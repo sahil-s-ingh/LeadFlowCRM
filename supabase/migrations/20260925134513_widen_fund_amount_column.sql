@@ -1,0 +1,1 @@
+ALTER TABLE submissions ALTER COLUMN fund_amount TYPE numeric(16, 2);

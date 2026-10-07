@@ -1,0 +1,95 @@
+[functions.send-email]
+verify_jwt = true
+
+[functions.email-track]
+verify_jwt = false
+
+[functions.telegram-webhook]
+verify_jwt = false
+
+[functions.send-telegram-message]
+verify_jwt = true
+
+[functions.telegram-file]
+verify_jwt = true
+
+[functions.whatsapp-webhook]
+verify_jwt = false
+
+[functions.send-whatsapp-message]
+verify_jwt = true
+
+[functions.whatsapp-file]
+verify_jwt = true
+
+[functions.process-followups]
+verify_jwt = false
+
+[functions.process-scheduled-emails]
+verify_jwt = false
+
+[functions.meta-conversion-api]
+verify_jwt = true
+
+[functions.delete-account]
+verify_jwt = true
+
+[functions.send-team-invite]
+verify_jwt = true
+
+[functions.whatsapp-templates]
+verify_jwt = true
+
+[functions.whatsapp-broadcast]
+verify_jwt = true
+
+[functions.whatsapp-profile-picture]
+verify_jwt = true
+
+[functions.twilio-call]
+verify_jwt = true
+
+[functions.plivo-answer]
+verify_jwt = false
+
+[functions.whatsapp-call]
+verify_jwt = true
+
+[functions.whatsapp-call-signaling]
+verify_jwt = false
+
+[functions.fire-webhook]
+verify_jwt = true
+
+[functions.inbound-webhook]
+verify_jwt = false
+
+[functions.send-chat-notification]
+verify_jwt = true
+
+[functions.send-welcome-email]
+verify_jwt = false
+
+[functions.email-broadcast]
+verify_jwt = true
+
+[functions.process-automations]
+verify_jwt = false
+
+[functions.short-link]
+verify_jwt = false
+
+[functions.telegram-broadcast]
+verify_jwt = true
+
+[functions.email-inbox]
+verify_jwt = true
+
+[functions.meta-marketing-sync]
+verify_jwt = true
+
+[functions.meta-optimize-campaigns]
+verify_jwt = true
+
+[functions.google-sheets-sync]
+verify_jwt = false
