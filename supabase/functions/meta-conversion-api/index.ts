@@ -126,10 +126,11 @@ Deno.serve(async (req: Request) => {
     };
 
     if (event_name === "Purchase") {
-      const value = purchase_value != null ? purchase_value : fund_amount;
+      const value = purchase_value != null ? purchase_value : (fund_amount != null ? fund_amount : (settings.default_purchase_value != null ? Number(settings.default_purchase_value) : null));
+      const currency = (settings.currency as string) || "USD";
       if (value != null) {
-        custom_data["value"] = value;
-        custom_data["currency"] = "USD";
+        custom_data["value"] = Number(value);
+        custom_data["currency"] = currency;
       }
     }
 

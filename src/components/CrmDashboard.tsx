@@ -7148,6 +7148,8 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
   const [metaAccessToken, setMetaAccessToken] = useState('');
   const [metaApiVersion, setMetaApiVersion] = useState('v18.0');
   const [metaEnabled, setMetaEnabled] = useState(true);
+  const [metaCurrency, setMetaCurrency] = useState('USD');
+  const [metaDefaultValue, setMetaDefaultValue] = useState('');
   const [showMetaToken, setShowMetaToken] = useState(false);
   const [metaConversionLog, setMetaConversionLog] = useState<{ id: string; event_name: string; success: boolean; error_message: string | null; created_at: string }[]>([]);
   const [eventMapping, setEventMapping] = useState<Record<LeadStatus, string>>({ ...DEFAULT_STAGE_EVENTS });
@@ -7358,6 +7360,8 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
         setMetaAccessToken(metaRes.data.access_token || '');
         setMetaApiVersion(metaRes.data.api_version || 'v18.0');
         setMetaEnabled(metaRes.data.is_enabled !== false);
+        setMetaCurrency((metaRes.data as Record<string, unknown>).currency as string || 'USD');
+        setMetaDefaultValue((metaRes.data as Record<string, unknown>).default_purchase_value != null ? String((metaRes.data as Record<string, unknown>).default_purchase_value) : '');
         const m = metaRes.data as Record<string, unknown>;
         setEventMapping({
           new: (m.event_new as string) || DEFAULT_STAGE_EVENTS.new,
@@ -7631,6 +7635,8 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
         access_token: metaAccessToken.trim(),
         api_version: metaApiVersion.trim() || 'v18.0',
         is_enabled: metaEnabled,
+        currency: metaCurrency.trim() || 'USD',
+        default_purchase_value: metaDefaultValue.trim() ? parseFloat(metaDefaultValue) : null,
         event_new: eventMapping.new,
         event_called_no_response: eventMapping.called_no_response,
         event_called_responded: eventMapping.called_responded,
@@ -10436,6 +10442,70 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                     </label>
                   </div>
 
+                  <div style={{ marginTop: '16px', padding: '16px', background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                    <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#64748b', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Purchase Event Value Settings</div>
+                    <p style={{ fontSize: '0.78rem', color: '#94a3b8', marginBottom: '16px' }}>Meta requires a <strong>value</strong> and <strong>currency</strong> for all Purchase events. When a lead is converted, the CRM sends the purchase value if set, then falls back to the fund amount, then to the default value below.</p>
+                    <div className="crm-add-lead-grid">
+                      <label className="crm-add-lead-field">
+                        <span>Currency (ISO 4217)</span>
+                        <select
+                          value={metaCurrency}
+                          onChange={(e) => setMetaCurrency(e.target.value)}
+                          style={{ cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}
+                        >
+                          <option value="USD">USD — US Dollar</option>
+                          <option value="EUR">EUR — Euro</option>
+                          <option value="GBP">GBP — British Pound</option>
+                          <option value="INR">INR — Indian Rupee</option>
+                          <option value="AED">AED — UAE Dirham</option>
+                          <option value="SAR">SAR — Saudi Riyal</option>
+                          <option value="SGD">SGD — Singapore Dollar</option>
+                          <option value="AUD">AUD — Australian Dollar</option>
+                          <option value="CAD">CAD — Canadian Dollar</option>
+                          <option value="ZAR">ZAR — South African Rand</option>
+                          <option value="NGN">NGN — Nigerian Naira</option>
+                          <option value="KES">KES — Kenyan Shilling</option>
+                          <option value="PKR">PKR — Pakistani Rupee</option>
+                          <option value="BDT">BDT — Bangladeshi Taka</option>
+                          <option value="LKR">LKR — Sri Lankan Rupee</option>
+                          <option value="NPR">NPR — Nepalese Rupee</option>
+                          <option value="JPY">JPY — Japanese Yen</option>
+                          <option value="CNY">CNY — Chinese Yuan</option>
+                          <option value="MYR">MYR — Malaysian Ringgit</option>
+                          <option value="IDR">IDR — Indonesian Rupiah</option>
+                          <option value="PHP">PHP — Philippine Peso</option>
+                          <option value="THB">THB — Thai Baht</option>
+                          <option value="VND">VND — Vietnamese Dong</option>
+                          <option value="BRL">BRL — Brazilian Real</option>
+                          <option value="MXN">MXN — Mexican Peso</option>
+                          <option value="TRY">TRY — Turkish Lira</option>
+                          <option value="EGP">EGP — Egyptian Pound</option>
+                          <option value="GHS">GHS — Ghanaian Cedi</option>
+                          <option value="TZS">TZS — Tanzanian Shilling</option>
+                          <option value="UGX">UGX — Ugandan Shilling</option>
+                        </select>
+                        <small style={{ color: '#94a3b8', fontSize: '0.74rem', marginTop: '4px', display: 'block' }}>
+                          The currency code sent with every Purchase event to Meta.
+                        </small>
+                      </label>
+                      <label className="crm-add-lead-field">
+                        <span>Default Purchase Value (fallback)</span>
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={metaDefaultValue}
+                          onChange={(e) => setMetaDefaultValue(e.target.value)}
+                          placeholder="e.g. 100.00"
+                          style={{ fontSize: '0.85rem', fontWeight: 600 }}
+                        />
+                        <small style={{ color: '#94a3b8', fontSize: '0.74rem', marginTop: '4px', display: 'block' }}>
+                          Used only when a converted lead has no purchase value or fund amount set. Ensures Meta always receives a valid value.
+                        </small>
+                      </label>
+                    </div>
+                  </div>
+
                   <div style={{ marginTop: '20px', padding: '16px', background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
                     <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#64748b', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Event Mapping</div>
                     <p style={{ fontSize: '0.78rem', color: '#94a3b8', marginBottom: '16px' }}>Choose which Meta event to send when a lead moves to each stage. Set to <strong>None</strong> to skip sending for that stage.</p>
@@ -10469,7 +10539,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                       </div>
                     ))}
                     <div style={{ marginTop: '12px', padding: '10px 12px', background: 'rgba(24,119,242,0.06)', borderRadius: '8px', fontSize: '0.76rem', color: '#475569', lineHeight: 1.5 }}>
-                      <strong>Tip:</strong> The <strong>Purchase</strong> event automatically includes the lead's fund amount as the purchase value. <strong>None</strong> means no event is sent for that stage.
+                      <strong>Tip:</strong> The <strong>Purchase</strong> event automatically includes a <strong>value</strong> and <strong>currency</strong>. It uses the lead's purchase value if set, then the fund amount, then the default value from the settings above. <strong>None</strong> means no event is sent for that stage.
                     </div>
                   </div>
 
