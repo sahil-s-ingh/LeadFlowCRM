@@ -7,6 +7,7 @@ import CrmDashboard from './components/CrmDashboard';
 import SuperAdminLogin from './components/SuperAdminLogin';
 import SuperAdminDashboard from './components/SuperAdminDashboard';
 import { AboutPage, PrivacyPage, TermsPage, CareersPage, SecurityPage, BrandAssetsPage, ReportAbusePage, SitemapPage } from './components/InfoPages';
+import { Shield, X } from 'lucide-react';
 
 function useHashRoute() {
   const [hash, setHash] = useState(() => window.location.hash.slice(1));
@@ -20,12 +21,108 @@ function useHashRoute() {
   return hash;
 }
 
+function useImpersonationBanner(session: Session | null) {
+  const [impersonationAdminEmail, setImpersonationAdminEmail] = useState<string | null>(null);
+
+  useEffect(() => {
+    const raw = localStorage.getItem('impersonation_admin_session');
+    if (raw && session) {
+      try {
+        const parsed = JSON.parse(raw);
+        if (parsed.admin_email && parsed.access_token !== session.access_token) {
+          setImpersonationAdminEmail(parsed.admin_email);
+        } else {
+          setImpersonationAdminEmail(null);
+        }
+      } catch {
+        setImpersonationAdminEmail(null);
+      }
+    } else {
+      setImpersonationAdminEmail(null);
+    }
+  }, [session]);
+
+  const exitImpersonation = async () => {
+    const raw = localStorage.getItem('impersonation_admin_session');
+    if (!raw) {
+      await supabase.auth.signOut();
+      window.location.hash = '#/superadmin';
+      return;
+    }
+
+    try {
+      const adminSession = JSON.parse(raw);
+
+      // Notify the edge function to end the impersonation log
+      await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/impersonate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${adminSession.access_token}`,
+        },
+        body: JSON.stringify({ action: 'end' }),
+      }).catch(() => {});
+
+      // Restore the admin session
+      await supabase.auth.setSession({
+        access_token: adminSession.access_token,
+        refresh_token: adminSession.refresh_token,
+      });
+
+      localStorage.removeItem('impersonation_admin_session');
+      setImpersonationAdminEmail(null);
+      window.location.hash = '#/superadmin';
+    } catch {
+      localStorage.removeItem('impersonation_admin_session');
+      await supabase.auth.signOut();
+      window.location.hash = '#/superadmin';
+    }
+  };
+
+  return { impersonationAdminEmail, exitImpersonation };
+}
+
+function ImpersonationBanner({ adminEmail, onExit }: { adminEmail: string; onExit: () => void }) {
+  return (
+    <div style={{
+      background: 'linear-gradient(90deg, #92400e, #b45309)',
+      padding: '10px 24px',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: '12px',
+      color: '#fff',
+      fontSize: '0.82rem',
+      fontWeight: 600,
+    }}>
+      <Shield size={16} />
+      <span>
+        You are logged in as a customer. Admin session: {adminEmail}
+      </span>
+      <button
+        type="button"
+        onClick={onExit}
+        style={{
+          display: 'inline-flex', alignItems: 'center', gap: '5px',
+          padding: '5px 14px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.3)',
+          background: 'rgba(255,255,255,0.15)', color: '#fff',
+          fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap',
+        }}
+      >
+        <X size={13} /> Exit Impersonation
+      </button>
+    </div>
+  );
+}
+
 function App() {
   const [session, setSession] = useState<Session | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
   const [superAdminChecked, setSuperAdminChecked] = useState(false);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const hash = useHashRoute();
+
+  const { impersonationAdminEmail, exitImpersonation } = useImpersonationBanner(session);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -58,9 +155,10 @@ function App() {
       return;
     }
 
+    let cancelled = false;
     (async () => {
-      // Check if this user is a super admin
       const { data, error } = await supabase.rpc('is_super_admin');
+      if (cancelled) return;
       if (!error && data === true) {
         setIsSuperAdmin(true);
       } else {
@@ -68,7 +166,11 @@ function App() {
       }
       setSuperAdminChecked(true);
     })();
+    return () => { cancelled = true; };
   }, [hash, session]);
+
+  // If impersonating, inject banner above the CRM dashboard
+  const showImpersonationBanner = !!impersonationAdminEmail && (hash === 'admin' || hash === '/admin' || hash === 'signup' || hash === '/signup');
 
   // Landing page for root hash
   if (hash === '' || hash === '/' || hash === '#') {
@@ -152,7 +254,14 @@ function App() {
       return <CrmLogin />;
     }
 
-    return <CrmDashboard session={session} />;
+    return (
+      <>
+        {showImpersonationBanner && (
+          <ImpersonationBanner adminEmail={impersonationAdminEmail!} onExit={exitImpersonation} />
+        )}
+        <CrmDashboard session={session} />
+      </>
+    );
   }
 
   // CRM signup route: #/signup
@@ -169,7 +278,14 @@ function App() {
       return <CrmLogin initialMode="signup" />;
     }
 
-    return <CrmDashboard session={session} />;
+    return (
+      <>
+        {showImpersonationBanner && (
+          <ImpersonationBanner adminEmail={impersonationAdminEmail!} onExit={exitImpersonation} />
+        )}
+        <CrmDashboard session={session} />
+      </>
+    );
   }
 
   // Unknown hash — fall back to landing

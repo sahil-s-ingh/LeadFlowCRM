@@ -1,7 +1,9 @@
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import type { Session } from '@supabase/supabase-js';
-import { Shield, Users, TrendingUp, MessageSquare, UserCog, LogOut, Loader2, Building2, Mail, Activity, AlertCircle, Search, RefreshCw, CircleDot } from 'lucide-react';
+import { Shield, Users, TrendingUp, MessageSquare, UserCog, LogOut, Loader2, Building2, Mail, Activity, AlertCircle, Search, RefreshCw, CircleDot, LogIn, Eye, UserCircle } from 'lucide-react';
+import AccountDetailDrawer from './AccountDetailDrawer';
+import AdminProfilePage from './AdminProfilePage';
 
 type Stats = {
   total_auth_users: number;
@@ -30,6 +32,9 @@ export default function SuperAdminDashboard({ session, onSignOut }: { session: S
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const [impersonatingId, setImpersonatingId] = useState<string | null>(null);
+  const [drawerUserId, setDrawerUserId] = useState<string | null>(null);
+  const [view, setView] = useState<'dashboard' | 'profile'>('dashboard');
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -55,6 +60,58 @@ export default function SuperAdminDashboard({ session, onSignOut }: { session: S
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  const handleImpersonate = async (account: Account) => {
+    if (account.owner_id === session.user.id) {
+      setError('You cannot impersonate yourself.');
+      return;
+    }
+    setImpersonatingId(account.owner_id);
+    setError('');
+
+    try {
+      const { data: { session: adminSession } } = await supabase.auth.getSession();
+      if (!adminSession) throw new Error('No active admin session');
+
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/impersonate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${adminSession.access_token}`,
+        },
+        body: JSON.stringify({ action: 'start', targetUserId: account.owner_id }),
+      });
+
+      if (!response.ok) {
+        const errBody = await response.json();
+        throw new Error(errBody.error || 'Failed to start impersonation');
+      }
+
+      const data = await response.json();
+
+      // Save admin session so we can restore it later
+      localStorage.setItem('impersonation_admin_session', JSON.stringify({
+        access_token: adminSession.access_token,
+        refresh_token: adminSession.refresh_token,
+        admin_email: adminSession.user.email,
+      }));
+
+      // Set the target user's session
+      const { error: setSessionError } = await supabase.auth.setSession({
+        access_token: data.access_token,
+        refresh_token: data.refresh_token,
+      });
+
+      if (setSessionError) throw setSessionError;
+
+      // Redirect to CRM
+      window.location.hash = '#/admin';
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to impersonate user';
+      setError(msg);
+    }
+    setImpersonatingId(null);
+  };
 
   const isActive = (lastSignIn: string | null) => {
     if (!lastSignIn) return false;
@@ -101,7 +158,7 @@ export default function SuperAdminDashboard({ session, onSignOut }: { session: S
     }
   };
 
-  if (loading) {
+  if (loading && view === 'dashboard') {
     return (
       <div style={{ minHeight: '100vh', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div style={{ textAlign: 'center' }}>
@@ -110,6 +167,10 @@ export default function SuperAdminDashboard({ session, onSignOut }: { session: S
         </div>
       </div>
     );
+  }
+
+  if (view === 'profile') {
+    return <AdminProfilePage session={session} onBack={() => setView('dashboard')} />;
   }
 
   return (
@@ -140,18 +201,33 @@ export default function SuperAdminDashboard({ session, onSignOut }: { session: S
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <button
-            type="button"
-            onClick={loadData}
-            disabled={loading}
-            style={{
-              padding: '8px 14px', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '8px',
-              background: 'rgba(255,255,255,0.1)', color: '#fff', fontSize: '0.8rem',
-              fontWeight: 600, cursor: loading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px',
-            }}
-          >
-            <RefreshCw size={14} className={loading ? 'crm-spin' : ''} /> Refresh
-          </button>
+          {view === 'dashboard' && (
+            <button
+              type="button"
+              onClick={loadData}
+              disabled={loading}
+              style={{
+                padding: '8px 14px', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '8px',
+                background: 'rgba(255,255,255,0.1)', color: '#fff', fontSize: '0.8rem',
+                fontWeight: 600, cursor: loading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px',
+              }}
+            >
+              <RefreshCw size={14} className={loading ? 'crm-spin' : ''} /> Refresh
+            </button>
+          )}
+          {view === 'dashboard' && (
+            <button
+              type="button"
+              onClick={() => setView('profile')}
+              style={{
+                padding: '8px 14px', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '8px',
+                background: 'rgba(255,255,255,0.1)', color: '#fff', fontSize: '0.8rem',
+                fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px',
+              }}
+            >
+              <UserCircle size={14} /> My Profile
+            </button>
+          )}
           <button
             type="button"
             onClick={onSignOut}
@@ -318,15 +394,18 @@ export default function SuperAdminDashboard({ session, onSignOut }: { session: S
                     <th style={thStyle}>Team</th>
                     <th style={thStyle}>Leads</th>
                     <th style={thStyle}>Chats</th>
+                    <th style={thStyle}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredAccounts.map((account, idx) => {
                     const active = isActive(account.last_sign_in_at);
+                    const isSelf = account.owner_id === session.user.id;
                     return (
-                      <tr key={account.owner_id} style={{ borderBottom: '1px solid #f1f5f9', transition: 'background 0.15s' }}
+                      <tr key={account.owner_id} style={{ borderBottom: '1px solid #f1f5f9', transition: 'background 0.15s', cursor: 'pointer' }}
                         onMouseEnter={(e) => { e.currentTarget.style.background = '#f8fafc'; }}
                         onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                        onClick={() => setDrawerUserId(account.owner_id)}
                       >
                         <td style={tdStyle}>
                           <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '26px', height: '26px', borderRadius: '50%', background: 'rgba(15,118,110,0.1)', color: '#0f766e', fontSize: '0.75rem', fontWeight: 700 }}>
@@ -375,6 +454,45 @@ export default function SuperAdminDashboard({ session, onSignOut }: { session: S
                             {account.conversation_count}
                           </span>
                         </td>
+                        <td style={tdStyle} onClick={(e) => e.stopPropagation()}>
+                          <div style={{ display: 'flex', gap: '6px' }}>
+                          <button
+                            type="button"
+                            onClick={() => setDrawerUserId(account.owner_id)}
+                            title="View account details"
+                            style={{
+                              display: 'inline-flex', alignItems: 'center', gap: '5px',
+                              padding: '6px 10px', borderRadius: '7px', border: '1px solid #e2e8f0',
+                              background: '#fff', color: '#475569',
+                              fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer',
+                              transition: 'all 0.15s', whiteSpace: 'nowrap',
+                            }}
+                          >
+                            <Eye size={13} /> View
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleImpersonate(account)}
+                            disabled={isSelf || impersonatingId === account.owner_id}
+                            title={isSelf ? 'You cannot impersonate yourself' : 'Log into this customer\'s CRM'}
+                            style={{
+                              display: 'inline-flex', alignItems: 'center', gap: '5px',
+                              padding: '6px 12px', borderRadius: '7px', border: 'none',
+                              background: isSelf ? '#f1f5f9' : '#0f766e',
+                              color: isSelf ? '#94a3b8' : '#fff',
+                              fontSize: '0.75rem', fontWeight: 700, cursor: (isSelf || impersonatingId === account.owner_id) ? 'not-allowed' : 'pointer',
+                              transition: 'all 0.15s', whiteSpace: 'nowrap',
+                            }}
+                          >
+                            {impersonatingId === account.owner_id ? (
+                              <Loader2 size={13} className="crm-spin" />
+                            ) : (
+                              <LogIn size={13} />
+                            )}
+                            {isSelf ? 'You' : 'Login'}
+                          </button>
+                          </div>
+                        </td>
                       </tr>
                     );
                   })}
@@ -388,6 +506,18 @@ export default function SuperAdminDashboard({ session, onSignOut }: { session: S
           Super Admin Portal &middot; LeadCentre CRM Platform
         </p>
       </div>
+
+      {drawerUserId && (
+        <AccountDetailDrawer
+          targetUserId={drawerUserId}
+          session={session}
+          onClose={() => setDrawerUserId(null)}
+          onImpersonate={(userId, email) => {
+            setDrawerUserId(null);
+            handleImpersonate({ owner_id: userId, email } as Account);
+          }}
+        />
+      )}
     </div>
   );
 }

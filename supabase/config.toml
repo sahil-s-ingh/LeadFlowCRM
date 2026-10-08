@@ -93,3 +93,6 @@ verify_jwt = true
 
 [functions.google-sheets-sync]
 verify_jwt = false
+
+[functions.impersonate]
+verify_jwt = true

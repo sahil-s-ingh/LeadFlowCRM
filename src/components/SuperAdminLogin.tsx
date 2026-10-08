@@ -14,28 +14,11 @@ export default function SuperAdminLogin() {
     setLoading(true);
     setError('');
 
-    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+    const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
     if (signInError) {
       setError(signInError.message);
       setLoading(false);
-      return;
     }
-
-    if (signInData.user) {
-      const { data: adminCheck } = await supabase
-        .from('super_admins')
-        .select('id')
-        .eq('id', signInData.user.id)
-        .maybeSingle();
-
-      if (!adminCheck) {
-        setError('You are not authorized as a super admin. Only platform owners can access this portal.');
-        await supabase.auth.signOut();
-        setLoading(false);
-        return;
-      }
-    }
-    setLoading(false);
   };
 
   return (
