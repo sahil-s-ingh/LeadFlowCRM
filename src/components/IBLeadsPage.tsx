@@ -161,7 +161,7 @@ function computeLeadScore(lead: IbLead): number {
   return Math.max(0, Math.min(100, score));
 }
 
-export default function IBLeadsPage({ session, onBack }: { session: Session; onBack: () => void }) {
+export default function IBLeadsPage({ session, onBack, onCall }: { session: Session; onBack: () => void; onCall?: (number: string) => void }) {
   const [leads, setLeads] = useState<IbLead[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -977,9 +977,9 @@ export default function IBLeadsPage({ session, onBack }: { session: Session; onB
                         </td>
                         <td>
                           <div className="crm-contact-cell">
-                            <a href={`tel:${lead.mobile_number}`} className="crm-contact-item" onClick={(e) => e.stopPropagation()}>
+                            <button type="button" className="crm-contact-item" onClick={(e) => { e.stopPropagation(); window.location.href = `tel:${lead.mobile_number.replace(/[^+\d]/g, '')}`; }} style={{ cursor: 'pointer', font: 'inherit' }}>
                               <Phone size={14} /> {lead.mobile_number}
-                            </a>
+                            </button>
                             <span className="crm-contact-item crm-contact-email">
                               <MapPin size={13} /> {lead.state}
                             </span>
@@ -1192,9 +1192,9 @@ export default function IBLeadsPage({ session, onBack }: { session: Session; onB
                       </span>
                     </div>
                     <div className="crm-mobile-card-body">
-                      <a href={`tel:${lead.mobile_number}`} className="crm-mobile-card-phone" onClick={(e) => e.stopPropagation()}>
+                      <button type="button" className="crm-mobile-card-phone" onClick={(e) => { e.stopPropagation(); window.location.href = `tel:${lead.mobile_number.replace(/[^+\d]/g, '')}`; }} style={{ cursor: 'pointer', font: 'inherit' }}>
                         <Phone size={14} /> {lead.mobile_number}
-                      </a>
+                      </button>
                       <span className="crm-mobile-card-location">
                         <MapPin size={13} /> {lead.state}
                       </span>
@@ -1244,6 +1244,7 @@ export default function IBLeadsPage({ session, onBack }: { session: Session; onB
           onDelete={deleteLead}
           formatDate={formatDate}
           assigneeMap={assigneeMap}
+          onCall={onCall}
         />
       )}
 
@@ -1370,13 +1371,14 @@ function IbPipelineView({ leads, onLeadClick, onStatusChange, formatDate, assign
 }
 
 // ===================== Detail Drawer =====================
-function IbLeadDetailDrawer({ lead, onClose, onUpdate, onDelete, formatDate, assigneeMap }: {
+function IbLeadDetailDrawer({ lead, onClose, onUpdate, onDelete, formatDate, assigneeMap, onCall }: {
   lead: IbLead;
   onClose: () => void;
   onUpdate: (id: string, updates: Partial<IbLead>) => void;
   onDelete: (id: string) => void;
   formatDate: (iso: string) => string;
   assigneeMap: Record<string, string>;
+  onCall?: (number: string) => void;
 }) {
   const [editing, setEditing] = useState(false);
   const [tagInput, setTagInput] = useState('');
@@ -1480,7 +1482,7 @@ function IbLeadDetailDrawer({ lead, onClose, onUpdate, onDelete, formatDate, ass
           </div>
 
           <div className="ib-profile-actions">
-            <a href={`tel:${lead.mobile_number}`} className="ib-profile-action ib-profile-action-primary"><Phone size={15} /> Call</a>
+            <button type="button" className="ib-profile-action ib-profile-action-primary" onClick={() => { window.location.href = `tel:${lead.mobile_number.replace(/[^+\d]/g, '')}`; }} style={{ cursor: 'pointer', font: 'inherit' }}><Phone size={15} /> Call</button>
             <a href={`mailto:${lead.email}`} className="ib-profile-action"><Mail size={15} /> Email</a>
             <a href={`https://wa.me/${lead.mobile_number.replace(/[^0-9]/g, '')}`} target="_blank" rel="noopener noreferrer" className="ib-profile-action"><MessageCircle size={15} /> WhatsApp</a>
           </div>
@@ -1529,11 +1531,11 @@ function IbLeadDetailDrawer({ lead, onClose, onUpdate, onDelete, formatDate, ass
                   <div><span className="ib-section-eyebrow">CONTACT</span><h3>Reach this applicant</h3></div>
                 </div>
                 <div className="ib-contact-grid">
-                  <a href={`tel:${lead.mobile_number}`} className="ib-contact-card">
+                  <button type="button" className="ib-contact-card" onClick={() => { window.location.href = `tel:${lead.mobile_number.replace(/[^+\d]/g, '')}`; }} style={{ cursor: 'pointer', font: 'inherit' }}>
                     <div className="ib-contact-card-icon"><Phone size={16} /></div>
                     <span><small>Phone</small><strong>{lead.mobile_number}</strong></span>
                     <ArrowUpRight size={15} />
-                  </a>
+                  </button>
                   <a href={`mailto:${lead.email}`} className="ib-contact-card">
                     <div className="ib-contact-card-icon"><Mail size={16} /></div>
                     <span><small>Email</small><strong>{lead.email}</strong></span>

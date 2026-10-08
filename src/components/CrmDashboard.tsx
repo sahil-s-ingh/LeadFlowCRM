@@ -2342,6 +2342,7 @@ export default function CrmDashboard({ session }: { session: Session }) {
             WhatsAppInbox={WhatsAppInbox}
             EmailInbox={EmailInbox}
             onTotalUnreadChange={() => {}}
+            onCall={(number) => { window.location.href = `tel:${number.replace(/[^+\d]/g, '')}`; }}
           />
         ) : activeView === 'settings' ? (
           <SettingsPage session={session} userRole={userRole} permissions={permissions} customPermissions={customPermissions} onBack={() => setActiveView('leads')} onSignOut={handleSignOut} onInboxVisibilityChange={(tg, wa, em) => { setShowTelegramInbox(tg); setShowWhatsAppInbox(wa); setShowEmailInbox(em); }} onOpenRecycleBin={() => { fetchTrashedLeads(); setShowTrashModal(true); }} pipelineAutoAssignEnabled={pipelineAutoAssignEnabled} pipelineAutoAssignStages={pipelineAutoAssignStages} onPipelineAutoAssignChange={(enabled, stages) => { setPipelineAutoAssignEnabled(enabled); setPipelineAutoAssignStages(stages); }} />
@@ -2352,9 +2353,9 @@ export default function CrmDashboard({ session }: { session: Session }) {
         ) : activeView === 'broadcast_hub' ? (
           <BroadcastHub session={session} onBack={() => setActiveView('dashboard')} />
         ) : activeView === 'followups' ? (
-          <FollowUpsPage session={session} onBack={() => setActiveView('dashboard')} />
+          <FollowUpsPage session={session} onBack={() => setActiveView('dashboard')} onCall={(number) => { window.location.href = `tel:${number.replace(/[^+\d]/g, '')}`; }} />
         ) : activeView === 'ib_leads' ? (
-          <IBLeadsPage session={session} onBack={() => setActiveView('dashboard')} />
+          <IBLeadsPage session={session} onBack={() => setActiveView('dashboard')} onCall={(number) => { window.location.href = `tel:${number.replace(/[^+\d]/g, '')}`; }} />
         ) : activeView === 'leaderboard' ? (
           <AgentLeaderboard session={session} leads={leads} onBack={() => setActiveView('dashboard')} />
         ) : activeView === 'goals' ? (
@@ -2784,9 +2785,9 @@ export default function CrmDashboard({ session }: { session: Session }) {
                         </td>
                         <td>
                           <div className="crm-contact-cell">
-                            <a href={`tel:${lead.mobile_number}`} className="crm-contact-item" onClick={(e) => e.stopPropagation()}>
+                            <button type="button" className="crm-contact-item" onClick={(e) => { e.stopPropagation(); window.location.href = `tel:${lead.mobile_number.replace(/[^+\d]/g, '')}`; }} style={{ cursor: 'pointer', font: 'inherit' }}>
                               <Phone size={14} /> {lead.mobile_number}
-                            </a>
+                            </button>
                             <span className="crm-contact-item crm-contact-email">
                               <MapPin size={13} /> {lead.state}
                             </span>
@@ -3097,9 +3098,9 @@ export default function CrmDashboard({ session }: { session: Session }) {
                       })()}
                     </div>
                     <div className="crm-mobile-card-body">
-                      <a href={`tel:${lead.mobile_number}`} className="crm-mobile-card-phone" onClick={(e) => e.stopPropagation()}>
+                      <button type="button" className="crm-mobile-card-phone" onClick={(e) => { e.stopPropagation(); window.location.href = `tel:${lead.mobile_number.replace(/[^+\d]/g, '')}`; }} style={{ cursor: 'pointer', font: 'inherit' }}>
                         <Phone size={14} /> {lead.mobile_number}
-                      </a>
+                      </button>
                       <span className="crm-mobile-card-location">
                         <MapPin size={13} /> {lead.state}
                       </span>
@@ -3166,6 +3167,7 @@ export default function CrmDashboard({ session }: { session: Session }) {
           onDelete={deleteLead}
           formatDate={formatDate}
           onSendEmail={(lead) => setEmailTarget(lead)}
+          onCall={(number) => { window.location.href = `tel:${number.replace(/[^+\d]/g, '')}`; }}
           setupCostPerClient={setupCostPerClient}
         />
       )}
@@ -5873,13 +5875,14 @@ function QualificationSection({ lead }: { lead: Lead }) {
   );
 }
 
-function LeadDetailDrawer({ lead, onClose, onUpdate, onDelete, formatDate, onSendEmail, setupCostPerClient }: {
+function LeadDetailDrawer({ lead, onClose, onUpdate, onDelete, formatDate, onSendEmail, onCall, setupCostPerClient }: {
   lead: Lead;
   onClose: () => void;
   onUpdate: (id: string, updates: Partial<Lead>) => void;
   onDelete: (id: string) => void;
   formatDate: (iso: string) => string;
   onSendEmail: (lead: Lead) => void;
+  onCall: (number: string) => void;
   setupCostPerClient: number;
 }) {
   const [tagInput, setTagInput] = useState('');
@@ -6215,9 +6218,9 @@ function LeadDetailDrawer({ lead, onClose, onUpdate, onDelete, formatDate, onSen
             </div>
           ) : (
             <div className="crm-drawer-contacts">
-              <a href={`tel:${lead.mobile_number}`} className="crm-drawer-contact-item">
+              <button type="button" className="crm-drawer-contact-item" onClick={() => onCall(lead.mobile_number)} style={{ cursor: 'pointer', font: 'inherit' }}>
                 <Phone size={16} /> <span>{lead.mobile_number}</span>
-              </a>
+              </button>
               <a href={`mailto:${lead.email}`} className="crm-drawer-contact-item">
                 <Mail size={16} /> <span>{lead.email}</span>
               </a>
@@ -6481,9 +6484,9 @@ function LeadDetailDrawer({ lead, onClose, onUpdate, onDelete, formatDate, onSen
         <div className="crm-drawer-section">
           <label className="crm-drawer-label">QUICK ACTIONS</label>
           <div className="crm-quick-actions">
-            <a href={`tel:${lead.mobile_number}`} className="crm-quick-btn crm-quick-call">
+            <button type="button" className="crm-quick-btn crm-quick-call" onClick={() => onCall(lead.mobile_number)} style={{ cursor: 'pointer' }}>
               <PhoneCall size={18} /> Call Now
-            </a>
+            </button>
             <a href={`https://wa.me/${lead.mobile_number.replace(/[^0-9]/g, '')}`} target="_blank" rel="noopener noreferrer" className="crm-quick-btn crm-quick-wa">
               <MessageCircle size={18} /> WhatsApp
             </a>
@@ -12004,7 +12007,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
 }
 
 // ===================== Chat Profile Panel =====================
-function ChatProfilePanel({ convId, tableName, displayName, phoneNumber, profilePicUrl, lastMessageAt, onClose }: {
+function ChatProfilePanel({ convId, tableName, displayName, phoneNumber, profilePicUrl, lastMessageAt, onClose, onCallFromDrawer }: {
   convId: string;
   tableName: 'chat_conversations' | 'wa_conversations';
   displayName: string;
@@ -12012,6 +12015,7 @@ function ChatProfilePanel({ convId, tableName, displayName, phoneNumber, profile
   profilePicUrl: string | null;
   lastMessageAt: string | null;
   onClose: () => void;
+  onCallFromDrawer?: (number: string) => void;
 }) {
   const [lead, setLead] = useState<Lead | null>(null);
   const [loading, setLoading] = useState(true);
@@ -12403,9 +12407,9 @@ function ChatProfilePanel({ convId, tableName, displayName, phoneNumber, profile
               ) : (
                 <div className="crm-drawer-contacts">
                   {lead.mobile_number && lead.mobile_number !== 'N/A' && (
-                    <a href={`tel:${lead.mobile_number}`} className="crm-drawer-contact-item">
+                    <button type="button" className="crm-drawer-contact-item" onClick={() => onCallFromDrawer?.(lead.mobile_number)} style={{ cursor: 'pointer', font: 'inherit' }}>
                       <Phone size={16} /> <span>{lead.mobile_number}</span>
-                    </a>
+                    </button>
                   )}
                   {lead.email && lead.email !== 'N/A' && (
                     <a href={`mailto:${lead.email}`} className="crm-drawer-contact-item">
@@ -12625,9 +12629,9 @@ function ChatProfilePanel({ convId, tableName, displayName, phoneNumber, profile
               <label className="crm-drawer-label">QUICK ACTIONS</label>
               <div className="crm-quick-actions">
                 {lead.mobile_number && lead.mobile_number !== 'N/A' && (
-                  <a href={`tel:${lead.mobile_number}`} className="crm-quick-btn crm-quick-call">
+                  <button type="button" className="crm-quick-btn crm-quick-call" onClick={() => onCallFromDrawer?.(lead.mobile_number)} style={{ cursor: 'pointer' }}>
                     <PhoneCall size={18} /> Call Now
-                  </a>
+                  </button>
                 )}
                 {lead.mobile_number && lead.mobile_number !== 'N/A' && (
                   <a href={`https://wa.me/${lead.mobile_number.replace(/[^0-9]/g, '')}`} target="_blank" rel="noopener noreferrer" className="crm-quick-btn crm-quick-wa">
@@ -12698,11 +12702,12 @@ function ChatProfilePanel({ convId, tableName, displayName, phoneNumber, profile
 }
 
 // ===================== Chat Inbox =====================
-function ChatInbox({ session, onUnreadChange, refreshKey, onRefresh }: {
+function ChatInbox({ session, onUnreadChange, refreshKey, onRefresh, onCall }: {
   session: Session;
   onUnreadChange: (count: number) => void;
   refreshKey: number;
   onRefresh: () => void;
+  onCall?: (number: string) => void;
 }) {
   const [conversations, setConversations] = useState<ChatConversation[]>([]);
   const [selectedConv, setSelectedConv] = useState<string | null>(null);
@@ -13663,6 +13668,7 @@ function ChatInbox({ session, onUnreadChange, refreshKey, onRefresh }: {
           profilePicUrl={selectedConversation.profile_pic_url}
           lastMessageAt={selectedConversation.last_message_at}
           onClose={() => setShowProfilePanel(false)}
+          onCallFromDrawer={onCall}
         />
       )}
     </div>
@@ -13670,11 +13676,12 @@ function ChatInbox({ session, onUnreadChange, refreshKey, onRefresh }: {
 }
 
 // ===================== WhatsApp Inbox =====================
-function WhatsAppInbox({ session, onUnreadChange, refreshKey, onRefresh }: {
+function WhatsAppInbox({ session, onUnreadChange, refreshKey, onRefresh, onCall }: {
   session: Session;
   onUnreadChange: (count: number) => void;
   refreshKey: number;
   onRefresh: () => void;
+  onCall?: (number: string) => void;
 }) {
   const [conversations, setConversations] = useState<WaConversation[]>([]);
   const [selectedConv, setSelectedConv] = useState<string | null>(null);
@@ -15649,6 +15656,7 @@ function WhatsAppInbox({ session, onUnreadChange, refreshKey, onRefresh }: {
           profilePicUrl={selectedConversation.profile_pic_url}
           lastMessageAt={selectedConversation.last_message_at}
           onClose={() => setShowProfilePanel(false)}
+          onCallFromDrawer={onCall}
         />
       )}
     </div>

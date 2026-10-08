@@ -9,10 +9,11 @@ interface InboxHubProps {
   showTelegram: boolean;
   showWhatsApp: boolean;
   showEmail: boolean;
-  ChatInbox: React.ComponentType<{ session: Session; onUnreadChange: (n: number) => void; refreshKey: number; onRefresh: () => void }>;
-  WhatsAppInbox: React.ComponentType<{ session: Session; onUnreadChange: (n: number) => void; refreshKey: number; onRefresh: () => void }>;
+  ChatInbox: React.ComponentType<{ session: Session; onUnreadChange: (n: number) => void; refreshKey: number; onRefresh: () => void; onCall?: (number: string) => void }>;
+  WhatsAppInbox: React.ComponentType<{ session: Session; onUnreadChange: (n: number) => void; refreshKey: number; onRefresh: () => void; onCall?: (number: string) => void }>;
   EmailInbox: React.ComponentType<{ session: Session; onUnreadChange: (n: number) => void; refreshKey: number; onRefresh: () => void }>;
   onTotalUnreadChange?: (total: number) => void;
+  onCall?: (number: string) => void;
   initialTab?: InboxTab;
 }
 
@@ -25,6 +26,7 @@ export default function InboxHub({
   WhatsAppInbox,
   EmailInbox,
   onTotalUnreadChange,
+  onCall,
   initialTab,
 }: InboxHubProps) {
   const availableTabs: InboxTab[] = [];
@@ -120,6 +122,7 @@ export default function InboxHub({
               onUnreadChange={setTgUnread}
               refreshKey={tgRefresh}
               onRefresh={() => setTgRefresh((k) => k + 1)}
+              onCall={onCall}
             />
           </div>
         )}
@@ -130,6 +133,7 @@ export default function InboxHub({
               onUnreadChange={setWaUnread}
               refreshKey={waRefresh}
               onRefresh={() => setWaRefresh((k) => k + 1)}
+              onCall={onCall}
             />
           </div>
         )}

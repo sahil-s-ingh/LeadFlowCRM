@@ -27,7 +27,7 @@ type Lead = {
 
 type FollowUpFilter = 'all' | 'overdue' | 'upcoming' | 'done';
 
-export default function FollowUpsPage({ session, onBack }: { session: Session; onBack: () => void }) {
+export default function FollowUpsPage({ session, onBack, onCall }: { session: Session; onBack: () => void; onCall?: (number: string) => void }) {
   const [followups, setFollowups] = useState<FollowUp[]>([]);
   const [leads, setLeads] = useState<Record<string, Lead>>({});
   const [loading, setLoading] = useState(true);
@@ -284,9 +284,9 @@ export default function FollowUpsPage({ session, onBack }: { session: Session; o
 
                 <div className="crm-followups-card-actions">
                   {phone && !isDone && (
-                    <a href={`tel:${phone.replace(/[^+\d]/g, '')}`} className="crm-followups-action call">
+                    <button type="button" className="crm-followups-action call" onClick={() => { window.location.href = `tel:${phone.replace(/[^+\d]/g, '')}`; }} style={{ cursor: 'pointer', font: 'inherit' }}>
                       <PhoneCall size={14} /> Call
-                    </a>
+                    </button>
                   )}
                   {phone && !isDone && (
                     <a href={`https://wa.me/${phone.replace(/[^0-9]/g, '')}`} target="_blank" rel="noopener noreferrer" className="crm-followups-action wa">
