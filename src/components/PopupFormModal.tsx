@@ -169,6 +169,10 @@ export default function PopupFormModal() {
       lead.custom_data = customData;
     }
 
+    if (form.user_id) {
+      lead.user_id = form.user_id;
+    }
+
     const { data: leadData, error: insertError } = await supabase.from('submissions').insert(lead).select('id').single();
 
     if (insertError) {

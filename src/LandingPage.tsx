@@ -2112,14 +2112,10 @@ function LiveActivityFeed() {
 
   useEffect(() => {
     (async () => {
-      const { data } = await supabase
-        .from('submissions')
-        .select('full_name, state, created_at')
-        .order('created_at', { ascending: false })
-        .limit(8);
+      const { data } = await supabase.rpc('get_public_recent_activity');
       if (data && data.length > 0) {
         const actions = ['signed up for free trial', 'imported leads into CRM', 'started WhatsApp broadcast', 'set up automated follow-ups', 'closed a deal via pipeline'];
-        const mapped = data.map((s: { full_name: string; state: string; created_at: string }, i: number) => ({
+        const mapped = (data as { full_name: string; state: string; created_at: string }[]).map((s, i: number) => ({
           name: s.full_name?.split(' ').slice(0, 2).join(' ') || 'Anonymous',
           city: s.state || 'India',
           action: actions[i % actions.length],
@@ -3579,6 +3575,8 @@ function SetupModal() {
     setSubmitting(true);
     setSubmitError(false);
 
+    const { data: ownerId } = await supabase.rpc('get_platform_owner_id');
+
     const { data: leadData, error } = await supabase.from('submissions').insert({
       full_name: form.fullName,
       mobile_number: form.mobileNumber,
@@ -3586,6 +3584,7 @@ function SetupModal() {
       state: form.state,
       trading_product: form.crmProduct,
       fund_amount: null,
+      user_id: ownerId ?? null,
     }).select('id').single();
 
     if (error) {
