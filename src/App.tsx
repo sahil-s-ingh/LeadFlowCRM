@@ -59,10 +59,7 @@ function App() {
     }
 
     (async () => {
-      // First try bootstrap — if no super admins exist yet, this promotes the caller
-      await supabase.rpc('bootstrap_super_admin');
-
-      // Now check if we're a super admin
+      // Check if this user is a super admin
       const { data, error } = await supabase.rpc('is_super_admin');
       if (!error && data === true) {
         setIsSuperAdmin(true);

@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import type { Session } from '@supabase/supabase-js';
-import { Shield, Users, TrendingUp, MessageSquare, UserCog, LogOut, Loader2, Building2, Mail, Activity, AlertCircle, Search, RefreshCw } from 'lucide-react';
+import { Shield, Users, TrendingUp, MessageSquare, UserCog, LogOut, Loader2, Building2, Mail, Activity, AlertCircle, Search, RefreshCw, CircleDot } from 'lucide-react';
 
 type Stats = {
   total_auth_users: number;
@@ -14,25 +14,22 @@ type Stats = {
 
 type Account = {
   owner_id: string;
+  email: string;
+  created_at: string;
+  last_sign_in_at: string | null;
   team_count: number;
   active_team_count: number;
   lead_count: number;
   conversation_count: number;
 };
 
-type AccountWithEmail = Account & {
-  email?: string;
-  created_at?: string;
-  last_sign_in_at?: string;
-};
-
 export default function SuperAdminDashboard({ session, onSignOut }: { session: Session; onSignOut: () => void }) {
   const [stats, setStats] = useState<Stats | null>(null);
-  const [accounts, setAccounts] = useState<AccountWithEmail[]>([]);
+  const [accounts, setAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
-  const [emailsMap, setEmailsMap] = useState<Record<string, { email: string; created_at: string; last_sign_in_at: string | null }>>({});
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -47,51 +44,7 @@ export default function SuperAdminDashboard({ session, onSignOut }: { session: S
       if (accountsRes.error) throw accountsRes.error;
 
       setStats(statsRes.data as Stats);
-      const rawAccounts = (accountsRes.data as Account[]) || [];
-
-      // Fetch all auth users via SECURITY DEFINER function for real emails + last sign-in
-      const { data: authUsersData, error: authUsersError } = await supabase.rpc('get_all_auth_users');
-      const emailLookup: Record<string, { email: string; created_at: string; last_sign_in_at: string | null }> = {};
-
-      if (!authUsersError && authUsersData) {
-        for (const u of authUsersData as { id: string; email: string; created_at: string; last_sign_in_at: string | null }[]) {
-          emailLookup[u.id] = { email: u.email, created_at: u.created_at, last_sign_in_at: u.last_sign_in_at };
-        }
-      }
-
-      // Fallback: also check team_members for owner emails
-      const ownerIds = rawAccounts.map((a) => a.owner_id).filter(Boolean);
-      if (ownerIds.length > 0) {
-        const { data: memberEmails } = await supabase
-          .from('team_members')
-          .select('owner_id, email, created_at')
-          .in('owner_id', ownerIds)
-          .order('created_at', { ascending: true });
-
-        if (memberEmails) {
-          for (const m of memberEmails as { owner_id: string; email: string; created_at: string }[]) {
-            if (!emailLookup[m.owner_id]) {
-              emailLookup[m.owner_id] = { email: m.email, created_at: m.created_at, last_sign_in_at: null };
-            }
-          }
-        }
-      }
-
-      setEmailsMap(emailLookup);
-
-      const enriched: AccountWithEmail[] = rawAccounts.map((a) => {
-        const info = emailLookup[a.owner_id];
-        return {
-          ...a,
-          email: info?.email || 'Unknown',
-          created_at: info?.created_at,
-          last_sign_in_at: info?.last_sign_in_at,
-        };
-      });
-
-      // Sort by lead count descending
-      enriched.sort((a, b) => b.lead_count - a.lead_count);
-      setAccounts(enriched);
+      setAccounts((accountsRes.data as Account[]) || []);
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Failed to load dashboard data';
       setError(msg);
@@ -103,16 +56,46 @@ export default function SuperAdminDashboard({ session, onSignOut }: { session: S
     loadData();
   }, [loadData]);
 
+  const isActive = (lastSignIn: string | null) => {
+    if (!lastSignIn) return false;
+    const daysSince = (Date.now() - new Date(lastSignIn).getTime()) / (1000 * 60 * 60 * 24);
+    return daysSince <= 7;
+  };
+
   const filteredAccounts = accounts.filter((a) => {
     if (!search.trim()) return true;
     const q = search.toLowerCase();
     return a.email?.toLowerCase().includes(q) || a.owner_id.toLowerCase().includes(q);
+  }).filter((a) => {
+    if (statusFilter === 'all') return true;
+    if (statusFilter === 'active') return isActive(a.last_sign_in_at);
+    if (statusFilter === 'inactive') return !isActive(a.last_sign_in_at);
+    return true;
   });
 
-  const formatDate = (d?: string) => {
-    if (!d) return 'Unknown';
+  const activeCount = accounts.filter((a) => isActive(a.last_sign_in_at)).length;
+  const inactiveCount = accounts.length - activeCount;
+
+  const formatDate = (d?: string | null) => {
+    if (!d) return 'Never';
     try {
       return new Date(d).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+    } catch {
+      return 'Unknown';
+    }
+  };
+
+  const formatRelative = (d?: string | null) => {
+    if (!d) return 'Never';
+    try {
+      const diff = Date.now() - new Date(d).getTime();
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      if (days === 0) return 'Today';
+      if (days === 1) return 'Yesterday';
+      if (days < 7) return `${days} days ago`;
+      if (days < 30) return `${Math.floor(days / 7)} weeks ago`;
+      if (days < 365) return `${Math.floor(days / 30)} months ago`;
+      return `${Math.floor(days / 365)} years ago`;
     } catch {
       return 'Unknown';
     }
@@ -203,19 +186,19 @@ export default function SuperAdminDashboard({ session, onSignOut }: { session: S
         }}>
           <StatCard
             icon={<Building2 size={22} />}
-            label="Total CRM Accounts"
-            value={stats?.account_count ?? 0}
-            subtext="Distinct organizations signed up"
+            label="Total Accounts"
+            value={accounts.length}
+            subtext="All signed-up users"
             color="#0f766e"
             bg="rgba(15,118,110,0.08)"
           />
           <StatCard
-            icon={<Users size={22} />}
-            label="Total Auth Users"
-            value={stats?.total_auth_users ?? 0}
-            subtext="All registered users"
-            color="#2563eb"
-            bg="rgba(37,99,235,0.08)"
+            icon={<CircleDot size={22} />}
+            label="Active Users (7 days)"
+            value={activeCount}
+            subtext={`${inactiveCount} inactive`}
+            color="#16a34a"
+            bg="rgba(22,163,74,0.08)"
           />
           <StatCard
             icon={<TrendingUp size={22} />}
@@ -230,8 +213,8 @@ export default function SuperAdminDashboard({ session, onSignOut }: { session: S
             label="Team Members"
             value={stats?.total_team_members ?? 0}
             subtext={`${stats?.active_team_members ?? 0} active`}
-            color="#7c3aed"
-            bg="rgba(124,58,237,0.08)"
+            color="#2563eb"
+            bg="rgba(37,99,235,0.08)"
           />
           <StatCard
             icon={<MessageSquare size={22} />}
@@ -244,8 +227,8 @@ export default function SuperAdminDashboard({ session, onSignOut }: { session: S
           <StatCard
             icon={<Activity size={22} />}
             label="Avg Leads / Account"
-            value={stats && stats.account_count > 0 ? Math.round(stats.total_submissions / stats.account_count) : 0}
-            subtext="Average per organization"
+            value={accounts.length > 0 ? Math.round((stats?.total_submissions ?? 0) / accounts.length) : 0}
+            subtext="Average per account"
             color="#db2777"
             bg="rgba(219,39,119,0.08)"
           />
@@ -268,26 +251,50 @@ export default function SuperAdminDashboard({ session, onSignOut }: { session: S
             gap: '12px',
           }}>
             <div>
-              <h2 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: '#0f172a' }}>All CRM Accounts</h2>
+              <h2 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: '#0f172a' }}>All Accounts</h2>
               <p style={{ margin: '4px 0 0', fontSize: '0.8rem', color: '#94a3b8' }}>
                 {accounts.length} account{accounts.length !== 1 ? 's' : ''} on the platform
               </p>
             </div>
 
-            <div style={{ position: 'relative' }}>
-              <Search size={16} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
-              <input
-                type="text"
-                placeholder="Search by email..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                style={{
-                  padding: '9px 12px 9px 34px', border: '1px solid #e2e8f0', borderRadius: '8px',
-                  fontSize: '0.85rem', outline: 'none', width: '240px',
-                }}
-                onFocus={(e) => { e.target.style.borderColor = '#0f766e'; }}
-                onBlur={(e) => { e.target.style.borderColor = '#e2e8f0'; }}
-              />
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              {/* Status filter buttons */}
+              <div style={{ display: 'flex', gap: '4px' }}>
+                {(['all', 'active', 'inactive'] as const).map((f) => (
+                  <button
+                    key={f}
+                    type="button"
+                    onClick={() => setStatusFilter(f)}
+                    style={{
+                      padding: '7px 12px', borderRadius: '8px', border: '1px solid',
+                      borderColor: statusFilter === f ? '#0f766e' : '#e2e8f0',
+                      background: statusFilter === f ? 'rgba(15,118,110,0.08)' : '#fff',
+                      color: statusFilter === f ? '#0f766e' : '#64748b',
+                      fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer',
+                      textTransform: 'capitalize', transition: 'all 0.15s',
+                    }}
+                  >
+                    {f}
+                  </button>
+                ))}
+              </div>
+
+              {/* Search */}
+              <div style={{ position: 'relative' }}>
+                <Search size={16} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                <input
+                  type="text"
+                  placeholder="Search by email..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  style={{
+                    padding: '9px 12px 9px 34px', border: '1px solid #e2e8f0', borderRadius: '8px',
+                    fontSize: '0.85rem', outline: 'none', width: '240px',
+                  }}
+                  onFocus={(e) => { e.target.style.borderColor = '#0f766e'; }}
+                  onBlur={(e) => { e.target.style.borderColor = '#e2e8f0'; }}
+                />
+              </div>
             </div>
           </div>
 
@@ -295,7 +302,7 @@ export default function SuperAdminDashboard({ session, onSignOut }: { session: S
             <div style={{ padding: '48px 24px', textAlign: 'center' }}>
               <Users size={36} style={{ color: '#cbd5e1', marginBottom: '10px' }} />
               <p style={{ fontSize: '0.88rem', color: '#94a3b8' }}>
-                {search ? 'No accounts match your search.' : 'No CRM accounts found yet.'}
+                {search || statusFilter !== 'all' ? 'No accounts match your filters.' : 'No accounts found yet.'}
               </p>
             </div>
           ) : (
@@ -304,60 +311,73 @@ export default function SuperAdminDashboard({ session, onSignOut }: { session: S
                 <thead>
                   <tr style={{ background: '#f8fafc' }}>
                     <th style={thStyle}>#</th>
-                    <th style={thStyle}><Mail size={12} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'middle' }} />Account Email</th>
+                    <th style={thStyle}><Mail size={12} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'middle' }} />Email</th>
+                    <th style={thStyle}>Status</th>
                     <th style={thStyle}>Joined</th>
                     <th style={thStyle}>Last Active</th>
-                    <th style={thStyle}>Team Members</th>
-                    <th style={thStyle}>Active Members</th>
+                    <th style={thStyle}>Team</th>
                     <th style={thStyle}>Leads</th>
-                    <th style={thStyle}>Conversations</th>
+                    <th style={thStyle}>Chats</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredAccounts.map((account, idx) => (
-                    <tr key={account.owner_id} style={{ borderBottom: '1px solid #f1f5f9', transition: 'background 0.15s' }}
-                      onMouseEnter={(e) => { e.currentTarget.style.background = '#f8fafc'; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
-                    >
-                      <td style={tdStyle}>
-                        <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '26px', height: '26px', borderRadius: '50%', background: 'rgba(15,118,110,0.1)', color: '#0f766e', fontSize: '0.75rem', fontWeight: 700 }}>
-                          {idx + 1}
-                        </span>
-                      </td>
-                      <td style={tdStyle}>
-                        <div style={{ fontWeight: 600, color: '#1e293b', fontSize: '0.85rem' }}>{account.email}</div>
-                        <div style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: '2px' }}>
-                          {account.owner_id.slice(0, 8)}...
-                        </div>
-                      </td>
-                      <td style={{ ...tdStyle, fontSize: '0.8rem', color: '#64748b' }}>
-                        {formatDate(account.created_at)}
-                      </td>
-                      <td style={{ ...tdStyle, fontSize: '0.8rem', color: '#64748b' }}>
-                        {formatDate(account.last_sign_in_at)}
-                      </td>
-                      <td style={tdStyle}>
-                        <span style={{ padding: '3px 10px', borderRadius: '6px', background: 'rgba(124,58,237,0.08)', color: '#7c3aed', fontSize: '0.78rem', fontWeight: 700 }}>
-                          {account.team_count}
-                        </span>
-                      </td>
-                      <td style={tdStyle}>
-                        <span style={{ padding: '3px 10px', borderRadius: '6px', background: 'rgba(34,197,94,0.08)', color: '#16a34a', fontSize: '0.78rem', fontWeight: 700 }}>
-                          {account.active_team_count}
-                        </span>
-                      </td>
-                      <td style={tdStyle}>
-                        <span style={{ padding: '3px 10px', borderRadius: '6px', background: 'rgba(217,119,6,0.08)', color: '#d97706', fontSize: '0.78rem', fontWeight: 700 }}>
-                          {account.lead_count}
-                        </span>
-                      </td>
-                      <td style={tdStyle}>
-                        <span style={{ padding: '3px 10px', borderRadius: '6px', background: 'rgba(8,145,178,0.08)', color: '#0891b2', fontSize: '0.78rem', fontWeight: 700 }}>
-                          {account.conversation_count}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
+                  {filteredAccounts.map((account, idx) => {
+                    const active = isActive(account.last_sign_in_at);
+                    return (
+                      <tr key={account.owner_id} style={{ borderBottom: '1px solid #f1f5f9', transition: 'background 0.15s' }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = '#f8fafc'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                      >
+                        <td style={tdStyle}>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '26px', height: '26px', borderRadius: '50%', background: 'rgba(15,118,110,0.1)', color: '#0f766e', fontSize: '0.75rem', fontWeight: 700 }}>
+                            {idx + 1}
+                          </span>
+                        </td>
+                        <td style={tdStyle}>
+                          <div style={{ fontWeight: 600, color: '#1e293b', fontSize: '0.85rem' }}>{account.email}</div>
+                          <div style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: '2px' }}>
+                            {account.owner_id.slice(0, 8)}...
+                          </div>
+                        </td>
+                        <td style={tdStyle}>
+                          <span style={{
+                            display: 'inline-flex', alignItems: 'center', gap: '5px',
+                            padding: '3px 10px', borderRadius: '9999px',
+                            fontSize: '0.72rem', fontWeight: 700,
+                            background: active ? 'rgba(22,163,74,0.1)' : 'rgba(148,163,184,0.1)',
+                            color: active ? '#16a34a' : '#94a3b8',
+                          }}>
+                            <span style={{
+                              width: '6px', height: '6px', borderRadius: '50%',
+                              background: active ? '#16a34a' : '#cbd5e1',
+                            }} />
+                            {active ? 'Active' : 'Inactive'}
+                          </span>
+                        </td>
+                        <td style={{ ...tdStyle, fontSize: '0.8rem', color: '#64748b' }}>
+                          {formatDate(account.created_at)}
+                        </td>
+                        <td style={{ ...tdStyle, fontSize: '0.8rem', color: '#64748b' }}>
+                          {formatRelative(account.last_sign_in_at)}
+                        </td>
+                        <td style={tdStyle}>
+                          <span style={{ padding: '3px 10px', borderRadius: '6px', background: 'rgba(37,99,235,0.08)', color: '#2563eb', fontSize: '0.78rem', fontWeight: 700 }}>
+                            {account.team_count}
+                          </span>
+                        </td>
+                        <td style={tdStyle}>
+                          <span style={{ padding: '3px 10px', borderRadius: '6px', background: 'rgba(217,119,6,0.08)', color: '#d97706', fontSize: '0.78rem', fontWeight: 700 }}>
+                            {account.lead_count}
+                          </span>
+                        </td>
+                        <td style={tdStyle}>
+                          <span style={{ padding: '3px 10px', borderRadius: '6px', background: 'rgba(8,145,178,0.08)', color: '#0891b2', fontSize: '0.78rem', fontWeight: 700 }}>
+                            {account.conversation_count}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
