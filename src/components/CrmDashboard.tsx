@@ -545,6 +545,9 @@ async function sendMetaConversionEvent(leadId: string, lead: Lead, newStatus: Le
         mobile_number: lead.mobile_number,
         email: lead.email,
         meta_lead_id: lead.meta_lead_id || null,
+        fbc: typeof document !== 'undefined' ? (document.cookie.match(/_fbc=([^;]+)/)?.[1] || null) : null,
+        fbp: typeof document !== 'undefined' ? (document.cookie.match(/_fbp=([^;]+)/)?.[1] || null) : null,
+        event_source_url: typeof window !== 'undefined' ? window.location.href : undefined,
       }),
     });
   } catch {
@@ -7142,6 +7145,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
   const [landingPalette, setLandingPalette] = useState<LandingPalette>(DEFAULT_PALETTE);
   const [landingSaving, setLandingSaving] = useState(false);
   const [landingSaved, setLandingSaved] = useState(false);
+  const [landingMetaPixelId, setLandingMetaPixelId] = useState('');
 
   // Meta Conversion API state
   const [metaPixelId, setMetaPixelId] = useState('');
@@ -7327,6 +7331,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
         setLandingPrimary(la.primary_color || '#EAB308');
         setLandingStyle((la.palette_style as PaletteStyle) || 'vibrant');
         setLandingEnabled(la.enabled !== false);
+        setLandingMetaPixelId((landingAppearanceRes.data as Record<string, unknown>).meta_pixel_id as string || '');
         setLandingPalette({
           primary: la.primary_color || DEFAULT_PALETTE.primary,
           primaryLight: la.primary_light || DEFAULT_PALETTE.primaryLight,
@@ -7846,6 +7851,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
       badge_text: palette.badgeText,
       footer_bg: palette.footerBg,
       footer_text: palette.footerText,
+      meta_pixel_id: landingMetaPixelId.trim() || null,
       updated_at: new Date().toISOString(),
     };
 
@@ -11203,6 +11209,15 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                             className={`appearance-style-btn ${landingStyle === s ? 'appearance-style-active' : ''}`}>{s}</button>
                         ))}
                       </div>
+                      <label className="crm-settings-label" style={{ marginTop: '14px' }}>Meta Pixel ID (for landing page tracking)</label>
+                      <input
+                        type="text"
+                        value={landingMetaPixelId}
+                        onChange={(e) => setLandingMetaPixelId(e.target.value)}
+                        placeholder="e.g. 123456789012345"
+                        style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: '0.85rem', marginTop: '4px' }}
+                      />
+                      <p style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: '4px' }}>Enter your Meta Pixel ID to track PageView and Lead events on your landing page. Find it in Meta Events Manager.</p>
                       <div className="appearance-save-row" style={{ marginTop: '16px' }}>
                         <button type="button" onClick={handleSaveLandingAppearance} disabled={landingSaving} className="appearance-save-btn">
                           {landingSaving ? <Loader2 size={16} className="crm-spin" /> : <Save size={16} />} Save Landing Colors

@@ -6,6 +6,45 @@ import PopupFormModal from '@/components/PopupFormModal';
 const DEFAULT_TELEGRAM_URL = '#crm-signup';
 const OPEN_SETUP_EVENT = 'open-mt5-setup';
 
+declare global {
+  interface Window {
+    fbq?: (...args: unknown[]) => void;
+    _fbq?: unknown;
+  }
+}
+
+function initMetaPixel(pixelId: string) {
+  if (window.fbq) return;
+  (function (f: Window, b: Document, e: string, v: string) {
+    let n: Element | null = f.fbq ? null : b.createElement(e);
+    if (f.fbq) return;
+    (f.fbq as unknown) = function () {
+      (f.fbq as unknown as { callMethod?: (...a: unknown[]) => void }).callMethod
+        ? (f.fbq as unknown as { callMethod: (...a: unknown[]) => void }).callMethod.apply(f.fbq, arguments as unknown as unknown[])
+        : (f.fbq as unknown as { queue?: unknown[] }).queue
+          ? (f.fbq as unknown as { queue: unknown[] }).queue.push(arguments as unknown as unknown[])
+          : ((f.fbq as unknown as { queue?: unknown[] }).queue = [], (f.fbq as unknown as { queue: unknown[] }).queue.push(arguments as unknown as unknown[]));
+    };
+    if (!f._fbq) f._fbq = f;
+    (f.fbq as unknown as { loaded?: boolean; version?: string }).loaded = true;
+    (f.fbq as unknown as { version?: string }).version = '2.0';
+    (f.fbq as unknown as { queue?: unknown[] }).queue = [];
+    const t = b.createElement(e);
+    t.async = true;
+    t.src = v;
+    const s = b.getElementsByTagName(e)[0];
+    s.parentNode?.insertBefore(t, s);
+  })(window, document, 'script', 'https://connect.facebook.net/en_US/fbevents.js');
+  window.fbq?.('init', pixelId);
+  window.fbq?.('track', 'PageView');
+}
+
+function trackMetaLeadEvent() {
+  if (window.fbq) {
+    window.fbq('track', 'Lead', { content_name: 'Landing Page Signup' });
+  }
+}
+
 /** Fetch the saved landing page color palette. When enabled, applies CSS variables to the document root. */
 function useLandingPalette(): LandingPalette | null {
   const [palette, setPalette] = useState<LandingPalette | null>(null);
@@ -16,6 +55,13 @@ function useLandingPalette(): LandingPalette | null {
         .from('landing_page_appearance')
         .select('*')
         .maybeSingle();
+
+      if (data) {
+        const pixelId = (data as { meta_pixel_id?: string }).meta_pixel_id;
+        if (pixelId) {
+          initMetaPixel(pixelId);
+        }
+      }
 
       if (data && (data as { enabled: boolean }).enabled) {
         const d = data as { primary_color: string; primary_light: string | null; primary_dark: string | null; accent: string | null; accent_dark: string | null; background: string | null; surface: string | null; surface_tint: string | null; text: string | null; text_muted: string | null; border: string | null; button_bg: string | null; button_text: string | null; button_hover: string | null; badge_bg: string | null; badge_text: string | null; footer_bg: string | null; footer_text: string | null };
@@ -3550,6 +3596,7 @@ function SetupModal() {
 
     setSubmitted(true);
     setSubmitting(false);
+    trackMetaLeadEvent();
 
     // Fire-and-forget: send auto welcome email if enabled
     if (leadData?.id) {

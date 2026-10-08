@@ -77,7 +77,7 @@ Deno.serve(async (req: Request) => {
     }
 
     const body = await req.json();
-    const { lead_id, event_name: clientEventName, status, fund_amount, purchase_value, mobile_number, email, meta_lead_id } = body;
+    const { lead_id, event_name: clientEventName, status, fund_amount, purchase_value, mobile_number, email, meta_lead_id, fbc, fbp } = body;
 
     if (!lead_id) {
       return new Response(
@@ -120,6 +120,24 @@ Deno.serve(async (req: Request) => {
       user_data["email"] = [await hashValueAsync(email)];
     }
 
+    if (fbc) {
+      user_data["fbc"] = fbc;
+    }
+
+    if (fbp) {
+      user_data["fbp"] = fbp;
+    }
+
+    const clientIpAddress = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
+    if (clientIpAddress) {
+      user_data["client_ip_address"] = clientIpAddress;
+    }
+
+    const clientUserAgent = req.headers.get("user-agent");
+    if (clientUserAgent) {
+      user_data["client_user_agent"] = clientUserAgent;
+    }
+
     // Build custom data
     const custom_data: Record<string, unknown> = {
       status: status || "unknown",
@@ -143,6 +161,7 @@ Deno.serve(async (req: Request) => {
           event_time: Math.floor(Date.now() / 1000),
           event_id,
           action_source: "system_generated",
+          event_source_url: body.event_source_url || "https://crm.sahilexchange.com",
           user_data,
           custom_data,
         },

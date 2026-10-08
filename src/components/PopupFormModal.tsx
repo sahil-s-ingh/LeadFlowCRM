@@ -2,6 +2,12 @@ import { useEffect, useState, useRef, type FormEvent } from 'react';
 import { supabase } from '@/lib/supabase';
 import { X, Loader2, CheckCircle2 } from 'lucide-react';
 
+declare global {
+  interface Window {
+    fbq?: (...args: unknown[]) => void;
+  }
+}
+
 type PopupFormField = {
   id: string;
   type: 'text' | 'email' | 'tel' | 'select' | 'textarea' | 'number' | 'checkbox' | 'radio' | 'date' | 'url';
@@ -173,6 +179,11 @@ export default function PopupFormModal() {
 
     setSubmitted(true);
     setSubmitting(false);
+
+    // Fire Meta Pixel Lead event if available
+    if (typeof window !== 'undefined' && window.fbq) {
+      window.fbq('track', 'Lead', { content_name: 'Popup Form Submission' });
+    }
 
     // Fire-and-forget: trigger automation flows for new leads
     if (leadData?.id) {
