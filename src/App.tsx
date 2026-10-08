@@ -4,6 +4,7 @@ import type { Session } from '@supabase/supabase-js';
 import LandingPage from './LandingPage';
 import CrmLogin from './components/CrmLogin';
 import CrmDashboard from './components/CrmDashboard';
+import { WorkspaceProvider } from '@/lib/workspace';
 import SuperAdminLogin from './components/SuperAdminLogin';
 import SuperAdminDashboard from './components/SuperAdminDashboard';
 import { AboutPage, PrivacyPage, TermsPage, CareersPage, SecurityPage, BrandAssetsPage, ReportAbusePage, SitemapPage } from './components/InfoPages';
@@ -259,7 +260,9 @@ function App() {
         {showImpersonationBanner && (
           <ImpersonationBanner adminEmail={impersonationAdminEmail!} onExit={exitImpersonation} />
         )}
-        <CrmDashboard session={session} />
+        <WorkspaceProvider session={session}>
+          <CrmDashboard session={session} />
+        </WorkspaceProvider>
       </>
     );
   }
@@ -283,7 +286,9 @@ function App() {
         {showImpersonationBanner && (
           <ImpersonationBanner adminEmail={impersonationAdminEmail!} onExit={exitImpersonation} />
         )}
-        <CrmDashboard session={session} />
+        <WorkspaceProvider session={session}>
+          <CrmDashboard session={session} />
+        </WorkspaceProvider>
       </>
     );
   }

@@ -3577,6 +3577,18 @@ function SetupModal() {
 
     const { data: ownerId } = await supabase.rpc('get_platform_owner_id');
 
+    let workspaceId: string | null = null;
+    if (ownerId) {
+      const { data: ws } = await supabase
+        .from('workspaces')
+        .select('id')
+        .eq('owner_id', ownerId)
+        .order('created_at', { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      workspaceId = ws?.id ?? null;
+    }
+
     const { data: leadData, error } = await supabase.from('submissions').insert({
       full_name: form.fullName,
       mobile_number: form.mobileNumber,
@@ -3585,6 +3597,7 @@ function SetupModal() {
       trading_product: form.crmProduct,
       fund_amount: null,
       user_id: ownerId ?? null,
+      workspace_id: workspaceId,
     }).select('id').single();
 
     if (error) {

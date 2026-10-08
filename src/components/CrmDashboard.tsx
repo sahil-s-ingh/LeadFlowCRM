@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
+import { useWorkspace } from '@/lib/workspace';
 import { generatePalette, DEFAULT_PALETTE, type LandingPalette, type PaletteStyle } from '@/lib/colorPalette';
 import { convertToWav } from '@/lib/audioWav';
 import type { Session, PostgrestError } from '@supabase/supabase-js';
@@ -23,7 +24,7 @@ import {
   Building2, Trophy, Target, TrendingDown, GitBranch,
 
   Webhook, ArrowDownLeft, LayoutTemplate, Inbox as InboxIcon,
-  HelpCircle,
+  HelpCircle, Layers, Settings2,
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import DashboardOverview from '@/components/DashboardOverview';
@@ -556,6 +557,16 @@ async function sendMetaConversionEvent(leadId: string, lead: Lead, newStatus: Le
 }
 
 export default function CrmDashboard({ session }: { session: Session }) {
+  const { workspaces, activeWorkspace, activeWorkspaceId, switchWorkspace, createWorkspace, renameWorkspace, deleteWorkspace, loading: wsLoading } = useWorkspace();
+  const [showWsDropdown, setShowWsDropdown] = useState(false);
+  const [showWsManage, setShowWsManage] = useState(false);
+  const [showWsCreateInline, setShowWsCreateInline] = useState(false);
+  const [inlineWsName, setInlineWsName] = useState('');
+  const [newWsName, setNewWsName] = useState('');
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState('');
+  const [wsError, setWsError] = useState('');
+  const wsDropdownRef = useRef<HTMLDivElement | null>(null);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -667,6 +678,16 @@ export default function CrmDashboard({ session }: { session: Session }) {
   useEffect(() => {
     try { localStorage.setItem('crm-sidebar-collapsed', String(sidebarCollapsed)); } catch { /* ignore */ }
   }, [sidebarCollapsed]);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (wsDropdownRef.current && !wsDropdownRef.current.contains(e.target as Node)) {
+        setShowWsDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
 
   const toggleSidebar = () => setSidebarCollapsed((prev) => !prev);
 
@@ -918,6 +939,7 @@ export default function CrmDashboard({ session }: { session: Session }) {
       const { data } = await supabase
         .from('pipeline_autoassign_settings')
         .select('enabled, assign_on_stages')
+        .eq('workspace_id', activeWorkspaceId)
         .maybeSingle();
       if (data) {
         const s = data as { enabled: boolean; assign_on_stages: string[] };
@@ -925,7 +947,7 @@ export default function CrmDashboard({ session }: { session: Session }) {
         setPipelineAutoAssignStages(s.assign_on_stages || ['called_no_response','called_responded','interested','not_interested','converted']);
       }
     })();
-  }, []);
+  }, [activeWorkspaceId]);
 
   // Load appearance settings on CRM mount so borders apply immediately
   useEffect(() => {
@@ -933,6 +955,7 @@ export default function CrmDashboard({ session }: { session: Session }) {
       const { data } = await supabase
         .from('appearance_settings')
         .select('border_color, border_width, border_radius, btn_bg_color, btn_text_color, btn_border_color, btn_border_width, btn_border_radius, show_telegram_inbox, show_whatsapp_inbox, show_email_inbox, crm_bg_color, sidebar_color, font_size, setup_cost')
+        .eq('workspace_id', activeWorkspaceId)
         .maybeSingle();
       if (data) {
         const a = data as { border_color: string; border_width: number; border_radius: number; btn_bg_color: string; btn_text_color: string; btn_border_color: string; btn_border_width: number; btn_border_radius: number; show_telegram_inbox: boolean; show_whatsapp_inbox: boolean; show_email_inbox: boolean; crm_bg_color: string | null; sidebar_color: string | null; font_size: string | null; setup_cost: number | null };
@@ -959,11 +982,13 @@ export default function CrmDashboard({ session }: { session: Session }) {
   const permissions = customPermissions[userRole] || ROLE_PERMISSIONS[userRole];
 
   const fetchLeads = useCallback(async () => {
+    if (!activeWorkspaceId) return;
     setLoading(true);
     setError('');
     const { data, error: fetchError } = await supabase
       .from('submissions')
       .select('*')
+      .eq('workspace_id', activeWorkspaceId)
       .is('deleted_at', null)
       .order('created_at', { ascending: false });
 
@@ -993,12 +1018,14 @@ export default function CrmDashboard({ session }: { session: Session }) {
     });
     setLeads(scoredLeads);
     setLoading(false);
-  }, []);
+  }, [activeWorkspaceId]);
 
   const fetchTrashedLeads = useCallback(async () => {
+    if (!activeWorkspaceId) return;
     const { data, error: fetchError } = await supabase
       .from('submissions')
       .select('*')
+      .eq('workspace_id', activeWorkspaceId)
       .not('deleted_at', 'is', null)
       .order('deleted_at', { ascending: false });
     if (fetchError) {
@@ -1006,11 +1033,11 @@ export default function CrmDashboard({ session }: { session: Session }) {
       return;
     }
     setTrashedLeads((data || []) as Lead[]);
-  }, []);
+  }, [activeWorkspaceId]);
 
   useEffect(() => {
-    fetchLeads();
-  }, [fetchLeads]);
+    if (activeWorkspaceId) fetchLeads();
+  }, [fetchLeads, activeWorkspaceId]);
 
   const fetchBulkWaTemplates = useCallback(async () => {
     setBulkWaTemplatesLoading(true);
@@ -1044,10 +1071,12 @@ export default function CrmDashboard({ session }: { session: Session }) {
 
   useEffect(() => {
     (async () => {
+      if (!activeWorkspaceId) return;
       const { data } = await supabase
         .from('team_members')
         .select('id, email, full_name')
-        .eq('status', 'active');
+        .eq('status', 'active')
+        .eq('workspace_id', activeWorkspaceId);
       if (data) {
         const map: Record<string, string> = {};
         for (const m of data as { id: string; email: string; full_name: string | null }[]) {
@@ -1056,45 +1085,48 @@ export default function CrmDashboard({ session }: { session: Session }) {
         setAssigneeMap(map);
       }
     })();
-  }, [fetchLeads]);
+  }, [fetchLeads, activeWorkspaceId]);
 
   useEffect(() => {
-    if (activeView !== 'inbox_hub') {
+    if (activeView !== 'inbox_hub' && activeWorkspaceId) {
       (async () => {
         const { count } = await supabase
           .from('chat_conversations')
           .select('*', { count: 'exact', head: true })
+          .eq('workspace_id', activeWorkspaceId)
           .gt('unread_count', 0);
         setUnreadCount(count || 0);
       })();
     }
-  }, [activeView, inboxRefreshKey]);
+  }, [activeView, inboxRefreshKey, activeWorkspaceId]);
 
   useEffect(() => {
-    if (activeView !== 'inbox_hub') {
+    if (activeView !== 'inbox_hub' && activeWorkspaceId) {
       (async () => {
         const { count } = await supabase
           .from('wa_conversations')
           .select('*', { count: 'exact', head: true })
+          .eq('workspace_id', activeWorkspaceId)
           .gt('unread_count', 0);
         setWaUnreadCount(count || 0);
       })();
     }
-  }, [activeView, waRefreshKey]);
+  }, [activeView, waRefreshKey, activeWorkspaceId]);
 
   useEffect(() => {
-    if (activeView === 'leads') {
+    if (activeView === 'leads' && activeWorkspaceId) {
       (async () => {
         const { data } = await supabase
           .from('lead_followups')
           .select('*')
+          .eq('workspace_id', activeWorkspaceId)
           .in('status', ['pending', 'snoozed'])
           .order('reminder_at', { ascending: true })
           .limit(30);
         setDashFollowups((data || []) as FollowUp[]);
       })();
     }
-  }, [activeView, fetchLeads]);
+  }, [activeView, fetchLeads, activeWorkspaceId]);
 
   const updateLeadInState = useCallback((id: string, updates: Partial<Lead>) => {
     setLeads((prev) => prev.map((l) => (l.id === id ? { ...l, ...updates } : l)));
@@ -1516,6 +1548,7 @@ export default function CrmDashboard({ session }: { session: Session }) {
         },
         tags: [],
         assigned_to: assigneeId,
+        workspace_id: activeWorkspaceId,
       })
       .select()
       .single();
@@ -1530,7 +1563,7 @@ export default function CrmDashboard({ session }: { session: Session }) {
       fireWebhookEvent('lead.created', data as Record<string, unknown>, session.user.id);
     }
     return true;
-  }, []);
+  }, [activeWorkspaceId]);
 
   const mergeLead = useCallback(async (existingLead: Lead, newForm: NewLeadForm): Promise<boolean> => {
     const updatePayload: Record<string, unknown> = {};
@@ -1568,14 +1601,14 @@ export default function CrmDashboard({ session }: { session: Session }) {
       const { data: settings } = await supabase
         .from('lead_assignment_settings')
         .select('enabled, last_assigned_index')
-        .eq('user_id', session.user.id)
+        .eq('workspace_id', activeWorkspaceId)
         .maybeSingle();
 
       if (settings?.enabled) {
         const { data: members } = await supabase
           .from('team_members')
           .select('id')
-          .eq('owner_id', session.user.id)
+          .eq('workspace_id', activeWorkspaceId)
           .eq('status', 'active')
           .order('created_at', { ascending: true });
 
@@ -1606,6 +1639,7 @@ export default function CrmDashboard({ session }: { session: Session }) {
       },
       tags: [],
       assigned_to: assignees[i] ?? null,
+      workspace_id: activeWorkspaceId,
     }));
 
     const { data, error: insertError } = await supabase
@@ -1623,7 +1657,7 @@ export default function CrmDashboard({ session }: { session: Session }) {
       return { success: data.length, failed: 0 };
     }
     return { success: 0, failed: rows.length };
-  }, []);
+  }, [activeWorkspaceId]);
 
   const dateRange = useMemo((): { start: Date | null; end: Date | null } => {
     if (dateFilter === 'all') return { start: null, end: null };
@@ -1916,10 +1950,170 @@ export default function CrmDashboard({ session }: { session: Session }) {
         )}
       </div>
 
+      {showWsCreateInline && (
+        <div className="crm-ws-modal-overlay" onClick={() => { setShowWsCreateInline(false); setInlineWsName(''); setWsError(''); }}>
+          <div className="crm-ws-modal" style={{ width: '380px' }} onClick={(e) => e.stopPropagation()}>
+            <div className="crm-ws-modal-header">
+              <h2>Create New Workspace</h2>
+              <button className="crm-ws-modal-close" onClick={() => { setShowWsCreateInline(false); setInlineWsName(''); setWsError(''); }}><X size={18} /></button>
+            </div>
+            {wsError && <div className="crm-ws-modal-error">{wsError}</div>}
+            <div style={{ padding: '20px 24px' }}>
+              <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '8px' }}>Workspace Name</label>
+              <input
+                type="text"
+                placeholder="e.g. VIP Clients, Cold Leads..."
+                value={inlineWsName}
+                onChange={(e) => { setInlineWsName(e.target.value); setWsError(''); }}
+                className="crm-ws-modal-input"
+                style={{ width: '100%' }}
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && inlineWsName.trim()) {
+                    (async () => {
+                      setWsError('');
+                      const ws = await createWorkspace(inlineWsName.trim());
+                      if (!ws) { setWsError('Failed to create workspace'); return; }
+                      setShowWsCreateInline(false);
+                      setInlineWsName('');
+                    })();
+                  }
+                }}
+              />
+              <p style={{ fontSize: '0.75rem', color: '#94A3B8', margin: '10px 0 0 0', lineHeight: 1.5 }}>
+                Each workspace keeps its leads, conversations, team members, and settings completely separate.
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: '8px', padding: '0 24px 20px 24px', justifyContent: 'flex-end' }}>
+              <button className="crm-ws-modal-create-btn" style={{ background: '#F1F5F9', color: '#475569' }} onClick={() => { setShowWsCreateInline(false); setInlineWsName(''); setWsError(''); }}>
+                Cancel
+              </button>
+              <button
+                className="crm-ws-modal-create-btn"
+                disabled={!inlineWsName.trim()}
+                onClick={async () => {
+                  setWsError('');
+                  const ws = await createWorkspace(inlineWsName.trim());
+                  if (!ws) { setWsError('Failed to create workspace'); return; }
+                  setShowWsCreateInline(false);
+                  setInlineWsName('');
+                }}
+              >
+                <Plus size={16} /> Create Workspace
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showWsManage && (
+        <div className="crm-ws-modal-overlay" onClick={() => { setShowWsManage(false); setNewWsName(''); setWsError(''); setRenamingId(null); }}>
+          <div className="crm-ws-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="crm-ws-modal-header">
+              <h2>Manage Workspaces</h2>
+              <button className="crm-ws-modal-close" onClick={() => { setShowWsManage(false); setNewWsName(''); setWsError(''); setRenamingId(null); }}><X size={18} /></button>
+            </div>
+            {wsError && <div className="crm-ws-modal-error">{wsError}</div>}
+            <div className="crm-ws-modal-create">
+              <input
+                type="text"
+                placeholder="New workspace name"
+                value={newWsName}
+                onChange={(e) => setNewWsName(e.target.value)}
+                className="crm-ws-modal-input"
+              />
+              <button
+                className="crm-ws-modal-create-btn"
+                disabled={!newWsName.trim()}
+                onClick={async () => {
+                  setWsError('');
+                  const ws = await createWorkspace(newWsName.trim());
+                  if (!ws) { setWsError('Failed to create workspace'); return; }
+                  setNewWsName('');
+                }}
+              >
+                <Plus size={16} /> Create
+              </button>
+            </div>
+            <div className="crm-ws-modal-list">
+              {workspaces.map((ws) => (
+                <div key={ws.id} className={`crm-ws-modal-item ${ws.id === activeWorkspaceId ? 'active' : ''}`}>
+                  {renamingId === ws.id ? (
+                    <>
+                      <input
+                        type="text"
+                        value={renameValue}
+                        onChange={(e) => setRenameValue(e.target.value)}
+                        className="crm-ws-modal-input"
+                        autoFocus
+                      />
+                      <button className="crm-ws-modal-icon-btn" onClick={async () => {
+                        if (renameValue.trim()) { const ok = await renameWorkspace(ws.id, renameValue.trim()); if (!ok) setWsError('Failed to rename'); }
+                        setRenamingId(null);
+                      }}><Check size={16} /></button>
+                      <button className="crm-ws-modal-icon-btn" onClick={() => setRenamingId(null)}><X size={16} /></button>
+                    </>
+                  ) : (
+                    <>
+                      <Layers size={16} style={{ opacity: 0.6, flexShrink: 0 }} />
+                      <span className="crm-ws-modal-item-name">{ws.name}</span>
+                      {ws.id === activeWorkspaceId && <span className="crm-ws-modal-active-badge">Active</span>}
+                      <button className="crm-ws-modal-icon-btn" title="Rename" onClick={() => { setRenamingId(ws.id); setRenameValue(ws.name); }}><Pencil size={14} /></button>
+                      <button className="crm-ws-modal-icon-btn crm-ws-modal-delete" title="Delete" disabled={workspaces.length <= 1} onClick={async () => {
+                        if (workspaces.length <= 1) return;
+                        const ok = await deleteWorkspace(ws.id);
+                        if (!ok) setWsError('Failed to delete workspace');
+                      }}><Trash2 size={14} /></button>
+                    </>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       {sidebarCollapsed && (
         <button className="crm-sidebar-toggle-collapsed" onClick={toggleSidebar} aria-label="Expand sidebar" title="Expand sidebar">
           <PanelLeft size={18} />
         </button>
+      )}
+
+      {!sidebarCollapsed && activeWorkspaceId && (
+        <div className="crm-ws-switcher">
+          <button className="crm-ws-switcher-btn" onClick={() => setShowWsDropdown((v) => !v)}>
+            <Layers size={16} />
+            <span className="crm-ws-switcher-name">{activeWorkspace?.name || 'Default'}</span>
+            <ChevronDown size={14} style={{ marginLeft: 'auto', opacity: 0.6 }} />
+          </button>
+          {showWsDropdown && (
+            <div className="crm-ws-dropdown" ref={wsDropdownRef}>
+              {workspaces.map((ws) => (
+                <button
+                  key={ws.id}
+                  className={`crm-ws-dropdown-item ${ws.id === activeWorkspaceId ? 'active' : ''}`}
+                  onClick={() => { switchWorkspace(ws.id); setShowWsDropdown(false); }}
+                >
+                  <Check size={14} style={{ opacity: ws.id === activeWorkspaceId ? 1 : 0 }} />
+                  <span>{ws.name}</span>
+                </button>
+              ))}
+              <div className="crm-ws-dropdown-divider" />
+              <button className="crm-ws-dropdown-item crm-ws-create" onClick={() => { setShowWsCreateInline(true); setShowWsDropdown(false); }}>
+                <Plus size={14} /> Create New Workspace
+              </button>
+              <button className="crm-ws-dropdown-item crm-ws-manage" onClick={() => { setShowWsManage(true); setShowWsDropdown(false); }}>
+                <Settings2 size={14} /> Manage Workspaces
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {sidebarCollapsed && activeWorkspaceId && (
+        <div className="crm-ws-switcher-collapsed" title={activeWorkspace?.name || 'Default'}>
+          <Layers size={18} />
+        </div>
       )}
 
       <nav className="crm-sidebar-nav">
@@ -11848,11 +12042,12 @@ function ChatProfilePanel({ convId, tableName, displayName, phoneNumber, profile
     (async () => {
       const { data: conv } = await supabase
         .from(tableName)
-        .select('lead_id')
+        .select('lead_id, workspace_id')
         .eq('id', convId)
         .maybeSingle();
 
       let lid = (conv as { lead_id?: string | null } | null)?.lead_id ?? null;
+      const convWorkspaceId = (conv as { workspace_id?: string | null } | null)?.workspace_id ?? null;
 
       if (!lid) {
         const { data: sessionData } = await supabase.auth.getSession();
@@ -11870,6 +12065,7 @@ function ChatProfilePanel({ convId, tableName, displayName, phoneNumber, profile
               tags: [],
               notes: '',
               fund_amount: null,
+              workspace_id: convWorkspaceId,
             })
             .select()
             .single();
