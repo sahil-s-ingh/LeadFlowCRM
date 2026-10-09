@@ -1,9 +1,13 @@
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import type { Session } from '@supabase/supabase-js';
-import { Shield, Users, TrendingUp, MessageSquare, UserCog, LogOut, Loader2, Building2, Mail, Activity, AlertCircle, Search, RefreshCw, CircleDot, LogIn, Eye, UserCircle } from 'lucide-react';
+import { Shield, Users, TrendingUp, MessageSquare, UserCog, LogOut, Loader2, Building2, Mail, Activity, AlertCircle, Search, RefreshCw, CircleDot, LogIn, Eye, UserCircle, CreditCard, ToggleLeft, FileText, BarChart3 } from 'lucide-react';
 import AccountDetailDrawer from './AccountDetailDrawer';
 import AdminProfilePage from './AdminProfilePage';
+import SuperAdminPlans from './SuperAdminPlans';
+import SuperAdminFeatures from './SuperAdminFeatures';
+import SuperAdminLegal from './SuperAdminLegal';
+import SuperAdminUsage from './SuperAdminUsage';
 
 type Stats = {
   total_auth_users: number;
@@ -34,7 +38,7 @@ export default function SuperAdminDashboard({ session, onSignOut }: { session: S
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [impersonatingId, setImpersonatingId] = useState<string | null>(null);
   const [drawerUserId, setDrawerUserId] = useState<string | null>(null);
-  const [view, setView] = useState<'dashboard' | 'profile'>('dashboard');
+  const [view, setView] = useState<'dashboard' | 'profile' | 'plans' | 'features' | 'legal' | 'usage'>('dashboard');
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -173,6 +177,22 @@ export default function SuperAdminDashboard({ session, onSignOut }: { session: S
     return <AdminProfilePage session={session} onBack={() => setView('dashboard')} />;
   }
 
+  if (view === 'plans') {
+    return <SuperAdminPlans onBack={() => setView('dashboard')} />;
+  }
+
+  if (view === 'features') {
+    return <SuperAdminFeatures onBack={() => setView('dashboard')} />;
+  }
+
+  if (view === 'legal') {
+    return <SuperAdminLegal onBack={() => setView('dashboard')} />;
+  }
+
+  if (view === 'usage') {
+    return <SuperAdminUsage onBack={() => setView('dashboard')} />;
+  }
+
   return (
     <div style={{ minHeight: '100vh', background: '#f8fafc' }}>
       {/* Header */}
@@ -213,6 +233,34 @@ export default function SuperAdminDashboard({ session, onSignOut }: { session: S
               }}
             >
               <RefreshCw size={14} className={loading ? 'crm-spin' : ''} /> Refresh
+            </button>
+          )}
+          {view === 'dashboard' && (
+            <button
+              type="button"
+              onClick={() => setView('plans')} style={headerBtnStyle}>
+              <CreditCard size={14} /> Plans
+            </button>
+          )}
+          {view === 'dashboard' && (
+            <button
+              type="button"
+              onClick={() => setView('features')} style={headerBtnStyle}>
+              <ToggleLeft size={14} /> Features
+            </button>
+          )}
+          {view === 'dashboard' && (
+            <button
+              type="button"
+              onClick={() => setView('legal')} style={headerBtnStyle}>
+              <FileText size={14} /> Legal
+            </button>
+          )}
+          {view === 'dashboard' && (
+            <button
+              type="button"
+              onClick={() => setView('usage')} style={headerBtnStyle}>
+              <BarChart3 size={14} /> Usage
             </button>
           )}
           {view === 'dashboard' && (
@@ -531,6 +579,20 @@ const thStyle: React.CSSProperties = {
   letterSpacing: '0.05em',
   color: '#64748b',
   whiteSpace: 'nowrap',
+};
+
+const headerBtnStyle: React.CSSProperties = {
+  padding: '8px 14px',
+  border: '1px solid rgba(255,255,255,0.2)',
+  borderRadius: '8px',
+  background: 'rgba(255,255,255,0.1)',
+  color: '#fff',
+  fontSize: '0.8rem',
+  fontWeight: 600,
+  cursor: 'pointer',
+  display: 'flex',
+  alignItems: 'center',
+  gap: '6px',
 };
 
 const tdStyle: React.CSSProperties = {

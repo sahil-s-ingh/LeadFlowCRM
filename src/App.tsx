@@ -8,6 +8,7 @@ import { WorkspaceProvider } from '@/lib/workspace';
 import SuperAdminLogin from './components/SuperAdminLogin';
 import SuperAdminDashboard from './components/SuperAdminDashboard';
 import { AboutPage, PrivacyPage, TermsPage, CareersPage, SecurityPage, BrandAssetsPage, ReportAbusePage, SitemapPage } from './components/InfoPages';
+import LegalPageView from './components/LegalPageView';
 import { Shield, X } from 'lucide-react';
 
 function useHashRoute() {
@@ -187,6 +188,12 @@ function App() {
   if (hash === 'brand-assets' || hash === '/brand-assets') return <BrandAssetsPage />;
   if (hash === 'report-abuse' || hash === '/report-abuse') return <ReportAbusePage />;
   if (hash === 'sitemap' || hash === '/sitemap') return <SitemapPage />;
+
+  // Dynamic legal pages: #/legal/terms, #/legal/privacy, etc.
+  if (hash.startsWith('legal/') || hash.startsWith('/legal/')) {
+    const slug = hash.replace(/^\/?legal\//, '');
+    return <LegalPageView slug={slug} />;
+  }
 
   // Super admin route: #/superadmin
   if (hash === 'superadmin' || hash === '/superadmin') {

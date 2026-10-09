@@ -858,7 +858,7 @@ function GiftStack() {
             }}
           >
             <div style={{ fontSize: '0.85rem', color: '#475569', marginBottom: 2 }}>
-              Total Value: <span style={{ textDecoration: 'line-through', color: '#EF4444', fontWeight: 700 }}>{'\u20B9'}61,997</span>
+              Total Value: <span style={{ textDecoration: 'line-through', color: '#EF4444', fontWeight: 700 }}>{'₹'}61,997</span>
             </div>
             <div className="offer-free-price">YOUR PRICE: 14 DAYS FREE</div>
           </div>
@@ -1120,72 +1120,91 @@ function Testimonials() {
 }
 
 // ===================== Pricing Section =====================
+type DbPlan = {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  monthly_price: number;
+  annual_price: number;
+  currency: string;
+  lead_limit: number;
+  team_seats: number;
+  is_active: boolean;
+  is_featured: boolean;
+  sort_order: number;
+  features: string[];
+  cta_label: string;
+};
+
+const FALLBACK_PLANS = [
+  {
+    name: 'Starter',
+    tagline: 'For small sales teams getting started',
+    monthly_price: 999,
+    annual_price: 799,
+    currency: 'INR',
+    is_featured: false,
+    cta_label: 'Start Free Trial',
+    features: ['Up to 5 team members', 'Lead pipeline & Kanban board', 'Automated follow-up reminders', 'WhatsApp broadcast (1 number)', 'Email broadcast (1,000/mo)', 'Basic sales analytics', 'Popup form builder', 'Email support'],
+  },
+  {
+    name: 'Professional',
+    tagline: 'For growing teams that need more power',
+    monthly_price: 2499,
+    annual_price: 1999,
+    currency: 'INR',
+    is_featured: true,
+    cta_label: 'Start Free Trial',
+    features: ['Unlimited team members', 'Everything in Starter, plus:', 'Unlimited WhatsApp numbers', 'Email broadcast (50,000/mo)', 'Advanced analytics & revenue forecast', 'Lead scoring & custom fields', 'Automation builder', 'Google Sheets sync', 'Priority support'],
+  },
+  {
+    name: 'Enterprise',
+    tagline: 'For large teams with custom needs',
+    monthly_price: 4999,
+    annual_price: 3999,
+    currency: 'INR',
+    is_featured: false,
+    cta_label: 'Contact Sales',
+    features: ['Everything in Professional, plus:', 'Unlimited email broadcasts', 'Meta Ads & Conversion API', 'Campaign optimizer', 'Super admin dashboard', 'Custom integrations & webhooks', 'Dedicated account manager', '24/7 phone & chat support'],
+  },
+];
+
 function Pricing() {
   const telegramLink = useTelegramLink();
   const [billing, setBilling] = useState<'monthly' | 'yearly'>('monthly');
+  const [dbPlans, setDbPlans] = useState<DbPlan[] | null>(null);
 
-  const plans = [
-    {
-      name: 'Starter',
-      tagline: 'For small sales teams getting started',
-      priceMonthly: 999,
-      priceYearly: 799,
-      icon: 'bot' as const,
-      features: [
-        'Up to 5 team members',
-        'Lead pipeline & Kanban board',
-        'Automated follow-up reminders',
-        'WhatsApp broadcast (1 number)',
-        'Email broadcast (1,000/mo)',
-        'Basic sales analytics',
-        'Popup form builder',
-        'Email support',
-      ],
-      popular: false,
-    },
-    {
-      name: 'Professional',
-      tagline: 'For growing teams that need more power',
-      priceMonthly: 2499,
-      priceYearly: 1999,
-      icon: 'zap' as const,
-      features: [
-        'Unlimited team members',
-        'Everything in Starter, plus:',
-        'Unlimited WhatsApp numbers',
-        'Email broadcast (50,000/mo)',
-        'Advanced analytics & revenue forecast',
-        'Lead scoring & custom fields',
-        'Automation builder',
-        'Google Sheets sync',
-        'Priority support',
-      ],
-      popular: true,
-    },
-    {
-      name: 'Enterprise',
-      tagline: 'For large teams with custom needs',
-      priceMonthly: 4999,
-      priceYearly: 3999,
-      icon: 'shield' as const,
-      features: [
-        'Everything in Professional, plus:',
-        'Unlimited email broadcasts',
-        'Meta Ads & Conversion API',
-        'Campaign optimizer',
-        'Super admin dashboard',
-        'Custom integrations & webhooks',
-        'Dedicated account manager',
-        '24/7 phone & chat support',
-      ],
-      popular: false,
-    },
-  ];
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from('subscription_plans')
+        .select('*')
+        .eq('is_active', true)
+        .order('sort_order', { ascending: true });
+      if (data && data.length > 0) setDbPlans(data as DbPlan[]);
+    })();
+  }, []);
+
+  const plans = dbPlans
+    ? dbPlans.map((p) => ({
+        name: p.name,
+        tagline: p.description || '',
+        monthly_price: p.monthly_price,
+        annual_price: p.annual_price,
+        currency: p.currency,
+        is_featured: p.is_featured,
+        cta_label: p.cta_label,
+        features: p.features || [],
+      }))
+    : FALLBACK_PLANS;
+
+  const currencySymbol = (c: string) => c === 'INR' ? '\u20B9' : c === 'EUR' ? '\u20AC' : c === 'GBP' ? '\u00A3' : '$';
 
   return (
     <section id="pricing" style={{ paddingBottom: 55 }}>
       <div style={{ maxWidth: 960, margin: '0 auto', padding: '0 16px' }}>
-        <SectionHeader pill="PRICING PLANS" title={<>CHOOSE YOUR <span className="text-gold-gradient">CRM PLAN</span></>} desc="Start with a 14-day free trial. No credit card required. Cancel anytime." />
+        <SectionHeader pill="PRICING PLANS" title={<><span className="text-gold-gradient">CHOOSE YOUR CRM PLAN</span></>} desc="Start with a 14-day free trial. No credit card required. Cancel anytime." />
 
         {/* Billing toggle */}
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 28 }}>
@@ -1257,21 +1276,21 @@ function Pricing() {
           {plans.map((plan) => (
             <div
               key={plan.name}
-              className={`pricing-card ${plan.popular ? 'popular' : ''}`}
+              className={`pricing-card ${plan.is_featured ? 'popular' : ''}`}
               style={{
-                background: plan.popular ? '#FFFDF5' : '#FFFFFF',
-                border: plan.popular ? '2px solid #EAB308' : '1px solid rgba(0, 0, 0, 0.08)',
+                background: plan.is_featured ? '#FFFDF5' : '#FFFFFF',
+                border: plan.is_featured ? '2px solid #EAB308' : '1px solid rgba(0, 0, 0, 0.08)',
                 borderRadius: 18,
                 padding: '24px 18px',
                 display: 'flex',
                 flexDirection: 'column',
                 gap: 14,
                 position: 'relative',
-                boxShadow: plan.popular ? '0 10px 30px rgba(234, 179, 8, 0.15)' : '0 3px 12px rgba(0, 0, 0, 0.03)',
+                boxShadow: plan.is_featured ? '0 10px 30px rgba(234, 179, 8, 0.15)' : '0 3px 12px rgba(0, 0, 0, 0.03)',
                 transition: 'all 0.25s ease',
               }}
             >
-              {plan.popular && (
+              {plan.is_featured && (
                 <div
                   style={{
                     position: 'absolute',
@@ -1301,18 +1320,18 @@ function Pricing() {
                   style={{
                     width: 38,
                     height: 38,
-                    background: plan.popular ? 'linear-gradient(135deg, #FEF08A, #EAB308)' : '#F1F5F9',
-                    border: plan.popular ? '1px solid #EAB308' : '1px solid rgba(0, 0, 0, 0.08)',
+                    background: plan.is_featured ? 'linear-gradient(135deg, #FEF08A, #EAB308)' : '#F1F5F9',
+                    border: plan.is_featured ? '1px solid #EAB308' : '1px solid rgba(0, 0, 0, 0.08)',
                     borderRadius: 10,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: plan.popular ? '#422006' : '#64748B',
+                    color: plan.is_featured ? '#422006' : '#64748B',
                     flexShrink: 0,
                   }}
                 >
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <PricingIconSvg type={plan.icon} />
+                    <PricingIconSvg type="bot" />
                   </svg>
                 </div>
                 <div>
@@ -1324,9 +1343,9 @@ function Pricing() {
               {/* Price */}
               <div style={{ textAlign: 'center', padding: '6px 0 2px 0' }}>
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'center', gap: 2 }}>
-                  <span style={{ fontFamily: 'Outfit, sans-serif', fontSize: '0.9rem', fontWeight: 800, color: '#64748B', marginTop: 6 }}>{'\u20B9'}</span>
-                  <span style={{ fontFamily: 'Outfit, sans-serif', fontSize: '2.4rem', fontWeight: 900, color: plan.popular ? '#CA8A04' : '#0F172A', lineHeight: 1 }}>
-                    {billing === 'monthly' ? plan.priceMonthly.toLocaleString('en-IN') : plan.priceYearly.toLocaleString('en-IN')}
+                  <span style={{ fontFamily: 'Outfit, sans-serif', fontSize: '0.9rem', fontWeight: 800, color: '#64748B', marginTop: 6 }}>{currencySymbol(plan.currency)}</span>
+                  <span style={{ fontFamily: 'Outfit, sans-serif', fontSize: '2.4rem', fontWeight: 900, color: plan.is_featured ? '#CA8A04' : '#0F172A', lineHeight: 1 }}>
+                    {(billing === 'monthly' ? plan.monthly_price : plan.annual_price).toLocaleString('en-IN')}
                   </span>
                 </div>
                 <div style={{ fontSize: '0.72rem', color: '#94A3B8', fontWeight: 600, marginTop: 2 }}>
@@ -1338,12 +1357,12 @@ function Pricing() {
               <a
                 href="#signup"
                 onClick={(event) => { event.preventDefault(); window.location.hash = 'signup'; }}
-                className={plan.popular ? 'gold-cta' : 'pricing-cta-secondary'}
+                className={plan.is_featured ? 'gold-cta' : 'pricing-cta-secondary'}
                 style={{
                   margin: '0 auto',
                   width: '100%',
                   maxWidth: 260,
-                  ...(plan.popular ? {} : {
+                  ...(plan.is_featured ? {} : {
                     display: 'inline-flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -1362,7 +1381,7 @@ function Pricing() {
                   }),
                 }}
               >
-                {plan.name === 'Enterprise' ? 'Contact Sales' : 'Start Free Trial'}
+                {plan.cta_label || 'Start Free Trial'}
               </a>
 
               {/* Features */}
@@ -1692,7 +1711,7 @@ function ProductMockup({ type, accent }: { type: 'pipeline' | 'broadcast' | 'ana
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
           <div>
             <div style={{ fontSize: '0.68rem', color: '#64748B' }}>Revenue This Month</div>
-            <div style={{ fontSize: '1.3rem', fontWeight: 900, color: '#F1F5F9' }}>{'\u20B9'}4.2L</div>
+            <div style={{ fontSize: '1.3rem', fontWeight: 900, color: '#F1F5F9' }}>{'₹'}4.2L</div>
           </div>
           <div style={{ textAlign: 'right' }}>
             <div style={{ fontSize: '0.68rem', color: '#64748B' }}>Conversion</div>
@@ -1846,8 +1865,8 @@ function ComparisonTable() {
               ))}
               <tr style={{ background: '#FFFDF5', borderTop: '2px solid rgba(234, 179, 8, 0.3)' }}>
                 <td style={{ padding: '12px 16px', fontWeight: 900, color: '#0F172A', fontSize: '0.82rem' }}>Price Starting At</td>
-                <td style={{ padding: '12px 12px', textAlign: 'center', fontWeight: 900, color: '#CA8A04', fontSize: '0.88rem' }}>{'\u20B9'}799/mo</td>
-                <td style={{ padding: '12px 12px', textAlign: 'center', fontWeight: 700, color: '#64748B', fontSize: '0.82rem' }} className="hide-mobile">{'\u20B9'}2,000+/mo</td>
+                <td style={{ padding: '12px 12px', textAlign: 'center', fontWeight: 900, color: '#CA8A04', fontSize: '0.88rem' }}>{'₹'}799/mo</td>
+                <td style={{ padding: '12px 12px', textAlign: 'center', fontWeight: 700, color: '#64748B', fontSize: '0.82rem' }} className="hide-mobile">{'₹'}2,000+/mo</td>
                 <td style={{ padding: '12px 12px', textAlign: 'center', fontWeight: 700, color: '#64748B', fontSize: '0.82rem' }} className="hide-mobile">Free*</td>
               </tr>
             </tbody>
@@ -2008,10 +2027,10 @@ function RoiCalculator() {
   const improvedRevenue = Math.round(leadsPerMonth * (improvedCloseRate / 100) * dealSize);
   const revenueGain = improvedRevenue - currentRevenue;
   const formatINR = (n: number) => {
-    if (n >= 10000000) return `${'\u20B9'}${(n / 10000000).toFixed(1)}Cr`;
-    if (n >= 100000) return `${'\u20B9'}${(n / 100000).toFixed(1)}L`;
-    if (n >= 1000) return `${'\u20B9'}${(n / 1000).toFixed(0)}K`;
-    return `${'\u20B9'}${n}`;
+    if (n >= 10000000) return `${'₹'}${(n / 10000000).toFixed(1)}Cr`;
+    if (n >= 100000) return `${'₹'}${(n / 100000).toFixed(1)}L`;
+    if (n >= 1000) return `${'₹'}${(n / 1000).toFixed(0)}K`;
+    return `${'₹'}${n}`;
   };
   return (
     <section id="roi" style={{ paddingBottom: 55 }}>
@@ -2056,7 +2075,7 @@ function RoiCalculator() {
                 </div>
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 800, color: '#0F172A', marginBottom: 6 }}>Average Deal Size ({'\u20B9'})</label>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 800, color: '#0F172A', marginBottom: 6 }}>Average Deal Size ({'₹'})</label>
                 <input
                   type="range"
                   min={1000}
@@ -2067,9 +2086,9 @@ function RoiCalculator() {
                   style={{ width: '100%', accentColor: '#EAB308' }}
                 />
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#64748B', marginTop: 4 }}>
-                  <span>{'\u20B9'}1K</span>
-                  <span style={{ fontWeight: 800, color: '#CA8A04' }}>{'\u20B9'}{dealSize.toLocaleString('en-IN')}</span>
-                  <span>{'\u20B9'}1L</span>
+                  <span>{'₹'}1K</span>
+                  <span style={{ fontWeight: 800, color: '#CA8A04' }}>{'₹'}{dealSize.toLocaleString('en-IN')}</span>
+                  <span>{'₹'}1L</span>
                 </div>
               </div>
             </div>
@@ -3787,3 +3806,4 @@ function LandingPage() {
 }
 
 export default LandingPage;
+;
