@@ -1,13 +1,14 @@
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import type { Session } from '@supabase/supabase-js';
-import { Shield, Users, TrendingUp, MessageSquare, UserCog, LogOut, Loader2, Building2, Mail, Activity, AlertCircle, Search, RefreshCw, CircleDot, LogIn, Eye, UserCircle, CreditCard, ToggleLeft, FileText, BarChart3 } from 'lucide-react';
+import { Shield, Users, TrendingUp, MessageSquare, UserCog, LogOut, Loader2, Building2, Mail, Activity, AlertCircle, Search, RefreshCw, CircleDot, LogIn, Eye, UserCircle, CreditCard, ToggleLeft, FileText, BarChart3, Server } from 'lucide-react';
 import AccountDetailDrawer from './AccountDetailDrawer';
 import AdminProfilePage from './AdminProfilePage';
 import SuperAdminPlans from './SuperAdminPlans';
 import SuperAdminFeatures from './SuperAdminFeatures';
 import SuperAdminLegal from './SuperAdminLegal';
 import SuperAdminUsage from './SuperAdminUsage';
+import SuperAdminSetupGuide from './SuperAdminSetupGuide';
 
 type Stats = {
   total_auth_users: number;
@@ -38,7 +39,7 @@ export default function SuperAdminDashboard({ session, onSignOut }: { session: S
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [impersonatingId, setImpersonatingId] = useState<string | null>(null);
   const [drawerUserId, setDrawerUserId] = useState<string | null>(null);
-  const [view, setView] = useState<'dashboard' | 'profile' | 'plans' | 'features' | 'legal' | 'usage'>('dashboard');
+  const [view, setView] = useState<'dashboard' | 'profile' | 'plans' | 'features' | 'legal' | 'usage' | 'setup'>('dashboard');
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -193,6 +194,10 @@ export default function SuperAdminDashboard({ session, onSignOut }: { session: S
     return <SuperAdminUsage onBack={() => setView('dashboard')} />;
   }
 
+  if (view === 'setup') {
+    return <SuperAdminSetupGuide onBack={() => setView('dashboard')} />;
+  }
+
   return (
     <div style={{ minHeight: '100vh', background: '#f8fafc' }}>
       {/* Header */}
@@ -261,6 +266,13 @@ export default function SuperAdminDashboard({ session, onSignOut }: { session: S
               type="button"
               onClick={() => setView('usage')} style={headerBtnStyle}>
               <BarChart3 size={14} /> Usage
+            </button>
+          )}
+          {view === 'dashboard' && (
+            <button
+              type="button"
+              onClick={() => setView('setup')} style={headerBtnStyle}>
+              <Server size={14} /> Setup Guide
             </button>
           )}
           {view === 'dashboard' && (
