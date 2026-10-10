@@ -7331,7 +7331,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
   useEffect(() => {
     (async () => {
      try {
-      const [smtpRes, tgRes, waRes, teamRes, fuRes, fuRemindersRes, metaRes, metaLogRes, assignRes, rolePermRes, appearanceRes, twilioRes, twilioLogRes, webhooksRes, webhookDeliveriesRes, inboundKeysRes, inboundLogsRes, landingAppearanceRes, gsConfigsRes, gsSyncLogsRes] = await Promise.all([
+      const settled = await Promise.allSettled([
         supabase.from('smtp_settings').select('*').maybeSingle(),
         supabase.from('telegram_settings').select('*').maybeSingle(),
         supabase.from('whatsapp_settings').select('*').order('created_at', { ascending: true }).limit(1).maybeSingle(),
@@ -7353,6 +7353,32 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
         supabase.from('google_sheets_settings').select('*').order('created_at', { ascending: false }),
         supabase.from('google_sheets_sync_log').select('*').order('created_at', { ascending: false }).limit(30),
       ]);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const R = (idx: number): { data: any } => {
+        const r = settled[idx];
+        return r.status === 'fulfilled' ? { data: r.value.data } : { data: null };
+      };
+
+      const smtpRes = R(0);
+      const tgRes = R(1);
+      const waRes = R(2);
+      const teamRes = R(3);
+      const fuRes = R(4);
+      const fuRemindersRes = R(5);
+      const metaRes = R(6);
+      const metaLogRes = R(7);
+      const assignRes = R(8);
+      const rolePermRes = R(9);
+      const appearanceRes = R(10);
+      const twilioRes = R(11);
+      const twilioLogRes = R(12);
+      const webhooksRes = R(13);
+      const webhookDeliveriesRes = R(14);
+      const inboundKeysRes = R(15);
+      const inboundLogsRes = R(16);
+      const landingAppearanceRes = R(17);
+      const gsConfigsRes = R(18);
+      const gsSyncLogsRes = R(19);
 
       if (webhooksRes.data) {
         setWebhooks(webhooksRes.data as WebhookRow[]);

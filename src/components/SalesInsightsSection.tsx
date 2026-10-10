@@ -91,7 +91,7 @@ export default function SalesInsightsSection({
 
   useEffect(() => {
     (async () => {
-      const [tmRes, goalsRes, reasonsRes] = await Promise.all([
+      const [tmRes, goalsRes, reasonsRes] = await Promise.allSettled([
         supabase
           .from('team_members')
           .select('id, full_name, email, role')
@@ -109,9 +109,11 @@ export default function SalesInsightsSection({
           .select('id, outcome, reason_category')
           .eq('user_id', session.user.id),
       ]);
-      setTeamMembers((tmRes.data || []) as TeamMember[]);
-      setGoals((goalsRes.data || []) as Goal[]);
-      setReasons((reasonsRes.data || []) as WinLossReason[]);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const d = (r: PromiseSettledResult<{ data: any }>) => r.status === 'fulfilled' ? r.value.data : null;
+      setTeamMembers((d(tmRes) || []) as TeamMember[]);
+      setGoals((d(goalsRes) || []) as Goal[]);
+      setReasons((d(reasonsRes) || []) as WinLossReason[]);
     })();
   }, [session.user.id, currentMonth, currentYear]);
 
