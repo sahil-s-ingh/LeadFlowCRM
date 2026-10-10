@@ -60,7 +60,7 @@ export default function SuperAdminUsage({ onBack }: { onBack: () => void }) {
         .order('created_at', { ascending: false });
       if (subsErr) throw subsErr;
 
-      // Also fetch lead counts per user (workspace)
+      // Also fetch lead counts per user
       const { data: leadCounts } = await supabase.rpc('get_super_admin_stats');
 
       // Build usage rows

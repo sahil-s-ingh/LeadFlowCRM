@@ -9,6 +9,7 @@ import SuperAdminFeatures from './SuperAdminFeatures';
 import SuperAdminLegal from './SuperAdminLegal';
 import SuperAdminUsage from './SuperAdminUsage';
 import SuperAdminSetupGuide from './SuperAdminSetupGuide';
+import SuperAdminEmailSettings from './SuperAdminEmailSettings';
 
 type Stats = {
   total_auth_users: number;
@@ -39,7 +40,7 @@ export default function SuperAdminDashboard({ session, onSignOut }: { session: S
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [impersonatingId, setImpersonatingId] = useState<string | null>(null);
   const [drawerUserId, setDrawerUserId] = useState<string | null>(null);
-  const [view, setView] = useState<'dashboard' | 'profile' | 'plans' | 'features' | 'legal' | 'usage' | 'setup'>('dashboard');
+  const [view, setView] = useState<'dashboard' | 'profile' | 'plans' | 'features' | 'legal' | 'usage' | 'setup' | 'email'>('dashboard');
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -198,6 +199,10 @@ export default function SuperAdminDashboard({ session, onSignOut }: { session: S
     return <SuperAdminSetupGuide onBack={() => setView('dashboard')} />;
   }
 
+  if (view === 'email') {
+    return <SuperAdminEmailSettings onBack={() => setView('dashboard')} />;
+  }
+
   return (
     <div style={{ minHeight: '100vh', background: '#f8fafc' }}>
       {/* Header */}
@@ -273,6 +278,13 @@ export default function SuperAdminDashboard({ session, onSignOut }: { session: S
               type="button"
               onClick={() => setView('setup')} style={headerBtnStyle}>
               <Server size={14} /> Setup Guide
+            </button>
+          )}
+          {view === 'dashboard' && (
+            <button
+              type="button"
+              onClick={() => setView('email')} style={headerBtnStyle}>
+              <Mail size={14} /> Email Config
             </button>
           )}
           {view === 'dashboard' && (

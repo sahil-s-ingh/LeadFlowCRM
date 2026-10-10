@@ -45,7 +45,25 @@ Deno.serve(async (req: Request) => {
       .limit(1)
       .maybeSingle();
 
-    if (!smtpConfig || !smtpConfig.smtp_host || !smtpConfig.smtp_username || !smtpConfig.smtp_password) {
+    let smtpToUse: Record<string, unknown> | null = null;
+
+    if (smtpConfig && smtpConfig.smtp_host && smtpConfig.smtp_username && smtpConfig.smtp_password) {
+      smtpToUse = smtpConfig;
+    } else {
+      const { data: platformSmtp } = await supabase
+        .from("platform_smtp_settings")
+        .select("smtp_host, smtp_port, smtp_username, smtp_password, from_email, from_name")
+        .eq("is_active", true)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (platformSmtp && platformSmtp.smtp_host && platformSmtp.smtp_username && platformSmtp.smtp_password) {
+        smtpToUse = platformSmtp;
+      }
+    }
+
+    if (!smtpToUse) {
       return new Response(
         JSON.stringify({ ok: true, skipped: true, reason: "no_smtp" }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
@@ -153,7 +171,7 @@ Deno.serve(async (req: Request) => {
     const { data: logRow } = await supabase
       .from("email_log")
       .insert({
-        user_id: smtpConfig.user_id || null,
+        user_id: (smtpToUse as Record<string, unknown>).user_id || null,
         lead_id: leadId,
         recipient_email: email,
         subject,
@@ -166,17 +184,17 @@ Deno.serve(async (req: Request) => {
     const emailLogId = logRow?.id || null;
 
     const transporter = nodemailer.createTransport({
-      host: smtpConfig.smtp_host,
-      port: smtpConfig.smtp_port || 587,
-      secure: (smtpConfig.smtp_port || 587) === 465,
-      auth: { user: smtpConfig.smtp_username, pass: smtpConfig.smtp_password },
+      host: smtpToUse.smtp_host,
+      port: smtpToUse.smtp_port || 587,
+      secure: (smtpToUse.smtp_port || 587) === 465,
+      auth: { user: smtpToUse.smtp_username, pass: smtpToUse.smtp_password },
     });
 
     // Add Reply-To header for tracking if enabled
     const mailOptions: Record<string, unknown> = {
-      from: smtpConfig.from_name
-        ? '"' + smtpConfig.from_name + '" <' + (smtpConfig.from_email || smtpConfig.smtp_username) + ">"
-        : (smtpConfig.from_email || smtpConfig.smtp_username),
+      from: smtpToUse.from_name
+        ? '"' + smtpToUse.from_name + '" <' + (smtpToUse.from_email || smtpToUse.smtp_username) + ">"
+        : (smtpToUse.from_email || smtpToUse.smtp_username),
       to: email,
       subject,
       text: body,
@@ -190,7 +208,7 @@ Deno.serve(async (req: Request) => {
         "In-Reply-To": "<welcome-" + leadId + "@leadcentre.crm>",
         "References": "<welcome-" + leadId + "@leadcentre.crm>",
       };
-      mailOptions.replyTo = smtpConfig.from_email || smtpConfig.smtp_username;
+      mailOptions.replyTo = smtpToUse.from_email || smtpToUse.smtp_username;
     }
 
     const info = await transporter.sendMail(mailOptions);

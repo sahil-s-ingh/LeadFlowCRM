@@ -56,11 +56,26 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    if (!smtpConfig || !smtpConfig.smtp_host || !smtpConfig.smtp_username || !smtpConfig.smtp_password) {
-      return new Response(
-        JSON.stringify({ error: "SMTP settings not configured. Please set up your SMTP in Settings first." }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
+    let smtpConfigToUse: Record<string, unknown> | null = null;
+
+    if (smtpConfig && smtpConfig.smtp_host && smtpConfig.smtp_username && smtpConfig.smtp_password) {
+      smtpConfigToUse = smtpConfig;
+    } else {
+      const { data: platformSmtp, error: platformErr } = await adminSupabase
+        .from("platform_smtp_settings")
+        .select("*")
+        .eq("is_active", true)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (platformErr || !platformSmtp || !platformSmtp.smtp_host || !platformSmtp.smtp_username || !platformSmtp.smtp_password) {
+        return new Response(
+          JSON.stringify({ error: "SMTP settings not configured. Please set up your SMTP in Settings first, or ask the platform admin to configure platform-level SMTP." }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+      smtpConfigToUse = platformSmtp;
     }
 
     const contentType = req.headers.get("Content-Type") || "";
@@ -190,19 +205,19 @@ Deno.serve(async (req: Request) => {
     }
 
     const transporter = nodemailer.createTransport({
-      host: smtpConfig.smtp_host,
-      port: smtpConfig.smtp_port || 587,
-      secure: (smtpConfig.smtp_port || 587) === 465,
+      host: smtpConfigToUse.smtp_host,
+      port: smtpConfigToUse.smtp_port || 587,
+      secure: (smtpConfigToUse.smtp_port || 587) === 465,
       auth: {
-        user: smtpConfig.smtp_username,
-        pass: smtpConfig.smtp_password,
+        user: smtpConfigToUse.smtp_username,
+        pass: smtpConfigToUse.smtp_password,
       },
     });
 
     const mailOptions: nodemailer.SendMailOptions = {
-      from: smtpConfig.from_name
-        ? `"${smtpConfig.from_name}" <${smtpConfig.from_email || smtpConfig.smtp_username}>`
-        : (smtpConfig.from_email || smtpConfig.smtp_username),
+      from: smtpConfigToUse.from_name
+        ? `"${smtpConfigToUse.from_name}" <${smtpConfigToUse.from_email || smtpConfigToUse.smtp_username}>`
+        : (smtpConfigToUse.from_email || smtpConfigToUse.smtp_username),
       to,
       subject,
       text: body,

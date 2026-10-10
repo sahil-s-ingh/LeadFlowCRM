@@ -291,7 +291,7 @@ export function TermsPage() {
           'You are responsible for maintaining account security and password confidentiality',
           'You are responsible for all activities under your account',
           'You must be at least 18 years old and authorized to represent your organization',
-          'One account per organization unless using separate workspaces',
+          'One account per organization',
         ]} />
       </>
     ) },

@@ -225,7 +225,7 @@ const AUTOMATION_TEMPLATES: AutomationTemplate[] = [
   },
 ];
 
-export default function AutomationBuilder({ session, onBack }: { session: Session; onBack: () => void }) {
+export default function AutomationBuilder({ session, onBack, stages }: { session: Session; onBack: () => void; stages: { key: string; label: string }[] }) {
   const [flows, setFlows] = useState<AutomationFlow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -240,6 +240,7 @@ export default function AutomationBuilder({ session, onBack }: { session: Sessio
   const [showTemplates, setShowTemplates] = useState(false);
   const [templateCategory, setTemplateCategory] = useState<string>('All');
   const [flowStats, setFlowStats] = useState<Record<string, { total: number; success: number; failed: number; lastRun: string | null; conversions: number }>>({});
+  const stageOptions = stages && stages.length > 0 ? stages : PIPELINE_STAGES;
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [suggestionsLoading, setSuggestionsLoading] = useState(false);
 
@@ -488,6 +489,7 @@ export default function AutomationBuilder({ session, onBack }: { session: Sessio
         flow={editingFlow}
         isNew={editingFlow.id.startsWith('temp_')}
         session={session}
+        stages={stageOptions}
         onBack={() => { setView('list'); setEditingFlow(null); fetchFlows(); }}
         onSave={async (updated) => {
           if (updated.id.startsWith('temp_')) {
@@ -815,12 +817,13 @@ export default function AutomationBuilder({ session, onBack }: { session: Sessio
 
 // ===================== Flow Editor (Drag & Drop Builder) =====================
 
-function FlowEditor({ flow, isNew, session, onBack, onSave }: {
+function FlowEditor({ flow, isNew, session, onBack, onSave, stages }: {
   flow: AutomationFlow;
   isNew: boolean;
   session: Session;
   onBack: () => void;
   onSave: (flow: AutomationFlow) => Promise<void>;
+  stages: { key: string; label: string }[];
 }) {
   const [localFlow, setLocalFlow] = useState<AutomationFlow>(flow);
   const [saving, setSaving] = useState(false);
@@ -1059,7 +1062,7 @@ function FlowEditor({ flow, isNew, session, onBack, onSave }: {
               <div className="automation-test-field">
                 <label>Status</label>
                 <select value={testLead.status} onChange={(e) => setTestLead({ ...testLead, status: e.target.value })}>
-                  {PIPELINE_STAGES.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
+                  {stages.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
                 </select>
               </div>
               <div className="automation-test-field">
@@ -1125,7 +1128,7 @@ function FlowEditor({ flow, isNew, session, onBack, onSave }: {
           </div>
 
           {/* Trigger config filters */}
-          <TriggerConfig flow={localFlow} updateFlow={updateFlow} teamMembers={teamMembers} />
+          <TriggerConfig flow={localFlow} updateFlow={updateFlow} teamMembers={teamMembers} stages={stages} />
 
           {/* Webhook trigger URL */}
           {localFlow.trigger_type === 'webhook_received' && (
@@ -1238,7 +1241,7 @@ function FlowEditor({ flow, isNew, session, onBack, onSave }: {
                     </div>
                     <div className="automation-node-body">
                       <span className="automation-node-type">{meta?.label || action.type}</span>
-                      <strong>{getActionSummary(action)}</strong>
+                      <strong>{getActionSummary(action, stages)}</strong>
                     </div>
                     <div className="automation-action-node-controls">
                       <button className="automation-node-expand" onClick={() => setExpandedAction(isExpanded ? null : action.id)}>
@@ -1253,7 +1256,7 @@ function FlowEditor({ flow, isNew, session, onBack, onSave }: {
                     </div>
                     {isExpanded && (
                       <div className="automation-action-config">
-                        <ActionConfig action={action} updateConfig={(cfg) => updateAction(action.id, cfg)} teamMembers={teamMembers} emailTemplates={emailTemplates} />
+                        <ActionConfig action={action} updateConfig={(cfg) => updateAction(action.id, cfg)} teamMembers={teamMembers} emailTemplates={emailTemplates} stages={stages} />
                       </div>
                     )}
                   </div>
@@ -1334,10 +1337,11 @@ function FlowEditor({ flow, isNew, session, onBack, onSave }: {
 
 // ===================== Trigger Config =====================
 
-function TriggerConfig({ flow, updateFlow, teamMembers }: {
+function TriggerConfig({ flow, updateFlow, teamMembers, stages }: {
   flow: AutomationFlow;
   updateFlow: (updates: Partial<AutomationFlow>) => void;
   teamMembers: { id: string; email: string; full_name: string | null }[];
+  stages: { key: string; label: string }[];
 }) {
   const cfg = flow.trigger_config;
   const setCfg = (key: string, value: unknown) => {
@@ -1362,7 +1366,7 @@ function TriggerConfig({ flow, updateFlow, teamMembers }: {
         <label>When status changes to:</label>
         <select value={(cfg.status as string) || ''} onChange={(e) => setCfg('status', e.target.value || undefined)}>
           <option value="">Any status</option>
-          {PIPELINE_STAGES.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
+          {stages.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
         </select>
       </div>
     );
@@ -1398,11 +1402,12 @@ function TriggerConfig({ flow, updateFlow, teamMembers }: {
 
 // ===================== Action Config Panel =====================
 
-function ActionConfig({ action, updateConfig, teamMembers, emailTemplates }: {
+function ActionConfig({ action, updateConfig, teamMembers, emailTemplates, stages }: {
   action: FlowAction;
   updateConfig: (cfg: Record<string, unknown>) => void;
   teamMembers: { id: string; email: string; full_name: string | null }[];
   emailTemplates: { id: string; name: string; subject: string }[];
+  stages: { key: string; label: string }[];
 }) {
   const cfg = action.config;
 
@@ -1493,7 +1498,7 @@ function ActionConfig({ action, updateConfig, teamMembers, emailTemplates }: {
           <label>New status</label>
           <select value={(cfg.status as string) || ''} onChange={(e) => updateConfig({ status: e.target.value })}>
             <option value="">Select status...</option>
-            {PIPELINE_STAGES.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
+            {stages.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
           </select>
         </div>
       </div>
@@ -1794,7 +1799,7 @@ function getDefaultConfig(type: ActionType): Record<string, unknown> {
   }
 }
 
-function getActionSummary(action: FlowAction): string {
+function getActionSummary(action: FlowAction, stages?: { key: string; label: string }[]): string {
   const c = action.config;
   switch (action.type) {
     case 'send_email':
@@ -1810,7 +1815,7 @@ function getActionSummary(action: FlowAction): string {
     case 'add_tag':
       return (c.tag as string) || 'Enter tag name';
     case 'change_status':
-      return PIPELINE_STAGES.find((s) => s.key === (c.status as string))?.label || 'Select status';
+      return (stages || PIPELINE_STAGES).find((s) => s.key === (c.status as string))?.label || 'Select status';
     case 'schedule_followup':
       return c.title as string || c.days as string ? `In ${c.days || '3'} days` : 'Configure follow-up';
     case 'delay': {

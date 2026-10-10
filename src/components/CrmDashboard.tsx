@@ -1,6 +1,5 @@
 import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
-import { useWorkspace } from '@/lib/workspace';
 import { generatePalette, DEFAULT_PALETTE, type LandingPalette, type PaletteStyle } from '@/lib/colorPalette';
 import { convertToWav } from '@/lib/audioWav';
 import type { Session, PostgrestError } from '@supabase/supabase-js';
@@ -24,7 +23,7 @@ import {
   Building2, Trophy, Target, TrendingDown, GitBranch,
 
   Webhook, ArrowDownLeft, LayoutTemplate, Inbox as InboxIcon,
-  HelpCircle, Layers, Settings2,
+  HelpCircle,
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import DashboardOverview from '@/components/DashboardOverview';
@@ -72,6 +71,7 @@ type Lead = {
   deleted_at?: string | null;
   deleted_by?: string | null;
   lead_score?: number;
+  lead_source?: string | null;
 };
 
 type SortKey = 'created_at' | 'full_name' | 'state' | 'trading_product' | 'status';
@@ -445,7 +445,7 @@ function getLastSeenStatus(lastMessageAt: string | null): { online: boolean; lab
   return { online: false, label: `Last seen ${new Date(lastMessageAt).toLocaleDateString()}` };
 }
 
-const PIPELINE_STAGES: { key: LeadStatus; label: string; icon: React.ReactNode; color: string }[] = [
+const DEFAULT_PIPELINE_STAGES: { key: LeadStatus; label: string; icon: React.ReactNode; color: string }[] = [
   { key: 'new', label: 'New', icon: <Users size={15} />, color: 'blue' },
   { key: 'called_no_response', label: 'Called - No Response', icon: <PhoneMissed size={15} />, color: 'orange' },
   { key: 'called_responded', label: 'Called - Responded', icon: <PhoneCall size={15} />, color: 'cyan' },
@@ -557,16 +557,6 @@ async function sendMetaConversionEvent(leadId: string, lead: Lead, newStatus: Le
 }
 
 export default function CrmDashboard({ session }: { session: Session }) {
-  const { workspaces, activeWorkspace, activeWorkspaceId, switchWorkspace, createWorkspace, renameWorkspace, deleteWorkspace, loading: wsLoading } = useWorkspace();
-  const [showWsDropdown, setShowWsDropdown] = useState(false);
-  const [showWsManage, setShowWsManage] = useState(false);
-  const [showWsCreateInline, setShowWsCreateInline] = useState(false);
-  const [inlineWsName, setInlineWsName] = useState('');
-  const [newWsName, setNewWsName] = useState('');
-  const [renamingId, setRenamingId] = useState<string | null>(null);
-  const [renameValue, setRenameValue] = useState('');
-  const [wsError, setWsError] = useState('');
-  const wsDropdownRef = useRef<HTMLDivElement | null>(null);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -649,6 +639,21 @@ export default function CrmDashboard({ session }: { session: Session }) {
   const [showTelegramInbox, setShowTelegramInbox] = useState(true);
   const [showWhatsAppInbox, setShowWhatsAppInbox] = useState(true);
   const [showEmailInbox, setShowEmailInbox] = useState(true);
+  const [showIbLeads, setShowIbLeads] = useState(true);
+  const [sidebarSections, setSidebarSections] = useState<Record<string, boolean>>(() => {
+    try {
+      const saved = localStorage.getItem('crm-sidebar-sections');
+      if (saved) return JSON.parse(saved) as Record<string, boolean>;
+    } catch { /* ignore */ }
+    return { main: true, inbox: true, campaigns: true, analytics: true, tools: true, pipeline: true };
+  });
+  const updateSidebarSection = (key: string, visible: boolean) => {
+    setSidebarSections((prev) => {
+      const next = { ...prev, [key]: visible };
+      try { localStorage.setItem('crm-sidebar-sections', JSON.stringify(next)); } catch { /* ignore */ }
+      return next;
+    });
+  };
   const [setupCostPerClient, setSetupCostPerClient] = useState(10);
   const [inboxRefreshKey, setInboxRefreshKey] = useState(0);
   const [waRefreshKey, setWaRefreshKey] = useState(0);
@@ -667,6 +672,7 @@ export default function CrmDashboard({ session }: { session: Session }) {
   const [pipelineAutoAssignEnabled, setPipelineAutoAssignEnabled] = useState<boolean>(true);
   const [pipelineAutoAssignStages, setPipelineAutoAssignStages] = useState<string[]>(['called_no_response','called_responded','interested','not_interested','converted']);
   const [autoAssignToast, setAutoAssignToast] = useState<{ leadName: string; assigneeName: string } | null>(null);
+  const [stageLabelMap, setStageLabelMap] = useState<Record<string, string>>({});
 
   useEffect(() => {
     localStorage.setItem(`crm-mobile-stats-${session.user.id}`, JSON.stringify(hiddenMobileStats));
@@ -678,16 +684,6 @@ export default function CrmDashboard({ session }: { session: Session }) {
   useEffect(() => {
     try { localStorage.setItem('crm-sidebar-collapsed', String(sidebarCollapsed)); } catch { /* ignore */ }
   }, [sidebarCollapsed]);
-
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (wsDropdownRef.current && !wsDropdownRef.current.contains(e.target as Node)) {
-        setShowWsDropdown(false);
-      }
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, []);
 
   const toggleSidebar = () => setSidebarCollapsed((prev) => !prev);
 
@@ -874,6 +870,7 @@ export default function CrmDashboard({ session }: { session: Session }) {
 
   useEffect(() => {
     (async () => {
+      // Look for a team member record
       const { data } = await supabase
         .from('team_members')
         .select('id, role, status')
@@ -883,8 +880,8 @@ export default function CrmDashboard({ session }: { session: Session }) {
         setUserRole(data.role as UserRole);
         setCurrentMemberId(data.id);
       } else {
+        // No team member — treat as owner
         setUserRole('owner');
-        // Owner: look up own team member record by email so auto-assign can use it
         const { data: ownerMember } = await supabase
           .from('team_members')
           .select('id, role, status')
@@ -899,7 +896,7 @@ export default function CrmDashboard({ session }: { session: Session }) {
       }
       setRoleLoading(false);
 
-      // Load custom role permissions from the owner
+      // Load custom role permissions
       const { data: permData } = await supabase
         .from('role_permissions')
         .select('*');
@@ -909,6 +906,8 @@ export default function CrmDashboard({ session }: { session: Session }) {
           map[row.role] = dbRowToPermissions(row);
         }
         setCustomPermissions(map);
+      } else {
+        setCustomPermissions({});
       }
     })();
   }, [session.user.email]);
@@ -939,7 +938,6 @@ export default function CrmDashboard({ session }: { session: Session }) {
       const { data } = await supabase
         .from('pipeline_autoassign_settings')
         .select('enabled, assign_on_stages')
-        .eq('workspace_id', activeWorkspaceId)
         .maybeSingle();
       if (data) {
         const s = data as { enabled: boolean; assign_on_stages: string[] };
@@ -947,15 +945,14 @@ export default function CrmDashboard({ session }: { session: Session }) {
         setPipelineAutoAssignStages(s.assign_on_stages || ['called_no_response','called_responded','interested','not_interested','converted']);
       }
     })();
-  }, [activeWorkspaceId]);
+  }, []);
 
-  // Load appearance settings on CRM mount so borders apply immediately
+  // Load appearance settings on CRM mount
   useEffect(() => {
     (async () => {
       const { data } = await supabase
         .from('appearance_settings')
-        .select('border_color, border_width, border_radius, btn_bg_color, btn_text_color, btn_border_color, btn_border_width, btn_border_radius, show_telegram_inbox, show_whatsapp_inbox, show_email_inbox, crm_bg_color, sidebar_color, font_size, setup_cost')
-        .eq('workspace_id', activeWorkspaceId)
+        .select('border_color, border_width, border_radius, btn_bg_color, btn_text_color, btn_border_color, btn_border_width, btn_border_radius, show_telegram_inbox, show_whatsapp_inbox, show_email_inbox, show_ib_leads, crm_bg_color, sidebar_color, font_size, setup_cost')
         .maybeSingle();
       if (data) {
         const a = data as { border_color: string; border_width: number; border_radius: number; btn_bg_color: string; btn_text_color: string; btn_border_color: string; btn_border_width: number; btn_border_radius: number; show_telegram_inbox: boolean; show_whatsapp_inbox: boolean; show_email_inbox: boolean; crm_bg_color: string | null; sidebar_color: string | null; font_size: string | null; setup_cost: number | null };
@@ -973,22 +970,43 @@ export default function CrmDashboard({ session }: { session: Session }) {
         setShowTelegramInbox(a.show_telegram_inbox !== false);
         setShowWhatsAppInbox(a.show_whatsapp_inbox !== false);
         setShowEmailInbox(a.show_email_inbox !== false);
-        setShowEmailInbox(a.show_email_inbox !== false);
+        setShowIbLeads((a as Record<string, unknown>).show_ib_leads !== false);
         if (a.setup_cost != null) setSetupCostPerClient(a.setup_cost);
       }
     })();
   }, []);
 
+  // Load custom pipeline stage labels on mount
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from('pipeline_stage_labels')
+        .select('stage_key, label');
+      if (data) {
+        const map: Record<string, string> = {};
+        for (const row of data as { stage_key: string; label: string }[]) {
+          map[row.stage_key] = row.label;
+        }
+        setStageLabelMap(map);
+      }
+    })();
+  }, []);
+
+  const pipelineStages = useMemo(() =>
+    DEFAULT_PIPELINE_STAGES.map((s) => ({
+      ...s,
+      label: stageLabelMap[s.key] ?? s.label,
+    })),
+  [stageLabelMap]);
+
   const permissions = customPermissions[userRole] || ROLE_PERMISSIONS[userRole];
 
   const fetchLeads = useCallback(async () => {
-    if (!activeWorkspaceId) return;
     setLoading(true);
     setError('');
     const { data, error: fetchError } = await supabase
       .from('submissions')
       .select('*')
-      .eq('workspace_id', activeWorkspaceId)
       .is('deleted_at', null)
       .order('created_at', { ascending: false });
 
@@ -1018,14 +1036,12 @@ export default function CrmDashboard({ session }: { session: Session }) {
     });
     setLeads(scoredLeads);
     setLoading(false);
-  }, [activeWorkspaceId]);
+  }, []);
 
   const fetchTrashedLeads = useCallback(async () => {
-    if (!activeWorkspaceId) return;
     const { data, error: fetchError } = await supabase
       .from('submissions')
       .select('*')
-      .eq('workspace_id', activeWorkspaceId)
       .not('deleted_at', 'is', null)
       .order('deleted_at', { ascending: false });
     if (fetchError) {
@@ -1033,11 +1049,11 @@ export default function CrmDashboard({ session }: { session: Session }) {
       return;
     }
     setTrashedLeads((data || []) as Lead[]);
-  }, [activeWorkspaceId]);
+  }, []);
 
   useEffect(() => {
-    if (activeWorkspaceId) fetchLeads();
-  }, [fetchLeads, activeWorkspaceId]);
+    fetchLeads();
+  }, [fetchLeads]);
 
   const fetchBulkWaTemplates = useCallback(async () => {
     setBulkWaTemplatesLoading(true);
@@ -1071,12 +1087,10 @@ export default function CrmDashboard({ session }: { session: Session }) {
 
   useEffect(() => {
     (async () => {
-      if (!activeWorkspaceId) return;
       const { data } = await supabase
         .from('team_members')
         .select('id, email, full_name')
-        .eq('status', 'active')
-        .eq('workspace_id', activeWorkspaceId);
+        .eq('status', 'active');
       if (data) {
         const map: Record<string, string> = {};
         for (const m of data as { id: string; email: string; full_name: string | null }[]) {
@@ -1085,48 +1099,45 @@ export default function CrmDashboard({ session }: { session: Session }) {
         setAssigneeMap(map);
       }
     })();
-  }, [fetchLeads, activeWorkspaceId]);
+  }, [fetchLeads]);
 
   useEffect(() => {
-    if (activeView !== 'inbox_hub' && activeWorkspaceId) {
+    if (activeView !== 'inbox_hub') {
       (async () => {
         const { count } = await supabase
           .from('chat_conversations')
           .select('*', { count: 'exact', head: true })
-          .eq('workspace_id', activeWorkspaceId)
           .gt('unread_count', 0);
         setUnreadCount(count || 0);
       })();
     }
-  }, [activeView, inboxRefreshKey, activeWorkspaceId]);
+  }, [activeView, inboxRefreshKey]);
 
   useEffect(() => {
-    if (activeView !== 'inbox_hub' && activeWorkspaceId) {
+    if (activeView !== 'inbox_hub') {
       (async () => {
         const { count } = await supabase
           .from('wa_conversations')
           .select('*', { count: 'exact', head: true })
-          .eq('workspace_id', activeWorkspaceId)
           .gt('unread_count', 0);
         setWaUnreadCount(count || 0);
       })();
     }
-  }, [activeView, waRefreshKey, activeWorkspaceId]);
+  }, [activeView, waRefreshKey]);
 
   useEffect(() => {
-    if (activeView === 'leads' && activeWorkspaceId) {
+    if (activeView === 'leads') {
       (async () => {
         const { data } = await supabase
           .from('lead_followups')
           .select('*')
-          .eq('workspace_id', activeWorkspaceId)
           .in('status', ['pending', 'snoozed'])
           .order('reminder_at', { ascending: true })
           .limit(30);
         setDashFollowups((data || []) as FollowUp[]);
       })();
     }
-  }, [activeView, fetchLeads, activeWorkspaceId]);
+  }, [activeView, fetchLeads]);
 
   const updateLeadInState = useCallback((id: string, updates: Partial<Lead>) => {
     setLeads((prev) => prev.map((l) => (l.id === id ? { ...l, ...updates } : l)));
@@ -1548,7 +1559,8 @@ export default function CrmDashboard({ session }: { session: Session }) {
         },
         tags: [],
         assigned_to: assigneeId,
-        workspace_id: activeWorkspaceId,
+        user_id: session.user.id,
+        lead_source: 'Manual Entry',
       })
       .select()
       .single();
@@ -1563,7 +1575,7 @@ export default function CrmDashboard({ session }: { session: Session }) {
       fireWebhookEvent('lead.created', data as Record<string, unknown>, session.user.id);
     }
     return true;
-  }, [activeWorkspaceId]);
+  }, [session.user.id, getNextAssignee]);
 
   const mergeLead = useCallback(async (existingLead: Lead, newForm: NewLeadForm): Promise<boolean> => {
     const updatePayload: Record<string, unknown> = {};
@@ -1601,14 +1613,12 @@ export default function CrmDashboard({ session }: { session: Session }) {
       const { data: settings } = await supabase
         .from('lead_assignment_settings')
         .select('enabled, last_assigned_index')
-        .eq('workspace_id', activeWorkspaceId)
         .maybeSingle();
 
       if (settings?.enabled) {
         const { data: members } = await supabase
           .from('team_members')
           .select('id')
-          .eq('workspace_id', activeWorkspaceId)
           .eq('status', 'active')
           .order('created_at', { ascending: true });
 
@@ -1639,7 +1649,8 @@ export default function CrmDashboard({ session }: { session: Session }) {
       },
       tags: [],
       assigned_to: assignees[i] ?? null,
-      workspace_id: activeWorkspaceId,
+      user_id: session.user.id,
+      lead_source: 'Bulk Upload',
     }));
 
     const { data, error: insertError } = await supabase
@@ -1657,7 +1668,7 @@ export default function CrmDashboard({ session }: { session: Session }) {
       return { success: data.length, failed: 0 };
     }
     return { success: 0, failed: rows.length };
-  }, [activeWorkspaceId]);
+  }, []);
 
   const dateRange = useMemo((): { start: Date | null; end: Date | null } => {
     if (dateFilter === 'all') return { start: null, end: null };
@@ -1950,173 +1961,14 @@ export default function CrmDashboard({ session }: { session: Session }) {
         )}
       </div>
 
-      {showWsCreateInline && (
-        <div className="crm-ws-modal-overlay" onClick={() => { setShowWsCreateInline(false); setInlineWsName(''); setWsError(''); }}>
-          <div className="crm-ws-modal" style={{ width: '380px' }} onClick={(e) => e.stopPropagation()}>
-            <div className="crm-ws-modal-header">
-              <h2>Create New Workspace</h2>
-              <button className="crm-ws-modal-close" onClick={() => { setShowWsCreateInline(false); setInlineWsName(''); setWsError(''); }}><X size={18} /></button>
-            </div>
-            {wsError && <div className="crm-ws-modal-error">{wsError}</div>}
-            <div style={{ padding: '20px 24px' }}>
-              <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569', display: 'block', marginBottom: '8px' }}>Workspace Name</label>
-              <input
-                type="text"
-                placeholder="e.g. VIP Clients, Cold Leads..."
-                value={inlineWsName}
-                onChange={(e) => { setInlineWsName(e.target.value); setWsError(''); }}
-                className="crm-ws-modal-input"
-                style={{ width: '100%' }}
-                autoFocus
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && inlineWsName.trim()) {
-                    (async () => {
-                      setWsError('');
-                      const ws = await createWorkspace(inlineWsName.trim());
-                      if (!ws) { setWsError('Failed to create workspace'); return; }
-                      setShowWsCreateInline(false);
-                      setInlineWsName('');
-                    })();
-                  }
-                }}
-              />
-              <p style={{ fontSize: '0.75rem', color: '#94A3B8', margin: '10px 0 0 0', lineHeight: 1.5 }}>
-                Each workspace keeps its leads, conversations, team members, and settings completely separate.
-              </p>
-            </div>
-            <div style={{ display: 'flex', gap: '8px', padding: '0 24px 20px 24px', justifyContent: 'flex-end' }}>
-              <button className="crm-ws-modal-create-btn" style={{ background: '#F1F5F9', color: '#475569' }} onClick={() => { setShowWsCreateInline(false); setInlineWsName(''); setWsError(''); }}>
-                Cancel
-              </button>
-              <button
-                className="crm-ws-modal-create-btn"
-                disabled={!inlineWsName.trim()}
-                onClick={async () => {
-                  setWsError('');
-                  const ws = await createWorkspace(inlineWsName.trim());
-                  if (!ws) { setWsError('Failed to create workspace'); return; }
-                  setShowWsCreateInline(false);
-                  setInlineWsName('');
-                }}
-              >
-                <Plus size={16} /> Create Workspace
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showWsManage && (
-        <div className="crm-ws-modal-overlay" onClick={() => { setShowWsManage(false); setNewWsName(''); setWsError(''); setRenamingId(null); }}>
-          <div className="crm-ws-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="crm-ws-modal-header">
-              <h2>Manage Workspaces</h2>
-              <button className="crm-ws-modal-close" onClick={() => { setShowWsManage(false); setNewWsName(''); setWsError(''); setRenamingId(null); }}><X size={18} /></button>
-            </div>
-            {wsError && <div className="crm-ws-modal-error">{wsError}</div>}
-            <div className="crm-ws-modal-create">
-              <input
-                type="text"
-                placeholder="New workspace name"
-                value={newWsName}
-                onChange={(e) => setNewWsName(e.target.value)}
-                className="crm-ws-modal-input"
-              />
-              <button
-                className="crm-ws-modal-create-btn"
-                disabled={!newWsName.trim()}
-                onClick={async () => {
-                  setWsError('');
-                  const ws = await createWorkspace(newWsName.trim());
-                  if (!ws) { setWsError('Failed to create workspace'); return; }
-                  setNewWsName('');
-                }}
-              >
-                <Plus size={16} /> Create
-              </button>
-            </div>
-            <div className="crm-ws-modal-list">
-              {workspaces.map((ws) => (
-                <div key={ws.id} className={`crm-ws-modal-item ${ws.id === activeWorkspaceId ? 'active' : ''}`}>
-                  {renamingId === ws.id ? (
-                    <>
-                      <input
-                        type="text"
-                        value={renameValue}
-                        onChange={(e) => setRenameValue(e.target.value)}
-                        className="crm-ws-modal-input"
-                        autoFocus
-                      />
-                      <button className="crm-ws-modal-icon-btn" onClick={async () => {
-                        if (renameValue.trim()) { const ok = await renameWorkspace(ws.id, renameValue.trim()); if (!ok) setWsError('Failed to rename'); }
-                        setRenamingId(null);
-                      }}><Check size={16} /></button>
-                      <button className="crm-ws-modal-icon-btn" onClick={() => setRenamingId(null)}><X size={16} /></button>
-                    </>
-                  ) : (
-                    <>
-                      <Layers size={16} style={{ opacity: 0.6, flexShrink: 0 }} />
-                      <span className="crm-ws-modal-item-name">{ws.name}</span>
-                      {ws.id === activeWorkspaceId && <span className="crm-ws-modal-active-badge">Active</span>}
-                      <button className="crm-ws-modal-icon-btn" title="Rename" onClick={() => { setRenamingId(ws.id); setRenameValue(ws.name); }}><Pencil size={14} /></button>
-                      <button className="crm-ws-modal-icon-btn crm-ws-modal-delete" title="Delete" disabled={workspaces.length <= 1} onClick={async () => {
-                        if (workspaces.length <= 1) return;
-                        const ok = await deleteWorkspace(ws.id);
-                        if (!ok) setWsError('Failed to delete workspace');
-                      }}><Trash2 size={14} /></button>
-                    </>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
       {sidebarCollapsed && (
         <button className="crm-sidebar-toggle-collapsed" onClick={toggleSidebar} aria-label="Expand sidebar" title="Expand sidebar">
           <PanelLeft size={18} />
         </button>
       )}
 
-      {!sidebarCollapsed && activeWorkspaceId && (
-        <div className="crm-ws-switcher">
-          <button className="crm-ws-switcher-btn" onClick={() => setShowWsDropdown((v) => !v)}>
-            <Layers size={16} />
-            <span className="crm-ws-switcher-name">{activeWorkspace?.name || 'Default'}</span>
-            <ChevronDown size={14} style={{ marginLeft: 'auto', opacity: 0.6 }} />
-          </button>
-          {showWsDropdown && (
-            <div className="crm-ws-dropdown" ref={wsDropdownRef}>
-              {workspaces.map((ws) => (
-                <button
-                  key={ws.id}
-                  className={`crm-ws-dropdown-item ${ws.id === activeWorkspaceId ? 'active' : ''}`}
-                  onClick={() => { switchWorkspace(ws.id); setShowWsDropdown(false); }}
-                >
-                  <Check size={14} style={{ opacity: ws.id === activeWorkspaceId ? 1 : 0 }} />
-                  <span>{ws.name}</span>
-                </button>
-              ))}
-              <div className="crm-ws-dropdown-divider" />
-              <button className="crm-ws-dropdown-item crm-ws-create" onClick={() => { setShowWsCreateInline(true); setShowWsDropdown(false); }}>
-                <Plus size={14} /> Create New Workspace
-              </button>
-              <button className="crm-ws-dropdown-item crm-ws-manage" onClick={() => { setShowWsManage(true); setShowWsDropdown(false); }}>
-                <Settings2 size={14} /> Manage Workspaces
-              </button>
-            </div>
-          )}
-        </div>
-      )}
-
-      {sidebarCollapsed && activeWorkspaceId && (
-        <div className="crm-ws-switcher-collapsed" title={activeWorkspace?.name || 'Default'}>
-          <Layers size={18} />
-        </div>
-      )}
-
       <nav className="crm-sidebar-nav">
+        {sidebarSections.main && (
         <div className="crm-nav-section">
           {!sidebarCollapsed && <span className="crm-nav-label">MAIN</span>}
           <a className={`crm-nav-item ${activeView === 'dashboard' ? 'active' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`} onClick={() => { setActiveView('dashboard'); setMobileSidebarOpen(false); }} style={{ cursor: 'pointer' }} title={sidebarCollapsed ? 'Dashboard' : undefined}>
@@ -2126,10 +1978,14 @@ export default function CrmDashboard({ session }: { session: Session }) {
             <Users size={18} /> {!sidebarCollapsed && 'Leads'}
             {!sidebarCollapsed && <span className="crm-nav-badge">{stats.total}</span>}
           </a>
-          <a className={`crm-nav-item ${activeView === 'ib_leads' ? 'active' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`} onClick={() => { setActiveView('ib_leads'); setMobileSidebarOpen(false); setMobileNav('leads'); }} style={{ cursor: 'pointer' }} title={sidebarCollapsed ? 'IB Leads' : undefined}>
-            <Building2 size={18} /> {!sidebarCollapsed && 'IB Leads'}
-          </a>
+          {showIbLeads && (
+            <a className={`crm-nav-item ${activeView === 'ib_leads' ? 'active' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`} onClick={() => { setActiveView('ib_leads'); setMobileSidebarOpen(false); setMobileNav('leads'); }} style={{ cursor: 'pointer' }} title={sidebarCollapsed ? 'IB Leads' : undefined}>
+              <Building2 size={18} /> {!sidebarCollapsed && 'IB Leads'}
+            </a>
+          )}
         </div>
+        )}
+        {sidebarSections.inbox && (
         <div className="crm-nav-section">
           {!sidebarCollapsed && <span className="crm-nav-label">INBOX</span>}
           <a className={`crm-nav-item ${activeView === 'inbox_hub' ? 'active' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`} onClick={() => { if (permissions.inbox) { setActiveView('inbox_hub'); setMobileSidebarOpen(false); setMobileNav('leads'); } }} style={{ cursor: permissions.inbox ? 'pointer' : 'not-allowed', position: 'relative', opacity: permissions.inbox ? 1 : 0.4 }} title={sidebarCollapsed ? 'Shared Inbox' : undefined}>
@@ -2142,7 +1998,8 @@ export default function CrmDashboard({ session }: { session: Session }) {
             )}
           </a>
         </div>
-        {permissions.broadcasts && (
+        )}
+        {permissions.broadcasts && sidebarSections.campaigns && (
         <div className="crm-nav-section">
           {!sidebarCollapsed && <span className="crm-nav-label">CAMPAIGNS</span>}
           <a className={`crm-nav-item ${activeView === 'broadcast_hub' ? 'active' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`} onClick={() => { setActiveView('broadcast_hub'); setMobileSidebarOpen(false); setMobileNav('leads'); }} style={{ cursor: 'pointer' }} title={sidebarCollapsed ? 'Broadcasts' : undefined}>
@@ -2150,7 +2007,7 @@ export default function CrmDashboard({ session }: { session: Session }) {
           </a>
         </div>
         )}
-        {permissions.analytics && (
+        {permissions.analytics && sidebarSections.analytics && (
         <div className="crm-nav-section">
           {!sidebarCollapsed && <span className="crm-nav-label">ANALYTICS</span>}
           <a className={`crm-nav-item ${activeView === 'analytics_hub' ? 'active' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`} onClick={() => { setActiveView('analytics_hub'); setMobileSidebarOpen(false); setMobileNav('leads'); }} style={{ cursor: 'pointer' }} title={sidebarCollapsed ? 'Analytics' : undefined}>
@@ -2158,7 +2015,7 @@ export default function CrmDashboard({ session }: { session: Session }) {
           </a>
         </div>
         )}
-        {(permissions.broadcasts || permissions.followUps) && (
+        {(permissions.broadcasts || permissions.followUps) && sidebarSections.tools && (
         <div className="crm-nav-section">
           {!sidebarCollapsed && <span className="crm-nav-label">TOOLS</span>}
           {permissions.broadcasts && (
@@ -2186,7 +2043,7 @@ export default function CrmDashboard({ session }: { session: Session }) {
           )}
         </div>
         )}
-        {!sidebarCollapsed && (
+        {!sidebarCollapsed && sidebarSections.pipeline && (
         <div className="crm-nav-section">
           <span className="crm-nav-label">PIPELINE</span>
           <div className="crm-pipeline-funnel">
@@ -2203,7 +2060,7 @@ export default function CrmDashboard({ session }: { session: Session }) {
 
             </div>
             <div className="crm-pipeline-funnel-bars">
-              {PIPELINE_STAGES.map((stage) => {
+              {pipelineStages.map((stage) => {
                 const count = pipelineStats[stage.key];
                 const pct = stats.total > 0 ? (count / stats.total) * 100 : 0;
                 const colors = STAGE_COLORS[stage.color];
@@ -2256,11 +2113,22 @@ export default function CrmDashboard({ session }: { session: Session }) {
             </div>
           )}
         </div>
-        {permissions.settings && (
-          <button className={`crm-nav-item ${activeView === 'settings' ? 'active' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`} onClick={() => { setActiveView('settings'); setMobileSidebarOpen(false); setMobileNav('leads'); }} style={{ cursor: 'pointer' }} title={sidebarCollapsed ? 'Settings' : undefined}>
-            <SettingsIcon size={18} /> {!sidebarCollapsed && 'Settings'}
+        <div className={`crm-sidebar-footer-actions ${sidebarCollapsed ? 'collapsed' : ''}`}>
+          {permissions.settings && (
+            <button className={`crm-nav-item ${activeView === 'settings' ? 'active' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`} onClick={() => { setActiveView('settings'); setMobileSidebarOpen(false); setMobileNav('leads'); }} style={{ cursor: 'pointer', flex: 1 }} title={sidebarCollapsed ? 'Settings' : undefined}>
+              <SettingsIcon size={18} /> {!sidebarCollapsed && 'Settings'}
+            </button>
+          )}
+          <button
+            className={`crm-nav-item ${sidebarCollapsed ? 'collapsed' : ''}`}
+            onClick={handleSignOut}
+            style={{ cursor: 'pointer', color: '#94a3b8', flexShrink: 0 }}
+            title="Sign out"
+            aria-label="Sign out"
+          >
+            <LogOut size={18} />
           </button>
-        )}
+        </div>
       </div>
     </>
   );
@@ -2345,7 +2213,7 @@ export default function CrmDashboard({ session }: { session: Session }) {
             onCall={(number) => { window.location.href = `tel:${number.replace(/[^+\d]/g, '')}`; }}
           />
         ) : activeView === 'settings' ? (
-          <SettingsPage session={session} userRole={userRole} permissions={permissions} customPermissions={customPermissions} onBack={() => setActiveView('leads')} onSignOut={handleSignOut} onInboxVisibilityChange={(tg, wa, em) => { setShowTelegramInbox(tg); setShowWhatsAppInbox(wa); setShowEmailInbox(em); }} onOpenRecycleBin={() => { fetchTrashedLeads(); setShowTrashModal(true); }} pipelineAutoAssignEnabled={pipelineAutoAssignEnabled} pipelineAutoAssignStages={pipelineAutoAssignStages} onPipelineAutoAssignChange={(enabled, stages) => { setPipelineAutoAssignEnabled(enabled); setPipelineAutoAssignStages(stages); }} />
+          <SettingsPage session={session} userRole={userRole} permissions={permissions} customPermissions={customPermissions} onBack={() => setActiveView('leads')} onSignOut={handleSignOut} onInboxVisibilityChange={(tg, wa, em, ib) => { setShowTelegramInbox(tg); setShowWhatsAppInbox(wa); setShowEmailInbox(em); setShowIbLeads(ib); }} onOpenRecycleBin={() => { fetchTrashedLeads(); setShowTrashModal(true); }} pipelineAutoAssignEnabled={pipelineAutoAssignEnabled} pipelineAutoAssignStages={pipelineAutoAssignStages} onPipelineAutoAssignChange={(enabled, stages) => { setPipelineAutoAssignEnabled(enabled); setPipelineAutoAssignStages(stages); }} onStageLabelsChange={async () => { const { data } = await supabase.from('pipeline_stage_labels').select('stage_key, label'); if (data) { const map: Record<string, string> = {}; for (const row of data as { stage_key: string; label: string }[]) { map[row.stage_key] = row.label; } setStageLabelMap(map); } }} sidebarSections={sidebarSections} onSidebarSectionChange={updateSidebarSection} />
         ) : activeView === 'analytics_hub' ? (
           <AnalyticsHub session={session} onBack={() => setActiveView('dashboard')} />
         ) : activeView === 'message_templates' ? (
@@ -2365,7 +2233,7 @@ export default function CrmDashboard({ session }: { session: Session }) {
         ) : activeView === 'duplicates' ? (
           <DuplicateDetectionView leads={leads} onBack={() => setActiveView('dashboard')} onMerge={mergeDuplicates} assigneeMap={assigneeMap} />
         ) : activeView === 'automations' ? (
-          <AutomationBuilder session={session} onBack={() => setActiveView('dashboard')} />
+          <AutomationBuilder session={session} onBack={() => setActiveView('dashboard')} stages={pipelineStages} />
         ) : activeView === 'heatmap' ? (
           <div className="dash-overview">
             <div className="dash-page-header">
@@ -2531,7 +2399,7 @@ export default function CrmDashboard({ session }: { session: Session }) {
             </div>
           </div>
         ) : mobileNav === 'pipeline' || viewMode === 'pipeline' ? (
-          <PipelineView leads={filteredLeads} onLeadClick={setSelectedLead} onStatusChange={updateLead} formatDate={formatDate} assigneeMap={assigneeMap} />
+          <PipelineView leads={filteredLeads} onLeadClick={setSelectedLead} onStatusChange={updateLead} formatDate={formatDate} assigneeMap={assigneeMap} stages={pipelineStages} />
         ) : (
           <div className="crm-content-wrapper">
           {/* Desktop Table View */}
@@ -2637,7 +2505,7 @@ export default function CrmDashboard({ session }: { session: Session }) {
                   onChange={(e) => { setStatusFilter(e.target.value as typeof statusFilter); setPage(0); }}
                 >
                   <option value="all">All Statuses</option>
-                  {PIPELINE_STAGES.map((s) => (
+                  {pipelineStages.map((s) => (
                     <option key={s.key} value={s.key}>{s.label}</option>
                   ))}
                 </select>
@@ -2753,7 +2621,7 @@ export default function CrmDashboard({ session }: { session: Session }) {
                 </thead>
                 <tbody>
                   {pagedLeads.map((lead) => {
-                    const stage = PIPELINE_STAGES.find((s) => s.key === lead.status)!;
+                    const stage = pipelineStages.find((s) => s.key === lead.status)!;
                     const colors = STAGE_COLORS[stage.color];
                     return (
                       <tr key={lead.id} className={`crm-table-row ${selectedIds.has(lead.id) ? 'crm-row-selected' : ''}`} onClick={() => setSelectedLead(lead)} style={{ cursor: 'pointer' }}>
@@ -2944,7 +2812,7 @@ export default function CrmDashboard({ session }: { session: Session }) {
                     onChange={(e) => { setStatusFilter(e.target.value as typeof statusFilter); setPage(0); }}
                   >
                     <option value="all">All Statuses</option>
-                    {PIPELINE_STAGES.map((s) => (
+                    {pipelineStages.map((s) => (
                       <option key={s.key} value={s.key}>{s.label}</option>
                     ))}
                   </select>
@@ -3058,7 +2926,7 @@ export default function CrmDashboard({ session }: { session: Session }) {
             {/* Mobile Lead Cards */}
             <div className="crm-mobile-card-list">
               {pagedLeads.map((lead) => {
-                const stage = PIPELINE_STAGES.find((s) => s.key === lead.status)!;
+                const stage = pipelineStages.find((s) => s.key === lead.status)!;
                 const colors = STAGE_COLORS[stage.color];
                 return (
                   <div
@@ -3169,6 +3037,7 @@ export default function CrmDashboard({ session }: { session: Session }) {
           onSendEmail={(lead) => setEmailTarget(lead)}
           onCall={(number) => { window.location.href = `tel:${number.replace(/[^+\d]/g, '')}`; }}
           setupCostPerClient={setupCostPerClient}
+          stages={pipelineStages}
         />
       )}
 
@@ -3178,6 +3047,7 @@ export default function CrmDashboard({ session }: { session: Session }) {
           onAdd={addLead}
           onMerge={mergeLead}
           existingLeads={leads}
+          stages={pipelineStages}
         />
       )}
 
@@ -3339,7 +3209,7 @@ export default function CrmDashboard({ session }: { session: Session }) {
                   onChange={(e) => setBulkStatusValue(e.target.value as LeadStatus)}
                   style={{ width: '100%', padding: '10px 14px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '0.85rem', cursor: 'pointer', marginBottom: '16px' }}
                 >
-                  {PIPELINE_STAGES.map((s) => (
+                  {pipelineStages.map((s) => (
                     <option key={s.key} value={s.key}>{s.label}</option>
                   ))}
                 </select>
@@ -4587,7 +4457,7 @@ function DialerPanel({ onClose, number, setNumber, callInitiated, setCallInitiat
 
   return (
     <>
-      <div className="crm-drawer-overlay" onClick={onClose} />
+      <div className="crm-dialer-overlay" onClick={onClose} />
       <div className="crm-dialer-panel">
         <div className="crm-dialer-header">
           <div className="crm-dialer-header-inner">
@@ -4849,11 +4719,12 @@ function DialerPanel({ onClose, number, setNumber, callInitiated, setCallInitiat
 }
 
 // ===================== Add Lead Modal =====================
-function AddLeadModal({ onClose, onAdd, onMerge, existingLeads }: {
+function AddLeadModal({ onClose, onAdd, onMerge, existingLeads, stages }: {
   onClose: () => void;
   onAdd: (form: NewLeadForm) => Promise<boolean>;
   onMerge: (existingLead: Lead, form: NewLeadForm) => Promise<boolean>;
   existingLeads: Lead[];
+  stages: { key: LeadStatus; label: string }[];
 }) {
   const [form, setForm] = useState<NewLeadForm>({
     full_name: '',
@@ -5006,7 +4877,7 @@ function AddLeadModal({ onClose, onAdd, onMerge, existingLeads }: {
             <label className="crm-add-lead-field">
               <span>Initial Status</span>
               <select value={form.status} onChange={(e) => update('status', e.target.value)}>
-                {PIPELINE_STAGES.map((s) => (
+                {stages.map((s) => (
                   <option key={s.key} value={s.key}>{s.label}</option>
                 ))}
               </select>
@@ -5603,7 +5474,7 @@ function BulkUploadModal({ onClose, onUpload }: {
                         <td>{SERVICE_LABELS[row.service_interest] || row.service_interest || <span className="crm-bulk-missing">—</span>}</td>
                         <td className={`crm-bulk-qual-cell crm-bulk-qual-${readinessTone(row.referral_readiness)}`}>{REFERRAL_LABELS[row.referral_readiness] || row.referral_readiness}</td>
                         <td className={`crm-bulk-qual-cell crm-bulk-qual-${readinessTone(row.funding_readiness)}`}>{FUNDING_LABELS[row.funding_readiness] || row.funding_readiness}</td>
-                        <td>{PIPELINE_STAGES.find((s) => s.key === row.status)?.label || row.status}</td>
+                        <td>{pipelineStages.find((s) => s.key === row.status)?.label || row.status}</td>
                         <td className="crm-bulk-notes-cell">{row.notes || '—'}</td>
                         <td>
                           {row._valid
@@ -5644,12 +5515,13 @@ function BulkUploadModal({ onClose, onUpload }: {
 }
 
 // ===================== Pipeline (Kanban) View =====================
-function PipelineView({ leads, onLeadClick, onStatusChange, formatDate, assigneeMap }: {
+function PipelineView({ leads, onLeadClick, onStatusChange, formatDate, assigneeMap, stages }: {
   leads: Lead[];
   onLeadClick: (lead: Lead) => void;
   onStatusChange: (id: string, updates: Partial<Lead>) => void;
   formatDate: (iso: string) => string;
   assigneeMap: Record<string, string>;
+  stages: { key: LeadStatus; label: string; icon: React.ReactNode; color: string }[];
 }) {
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [dropTarget, setDropTarget] = useState<LeadStatus | null>(null);
@@ -5682,7 +5554,7 @@ function PipelineView({ leads, onLeadClick, onStatusChange, formatDate, assignee
   return (
     <div className="crm-pipeline-scroll">
       <div className="crm-pipeline-board">
-        {PIPELINE_STAGES.map((stage) => {
+        {stages.map((stage) => {
           const colors = STAGE_COLORS[stage.color];
           const stageLeads = leads.filter((l) => l.status === stage.key);
           const stageFund = stageLeads.reduce((sum, l) => sum + (l.fund_amount || 0), 0);
@@ -5875,7 +5747,7 @@ function QualificationSection({ lead }: { lead: Lead }) {
   );
 }
 
-function LeadDetailDrawer({ lead, onClose, onUpdate, onDelete, formatDate, onSendEmail, onCall, setupCostPerClient }: {
+function LeadDetailDrawer({ lead, onClose, onUpdate, onDelete, formatDate, onSendEmail, onCall, setupCostPerClient, stages }: {
   lead: Lead;
   onClose: () => void;
   onUpdate: (id: string, updates: Partial<Lead>) => void;
@@ -5884,6 +5756,7 @@ function LeadDetailDrawer({ lead, onClose, onUpdate, onDelete, formatDate, onSen
   onSendEmail: (lead: Lead) => void;
   onCall: (number: string) => void;
   setupCostPerClient: number;
+  stages: { key: LeadStatus; label: string; icon: React.ReactNode; color: string }[];
 }) {
   const [tagInput, setTagInput] = useState('');
   const [showTagSuggestions, setShowTagSuggestions] = useState(false);
@@ -5995,7 +5868,7 @@ function LeadDetailDrawer({ lead, onClose, onUpdate, onDelete, formatDate, onSen
     setActivities((prev) => [{ id: crypto.randomUUID(), lead_id: lead.id, activity_type: activityType, description, metadata, created_at: new Date().toISOString() }, ...prev]);
   }, [lead.id]);
 
-  const stage = PIPELINE_STAGES.find((s) => s.key === lead.status)!;
+  const stage = stages.find((s) => s.key === lead.status)!;
   const colors = STAGE_COLORS[stage.color];
 
   const handleStatusChange = (status: LeadStatus) => {
@@ -6149,7 +6022,7 @@ function LeadDetailDrawer({ lead, onClose, onUpdate, onDelete, formatDate, onSen
         <div className="crm-drawer-section">
           <label className="crm-drawer-label">MOVE TO STAGE</label>
           <div className="crm-status-grid">
-            {PIPELINE_STAGES.map((s) => {
+            {stages.map((s) => {
               const sc = STAGE_COLORS[s.color];
               const isActive = lead.status === s.key;
               return (
@@ -7034,20 +6907,23 @@ function EmailComposeModal({ lead, session, onClose }: {
 }
 
 // ===================== Settings Modal =====================
-function SettingsPage({ session, userRole, permissions, customPermissions, onBack, onSignOut, onInboxVisibilityChange, onOpenRecycleBin, pipelineAutoAssignEnabled, pipelineAutoAssignStages, onPipelineAutoAssignChange }: {
+function SettingsPage({ session, userRole, permissions, customPermissions, onBack, onSignOut, onInboxVisibilityChange, onOpenRecycleBin, pipelineAutoAssignEnabled, pipelineAutoAssignStages, onPipelineAutoAssignChange, onStageLabelsChange, sidebarSections, onSidebarSectionChange }: {
   session: Session;
   userRole: UserRole;
   permissions: PermissionFlags;
   customPermissions: Record<string, PermissionFlags>;
   onBack: () => void;
   onSignOut: () => void;
-  onInboxVisibilityChange?: (telegram: boolean, whatsapp: boolean, email: boolean) => void;
+  onInboxVisibilityChange?: (telegram: boolean, whatsapp: boolean, email: boolean, ibLeads: boolean) => void;
   onOpenRecycleBin?: () => void;
   pipelineAutoAssignEnabled?: boolean;
   pipelineAutoAssignStages?: string[];
   onPipelineAutoAssignChange?: (enabled: boolean, stages: string[]) => void;
+  onStageLabelsChange?: () => void;
+  sidebarSections?: Record<string, boolean>;
+  onSidebarSectionChange?: (key: string, visible: boolean) => void;
 }) {
-  const [activeTab, setActiveTab] = useState<'account' | 'email' | 'scheduled_emails' | 'telegram' | 'whatsapp' | 'twilio' | 'team' | 'team_dashboard' | 'role_management' | 'lead_distribution' | 'pipeline_autoassign' | 'followup' | 'meta' | 'assignment' | 'appearance' | 'direct_link' | 'recycle_bin' | 'webhooks' | 'google_sheets' | 'danger'>('account');
+  const [activeTab, setActiveTab] = useState<'account' | 'email' | 'scheduled_emails' | 'telegram' | 'whatsapp' | 'twilio' | 'team' | 'team_dashboard' | 'role_management' | 'lead_distribution' | 'pipeline_autoassign' | 'pipeline_stages' | 'followup' | 'meta' | 'assignment' | 'appearance' | 'direct_link' | 'recycle_bin' | 'webhooks' | 'google_sheets' | 'danger'>('account');
 
   // Account state
   const [firstName, setFirstName] = useState('');
@@ -7297,6 +7173,34 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
   const [paSaved, setPaSaved] = useState(false);
   const [paError, setPaError] = useState('');
 
+  // Pipeline stage labels state
+  const [psLabels, setPsLabels] = useState<Record<string, string>>({});
+  const [psSaving, setPsSaving] = useState(false);
+  const [psSaved, setPsSaved] = useState(false);
+  const [psError, setPsError] = useState('');
+  const PS_DEFAULT_STAGES: { key: string; defaultLabel: string; color: string }[] = [
+    { key: 'new', defaultLabel: 'New', color: '#3B82F6' },
+    { key: 'called_no_response', defaultLabel: 'Called - No Response', color: '#F59E0B' },
+    { key: 'called_responded', defaultLabel: 'Called - Responded', color: '#06B6D4' },
+    { key: 'interested', defaultLabel: 'Interested', color: '#8B5CF6' },
+    { key: 'not_interested', defaultLabel: 'Not Interested', color: '#EF4444' },
+    { key: 'converted', defaultLabel: 'Converted', color: '#16A34A' },
+  ];
+
+  useEffect(() => {
+    if (activeTab !== 'pipeline_stages') return;
+    (async () => {
+      const { data } = await supabase.from('pipeline_stage_labels').select('stage_key, label');
+      if (data) {
+        const map: Record<string, string> = {};
+        for (const row of data as { stage_key: string; label: string }[]) {
+          map[row.stage_key] = row.label;
+        }
+        setPsLabels(map);
+      }
+    })();
+  }, [activeTab]);
+
   // Load pipeline auto-assign settings when tab is opened
   useEffect(() => {
     if (activeTab !== 'pipeline_autoassign') return;
@@ -7331,6 +7235,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
   const [showTelegramInbox, setShowTelegramInbox] = useState(true);
   const [showWhatsAppInbox, setShowWhatsAppInbox] = useState(true);
   const [showEmailInbox, setShowEmailInbox] = useState(true);
+  const [showIbLeads, setShowIbLeads] = useState(true);
   const [appearanceSaving, setAppearanceSaving] = useState(false);
   const [appearanceSaved, setAppearanceSaved] = useState(false);
   const [setupCost, setSetupCost] = useState(10);
@@ -7482,7 +7387,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
       }
 
       if (appearanceRes.data) {
-        const a = appearanceRes.data as { border_color: string; border_width: number; border_radius: number; btn_bg_color: string; btn_text_color: string; btn_border_color: string; btn_border_width: number; btn_border_radius: number; show_telegram_inbox: boolean; show_whatsapp_inbox: boolean; show_email_inbox: boolean; crm_bg_color: string | null; sidebar_color: string | null; font_size: string | null; setup_cost: number | null };
+        const a = appearanceRes.data as { border_color: string; border_width: number; border_radius: number; btn_bg_color: string; btn_text_color: string; btn_border_color: string; btn_border_width: number; btn_border_radius: number; show_telegram_inbox: boolean; show_whatsapp_inbox: boolean; show_email_inbox: boolean; show_ib_leads: boolean; crm_bg_color: string | null; sidebar_color: string | null; font_size: string | null; setup_cost: number | null };
         setBorderColor(a.border_color || '#EAB308');
         setBorderWidth(a.border_width ?? 1.5);
         setBorderRadius(a.border_radius ?? 16);
@@ -7498,6 +7403,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
         setShowTelegramInbox(a.show_telegram_inbox !== false);
         setShowWhatsAppInbox(a.show_whatsapp_inbox !== false);
         setShowEmailInbox(a.show_email_inbox !== false);
+        setShowIbLeads(a.show_ib_leads !== false);
         document.documentElement.style.setProperty('--app-border-color', a.border_color || '#EAB308');
         document.documentElement.style.setProperty('--app-border-width', `${a.border_width ?? 1.5}px`);
         document.documentElement.style.setProperty('--app-border-radius', `${a.border_radius ?? 16}px`);
@@ -7982,6 +7888,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
         show_telegram_inbox: showTelegramInbox,
         show_whatsapp_inbox: showWhatsAppInbox,
         show_email_inbox: showEmailInbox,
+        show_ib_leads: showIbLeads,
         setup_cost: setupCost,
         updated_at: new Date().toISOString(),
       };
@@ -8007,7 +7914,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
 
       setAppearanceSaved(true);
       setAppearanceSaving(false);
-      onInboxVisibilityChange?.(showTelegramInbox, showWhatsAppInbox, showEmailInbox);
+      onInboxVisibilityChange?.(showTelegramInbox, showWhatsAppInbox, showEmailInbox, showIbLeads);
       setTimeout(() => setAppearanceSaved(false), 3000);
       setSaving(false);
       return;
@@ -8471,6 +8378,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
     { key: 'role_management', label: 'Role Management', icon: <SlidersHorizontal size={18} />, accent: 'role_management', show: permissions.teamManagement },
     { key: 'lead_distribution', label: 'Lead Distribution', icon: <Shuffle size={18} />, accent: 'lead_distribution', show: permissions.teamManagement },
     { key: 'pipeline_autoassign', label: 'Pipeline Auto-Assign', icon: <GitBranch size={18} />, accent: 'pipeline_autoassign', show: permissions.teamManagement },
+    { key: 'pipeline_stages', label: 'Pipeline Stage Labels', icon: <Tag size={18} />, accent: 'pipeline_stages', show: permissions.settings },
     { key: 'assignment', label: 'Lead Assignment', icon: <Shuffle size={18} />, accent: 'assignment', show: permissions.teamManagement },
     { key: 'followup', label: 'Follow-Ups', icon: <Bell size={18} />, accent: 'followup', show: true },
 
@@ -10497,6 +10405,88 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                     {paSaved && <span style={{ fontSize: '0.82rem', color: '#16a34a', fontWeight: 600, alignSelf: 'center' }}>Saved!</span>}
                   </div>
                 </>
+              ) : activeTab === 'pipeline_stages' ? (
+                <>
+                  <div className="crm-settings-card-header">
+                    <h2 className="crm-settings-card-title"><Tag size={20} style={{ color: '#0f766e' }} /> Pipeline Stage Labels</h2>
+                    <p className="crm-settings-card-desc">Customize the names of each pipeline stage to match your business terminology. The underlying stage logic stays the same — only the display text changes across your CRM.</p>
+                  </div>
+
+                  <div style={{ background: 'rgba(15,118,110,0.06)', border: '1px solid rgba(15,118,110,0.2)', borderRadius: '10px', padding: '14px 16px', marginBottom: '16px', display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                    <Tag size={18} style={{ color: '#0f766e', flexShrink: 0, marginTop: '2px' }} />
+                    <div style={{ fontSize: '0.8rem', color: '#475569', lineHeight: 1.5 }}>
+                      <strong>How it works:</strong> Each stage has a fixed internal key that powers automations, filters, and analytics. You're only changing the label that appears on screen — so your team sees terminology that makes sense for your business (e.g., "Contacted" instead of "Called - Responded"). Leave a field blank to use the default label.
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    {PS_DEFAULT_STAGES.map((stage) => (
+                      <div key={stage.key} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                        <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: stage.color, flexShrink: 0 }} />
+                        <div style={{ flex: 1, minWidth: '200px' }}>
+                          <label style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#94a3b8', display: 'block', marginBottom: '4px' }}>
+                            {stage.defaultLabel}
+                          </label>
+                          <input
+                            type="text"
+                            value={psLabels[stage.key] ?? ''}
+                            onChange={(e) => { setPsLabels((prev) => ({ ...prev, [stage.key]: e.target.value })); setPsSaved(false); }}
+                            placeholder={stage.defaultLabel}
+                            style={{ width: '100%', padding: '8px 12px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '0.88rem', fontWeight: 600, color: '#0f172a', outline: 'none', transition: 'border 0.15s' }}
+                            onFocus={(e) => { e.currentTarget.style.borderColor = '#0f766e'; }}
+                            onBlur={(e) => { e.currentTarget.style.borderColor = '#e2e8f0'; }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {psError && <div style={{ marginTop: '12px', fontSize: '0.82rem', color: '#ef4444' }}>{psError}</div>}
+
+                  <div style={{ marginTop: '20px', display: 'flex', gap: '10px', alignItems: 'center' }}>
+                    <button
+                      type="button"
+                      disabled={psSaving}
+                      onClick={async () => {
+                        setPsSaving(true);
+                        setPsError('');
+                        try {
+                          const { data: sessionData } = await supabase.auth.getSession();
+                          const userId = sessionData.session?.user.id;
+                          if (!userId) { setPsError('Not authenticated'); setPsSaving(false); return; }
+                          for (const stage of PS_DEFAULT_STAGES) {
+                            const label = (psLabels[stage.key] ?? '').trim();
+                            if (!label || label === stage.defaultLabel) {
+                              await supabase.from('pipeline_stage_labels').delete().eq('user_id', userId).eq('stage_key', stage.key);
+                            } else {
+                              await supabase.from('pipeline_stage_labels').upsert(
+                                { user_id: userId, stage_key: stage.key, label, updated_at: new Date().toISOString() },
+                                { onConflict: 'user_id,stage_key' }
+                              );
+                            }
+                          }
+                          setPsSaved(true);
+                          setTimeout(() => setPsSaved(false), 3000);
+                          onStageLabelsChange?.();
+                        } catch (err) {
+                          setPsError(err instanceof Error ? err.message : 'Failed to save labels');
+                        }
+                        setPsSaving(false);
+                      }}
+                      style={{ border: 'none', borderRadius: '10px', background: '#0f766e', color: '#fff', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', padding: '10px 20px', display: 'flex', alignItems: 'center', gap: '6px', opacity: psSaving ? 0.6 : 1 }}
+                    >
+                      {psSaving ? <Loader2 size={16} className="crm-spin" /> : <Save size={16} />} Save Labels
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setPsLabels({}); setPsSaved(false); }}
+                      style={{ padding: '10px 16px', border: '1px solid #e2e8f0', borderRadius: '10px', background: '#fff', color: '#64748b', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                    >
+                      <RotateCcw size={14} /> Reset to Defaults
+                    </button>
+                    {psSaved && <span style={{ fontSize: '0.82rem', color: '#16a34a', fontWeight: 600 }}>Saved!</span>}
+                  </div>
+                </>
               ) : activeTab === 'assignment' ? (
                 <>
                   <div className="crm-settings-card-header">
@@ -11226,6 +11216,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                           { label: 'Telegram Inbox', sub: showTelegramInbox ? 'Visible in sidebar' : 'Hidden from sidebar', active: showTelegramInbox, toggle: () => setShowTelegramInbox((v) => !v), icon: <MessageCircle size={18} />, iconBg: 'rgba(239,68,68,0.1)', iconColor: '#dc2626' },
                           { label: 'WhatsApp Inbox', sub: showWhatsAppInbox ? 'Visible in sidebar' : 'Hidden from sidebar', active: showWhatsAppInbox, toggle: () => setShowWhatsAppInbox((v) => !v), icon: <PhoneIcon size={18} />, iconBg: 'rgba(37,211,102,0.1)', iconColor: '#16a34a' },
                           { label: 'Email Inbox', sub: showEmailInbox ? 'Visible in inbox hub' : 'Hidden from inbox hub', active: showEmailInbox, toggle: () => setShowEmailInbox((v) => !v), icon: <Mail size={18} />, iconBg: 'rgba(37,99,235,0.1)', iconColor: '#2563eb' },
+                          { label: 'IB Leads', sub: showIbLeads ? 'Visible in sidebar' : 'Hidden from sidebar', active: showIbLeads, toggle: () => setShowIbLeads((v) => !v), icon: <Building2 size={18} />, iconBg: 'rgba(234,179,8,0.1)', iconColor: '#EAB308' },
                         ].map((item) => (
                           <div key={item.label} className="appearance-toggle-row">
                             <div className="appearance-toggle-info">
@@ -11247,7 +11238,46 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                     </div>
                   </div>
 
-                  {/* ===== Button Styling ===== */}
+                  {/* ===== Sidebar Sections Visibility ===== */}
+                  <div className="appearance-section" style={{ marginBottom: '20px' }}>
+                    <div className="appearance-section-head">
+                      <div className="appearance-section-icon" style={{ background: 'rgba(99,102,241,0.1)', color: '#6366F1' }}>
+                        <PanelLeft size={18} />
+                      </div>
+                      <h3 className="appearance-section-title">Sidebar Sections</h3>
+                    </div>
+                    <p className="appearance-section-desc">Show or hide entire sections from the CRM sidebar. Changes apply instantly and are saved per browser.</p>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      {[
+                        { key: 'main', label: 'Main', sub: 'Dashboard, Leads, IB Leads', icon: <LayoutGrid size={18} />, iconBg: 'rgba(99,102,241,0.1)', iconColor: '#6366F1' },
+                        { key: 'inbox', label: 'Inbox', sub: 'Shared Inbox (Telegram, WhatsApp, Email)', icon: <InboxIcon size={18} />, iconBg: 'rgba(15,118,110,0.1)', iconColor: '#0F766E' },
+                        { key: 'campaigns', label: 'Campaigns', sub: 'Broadcasts', icon: <Send size={18} />, iconBg: 'rgba(234,179,8,0.1)', iconColor: '#EAB308' },
+                        { key: 'analytics', label: 'Analytics', sub: 'Analytics dashboard', icon: <BarChart3 size={18} />, iconBg: 'rgba(59,130,246,0.1)', iconColor: '#3B82F6' },
+                        { key: 'tools', label: 'Tools', sub: 'Templates, Follow-Ups, Automations', icon: <Zap size={18} />, iconBg: 'rgba(245,158,11,0.1)', iconColor: '#F59E0B' },
+                        { key: 'pipeline', label: 'Pipeline', sub: 'Lead pipeline funnel visualization', icon: <Filter size={18} />, iconBg: 'rgba(139,92,246,0.1)', iconColor: '#8B5CF6' },
+                      ].map((item) => {
+                        const isVisible = sidebarSections?.[item.key] !== false;
+                        return (
+                          <div key={item.key} className="appearance-toggle-row">
+                            <div className="appearance-toggle-info">
+                              <div className="appearance-toggle-icon" style={{ background: item.iconBg, color: item.iconColor }}>{item.icon}</div>
+                              <div>
+                                <span className="appearance-toggle-label">{item.label}</span>
+                                <p className="appearance-toggle-sub">{isVisible ? 'Visible in sidebar' : 'Hidden from sidebar'}</p>
+                              </div>
+                            </div>
+                            <button type="button"
+                              onClick={() => onSidebarSectionChange?.(item.key, !isVisible)}
+                              className="appearance-toggle-switch"
+                              style={{ background: isVisible ? '#16a34a' : '#cbd5e1' }}
+                              aria-label={`Toggle ${item.label}`}>
+                              <span className="appearance-toggle-knob" style={{ left: isVisible ? '25px' : '3px' }} />
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
                   <div className="appearance-section" style={{ marginBottom: '20px' }}>
                     <div className="appearance-section-head">
                       <div className="appearance-section-icon" style={{ background: 'rgba(139,92,246,0.1)', color: '#8B5CF6' }}>
@@ -11484,7 +11514,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                   {/* Reset button */}
                   <div style={{ marginTop: '20px' }}>
                     <button type="button" className="appearance-reset-btn"
-                      onClick={() => { setBorderColor('#EAB308'); setBorderWidth(1.5); setBorderRadius(16); setBtnBgColor('#0F172A'); setBtnTextColor('#FFFFFF'); setBtnBorderColor('#EAB308'); setBtnBorderWidth(0); setBtnBorderRadius(10); setShowTelegramInbox(true); setShowWhatsAppInbox(true); }}>
+                      onClick={() => { setBorderColor('#EAB308'); setBorderWidth(1.5); setBorderRadius(16); setBtnBgColor('#0F172A'); setBtnTextColor('#FFFFFF'); setBtnBorderColor('#EAB308'); setBtnBorderWidth(0); setBtnBorderRadius(10); setShowTelegramInbox(true); setShowWhatsAppInbox(true); setShowIbLeads(true); }}>
                       <RefreshCw size={14} /> Reset to Defaults
                     </button>
                   </div>
@@ -12007,7 +12037,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
 }
 
 // ===================== Chat Profile Panel =====================
-function ChatProfilePanel({ convId, tableName, displayName, phoneNumber, profilePicUrl, lastMessageAt, onClose, onCallFromDrawer }: {
+function ChatProfilePanel({ convId, tableName, displayName, phoneNumber, profilePicUrl, lastMessageAt, onClose, onCallFromDrawer, stages }: {
   convId: string;
   tableName: 'chat_conversations' | 'wa_conversations';
   displayName: string;
@@ -12016,6 +12046,7 @@ function ChatProfilePanel({ convId, tableName, displayName, phoneNumber, profile
   lastMessageAt: string | null;
   onClose: () => void;
   onCallFromDrawer?: (number: string) => void;
+  stages: { key: LeadStatus; label: string; icon: React.ReactNode; color: string }[];
 }) {
   const [lead, setLead] = useState<Lead | null>(null);
   const [loading, setLoading] = useState(true);
@@ -12046,12 +12077,11 @@ function ChatProfilePanel({ convId, tableName, displayName, phoneNumber, profile
     (async () => {
       const { data: conv } = await supabase
         .from(tableName)
-        .select('lead_id, workspace_id')
+        .select('lead_id')
         .eq('id', convId)
         .maybeSingle();
 
       let lid = (conv as { lead_id?: string | null } | null)?.lead_id ?? null;
-      const convWorkspaceId = (conv as { workspace_id?: string | null } | null)?.workspace_id ?? null;
 
       if (!lid) {
         const { data: sessionData } = await supabase.auth.getSession();
@@ -12069,7 +12099,6 @@ function ChatProfilePanel({ convId, tableName, displayName, phoneNumber, profile
               tags: [],
               notes: '',
               fund_amount: null,
-              workspace_id: convWorkspaceId,
             })
             .select()
             .single();
@@ -12168,7 +12197,7 @@ function ChatProfilePanel({ convId, tableName, displayName, phoneNumber, profile
   }, [lead]);
 
   const status = lead?.status || 'new';
-  const stage = PIPELINE_STAGES.find((s) => s.key === status)!;
+  const stage = stages.find((s) => s.key === status)!;
   const colors = STAGE_COLORS[stage.color];
   const statusLabel = getLastSeenStatus(lastMessageAt);
 
@@ -12342,7 +12371,7 @@ function ChatProfilePanel({ convId, tableName, displayName, phoneNumber, profile
             <div className="crm-drawer-section">
               <label className="crm-drawer-label">MOVE TO STAGE</label>
               <div className="crm-status-grid">
-                {PIPELINE_STAGES.map((s) => {
+                {stages.map((s) => {
                   const sc = STAGE_COLORS[s.color];
                   const isActive = status === s.key;
                   return (
@@ -13669,6 +13698,7 @@ function ChatInbox({ session, onUnreadChange, refreshKey, onRefresh, onCall }: {
           lastMessageAt={selectedConversation.last_message_at}
           onClose={() => setShowProfilePanel(false)}
           onCallFromDrawer={onCall}
+          stages={DEFAULT_PIPELINE_STAGES}
         />
       )}
     </div>
@@ -15657,6 +15687,7 @@ function WhatsAppInbox({ session, onUnreadChange, refreshKey, onRefresh, onCall 
           lastMessageAt={selectedConversation.last_message_at}
           onClose={() => setShowProfilePanel(false)}
           onCallFromDrawer={onCall}
+          stages={DEFAULT_PIPELINE_STAGES}
         />
       )}
     </div>
