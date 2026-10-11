@@ -487,6 +487,7 @@ type NewLeadForm = {
   funding_readiness: 'now' | 'after_demo' | 'not_at_moment';
   status: LeadStatus;
   notes: string;
+  fund_amount: number | null;
 };
 
 const DEFAULT_STAGE_EVENTS: Record<LeadStatus, string> = {
@@ -1552,6 +1553,7 @@ export default function CrmDashboard({ session }: { session: Session }) {
         trading_product: form.trading_product,
         status: form.status,
         notes: form.notes,
+        fund_amount: form.fund_amount,
         custom_data: {
           service_interest: form.service_interest,
           referral_readiness: form.referral_readiness,
@@ -1642,6 +1644,7 @@ export default function CrmDashboard({ session }: { session: Session }) {
       trading_product: r.trading_product,
       status: r.status,
       notes: r.notes,
+      fund_amount: r.fund_amount,
       custom_data: {
         service_interest: r.service_interest,
         referral_readiness: r.referral_readiness,
@@ -1653,22 +1656,37 @@ export default function CrmDashboard({ session }: { session: Session }) {
       lead_source: 'Bulk Upload',
     }));
 
-    const { data, error: insertError } = await supabase
-      .from('submissions')
-      .insert(insertRows)
-      .select();
+    const BATCH_SIZE = 500;
+    let totalSuccess = 0;
+    let totalFailed = 0;
+    let lastError = '';
 
-    if (insertError) {
-      setError(insertError.message);
-      return { success: 0, failed: rows.length };
+    for (let i = 0; i < insertRows.length; i += BATCH_SIZE) {
+      const batch = insertRows.slice(i, i + BATCH_SIZE);
+      try {
+        const { data, error: insertError } = await supabase
+          .from('submissions')
+          .insert(batch)
+          .select();
+
+        if (insertError) {
+          lastError = insertError.message;
+          totalFailed += batch.length;
+        } else if (data) {
+          totalSuccess += data.length;
+          setLeads((prev) => [...(data as Lead[]), ...prev]);
+        }
+      } catch {
+        totalFailed += batch.length;
+      }
     }
 
-    if (data) {
-      setLeads((prev) => [...(data as Lead[]), ...prev]);
-      return { success: data.length, failed: 0 };
+    if (totalFailed > 0 && totalSuccess === 0) {
+      setError(lastError || 'Upload failed. Please check your data and try again.');
     }
-    return { success: 0, failed: rows.length };
-  }, []);
+
+    return { success: totalSuccess, failed: totalFailed };
+  }, [session.user.id]);
 
   const dateRange = useMemo((): { start: Date | null; end: Date | null } => {
     if (dateFilter === 'all') return { start: null, end: null };
@@ -4737,6 +4755,7 @@ function AddLeadModal({ onClose, onAdd, onMerge, existingLeads, stages }: {
     funding_readiness: 'now',
     status: 'new',
     notes: '',
+    fund_amount: null,
   });
   const [saving, setSaving] = useState(false);
   const [merging, setMerging] = useState(false);
@@ -4883,6 +4902,20 @@ function AddLeadModal({ onClose, onAdd, onMerge, existingLeads, stages }: {
               </select>
             </label>
             <label className="crm-add-lead-field">
+              <span>Fund Amount (USD, optional)</span>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={form.fund_amount ?? ''}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setForm((prev) => ({ ...prev, fund_amount: val === '' ? null : parseFloat(val) }));
+                }}
+                placeholder="e.g. 5000"
+              />
+            </label>
+            <label className="crm-add-lead-field">
               <span>Ready to open an account using our referral link? <em>*</em></span>
               <select required value={form.referral_readiness} onChange={(e) => update('referral_readiness', e.target.value)}>
                 <option value="yes">Yes</option>
@@ -5019,6 +5052,7 @@ type ParsedRow = {
   funding_readiness: 'now' | 'after_demo' | 'not_at_moment';
   status: LeadStatus;
   notes: string;
+  fund_amount: number | null;
   _valid: boolean;
   _error: string;
 };
@@ -5028,6 +5062,7 @@ const COLUMN_ALIASES: Record<string, string> = {
   'mobile_number': 'mobile_number', 'mobile': 'mobile_number', 'phone': 'mobile_number', 'mobile no': 'mobile_number', 'mobile number': 'mobile_number', 'contact': 'mobile_number', 'contact number': 'mobile_number',
   'email': 'email', 'email address': 'email', 'e-mail': 'email',
   'state': 'state', 'location': 'state', 'region': 'state',
+  'fund_amount': 'fund_amount', 'fund': 'fund_amount', 'funds': 'fund_amount', 'fund amount': 'fund_amount', 'investment amount': 'fund_amount', 'capital': 'fund_amount',
   'trading_product': 'trading_product', 'product': 'trading_product', 'trading product': 'trading_product', 'interested in': 'trading_product', 'service interest': 'service_interest', 'service': 'service_interest', 'referral readiness': 'referral_readiness', 'referral link': 'referral_readiness', 'funding readiness': 'funding_readiness', 'funding plan': 'funding_readiness',
   'status': 'status', 'lead status': 'status', 'stage': 'status',
   'notes': 'notes', 'note': 'notes', 'remarks': 'notes', 'comment': 'notes', 'comments': 'notes',
@@ -5052,50 +5087,7 @@ function normalizeKey(s: string): string {
   return s.trim().toLowerCase().replace(/\s+/g, ' ');
 }
 
-function parseRow(raw: Record<string, unknown>): ParsedRow {
-  const mapped: Record<string, string> = {};
-  for (const [key, val] of Object.entries(raw)) {
-    const norm = normalizeKey(key);
-    const canonical = COLUMN_ALIASES[norm];
-    if (canonical) {
-      mapped[canonical] = String(val ?? '').trim();
-    }
-  }
 
-  const full_name = mapped['full_name'] || '';
-  const mobile_number = mapped['mobile_number'] || '';
-  const email = mapped['email'] || '';
-  const state = mapped['state'] || '';
-  const rawProduct = normalizeKey(mapped['trading_product'] || 'algo');
-  const rawStatus = normalizeKey(mapped['status'] || 'new');
-  const notes = mapped['notes'] || '';
-  const rawReferral = normalizeKey(mapped['referral_readiness'] || 'yes');
-  const rawFunding = normalizeKey(mapped['funding_readiness'] || 'now');
-
-  const trading_product = PRODUCT_ALIASES[rawProduct] || 'algo';
-  const service_interest = trading_product === 'both' ? 'both' : trading_product === 'algo' ? 'algo' : 'indicator';
-  const referral_readiness = rawReferral.includes('more') ? 'need_more_information' : rawReferral === 'no' ? 'no' : 'yes';
-  const funding_readiness = rawFunding.includes('demo') ? 'after_demo' : rawFunding.includes('not') ? 'not_at_moment' : 'now';
-  const status = STATUS_ALIASES[rawStatus] || 'new';
-  const fund_amount = mapped['fund_amount'] || '';
-
-  const errors: string[] = [];
-  if (!full_name) errors.push('Name missing');
-  if (!mobile_number) errors.push('Mobile missing');
-  if (!email) errors.push('Email missing');
-  if (!state) errors.push('State missing');
-  if (trading_product === 'algo' || trading_product === 'both') {
-    const fundNum = parseFloat(fund_amount);
-    if (!fund_amount) errors.push('Fund amount missing (required for Algo)');
-    else if (isNaN(fundNum) || fundNum < 500) errors.push('Fund amount must be >= 500');
-  }
-
-  return {
-    full_name, mobile_number, email, state, trading_product, service_interest, referral_readiness, funding_readiness, status, notes, fund_amount,
-    _valid: errors.length === 0,
-    _error: errors.join(', '),
- };
-}
 
 const TARGET_FIELDS: { key: string; label: string; required: boolean }[] = [
   { key: 'full_name', label: 'Full Name', required: true },
@@ -5107,8 +5099,9 @@ const TARGET_FIELDS: { key: string; label: string; required: boolean }[] = [
   { key: 'referral_readiness', label: 'Referral Readiness', required: false },
   { key: 'funding_readiness', label: 'Funding Readiness', required: false },
   { key: 'status', label: 'Status', required: false },
+  { key: 'fund_amount', label: 'Fund Amount', required: false },
   { key: 'notes', label: 'Notes', required: false },
-];
+]
 
 function autoSuggestMapping(headers: string[]): Record<string, string> {
   const mapping: Record<string, string> = {};
@@ -5148,13 +5141,23 @@ function parseRowWithMapping(raw: Record<string, unknown>, mapping: Record<strin
   const service_interest = trading_product === 'both' ? 'both' : trading_product === 'algo' ? 'algo' : 'indicator';
   const referral_readiness = rawReferral.includes('more') ? 'need_more_information' : rawReferral === 'no' ? 'no' : 'yes';
   const funding_readiness = rawFunding.includes('demo') ? 'after_demo' : rawFunding.includes('not') ? 'not_at_moment' : 'now';
+  const rawFund = (mapped['fund_amount'] || '').trim();
+  let fund_amount: number | null = null;
   const errors: string[] = [];
   if (!full_name) errors.push('Name missing');
   if (!mobile_number) errors.push('Mobile missing');
   if (!email) errors.push('Email missing');
   if (!state) errors.push('State missing');
+  if (rawFund) {
+    const fundNum = parseFloat(rawFund.replace(/[$,\s]/g, ''));
+    if (!isNaN(fundNum) && fundNum >= 0) {
+      fund_amount = fundNum;
+    } else {
+      errors.push('Fund amount must be a number');
+    }
+  }
   return {
-    full_name, mobile_number, email, state, trading_product, service_interest, referral_readiness, funding_readiness, status, notes,
+    full_name, mobile_number, email, state, trading_product, service_interest, referral_readiness, funding_readiness, status, notes, fund_amount,
     _valid: errors.length === 0,
     _error: errors.join(', '),
   };
@@ -5233,10 +5236,10 @@ function BulkUploadModal({ onClose, onUpload }: {
 
   const downloadTemplate = () => {
     const template = [
-      { 'Full Name': 'Rahul Sharma', 'Mobile Number': '+91 98765 43210', Email: 'rahul@example.com', State: 'Maharashtra', 'Service Interest': 'Both Services', 'Referral Readiness': 'Yes', 'Funding Readiness': 'Now', Status: 'New', Notes: 'Interested in both services' },
-      { 'Full Name': 'Priya Patel', 'Mobile Number': '+91 87654 32109', Email: 'priya@example.com', State: 'Gujarat', 'Service Interest': 'TradingView Premium', 'Referral Readiness': 'Need more information', 'Funding Readiness': 'After demo', Status: 'Interested', Notes: 'Wants to see demo first' },
-      { 'Full Name': 'Amit Singh', 'Mobile Number': '+91 99887 76655', Email: 'amit@example.com', State: 'Delhi', 'Service Interest': 'Trading Algo', 'Referral Readiness': 'Yes', 'Funding Readiness': 'Now', Status: 'Called - Responded', Notes: 'Ready to start immediately' },
-      { 'Full Name': 'Sneha Reddy', 'Mobile Number': '+91 90123 45678', Email: 'sneha@example.com', State: 'Telangana', 'Service Interest': 'Trading Algo', 'Referral Readiness': 'No', 'Funding Readiness': 'Not at the moment', Status: 'Not Interested', Notes: 'Will revisit next quarter' },
+      { 'Full Name': 'Rahul Sharma', 'Mobile Number': '+91 98765 43210', Email: 'rahul@example.com', State: 'Maharashtra', 'Service Interest': 'Both Services', 'Referral Readiness': 'Yes', 'Funding Readiness': 'Now', 'Fund Amount': '5000', Status: 'New', Notes: 'Interested in both services' },
+      { 'Full Name': 'Priya Patel', 'Mobile Number': '+91 87654 32109', Email: 'priya@example.com', State: 'Gujarat', 'Service Interest': 'TradingView Premium', 'Referral Readiness': 'Need more information', 'Funding Readiness': 'After demo', 'Fund Amount': '', Status: 'Interested', Notes: 'Wants to see demo first' },
+      { 'Full Name': 'Amit Singh', 'Mobile Number': '+91 99887 76655', Email: 'amit@example.com', State: 'Delhi', 'Service Interest': 'Trading Algo', 'Referral Readiness': 'Yes', 'Funding Readiness': 'Now', 'Fund Amount': '10000', Status: 'Called - Responded', Notes: 'Ready to start immediately' },
+      { 'Full Name': 'Sneha Reddy', 'Mobile Number': '+91 90123 45678', Email: 'sneha@example.com', State: 'Telangana', 'Service Interest': 'Trading Algo', 'Referral Readiness': 'No', 'Funding Readiness': 'Not at the moment', 'Fund Amount': '500', Status: 'Not Interested', Notes: 'Will revisit next quarter' },
     ];
     const ws = XLSX.utils.json_to_sheet(template);
     const wb = XLSX.utils.book_new();
@@ -5280,10 +5283,14 @@ function BulkUploadModal({ onClose, onUpload }: {
       funding_readiness: r.funding_readiness,
       status: r.status,
       notes: r.notes,
+      fund_amount: r.fund_amount,
     }));
     const result = await onUpload(forms);
     setUploadResult(result);
     setUploading(false);
+    if (result.failed > 0 && result.success === 0) {
+      setError('Upload failed. Please check your data and try again.');
+    }
   };
 
   const handleReset = () => {
@@ -5371,6 +5378,7 @@ function BulkUploadModal({ onClose, onUpload }: {
                   <span className="crm-bulk-col-tag">Mobile Number *</span>
                   <span className="crm-bulk-col-tag">Email *</span>
                   <span className="crm-bulk-col-tag">State *</span>
+                  <span className="crm-bulk-col-tag">Fund Amount</span>
                   <span className="crm-bulk-col-tag">Service Interest</span>
                   <span className="crm-bulk-col-tag">Referral Readiness</span>
                   <span className="crm-bulk-col-tag">Funding Readiness</span>
@@ -5454,6 +5462,7 @@ function BulkUploadModal({ onClose, onUpload }: {
                       <th>Email</th>
                       <th>State</th>
                       <th>Product</th>
+                      <th>Fund $</th>
                       <th>Service</th>
                       <th>Referral</th>
                       <th>Funding</th>
@@ -5471,10 +5480,11 @@ function BulkUploadModal({ onClose, onUpload }: {
                         <td>{row.email || <span className="crm-bulk-missing">—</span>}</td>
                         <td>{row.state || <span className="crm-bulk-missing">—</span>}</td>
                         <td>{row.trading_product === 'algo' ? 'Algo' : row.trading_product === 'both' ? 'Both' : 'TV Premium'}</td>
+                        <td>{row.fund_amount != null ? `${row.fund_amount.toLocaleString('en-US')}` : <span className="crm-bulk-missing">—</span>}</td>
                         <td>{SERVICE_LABELS[row.service_interest] || row.service_interest || <span className="crm-bulk-missing">—</span>}</td>
                         <td className={`crm-bulk-qual-cell crm-bulk-qual-${readinessTone(row.referral_readiness)}`}>{REFERRAL_LABELS[row.referral_readiness] || row.referral_readiness}</td>
                         <td className={`crm-bulk-qual-cell crm-bulk-qual-${readinessTone(row.funding_readiness)}`}>{FUNDING_LABELS[row.funding_readiness] || row.funding_readiness}</td>
-                        <td>{pipelineStages.find((s) => s.key === row.status)?.label || row.status}</td>
+                        <td>{DEFAULT_PIPELINE_STAGES.find((s) => s.key === row.status)?.label || row.status}</td>
                         <td className="crm-bulk-notes-cell">{row.notes || '—'}</td>
                         <td>
                           {row._valid
