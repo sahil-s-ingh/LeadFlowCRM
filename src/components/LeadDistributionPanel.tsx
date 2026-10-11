@@ -264,11 +264,11 @@ export default function LeadDistributionPanel({ session }: Props) {
 
       {/* Agent workload cards */}
       <div style={{ marginBottom: '20px' }}>
-        <div style={{ fontSize: '0.78rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#64748b', marginBottom: '10px' }}>
+        <div style={{ fontSize: '0.78rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-dark)', marginBottom: '10px' }}>
           Team Workload
         </div>
         {activeMembers.length === 0 ? (
-          <div style={{ padding: '20px', textAlign: 'center', background: '#f8fafc', borderRadius: '10px', border: '1px dashed #e2e8f0', color: '#94a3b8', fontSize: '0.82rem' }}>
+          <div style={{ padding: '20px', textAlign: 'center', background: 'var(--bg-light)', borderRadius: '10px', border: '1px dashed var(--border-subtle)', color: 'var(--text-dark)', fontSize: '0.82rem' }}>
             <Users size={28} style={{ marginBottom: '6px', opacity: 0.3 }} />
             <p>No active team members. Invite agents from the Team tab first.</p>
           </div>
@@ -279,21 +279,21 @@ export default function LeadDistributionPanel({ session }: Props) {
               const maxCount = Math.max(...Array.from(leadCounts.values()), 1);
               const pct = Math.round((count / maxCount) * 100);
               return (
-                <div key={m.id} style={{ padding: '14px', background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                <div key={m.id} style={{ padding: '14px', background: 'var(--bg-light)', borderRadius: '10px', border: '1px solid var(--border-subtle)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                    <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'linear-gradient(135deg, #0f766e, #14b8a6)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: '0.8rem', flexShrink: 0 }}>
+                    <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'linear-gradient(135deg, #0f766e, #14b8a6)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--bg-card)', fontWeight: 700, fontSize: '0.8rem', flexShrink: 0 }}>
                       {(m.full_name || m.email)[0]?.toUpperCase()}
                     </div>
                     <div style={{ minWidth: 0, flex: 1 }}>
                       <strong style={{ fontSize: '0.82rem', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.full_name || m.email}</strong>
-                      <span style={{ fontSize: '0.68rem', color: '#94a3b8', textTransform: 'capitalize' }}>{m.role}</span>
+                      <span style={{ fontSize: '0.68rem', color: 'var(--text-dark)', textTransform: 'capitalize' }}>{m.role}</span>
                     </div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', marginBottom: '6px' }}>
                     <span style={{ fontSize: '1.4rem', fontWeight: 800, color: '#0f766e' }}>{count}</span>
-                    <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>leads</span>
+                    <span style={{ fontSize: '0.72rem', color: 'var(--text-dark)' }}>leads</span>
                   </div>
-                  <div style={{ height: '5px', borderRadius: '3px', background: '#e2e8f0', overflow: 'hidden' }}>
+                  <div style={{ height: '5px', borderRadius: '3px', background: 'var(--border-subtle)', overflow: 'hidden' }}>
                     <div style={{ width: `${pct}%`, height: '100%', background: 'linear-gradient(90deg, #0f766e, #14b8a6)', borderRadius: '3px', transition: 'width 0.3s' }} />
                   </div>
                 </div>
@@ -306,24 +306,24 @@ export default function LeadDistributionPanel({ session }: Props) {
       {/* Filters bar */}
       <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '14px', alignItems: 'center' }}>
         <div style={{ position: 'relative', flex: '1', minWidth: '200px' }}>
-          <Search size={16} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+          <Search size={16} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dark)' }} />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by name, email, or phone..."
-            style={{ width: '100%', padding: '9px 12px 9px 34px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '0.83rem', outline: 'none' }}
+            style={{ width: '100%', padding: '9px 12px 9px 34px', border: '1px solid var(--border-subtle)', borderRadius: '8px', fontSize: '0.83rem', outline: 'none' }}
           />
         </div>
-        <select value={filterAssignment} onChange={(e) => setFilterAssignment(e.target.value as 'unassigned' | 'all')} style={{ padding: '9px 12px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '0.83rem', cursor: 'pointer', background: '#fff' }}>
+        <select value={filterAssignment} onChange={(e) => setFilterAssignment(e.target.value as 'unassigned' | 'all')} style={{ padding: '9px 12px', border: '1px solid var(--border-subtle)', borderRadius: '8px', fontSize: '0.83rem', cursor: 'pointer', background: 'var(--bg-card)' }}>
           <option value="unassigned">Unassigned only</option>
           <option value="all">All leads</option>
         </select>
-        <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} style={{ padding: '9px 12px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '0.83rem', cursor: 'pointer', background: '#fff' }}>
+        <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} style={{ padding: '9px 12px', border: '1px solid var(--border-subtle)', borderRadius: '8px', fontSize: '0.83rem', cursor: 'pointer', background: 'var(--bg-card)' }}>
           <option value="all">All statuses</option>
           {Object.entries(STATUS_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
         </select>
-        <select value={filterProduct} onChange={(e) => setFilterProduct(e.target.value)} style={{ padding: '9px 12px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '0.83rem', cursor: 'pointer', background: '#fff' }}>
+        <select value={filterProduct} onChange={(e) => setFilterProduct(e.target.value)} style={{ padding: '9px 12px', border: '1px solid var(--border-subtle)', borderRadius: '8px', fontSize: '0.83rem', cursor: 'pointer', background: 'var(--bg-card)' }}>
           <option value="all">All products</option>
           {Object.entries(PRODUCT_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
         </select>
@@ -333,32 +333,32 @@ export default function LeadDistributionPanel({ session }: Props) {
       {selectedIds.size > 0 && (
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center', padding: '12px 16px', background: 'rgba(15,118,110,0.06)', border: '1px solid rgba(15,118,110,0.2)', borderRadius: '10px', marginBottom: '14px' }}>
           <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#0f766e' }}>{selectedIds.size} selected</span>
-          <button onClick={clearSelection} style={{ fontSize: '0.75rem', color: '#64748b', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>Clear</button>
-          <div style={{ width: '1px', height: '24px', background: '#e2e8f0' }} />
-          <select value={bulkAssignee} onChange={(e) => setBulkAssignee(e.target.value)} style={{ padding: '7px 12px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '0.82rem', cursor: 'pointer', background: '#fff' }}>
+          <button onClick={clearSelection} style={{ fontSize: '0.75rem', color: 'var(--text-dark)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>Clear</button>
+          <div style={{ width: '1px', height: '24px', background: 'var(--border-subtle)' }} />
+          <select value={bulkAssignee} onChange={(e) => setBulkAssignee(e.target.value)} style={{ padding: '7px 12px', border: '1px solid var(--border-subtle)', borderRadius: '8px', fontSize: '0.82rem', cursor: 'pointer', background: 'var(--bg-card)' }}>
             <option value="">Assign to...</option>
             {activeMembers.map((m) => <option key={m.id} value={m.id}>{m.full_name || m.email}</option>)}
           </select>
           <button
             onClick={bulkAssign}
             disabled={!bulkAssignee || distributing}
-            style={{ padding: '8px 16px', border: 'none', borderRadius: '8px', background: (!bulkAssignee || distributing) ? '#cbd5e1' : '#0f766e', color: '#fff', fontSize: '0.82rem', fontWeight: 600, cursor: (!bulkAssignee || distributing) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+            style={{ padding: '8px 16px', border: 'none', borderRadius: '8px', background: (!bulkAssignee || distributing) ? 'var(--border-subtle)' : '#0f766e', color: 'var(--bg-card)', fontSize: '0.82rem', fontWeight: 600, cursor: (!bulkAssignee || distributing) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
           >
             {distributing ? <Loader2 size={15} className="crm-spin" /> : <UserPlus size={15} />}
             Assign
           </button>
-          <div style={{ width: '1px', height: '24px', background: '#e2e8f0' }} />
+          <div style={{ width: '1px', height: '24px', background: 'var(--border-subtle)' }} />
           <button
             onClick={() => autoDistribute('round_robin')}
             disabled={distributing || activeMembers.length === 0}
-            style={{ padding: '8px 16px', border: '1px solid rgba(15,118,110,0.3)', borderRadius: '8px', background: '#fff', color: '#0f766e', fontSize: '0.82rem', fontWeight: 600, cursor: distributing ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+            style={{ padding: '8px 16px', border: '1px solid rgba(15,118,110,0.3)', borderRadius: '8px', background: 'var(--bg-card)', color: '#0f766e', fontSize: '0.82rem', fontWeight: 600, cursor: distributing ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
           >
             <Shuffle size={15} /> Round Robin
           </button>
           <button
             onClick={() => autoDistribute('workload')}
             disabled={distributing || activeMembers.length === 0}
-            style={{ padding: '8px 16px', border: '1px solid rgba(15,118,110,0.3)', borderRadius: '8px', background: '#fff', color: '#0f766e', fontSize: '0.82rem', fontWeight: 600, cursor: distributing ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+            style={{ padding: '8px 16px', border: '1px solid rgba(15,118,110,0.3)', borderRadius: '8px', background: 'var(--bg-card)', color: '#0f766e', fontSize: '0.82rem', fontWeight: 600, cursor: distributing ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
           >
             <Filter size={15} /> Fewest Leads
           </button>
@@ -366,9 +366,9 @@ export default function LeadDistributionPanel({ session }: Props) {
       )}
 
       {/* Lead list */}
-      <div style={{ border: '1px solid #e2e8f0', borderRadius: '10px', overflow: 'hidden' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 16px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
-          <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#475569' }}>
+      <div style={{ border: '1px solid var(--border-subtle)', borderRadius: '10px', overflow: 'hidden' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 16px', background: 'var(--bg-light)', borderBottom: '1px solid var(--border-subtle)' }}>
+          <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-muted)' }}>
             {filteredLeads.length} lead{filteredLeads.length !== 1 ? 's' : ''}
             {filterAssignment === 'unassigned' && ` · ${unassignedCount} unassigned total`}
           </span>
@@ -380,7 +380,7 @@ export default function LeadDistributionPanel({ session }: Props) {
         </div>
 
         {filteredLeads.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '40px', color: '#94a3b8', fontSize: '0.85rem' }}>
+          <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-dark)', fontSize: '0.85rem' }}>
             <Users size={32} style={{ marginBottom: '8px', opacity: 0.3 }} />
             <p>{search || filterStatus !== 'all' || filterProduct !== 'all' ? 'No leads match your filters.' : 'No leads to distribute.'}</p>
           </div>
@@ -393,7 +393,7 @@ export default function LeadDistributionPanel({ session }: Props) {
                   key={lead.id}
                   style={{
                     display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px',
-                    borderBottom: '1px solid #f1f5f9', background: isSelected ? 'rgba(15,118,110,0.04)' : '#fff',
+                    borderBottom: '1px solid var(--border-subtle)', background: isSelected ? 'rgba(15,118,110,0.04)' : 'var(--bg-card)',
                     transition: 'background 0.15s',
                   }}
                 >
@@ -408,13 +408,13 @@ export default function LeadDistributionPanel({ session }: Props) {
                       </span>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px' }}>
-                      <span style={{ fontSize: '0.72rem', color: '#94a3b8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{lead.email}</span>
-                      <span style={{ fontSize: '0.62rem', color: '#94a3b8' }}>· {PRODUCT_LABELS[lead.trading_product] || lead.trading_product}</span>
+                      <span style={{ fontSize: '0.72rem', color: 'var(--text-dark)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{lead.email}</span>
+                      <span style={{ fontSize: '0.62rem', color: 'var(--text-dark)' }}>· {PRODUCT_LABELS[lead.trading_product] || lead.trading_product}</span>
                     </div>
                   </div>
                   <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
                     {lead.assigned_to && (
-                      <span style={{ fontSize: '0.72rem', fontWeight: 600, color: '#64748b', maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <span style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-dark)', maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {memberName(lead.assigned_to)}
                       </span>
                     )}
@@ -423,16 +423,16 @@ export default function LeadDistributionPanel({ session }: Props) {
                       onChange={(e) => assignOne(lead.id, e.target.value)}
                       disabled={assigning}
                       style={{
-                        padding: '5px 10px', border: '1px solid #e2e8f0', borderRadius: '6px',
-                        fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', background: '#fff',
-                        color: lead.assigned_to ? '#0f766e' : '#94a3b8',
+                        padding: '5px 10px', border: '1px solid var(--border-subtle)', borderRadius: '6px',
+                        fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', background: 'var(--bg-card)',
+                        color: lead.assigned_to ? '#0f766e' : 'var(--text-dark)',
                         outline: 'none',
                       }}
                     >
                       <option value="">{lead.assigned_to ? 'Unassign' : 'Assign to...'}</option>
                       {activeMembers.map((m) => <option key={m.id} value={m.id}>{m.full_name || m.email}</option>)}
                     </select>
-                    <ArrowRight size={14} style={{ color: '#cbd5e1' }} />
+                    <ArrowRight size={14} style={{ color: 'var(--text-dark)' }} />
                   </div>
                 </div>
               );

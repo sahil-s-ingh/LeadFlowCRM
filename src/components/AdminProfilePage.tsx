@@ -138,17 +138,17 @@ export default function AdminProfilePage({
 
   if (loading) {
     return (
-      <div style={{ minHeight: '100vh', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ minHeight: '100vh', background: 'var(--bg-light)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div style={{ textAlign: 'center' }}>
           <Loader2 size={32} className="crm-spin" style={{ color: '#0f766e' }} />
-          <p style={{ marginTop: '12px', color: '#64748b', fontSize: '0.88rem' }}>Loading profile...</p>
+          <p style={{ marginTop: '12px', color: 'var(--text-dark)', fontSize: '0.88rem' }}>Loading profile...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f8fafc' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg-light)' }}>
       {/* Header */}
       <div style={{
         background: 'linear-gradient(135deg, #0f172a, #0f766e)',
@@ -166,7 +166,7 @@ export default function AdminProfilePage({
             style={{
               width: '40px', height: '40px', borderRadius: '10px',
               border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.1)',
-              color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: 'var(--bg-card)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}
           >
             <ArrowLeft size={20} />
@@ -176,10 +176,10 @@ export default function AdminProfilePage({
             background: 'rgba(255,255,255,0.15)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
-            <Shield size={24} style={{ color: '#fff' }} />
+            <Shield size={24} style={{ color: 'var(--bg-card)' }} />
           </div>
           <div>
-            <h1 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, color: '#fff', letterSpacing: '-0.02em' }}>My Profile</h1>
+            <h1 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, color: 'var(--bg-card)', letterSpacing: '-0.02em' }}>My Profile</h1>
             <p style={{ margin: 0, fontSize: '0.78rem', color: 'rgba(255,255,255,0.7)' }}>Super Admin Account Settings</p>
           </div>
         </div>
@@ -201,7 +201,7 @@ export default function AdminProfilePage({
               onClick={() => setEditing(true)}
               style={{
                 padding: '8px 14px', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '8px',
-                background: 'rgba(255,255,255,0.1)', color: '#fff', fontSize: '0.8rem',
+                background: 'rgba(255,255,255,0.1)', color: 'var(--bg-card)', fontSize: '0.8rem',
                 fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px',
               }}
             >
@@ -214,7 +214,7 @@ export default function AdminProfilePage({
                 onClick={() => { setEditing(false); loadProfile(); }}
                 style={{
                   padding: '8px 14px', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '8px',
-                  background: 'rgba(255,255,255,0.05)', color: '#fff', fontSize: '0.8rem',
+                  background: 'rgba(255,255,255,0.05)', color: 'var(--bg-card)', fontSize: '0.8rem',
                   fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px',
                 }}
               >
@@ -226,7 +226,7 @@ export default function AdminProfilePage({
                 disabled={saving}
                 style={{
                   padding: '8px 14px', border: 'none', borderRadius: '8px',
-                  background: saving ? 'rgba(255,255,255,0.15)' : '#0f766e', color: '#fff', fontSize: '0.8rem',
+                  background: saving ? 'rgba(255,255,255,0.15)' : '#0f766e', color: 'var(--bg-card)', fontSize: '0.8rem',
                   fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px',
                 }}
               >
@@ -240,7 +240,7 @@ export default function AdminProfilePage({
       <div style={{ maxWidth: '800px', margin: '0 auto', padding: '28px 24px' }}>
         {error && (
           <div style={{
-            padding: '14px 16px', background: '#fef2f2', border: '1px solid #fecaca',
+            padding: '14px 16px', background: 'var(--bg-card)', border: '1px solid #fecaca',
             borderRadius: '12px', fontSize: '0.85rem', color: '#dc2626', marginBottom: '20px',
           }}>
             {error}
@@ -249,7 +249,7 @@ export default function AdminProfilePage({
 
         {/* Profile Card */}
         <div style={{
-          background: '#fff', borderRadius: '16px', border: '1px solid #e2e8f0',
+          background: 'var(--bg-card)', borderRadius: '16px', border: '1px solid var(--border-subtle)',
           overflow: 'hidden', marginBottom: '20px',
         }}>
           {/* Banner */}
@@ -283,21 +283,21 @@ export default function AdminProfilePage({
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   boxShadow: '0 4px 12px rgba(0,0,0,0.1)', flexShrink: 0,
                 }}>
-                  <span style={{ fontSize: '2rem', fontWeight: 800, color: '#fff' }}>
+                  <span style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--bg-card)' }}>
                     {profile ? initials(profile.email) : '?'}
                   </span>
                 </div>
               )}
 
               <div style={{ paddingBottom: '8px', flex: 1, minWidth: '200px' }}>
-                <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800, color: '#0f172a' }}>
+                <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800, color: 'var(--text-main)' }}>
                   {profile?.full_name || 'Super Admin'}
                 </h2>
-                <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: '#64748b' }}>
+                <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: 'var(--text-dark)' }}>
                   {profile?.email}
                 </p>
                 {profile?.company_name && (
-                  <p style={{ margin: '4px 0 0', fontSize: '0.8rem', color: '#94a3b8' }}>
+                  <p style={{ margin: '4px 0 0', fontSize: '0.8rem', color: 'var(--text-dark)' }}>
                     {profile.company_name}
                   </p>
                 )}
@@ -306,8 +306,8 @@ export default function AdminProfilePage({
 
             {/* Bio */}
             {profile?.bio && !editing && (
-              <div style={{ marginTop: '20px', padding: '16px', background: '#f8fafc', borderRadius: '12px' }}>
-                <p style={{ margin: 0, fontSize: '0.85rem', color: '#475569', lineHeight: 1.6 }}>
+              <div style={{ marginTop: '20px', padding: '16px', background: 'var(--bg-light)', borderRadius: '12px' }}>
+                <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>
                   {profile.bio}
                 </p>
               </div>
@@ -412,13 +412,13 @@ export default function AdminProfilePage({
                 placeholder="Tell us about yourself..."
                 rows={4}
                 style={{
-                  width: '100%', padding: '12px', border: '2px solid #e2e8f0',
+                  width: '100%', padding: '12px', border: '2px solid var(--border-subtle)',
                   borderRadius: '10px', fontSize: '0.85rem', outline: 'none',
                   boxSizing: 'border-box', fontFamily: 'inherit', resize: 'vertical',
                   transition: 'border-color 0.2s',
                 }}
                 onFocus={(e) => { e.target.style.borderColor = '#0f766e'; }}
-                onBlur={(e) => { e.target.style.borderColor = '#e2e8f0'; }}
+                onBlur={(e) => { e.target.style.borderColor = 'var(--border-subtle)'; }}
               />
               <div style={{ marginTop: '12px' }}>
                 <label style={labelStyle}>Avatar URL</label>
@@ -429,16 +429,16 @@ export default function AdminProfilePage({
                   placeholder="https://example.com/photo.jpg"
                   style={inputStyle}
                   onFocus={(e) => { e.target.style.borderColor = '#0f766e'; }}
-                  onBlur={(e) => { e.target.style.borderColor = '#e2e8f0'; }}
+                  onBlur={(e) => { e.target.style.borderColor = 'var(--border-subtle)'; }}
                 />
               </div>
             </div>
           ) : profile?.bio ? (
-            <div style={{ padding: '16px', background: '#f8fafc', borderRadius: '12px' }}>
-              <p style={{ margin: 0, fontSize: '0.85rem', color: '#475569', lineHeight: 1.6 }}>{profile.bio}</p>
+            <div style={{ padding: '16px', background: 'var(--bg-light)', borderRadius: '12px' }}>
+              <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>{profile.bio}</p>
             </div>
           ) : (
-            <p style={{ fontSize: '0.85rem', color: '#94a3b8', margin: 0 }}>No bio added yet. Click Edit Profile to add one.</p>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-dark)', margin: 0 }}>No bio added yet. Click Edit Profile to add one.</p>
           )}
         </Section>
 
@@ -457,11 +457,11 @@ export default function AdminProfilePage({
 }
 
 const labelStyle: React.CSSProperties = {
-  display: 'block', fontSize: '0.78rem', fontWeight: 600, color: '#334155', marginBottom: '6px',
+  display: 'block', fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '6px',
 };
 
 const inputStyle: React.CSSProperties = {
-  width: '100%', padding: '12px', border: '2px solid #e2e8f0',
+  width: '100%', padding: '12px', border: '2px solid var(--border-subtle)',
   borderRadius: '10px', fontSize: '0.85rem', outline: 'none',
   boxSizing: 'border-box', transition: 'border-color 0.2s',
 };
@@ -469,7 +469,7 @@ const inputStyle: React.CSSProperties = {
 function Section({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
   return (
     <div style={{
-      background: '#fff', borderRadius: '16px', border: '1px solid #e2e8f0',
+      background: 'var(--bg-card)', borderRadius: '16px', border: '1px solid var(--border-subtle)',
       padding: '24px', marginBottom: '20px',
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
@@ -480,7 +480,7 @@ function Section({ title, icon, children }: { title: string; icon: React.ReactNo
         }}>
           {icon}
         </div>
-        <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 700, color: '#0f172a' }}>{title}</h3>
+        <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 700, color: 'var(--text-main)' }}>{title}</h3>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
         {children}
@@ -505,7 +505,7 @@ function Field({
       {editing ? (
         <div style={{ position: 'relative' }}>
           {icon && (
-            <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }}>
+            <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dark)' }}>
               {icon}
             </span>
           )}
@@ -516,17 +516,17 @@ function Field({
             placeholder={`Enter ${label.toLowerCase()}`}
             style={icon ? { ...inputStyle, paddingLeft: '36px' } : inputStyle}
             onFocus={(e) => { e.target.style.borderColor = '#0f766e'; }}
-            onBlur={(e) => { e.target.style.borderColor = '#e2e8f0'; }}
+            onBlur={(e) => { e.target.style.borderColor = 'var(--border-subtle)'; }}
           />
         </div>
       ) : (
         <div style={{
-          padding: '12px 14px', background: value ? '#f8fafc' : '#fff',
-          borderRadius: '10px', border: '1px solid #e2e8f0',
-          fontSize: '0.85rem', color: value ? '#1e293b' : '#cbd5e1',
+          padding: '12px 14px', background: value ? '#f8fafc' : 'var(--bg-card)',
+          borderRadius: '10px', border: '1px solid var(--border-subtle)',
+          fontSize: '0.85rem', color: value ? '#1e293b' : 'var(--text-dark)',
           display: 'flex', alignItems: 'center', gap: '8px',
         }}>
-          {icon && <span style={{ color: '#94a3b8' }}>{icon}</span>}
+          {icon && <span style={{ color: 'var(--text-dark)' }}>{icon}</span>}
           {value || `Not set`}
         </div>
       )}
@@ -537,7 +537,7 @@ function Field({
 function InfoItem({ label, value, badge }: { label: string; value: string; badge?: boolean }) {
   return (
     <div>
-      <div style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '4px' }}>
+      <div style={{ fontSize: '0.72rem', color: 'var(--text-dark)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '4px' }}>
         {label}
       </div>
       {badge ? (
@@ -550,7 +550,7 @@ function InfoItem({ label, value, badge }: { label: string; value: string; badge
           <Shield size={12} /> {value}
         </span>
       ) : (
-        <div style={{ fontSize: '0.85rem', color: '#1e293b', fontWeight: 600 }}>{value}</div>
+        <div style={{ fontSize: '0.85rem', color: 'var(--text-main)', fontWeight: 600 }}>{value}</div>
       )}
     </div>
   );

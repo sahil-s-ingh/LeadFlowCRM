@@ -991,7 +991,7 @@ export default function IBLeadsPage({ session, onBack, onCall }: { session: Sess
                               <Building2 size={13} /> {lead.broker_name}
                             </span>
                           ) : (
-                            <span style={{ color: '#94a3b8', fontSize: '0.82rem' }}>—</span>
+                            <span style={{ color: 'var(--text-dark)', fontSize: '0.82rem' }}>—</span>
                           )}
                         </td>
                         <td>
@@ -1007,7 +1007,7 @@ export default function IBLeadsPage({ session, onBack, onCall }: { session: Sess
                         <td>
                           {(() => {
                             const score = lead.lead_score ?? 0;
-                            const scoreColor = score >= 60 ? '#16a34a' : score >= 30 ? '#f59e0b' : '#94a3b8';
+                            const scoreColor = score >= 60 ? '#16a34a' : score >= 30 ? '#f59e0b' : 'var(--text-dark)';
                             const scoreBg = score >= 60 ? 'rgba(22,163,74,0.1)' : score >= 30 ? 'rgba(245,158,11,0.1)' : 'rgba(148,163,184,0.1)';
                             const scoreLabel = score >= 60 ? 'Hot' : score >= 30 ? 'Warm' : 'Cold';
                             return (
@@ -1023,7 +1023,7 @@ export default function IBLeadsPage({ session, onBack, onCall }: { session: Sess
                               <Shuffle size={12} /> {assigneeMap[lead.assigned_to] || 'Assigned'}
                             </span>
                           ) : (
-                            <span style={{ color: '#94a3b8', fontSize: '0.82rem' }}>—</span>
+                            <span style={{ color: 'var(--text-dark)', fontSize: '0.82rem' }}>—</span>
                           )}
                         </td>
                         <td>
@@ -1041,7 +1041,7 @@ export default function IBLeadsPage({ session, onBack, onCall }: { session: Sess
                               ${lead.fund_amount.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
                             </span>
                           ) : (
-                            <span style={{ color: '#94a3b8', fontSize: '0.82rem' }}>—</span>
+                            <span style={{ color: 'var(--text-dark)', fontSize: '0.82rem' }}>—</span>
                           )}
                         </td>
                         <td><span className="crm-date-tag">{formatDate(lead.created_at)}</span></td>
@@ -1625,7 +1625,7 @@ function IbLeadDetailDrawer({ lead, onClose, onUpdate, onDelete, formatDate, ass
                       <button onClick={() => removeTag(t)} aria-label="Remove tag"><X size={12} /></button>
                     </span>
                   ))}
-                  {(lead.tags || []).length === 0 && <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>No tags yet</span>}
+                  {(lead.tags || []).length === 0 && <span style={{ color: 'var(--text-dark)', fontSize: '0.85rem' }}>No tags yet</span>}
                 </div>
                 <div className="crm-drawer-tag-input-wrap">
                   <input
@@ -1976,7 +1976,7 @@ function BulkStatusModal({ count, currentStatus, onStatusChange, updating, resul
           <select
             value={currentStatus}
             onChange={(e) => onStatusChange(e.target.value as IbLeadStatus)}
-            style={{ width: '100%', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: '10px', fontSize: '0.9rem', fontWeight: 600 }}
+            style={{ width: '100%', padding: '10px 12px', border: '1px solid var(--border-subtle)', borderRadius: '10px', fontSize: '0.9rem', fontWeight: 600 }}
           >
             {IB_PIPELINE_STAGES.map((s) => (
               <option key={s.key} value={s.key}>{s.label}</option>

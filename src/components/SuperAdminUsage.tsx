@@ -131,25 +131,25 @@ export default function SuperAdminUsage({ onBack }: { onBack: () => void }) {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f8fafc' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg-light)' }}>
       <div style={{ background: 'linear-gradient(135deg, #0f172a, #0f766e)', padding: '18px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <button type="button" onClick={onBack} style={{ padding: '6px 10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.1)', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.8rem', fontWeight: 600 }}>
+          <button type="button" onClick={onBack} style={{ padding: '6px 10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.1)', color: 'var(--bg-card)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.8rem', fontWeight: 600 }}>
             <ArrowLeft size={15} /> Back
           </button>
           <div>
-            <h1 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: '#fff' }}>Usage & Billing</h1>
+            <h1 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: 'var(--bg-card)' }}>Usage & Billing</h1>
             <p style={{ margin: 0, fontSize: '0.76rem', color: 'rgba(255,255,255,0.7)' }}>Per-account usage and revenue overview</p>
           </div>
         </div>
-        <button type="button" onClick={load} disabled={loading} style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.1)', color: '#fff', fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}>
+        <button type="button" onClick={load} disabled={loading} style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.1)', color: 'var(--bg-card)', fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}>
           {loading ? <Loader2 size={14} className="crm-spin" /> : <TrendingUp size={14} />} Refresh
         </button>
       </div>
 
       <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '24px 20px' }}>
         {error && (
-          <div style={{ padding: '14px 16px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '12px', fontSize: '0.85rem', color: '#dc2626', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div style={{ padding: '14px 16px', background: 'var(--bg-card)', border: '1px solid #fecaca', borderRadius: '12px', fontSize: '0.85rem', color: '#dc2626', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
             <AlertCircle size={18} /> {error}
           </div>
         )}
@@ -164,8 +164,8 @@ export default function SuperAdminUsage({ onBack }: { onBack: () => void }) {
 
         {/* Plan distribution */}
         {Object.keys(planDistribution).length > 0 && (
-          <div style={{ background: '#fff', borderRadius: '14px', border: '1px solid #e2e8f0', padding: '18px 20px', marginBottom: '24px' }}>
-            <h3 style={{ margin: '0 0 12px', fontSize: '0.85rem', fontWeight: 700, color: '#0f172a' }}>Plan Distribution</h3>
+          <div style={{ background: 'var(--bg-card)', borderRadius: '14px', border: '1px solid var(--border-subtle)', padding: '18px 20px', marginBottom: '24px' }}>
+            <h3 style={{ margin: '0 0 12px', fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-main)' }}>Plan Distribution</h3>
             <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
               {Object.entries(planDistribution).sort((a, b) => b[1] - a[1]).map(([name, count]) => (
                 <span key={name} style={{ padding: '6px 14px', borderRadius: '10px', background: name === 'Free' ? 'rgba(148,163,184,0.1)' : 'rgba(15,118,110,0.08)', border: `1px solid ${name === 'Free' ? 'rgba(148,163,184,0.2)' : 'rgba(15,118,110,0.2)'}`, fontSize: '0.8rem', fontWeight: 600, color: name === 'Free' ? '#64748b' : '#0f766e' }}>
@@ -179,10 +179,10 @@ export default function SuperAdminUsage({ onBack }: { onBack: () => void }) {
         {/* Filters */}
         <div style={{ display: 'flex', gap: '10px', marginBottom: '16px', flexWrap: 'wrap' }}>
           <div style={{ position: 'relative' }}>
-            <Search size={16} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
-            <input type="text" placeholder="Search by email..." value={search} onChange={(e) => setSearch(e.target.value)} style={{ padding: '9px 12px 9px 34px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '0.85rem', outline: 'none', width: '260px' }} />
+            <Search size={16} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dark)' }} />
+            <input type="text" placeholder="Search by email..." value={search} onChange={(e) => setSearch(e.target.value)} style={{ padding: '9px 12px 9px 34px', border: '1px solid var(--border-subtle)', borderRadius: '8px', fontSize: '0.85rem', outline: 'none', width: '260px' }} />
           </div>
-          <select value={planFilter} onChange={(e) => setPlanFilter(e.target.value)} style={{ padding: '9px 12px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '0.85rem', outline: 'none', cursor: 'pointer' }}>
+          <select value={planFilter} onChange={(e) => setPlanFilter(e.target.value)} style={{ padding: '9px 12px', border: '1px solid var(--border-subtle)', borderRadius: '8px', fontSize: '0.85rem', outline: 'none', cursor: 'pointer' }}>
             <option value="all">All Plans</option>
             <option value="free">Free / Trial</option>
             <option value="starter">Starter</option>
@@ -197,10 +197,10 @@ export default function SuperAdminUsage({ onBack }: { onBack: () => void }) {
             <Loader2 size={28} className="crm-spin" style={{ color: '#0f766e' }} />
           </div>
         ) : (
-          <div style={{ background: '#fff', borderRadius: '16px', border: '1px solid #e2e8f0', overflow: 'hidden', overflowX: 'auto' }}>
+          <div style={{ background: 'var(--bg-card)', borderRadius: '16px', border: '1px solid var(--border-subtle)', overflow: 'hidden', overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '800px' }}>
               <thead>
-                <tr style={{ background: '#f8fafc' }}>
+                <tr style={{ background: 'var(--bg-light)' }}>
                   <th style={th}>Account</th>
                   <th style={th}>Plan</th>
                   <th style={th}>Status</th>
@@ -212,12 +212,12 @@ export default function SuperAdminUsage({ onBack }: { onBack: () => void }) {
               </thead>
               <tbody>
                 {filtered.length === 0 ? (
-                  <tr><td colSpan={7} style={{ textAlign: 'center', padding: '40px', color: '#94a3b8', fontSize: '0.85rem' }}>No accounts found.</td></tr>
+                  <tr><td colSpan={7} style={{ textAlign: 'center', padding: '40px', color: 'var(--text-dark)', fontSize: '0.85rem' }}>No accounts found.</td></tr>
                 ) : filtered.map((r) => (
-                  <tr key={r.user_id} style={{ borderBottom: '1px solid #f1f5f9', transition: 'background 0.15s' }} onMouseEnter={(e) => { e.currentTarget.style.background = '#f8fafc'; }} onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}>
+                  <tr key={r.user_id} style={{ borderBottom: '1px solid var(--border-subtle)', transition: 'background 0.15s' }} onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--bg-light)'; }} onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}>
                     <td style={td}>
-                      <div style={{ fontWeight: 600, color: '#1e293b', fontSize: '0.83rem' }}>{r.email}</div>
-                      <div style={{ fontSize: '0.7rem', color: '#94a3b8', marginTop: '2px' }}>Last active: {formatDate(r.last_sign_in_at)}</div>
+                      <div style={{ fontWeight: 600, color: 'var(--text-main)', fontSize: '0.83rem' }}>{r.email}</div>
+                      <div style={{ fontSize: '0.7rem', color: 'var(--text-dark)', marginTop: '2px' }}>Last active: {formatDate(r.last_sign_in_at)}</div>
                     </td>
                     <td style={td}>
                       <span style={{ padding: '3px 10px', borderRadius: '6px', fontSize: '0.74rem', fontWeight: 700, background: r.plan_slug === 'free' ? 'rgba(148,163,184,0.1)' : 'rgba(15,118,110,0.08)', color: r.plan_slug === 'free' ? '#64748b' : '#0f766e' }}>
@@ -229,16 +229,16 @@ export default function SuperAdminUsage({ onBack }: { onBack: () => void }) {
                         {r.status}
                       </span>
                     </td>
-                    <td style={{ ...td, fontSize: '0.78rem', color: '#64748b' }}>{r.billing_cycle}</td>
+                    <td style={{ ...td, fontSize: '0.78rem', color: 'var(--text-dark)' }}>{r.billing_cycle}</td>
                     <td style={td}>
                       <UsageBar used={r.lead_count} limit={r.lead_limit} pct={r.lead_usage_pct} />
                     </td>
                     <td style={td}>
                       <UsageBar used={r.team_count} limit={r.team_seats} pct={r.team_usage_pct} />
                     </td>
-                    <td style={{ ...td, fontWeight: 700, color: r.monthly_price > 0 ? '#16a34a' : '#94a3b8', fontSize: '0.85rem' }}>
+                    <td style={{ ...td, fontWeight: 700, color: r.monthly_price > 0 ? '#16a34a' : 'var(--text-dark)', fontSize: '0.85rem' }}>
                       {r.currency === 'INR' ? '₹' : '$'}{r.monthly_price.toFixed(0)}
-                      {r.billing_cycle === 'annual' && r.monthly_price > 0 && <span style={{ fontSize: '0.68rem', color: '#94a3b8', fontWeight: 400 }}>/mo*</span>}
+                      {r.billing_cycle === 'annual' && r.monthly_price > 0 && <span style={{ fontSize: '0.68rem', color: 'var(--text-dark)', fontWeight: 400 }}>/mo*</span>}
                     </td>
                   </tr>
                 ))}
@@ -246,7 +246,7 @@ export default function SuperAdminUsage({ onBack }: { onBack: () => void }) {
             </table>
           </div>
         )}
-        <p style={{ marginTop: '12px', fontSize: '0.72rem', color: '#94a3b8', textAlign: 'center' }}>
+        <p style={{ marginTop: '12px', fontSize: '0.72rem', color: 'var(--text-dark)', textAlign: 'center' }}>
           * Annual plans show monthly equivalent. Revenue is estimated from active subscriptions.
         </p>
       </div>
@@ -254,18 +254,18 @@ export default function SuperAdminUsage({ onBack }: { onBack: () => void }) {
   );
 }
 
-const th: React.CSSProperties = { textAlign: 'left', padding: '12px 14px', fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#64748b', whiteSpace: 'nowrap' };
-const td: React.CSSProperties = { padding: '13px 14px', fontSize: '0.83rem', color: '#334155' };
+const th: React.CSSProperties = { textAlign: 'left', padding: '12px 14px', fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-dark)', whiteSpace: 'nowrap' };
+const td: React.CSSProperties = { padding: '13px 14px', fontSize: '0.83rem', color: 'var(--text-muted)' };
 
 function SummaryCard({ icon, label, value, sub, color, bg }: { icon: React.ReactNode; label: string; value: string | number; sub: string; color: string; bg: string }) {
   return (
-    <div style={{ background: '#fff', borderRadius: '14px', border: '1px solid #e2e8f0', padding: '18px' }}>
+    <div style={{ background: 'var(--bg-card)', borderRadius: '14px', border: '1px solid var(--border-subtle)', padding: '18px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
         <div style={{ width: '38px', height: '38px', borderRadius: '9px', background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', color }}>{icon}</div>
-        <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{label}</span>
+        <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-dark)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{label}</span>
       </div>
-      <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#0f172a', lineHeight: 1, marginBottom: '4px' }}>{value}</div>
-      <div style={{ fontSize: '0.74rem', color: '#94a3b8' }}>{sub}</div>
+      <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--text-main)', lineHeight: 1, marginBottom: '4px' }}>{value}</div>
+      <div style={{ fontSize: '0.74rem', color: 'var(--text-dark)' }}>{sub}</div>
     </div>
   );
 }
@@ -275,11 +275,11 @@ function UsageBar({ used, limit, pct }: { used: number; limit: number; pct: numb
   const displayLimit = limit > 0 ? limit.toLocaleString() : '∞';
   return (
     <div style={{ minWidth: '120px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.74rem', fontWeight: 600, color: '#475569', marginBottom: '4px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.74rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '4px' }}>
         <span>{used.toLocaleString()} / {displayLimit}</span>
         <span style={{ color }}>{pct}%</span>
       </div>
-      <div style={{ height: '6px', borderRadius: '3px', background: '#f1f5f9', overflow: 'hidden' }}>
+      <div style={{ height: '6px', borderRadius: '3px', background: 'var(--bg-light)', overflow: 'hidden' }}>
         <div style={{ height: '100%', borderRadius: '3px', background: color, width: `${Math.min(pct, 100)}%`, transition: 'width 0.3s' }} />
       </div>
     </div>

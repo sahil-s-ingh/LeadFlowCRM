@@ -23,7 +23,7 @@ export default function SuperAdminSetupGuide({ onBack }: { onBack: () => void })
   const CodeBlock = ({ code, id }: { code: string; id: string }) => (
     <div style={{ position: 'relative', marginBottom: 12 }}>
       <pre style={{
-        background: '#0f172a', color: '#e2e8f0', borderRadius: 10,
+        background: '#0f172a', color: 'var(--border-subtle)', borderRadius: 10,
         padding: '14px 16px', fontSize: '0.82rem', lineHeight: 1.6,
         overflowX: 'auto', fontFamily: 'monospace', margin: 0, paddingRight: 44,
       }}>
@@ -34,7 +34,7 @@ export default function SuperAdminSetupGuide({ onBack }: { onBack: () => void })
         style={{
           position: 'absolute', top: 8, right: 8,
           padding: '4px 8px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.15)',
-          background: 'rgba(255,255,255,0.08)', color: '#94a3b8', cursor: 'pointer',
+          background: 'rgba(255,255,255,0.08)', color: 'var(--text-dark)', cursor: 'pointer',
           display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.72rem', fontWeight: 600,
         }}
       >
@@ -52,7 +52,7 @@ export default function SuperAdminSetupGuide({ onBack }: { onBack: () => void })
       desc: 'Select the right VPS plan for your CRM workloads.',
       details: (
         <>
-          <p style={{ fontSize: '0.86rem', color: '#475569', lineHeight: 1.65, marginBottom: 12 }}>
+          <p style={{ fontSize: '0.86rem', color: 'var(--text-muted)', lineHeight: 1.65, marginBottom: 12 }}>
             This CRM is a frontend app (Vite/React) that connects to a managed Supabase backend. The VPS only hosts the static build files, so you don't need a powerful server. Choose based on how many customers you expect:
           </p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 12, marginBottom: 16 }}>
@@ -63,18 +63,18 @@ export default function SuperAdminSetupGuide({ onBack }: { onBack: () => void })
             ].map((p) => (
               <div key={p.plan} style={{
                 border: p.recommended ? '2px solid #0f766e' : '1px solid rgba(0,0,0,0.08)',
-                borderRadius: 12, padding: '16px 14px', background: p.recommended ? 'rgba(15,118,110,0.04)' : '#fff',
+                borderRadius: 12, padding: '16px 14px', background: p.recommended ? 'rgba(15,118,110,0.04)' : 'var(--bg-card)',
                 position: 'relative',
               }}>
                 {p.recommended && (
                   <span style={{
                     position: 'absolute', top: -10, left: '50%', transform: 'translateX(-50%)',
-                    background: '#0f766e', color: '#fff', fontSize: '0.62rem', fontWeight: 800,
+                    background: '#0f766e', color: 'var(--bg-card)', fontSize: '0.62rem', fontWeight: 800,
                     padding: '2px 10px', borderRadius: 9999, letterSpacing: '0.5px', textTransform: 'uppercase',
                   }}>Recommended</span>
                 )}
-                <h4 style={{ fontSize: '1rem', fontWeight: 800, color: '#0f172a', margin: '0 0 8px 0' }}>{p.plan}</h4>
-                <div style={{ fontSize: '0.78rem', color: '#475569', lineHeight: 1.7 }}>
+                <h4 style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--text-main)', margin: '0 0 8px 0' }}>{p.plan}</h4>
+                <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: 1.7 }}>
                   <div><strong>{p.ram}</strong> RAM</div>
                   <div><strong>{p.cpu}</strong></div>
                   <div><strong>{p.storage}</strong></div>
@@ -103,14 +103,14 @@ export default function SuperAdminSetupGuide({ onBack }: { onBack: () => void })
       desc: 'Access your server terminal to begin installation.',
       details: (
         <>
-          <p style={{ fontSize: '0.86rem', color: '#475569', lineHeight: 1.65, marginBottom: 12 }}>
+          <p style={{ fontSize: '0.86rem', color: 'var(--text-muted)', lineHeight: 1.65, marginBottom: 12 }}>
             After creating your VPS in the Hostinger dashboard, you'll receive an IP address and root password. Connect using SSH from your local machine:
           </p>
           <CodeBlock code={`ssh root@YOUR_VPS_IP`} id="ssh" />
-          <p style={{ fontSize: '0.86rem', color: '#475569', lineHeight: 1.65, marginBottom: 12 }}>
+          <p style={{ fontSize: '0.86rem', color: 'var(--text-muted)', lineHeight: 1.65, marginBottom: 12 }}>
             If you set up SSH keys during VPS creation, you'll connect automatically. Otherwise, enter the root password from the Hostinger welcome email.
           </p>
-          <p style={{ fontSize: '0.86rem', color: '#475569', lineHeight: 1.65, marginBottom: 12 }}>
+          <p style={{ fontSize: '0.86rem', color: 'var(--text-muted)', lineHeight: 1.65, marginBottom: 12 }}>
             Once connected, update the system packages first:
           </p>
           <CodeBlock code={`apt update && apt upgrade -y`} id="apt-update" />
@@ -124,12 +124,12 @@ export default function SuperAdminSetupGuide({ onBack }: { onBack: () => void })
       desc: 'Set up the runtime needed to build the CRM frontend.',
       details: (
         <>
-          <p style={{ fontSize: '0.86rem', color: '#475569', lineHeight: 1.65, marginBottom: 12 }}>
+          <p style={{ fontSize: '0.86rem', color: 'var(--text-muted)', lineHeight: 1.65, marginBottom: 12 }}>
             Install Node.js 20 LTS (required for Vite) and Git:
           </p>
           <CodeBlock code={`curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
 apt install -y nodejs git`} id="node-install" />
-          <p style={{ fontSize: '0.86rem', color: '#475569', lineHeight: 1.65, marginBottom: 12 }}>
+          <p style={{ fontSize: '0.86rem', color: 'var(--text-muted)', lineHeight: 1.65, marginBottom: 12 }}>
             Verify the installation:
           </p>
           <CodeBlock code={`node -v    # should show v20.x.x
@@ -144,16 +144,16 @@ npm -v     # should show 10.x.x`} id="node-verify" />
       desc: 'Download the CRM source code from GitHub to your VPS.',
       details: (
         <>
-          <p style={{ fontSize: '0.86rem', color: '#475569', lineHeight: 1.65, marginBottom: 12 }}>
+          <p style={{ fontSize: '0.86rem', color: 'var(--text-muted)', lineHeight: 1.65, marginBottom: 12 }}>
             Create a directory for your app and clone the repo:
           </p>
           <CodeBlock code={`mkdir -p /var/www/leadflow
 cd /var/www/leadflow
 git clone https://github.com/YOUR_USERNAME/YOUR_REPO.git .`} id="git-clone" />
-          <p style={{ fontSize: '0.86rem', color: '#475569', lineHeight: 1.65, marginBottom: 12 }}>
+          <p style={{ fontSize: '0.86rem', color: 'var(--text-muted)', lineHeight: 1.65, marginBottom: 12 }}>
             If your repo is private, you'll need to authenticate. The easiest way is using a GitHub Personal Access Token (PAT):
           </p>
-          <ol style={{ fontSize: '0.82rem', color: '#475569', lineHeight: 1.8, paddingLeft: 20, marginBottom: 12 }}>
+          <ol style={{ fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: 1.8, paddingLeft: 20, marginBottom: 12 }}>
             <li>Go to GitHub Settings Developer settings Personal access tokens</li>
             <li>Generate a new token with "repo" scope</li>
             <li>Use it as your password when cloning</li>
@@ -169,18 +169,18 @@ git clone https://github.com/YOUR_USERNAME/YOUR_REPO.git .`} id="git-clone" />
       desc: 'Connect the frontend to your Supabase backend.',
       details: (
         <>
-          <p style={{ fontSize: '0.86rem', color: '#475569', lineHeight: 1.65, marginBottom: 12 }}>
-            The CRM connects to Supabase for all data (leads, auth, chat, etc.). Your environment variables should already be in the <code style={{ background: '#f1f5f9', padding: '2px 6px', borderRadius: 4, fontSize: '0.78rem' }}>.env</code> file. Verify they exist:
+          <p style={{ fontSize: '0.86rem', color: 'var(--text-muted)', lineHeight: 1.65, marginBottom: 12 }}>
+            The CRM connects to Supabase for all data (leads, auth, chat, etc.). Your environment variables should already be in the <code style={{ background: 'var(--bg-light)', padding: '2px 6px', borderRadius: 4, fontSize: '0.78rem' }}>.env</code> file. Verify they exist:
           </p>
           <CodeBlock code={`cat /var/www/leadflow/.env`} id="check-env" />
-          <p style={{ fontSize: '0.86rem', color: '#475569', lineHeight: 1.65, marginBottom: 12 }}>
+          <p style={{ fontSize: '0.86rem', color: 'var(--text-muted)', lineHeight: 1.65, marginBottom: 12 }}>
             The file should contain these variables (already filled in for your project):
           </p>
           <CodeBlock code={`VITE_SUPABASE_URL=https://your-project.supabase.co
 VITE_SUPABASE_ANON_KEY=your-anon-key
 VITE_SUPABASE_SERVICE_ROLE_KEY=your-service-key`} id="env-vars" />
           <div style={{
-            padding: '12px 14px', background: '#fef2f2', border: '1px solid #fecaca',
+            padding: '12px 14px', background: 'var(--bg-card)', border: '1px solid #fecaca',
             borderRadius: 10, display: 'flex', gap: 10, alignItems: 'flex-start', marginBottom: 12,
           }}>
             <AlertCircle size={18} style={{ color: '#dc2626', flexShrink: 0, marginTop: 1 }} />
@@ -198,17 +198,17 @@ VITE_SUPABASE_SERVICE_ROLE_KEY=your-service-key`} id="env-vars" />
       desc: 'Compile the CRM into optimized static files.',
       details: (
         <>
-          <p style={{ fontSize: '0.86rem', color: '#475569', lineHeight: 1.65, marginBottom: 12 }}>
+          <p style={{ fontSize: '0.86rem', color: 'var(--text-muted)', lineHeight: 1.65, marginBottom: 12 }}>
             Install all required npm packages:
           </p>
           <CodeBlock code={`cd /var/www/leadflow
 npm install`} id="npm-install" />
-          <p style={{ fontSize: '0.86rem', color: '#475569', lineHeight: 1.65, marginBottom: 12 }}>
+          <p style={{ fontSize: '0.86rem', color: 'var(--text-muted)', lineHeight: 1.65, marginBottom: 12 }}>
             Build the production version:
           </p>
           <CodeBlock code={`npm run build`} id="npm-build" />
-          <p style={{ fontSize: '0.86rem', color: '#475569', lineHeight: 1.65, marginBottom: 12 }}>
-            This creates a <code style={{ background: '#f1f5f9', padding: '2px 6px', borderRadius: 4, fontSize: '0.78rem' }}>dist/</code> folder with all the static files. This is what we'll serve to visitors.
+          <p style={{ fontSize: '0.86rem', color: 'var(--text-muted)', lineHeight: 1.65, marginBottom: 12 }}>
+            This creates a <code style={{ background: 'var(--bg-light)', padding: '2px 6px', borderRadius: 4, fontSize: '0.78rem' }}>dist/</code> folder with all the static files. This is what we'll serve to visitors.
           </p>
         </>
       ),
@@ -220,11 +220,11 @@ npm install`} id="npm-install" />
       desc: 'Set up a web server to deliver your CRM to visitors.',
       details: (
         <>
-          <p style={{ fontSize: '0.86rem', color: '#475569', lineHeight: 1.65, marginBottom: 12 }}>
+          <p style={{ fontSize: '0.86rem', color: 'var(--text-muted)', lineHeight: 1.65, marginBottom: 12 }}>
             Install Nginx:
           </p>
           <CodeBlock code={`apt install -y nginx`} id="nginx-install" />
-          <p style={{ fontSize: '0.86rem', color: '#475569', lineHeight: 1.65, marginBottom: 12 }}>
+          <p style={{ fontSize: '0.86rem', color: 'var(--text-muted)', lineHeight: 1.65, marginBottom: 12 }}>
             Create the Nginx configuration for your CRM:
           </p>
           <CodeBlock code={`cat > /etc/nginx/sites-available/leadflow << 'EOF'
@@ -252,7 +252,7 @@ server {
     gzip_min_length 1000;
 }
 EOF`} id="nginx-config" />
-          <p style={{ fontSize: '0.86rem', color: '#475569', lineHeight: 1.65, marginBottom: 12 }}>
+          <p style={{ fontSize: '0.86rem', color: 'var(--text-muted)', lineHeight: 1.65, marginBottom: 12 }}>
             Enable the site and restart Nginx:
           </p>
           <CodeBlock code={`ln -sf /etc/nginx/sites-available/leadflow /etc/nginx/sites-enabled/leadflow
@@ -260,8 +260,8 @@ rm -f /etc/nginx/sites-enabled/default
 nginx -t          # test config for errors
 systemctl restart nginx
 systemctl enable nginx`} id="nginx-enable" />
-          <p style={{ fontSize: '0.86rem', color: '#475569', lineHeight: 1.65, marginBottom: 12 }}>
-            At this point, visiting <code style={{ background: '#f1f5f9', padding: '2px 6px', borderRadius: 4, fontSize: '0.78rem' }}>http://YOUR_VPS_IP</code> should show your CRM landing page.
+          <p style={{ fontSize: '0.86rem', color: 'var(--text-muted)', lineHeight: 1.65, marginBottom: 12 }}>
+            At this point, visiting <code style={{ background: 'var(--bg-light)', padding: '2px 6px', borderRadius: 4, fontSize: '0.78rem' }}>http://YOUR_VPS_IP</code> should show your CRM landing page.
           </p>
         </>
       ),
@@ -273,22 +273,22 @@ systemctl enable nginx`} id="nginx-enable" />
       desc: 'Secure your site with a free Let\u2019s Encrypt certificate.',
       details: (
         <>
-          <p style={{ fontSize: '0.86rem', color: '#475569', lineHeight: 1.65, marginBottom: 12 }}>
+          <p style={{ fontSize: '0.86rem', color: 'var(--text-muted)', lineHeight: 1.65, marginBottom: 12 }}>
             First, point your domain's A record to your VPS IP address in your domain registrar (Hostinger DNS or elsewhere):
           </p>
-          <ul style={{ fontSize: '0.82rem', color: '#475569', lineHeight: 1.8, paddingLeft: 20, marginBottom: 12 }}>
+          <ul style={{ fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: 1.8, paddingLeft: 20, marginBottom: 12 }}>
             <li>Type: <strong>A</strong>, Name: <strong>@</strong>, Value: <strong>YOUR_VPS_IP</strong></li>
             <li>Type: <strong>A</strong>, Name: <strong>www</strong>, Value: <strong>YOUR_VPS_IP</strong></li>
           </ul>
-          <p style={{ fontSize: '0.86rem', color: '#475569', lineHeight: 1.65, marginBottom: 12 }}>
+          <p style={{ fontSize: '0.86rem', color: 'var(--text-muted)', lineHeight: 1.65, marginBottom: 12 }}>
             Wait for DNS to propagate (usually 5-30 minutes), then install Certbot:
           </p>
           <CodeBlock code={`apt install -y certbot python3-certbot-nginx`} id="certbot-install" />
-          <p style={{ fontSize: '0.86rem', color: '#475569', lineHeight: 1.65, marginBottom: 12 }}>
+          <p style={{ fontSize: '0.86rem', color: 'var(--text-muted)', lineHeight: 1.65, marginBottom: 12 }}>
             Generate the SSL certificate:
           </p>
           <CodeBlock code={`certbot --nginx -d yourdomain.com -d www.yourdomain.com`} id="certbot-run" />
-          <p style={{ fontSize: '0.86rem', color: '#475569', lineHeight: 1.65, marginBottom: 12 }}>
+          <p style={{ fontSize: '0.86rem', color: 'var(--text-muted)', lineHeight: 1.65, marginBottom: 12 }}>
             Follow the prompts. Choose option 2 to redirect all HTTP traffic to HTTPS. Certbot auto-renews certificates, so you're set.
           </p>
         </>
@@ -301,7 +301,7 @@ systemctl enable nginx`} id="nginx-enable" />
       desc: 'Automatically update the CRM when you push to GitHub.',
       details: (
         <>
-          <p style={{ fontSize: '0.86rem', color: '#475569', lineHeight: 1.65, marginBottom: 12 }}>
+          <p style={{ fontSize: '0.86rem', color: 'var(--text-muted)', lineHeight: 1.65, marginBottom: 12 }}>
             Create a deploy script on your VPS:
           </p>
           <CodeBlock code={`cat > /var/www/leadflow/deploy.sh << 'EOF'
@@ -313,11 +313,11 @@ npm run build
 echo "Deploy complete: $(date)"
 EOF
 chmod +x /var/www/leadflow/deploy.sh`} id="deploy-script" />
-          <p style={{ fontSize: '0.86rem', color: '#475569', lineHeight: 1.65, marginBottom: 12 }}>
+          <p style={{ fontSize: '0.86rem', color: 'var(--text-muted)', lineHeight: 1.65, marginBottom: 12 }}>
             Run it manually whenever you want to update:
           </p>
           <CodeBlock code={`/var/www/leadflow/deploy.sh`} id="deploy-run" />
-          <p style={{ fontSize: '0.86rem', color: '#475569', lineHeight: 1.65, marginBottom: 12 }}>
+          <p style={{ fontSize: '0.86rem', color: 'var(--text-muted)', lineHeight: 1.65, marginBottom: 12 }}>
             For full automation, set up a GitHub Webhook that triggers this script on every push. Alternatively, use GitHub Actions to build and deploy via SSH automatically.
           </p>
         </>
@@ -330,7 +330,7 @@ chmod +x /var/www/leadflow/deploy.sh`} id="deploy-script" />
       desc: 'Final checks to confirm everything works.',
       details: (
         <>
-          <p style={{ fontSize: '0.86rem', color: '#475569', lineHeight: 1.65, marginBottom: 12 }}>
+          <p style={{ fontSize: '0.86rem', color: 'var(--text-muted)', lineHeight: 1.65, marginBottom: 12 }}>
             Run through this checklist:
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -368,7 +368,7 @@ chmod +x /var/www/leadflow/deploy.sh`} id="deploy-script" />
   ];
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f8fafc' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg-light)' }}>
       {/* Header */}
       <div style={{
         background: 'linear-gradient(135deg, #0f172a, #0f766e)',
@@ -383,7 +383,7 @@ chmod +x /var/www/leadflow/deploy.sh`} id="deploy-script" />
             display: 'flex', alignItems: 'center', gap: 6,
             padding: '8px 14px', borderRadius: 8,
             border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.1)',
-            color: '#fff', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer',
+            color: 'var(--bg-card)', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer',
           }}
         >
           <ArrowLeft size={14} /> Back to Dashboard
@@ -394,10 +394,10 @@ chmod +x /var/www/leadflow/deploy.sh`} id="deploy-script" />
             background: 'rgba(255,255,255,0.15)', display: 'flex',
             alignItems: 'center', justifyContent: 'center',
           }}>
-            <Server size={24} style={{ color: '#fff' }} />
+            <Server size={24} style={{ color: 'var(--bg-card)' }} />
           </div>
           <div>
-            <h1 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, color: '#fff', letterSpacing: '-0.02em' }}>VPS Setup Guide</h1>
+            <h1 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, color: 'var(--bg-card)', letterSpacing: '-0.02em' }}>VPS Setup Guide</h1>
             <p style={{ margin: 0, fontSize: '0.78rem', color: 'rgba(255,255,255,0.7)' }}>Deploy LeadFlow CRM on Hostinger VPS - Step by Step</p>
           </div>
         </div>
@@ -410,24 +410,24 @@ chmod +x /var/www/leadflow/deploy.sh`} id="deploy-script" />
           border: '1px solid rgba(15,118,110,0.2)', borderRadius: 14,
           padding: '20px 22px', marginBottom: 28,
         }}>
-          <h2 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#0f172a', marginBottom: 8 }}>How This CRM Works</h2>
-          <p style={{ fontSize: '0.86rem', color: '#475569', lineHeight: 1.65, marginBottom: 12 }}>
+          <h2 style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: 8 }}>How This CRM Works</h2>
+          <p style={{ fontSize: '0.86rem', color: 'var(--text-muted)', lineHeight: 1.65, marginBottom: 12 }}>
             LeadFlow CRM has two parts: a <strong>frontend</strong> (the React app you're building) and a <strong>backend</strong> (Supabase - a managed PostgreSQL database with auth, APIs, and edge functions). The frontend is compiled into static files and served by Nginx on your VPS. The backend runs in the cloud on Supabase servers - you don't need to install or maintain it on your VPS.
           </p>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 14 }} className="setup-arch-grid">
-            <div style={{ padding: '14px', background: '#fff', borderRadius: 10, border: '1px solid rgba(0,0,0,0.06)' }}>
+            <div style={{ padding: '14px', background: 'var(--bg-card)', borderRadius: 10, border: '1px solid var(--border-subtle)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
                 <Globe size={18} style={{ color: '#0f766e' }} />
-                <h4 style={{ fontSize: '0.88rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>Frontend (Your VPS)</h4>
+                <h4 style={{ fontSize: '0.88rem', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>Frontend (Your VPS)</h4>
               </div>
-              <p style={{ fontSize: '0.78rem', color: '#64748b', lineHeight: 1.5, margin: 0 }}>Static HTML/JS/CSS files served by Nginx. Low resource usage. Fast page loads.</p>
+              <p style={{ fontSize: '0.78rem', color: 'var(--text-dark)', lineHeight: 1.5, margin: 0 }}>Static HTML/JS/CSS files served by Nginx. Low resource usage. Fast page loads.</p>
             </div>
-            <div style={{ padding: '14px', background: '#fff', borderRadius: 10, border: '1px solid rgba(0,0,0,0.06)' }}>
+            <div style={{ padding: '14px', background: 'var(--bg-card)', borderRadius: 10, border: '1px solid var(--border-subtle)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
                 <Database size={18} style={{ color: '#0f766e' }} />
-                <h4 style={{ fontSize: '0.88rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>Backend (Supabase Cloud)</h4>
+                <h4 style={{ fontSize: '0.88rem', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>Backend (Supabase Cloud)</h4>
               </div>
-              <p style={{ fontSize: '0.78rem', color: '#64748b', lineHeight: 1.5, margin: 0 }}>PostgreSQL database, auth, realtime, edge functions. Auto-scaled, auto-backed-up, zero maintenance.</p>
+              <p style={{ fontSize: '0.78rem', color: 'var(--text-dark)', lineHeight: 1.5, margin: 0 }}>PostgreSQL database, auth, realtime, edge functions. Auto-scaled, auto-backed-up, zero maintenance.</p>
             </div>
           </div>
         </div>
@@ -438,7 +438,7 @@ chmod +x /var/www/leadflow/deploy.sh`} id="deploy-script" />
             <div
               key={step.id}
               style={{
-                background: '#fff', borderRadius: 14, border: '1px solid rgba(0,0,0,0.08)',
+                background: 'var(--bg-card)', borderRadius: 14, border: '1px solid var(--border-subtle)',
                 boxShadow: '0 2px 8px rgba(0,0,0,0.03)', overflow: 'hidden',
               }}
             >
@@ -460,20 +460,20 @@ chmod +x /var/www/leadflow/deploy.sh`} id="deploy-script" />
                 </div>
                 <div style={{ flex: 1 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ fontSize: '0.68rem', fontWeight: 800, color: '#94a3b8' }}>STEP {step.id}</span>
+                    <span style={{ fontSize: '0.68rem', fontWeight: 800, color: 'var(--text-dark)' }}>STEP {step.id}</span>
                   </div>
-                  <h3 style={{ fontSize: '0.95rem', fontWeight: 800, color: '#0f172a', margin: '2px 0 0 0' }}>{step.title}</h3>
-                  <p style={{ fontSize: '0.78rem', color: '#64748b', margin: '2px 0 0 0' }}>{step.desc}</p>
+                  <h3 style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--text-main)', margin: '2px 0 0 0' }}>{step.title}</h3>
+                  <p style={{ fontSize: '0.78rem', color: 'var(--text-dark)', margin: '2px 0 0 0' }}>{step.desc}</p>
                 </div>
                 <div style={{
-                  fontSize: '1.2rem', color: '#94a3b8', transition: 'transform 0.2s ease',
+                  fontSize: '1.2rem', color: 'var(--text-dark)', transition: 'transform 0.2s ease',
                   transform: activeStep === step.id ? 'rotate(90deg)' : 'rotate(0deg)',
                 }}>
                   &#8250;
                 </div>
               </button>
               {activeStep === step.id && (
-                <div style={{ padding: '0 20px 20px 20px', borderTop: '1px solid rgba(0,0,0,0.05)', paddingTop: 16 }}>
+                <div style={{ padding: '0 20px 20px 20px', borderTop: '1px solid var(--border-subtle)', paddingTop: 16 }}>
                   {step.details}
                 </div>
               )}
@@ -483,10 +483,10 @@ chmod +x /var/www/leadflow/deploy.sh`} id="deploy-script" />
 
         {/* Architecture assessment */}
         <div style={{
-          marginTop: 28, padding: '22px', background: '#fff', borderRadius: 14,
-          border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
+          marginTop: 28, padding: '22px', background: 'var(--bg-card)', borderRadius: 14,
+          border: '1px solid var(--border-subtle)', boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
         }}>
-          <h2 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#0f172a', marginBottom: 14 }}>Is This Architecture Good?</h2>
+          <h2 style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: 14 }}>Is This Architecture Good?</h2>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }} className="setup-pros-cons-grid">
             <div style={{ padding: '16px', background: '#f0fdf4', borderRadius: 10, border: '1px solid #bbf7d0' }}>
               <h4 style={{ fontSize: '0.88rem', fontWeight: 800, color: '#15803d', marginBottom: 10 }}>Pros</h4>
@@ -506,7 +506,7 @@ chmod +x /var/www/leadflow/deploy.sh`} id="deploy-script" />
                 ))}
               </ul>
             </div>
-            <div style={{ padding: '16px', background: '#fef2f2', borderRadius: 10, border: '1px solid #fecaca' }}>
+            <div style={{ padding: '16px', background: 'var(--bg-card)', borderRadius: 10, border: '1px solid #fecaca' }}>
               <h4 style={{ fontSize: '0.88rem', fontWeight: 800, color: '#dc2626', marginBottom: 10 }}>Things to Watch</h4>
               <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {[

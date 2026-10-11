@@ -267,10 +267,10 @@ export default function EmailInbox({ session, onUnreadChange, refreshKey, onRefr
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '300px', textAlign: 'center', padding: '24px' }}>
         <div style={{ width: '64px', height: '64px', borderRadius: '16px', background: 'linear-gradient(135deg, #2563eb, #3b82f6)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}>
-          <Mail size={32} style={{ color: '#fff' }} />
+          <Mail size={32} style={{ color: 'var(--bg-card)' }} />
         </div>
         <h2 style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: '8px' }}>Email Inbox Not Configured</h2>
-        <p style={{ color: '#94a3b8', fontSize: '0.88rem', maxWidth: '400px', lineHeight: 1.6, marginBottom: '20px' }}>
+        <p style={{ color: 'var(--text-dark)', fontSize: '0.88rem', maxWidth: '400px', lineHeight: 1.6, marginBottom: '20px' }}>
           To use the email inbox, you need to configure IMAP settings in Settings. Add your Hostinger email IMAP host (imap.hostinger.com), port (993), username, and password.
         </p>
       </div>
@@ -311,13 +311,13 @@ export default function EmailInbox({ session, onUnreadChange, refreshKey, onRefr
         {conversations.length === 0 ? (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 20px', textAlign: 'center' }}>
             <Mail size={40} style={{ opacity: 0.25, marginBottom: 12 }} />
-            <p style={{ color: '#94a3b8', fontSize: '0.88rem', marginBottom: 16 }}>No emails yet. Click the inbox icon above to fetch new emails.</p>
+            <p style={{ color: 'var(--text-dark)', fontSize: '0.88rem', marginBottom: 16 }}>No emails yet. Click the inbox icon above to fetch new emails.</p>
             <button
               onClick={handleFetchEmails}
               disabled={fetching}
               style={{
                 padding: '8px 20px', borderRadius: '8px', border: 'none',
-                background: '#2563eb', color: '#fff', fontSize: '0.85rem', fontWeight: 600,
+                background: '#2563eb', color: 'var(--bg-card)', fontSize: '0.85rem', fontWeight: 600,
                 cursor: fetching ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '8px',
               }}
             >
@@ -376,7 +376,7 @@ export default function EmailInbox({ session, onUnreadChange, refreshKey, onRefr
               </button>
               <div className="crm-chat-msg-header-info">
                 <div className="crm-chat-msg-header-name">{selectedConversation.from_name || selectedConversation.from_email}</div>
-                <div className="crm-chat-msg-header-status" style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+                <div className="crm-chat-msg-header-status" style={{ fontSize: '0.75rem', color: 'var(--text-dark)' }}>
                   {selectedConversation.from_email}
                 </div>
               </div>
@@ -394,8 +394,8 @@ export default function EmailInbox({ session, onUnreadChange, refreshKey, onRefr
               <div style={{ padding: '12px 16px', background: 'rgba(239,68,68,0.08)', borderBottom: '1px solid rgba(239,68,68,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
                 <span style={{ fontSize: '0.82rem', color: '#dc2626' }}>Delete this conversation?</span>
                 <div style={{ display: 'flex', gap: '8px' }}>
-                  <button onClick={() => setShowDeleteConfirm(null)} style={{ padding: '4px 12px', borderRadius: '6px', border: '1px solid #e2e8f0', background: '#fff', fontSize: '0.78rem', cursor: 'pointer' }}>Cancel</button>
-                  <button onClick={() => handleDeleteConversation(selectedConv)} style={{ padding: '4px 12px', borderRadius: '6px', border: 'none', background: '#ef4444', color: '#fff', fontSize: '0.78rem', cursor: 'pointer' }}>Delete</button>
+                  <button onClick={() => setShowDeleteConfirm(null)} style={{ padding: '4px 12px', borderRadius: '6px', border: '1px solid var(--border-subtle)', background: 'var(--bg-card)', fontSize: '0.78rem', cursor: 'pointer' }}>Cancel</button>
+                  <button onClick={() => handleDeleteConversation(selectedConv)} style={{ padding: '4px 12px', borderRadius: '6px', border: 'none', background: '#ef4444', color: 'var(--bg-card)', fontSize: '0.78rem', cursor: 'pointer' }}>Delete</button>
                 </div>
               </div>
             )}
@@ -408,7 +408,7 @@ export default function EmailInbox({ session, onUnreadChange, refreshKey, onRefr
               ) : messages.length === 0 ? (
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '40px', textAlign: 'center' }}>
                   <Mail size={36} style={{ opacity: 0.2, marginBottom: 10 }} />
-                  <p style={{ color: '#94a3b8', fontSize: '0.85rem' }}>No messages in this conversation.</p>
+                  <p style={{ color: 'var(--text-dark)', fontSize: '0.85rem' }}>No messages in this conversation.</p>
                 </div>
               ) : (
                 messages.map((msg) => (
@@ -453,7 +453,7 @@ export default function EmailInbox({ session, onUnreadChange, refreshKey, onRefr
                 placeholder="Type your reply..."
                 rows={3}
                 style={{
-                  flex: 1, resize: 'none', border: '1px solid #e2e8f0', borderRadius: '10px',
+                  flex: 1, resize: 'none', border: '1px solid var(--border-subtle)', borderRadius: '10px',
                   padding: '10px 14px', fontSize: '0.88rem', fontFamily: 'inherit',
                   outline: 'none', lineHeight: 1.5,
                 }}
@@ -469,8 +469,8 @@ export default function EmailInbox({ session, onUnreadChange, refreshKey, onRefr
                 disabled={!replyText.trim() || sending}
                 style={{
                   padding: '10px 18px', borderRadius: '10px', border: 'none',
-                  background: replyText.trim() && !sending ? '#2563eb' : '#cbd5e1',
-                  color: '#fff', fontSize: '0.85rem', fontWeight: 600,
+                  background: replyText.trim() && !sending ? '#2563eb' : 'var(--text-dark)',
+                  color: 'var(--bg-card)', fontSize: '0.85rem', fontWeight: 600,
                   cursor: replyText.trim() && !sending ? 'pointer' : 'not-allowed',
                   display: 'flex', alignItems: 'center', gap: '6px',
                   alignSelf: 'flex-end',
@@ -484,7 +484,7 @@ export default function EmailInbox({ session, onUnreadChange, refreshKey, onRefr
         ) : (
           <div className="crm-chat-empty-state" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', textAlign: 'center' }}>
             <Mail size={48} style={{ opacity: 0.2, marginBottom: 16 }} />
-            <p style={{ color: '#94a3b8', fontSize: '0.9rem' }}>Select a conversation to view emails</p>
+            <p style={{ color: 'var(--text-dark)', fontSize: '0.9rem' }}>Select a conversation to view emails</p>
           </div>
         )}
       </div>

@@ -1653,12 +1653,18 @@ html[data-font-size="large"] .crm-dashboard { font-size: 17px; }
 
 .crm-sidebar-nav {
   flex: 1;
-  padding: 18px 12px;
+  padding: 14px 10px 18px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 16px;
   overflow-y: auto;
 }
+
+/* Scrollbar styling for sidebar nav */
+.crm-sidebar-nav::-webkit-scrollbar { width: 4px; }
+.crm-sidebar-nav::-webkit-scrollbar-track { background: transparent; }
+.crm-sidebar-nav::-webkit-scrollbar-thumb { background: rgba(202, 138, 4, 0.15); border-radius: 4px; }
+.crm-sidebar-nav::-webkit-scrollbar-thumb:hover { background: rgba(202, 138, 4, 0.3); }
 
 .crm-sidebar-footer {
   padding: 14px 12px 18px 12px;
@@ -1696,52 +1702,79 @@ html[data-font-size="large"] .crm-dashboard { font-size: 17px; }
 .crm-nav-section {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 4px;
+  padding: 2px 0;
 }
 
 .crm-nav-label {
-  font-size: 0.65rem;
+  font-size: 0.62rem;
   font-weight: 800;
-  color: #CA8A04;
-  letter-spacing: 1px;
-  padding: 0 8px 6px 8px;
+  color: #94A3B8;
+  letter-spacing: 1.2px;
+  padding: 0 10px 4px 10px;
   text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.crm-nav-label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(148, 163, 184, 0.2), transparent);
+}
+
+/* Collapsed: hide labels, center items, reduce gap */
+.crm-sidebar.collapsed .crm-nav-section {
+  gap: 6px;
+  padding: 0;
 }
 
 .crm-nav-item {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 11px 12px;
-  border-radius: 13px;
-  font-size: 0.84rem;
+  padding: 10px 12px;
+  border-radius: 11px;
+  font-size: 0.83rem;
   font-weight: 700;
   color: #64748B;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.18s ease;
   text-decoration: none;
   background: transparent;
   border: 1px solid transparent;
   width: 100%;
   font-family: 'Plus Jakarta Sans', sans-serif;
   text-align: left;
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  position: relative;
 }
 
 .crm-nav-item:hover {
-  background: linear-gradient(145deg, #ffffff, #f8fafc);
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.9), rgba(248, 250, 252, 0.6));
   color: #854D0E;
-  border-color: rgba(234, 179, 8, 0.18);
-  transform: translate3d(2px, -1px, 0);
-  box-shadow: 4px 5px 10px rgba(15, 23, 42, 0.08), inset 1px 1px 0 rgba(255, 255, 255, 0.95);
+  border-color: rgba(234, 179, 8, 0.15);
+  box-shadow: 2px 3px 8px rgba(15, 23, 42, 0.06);
 }
 
 .crm-nav-item.active {
   background: linear-gradient(145deg, #fffdf2 0%, #fef3c7 100%);
   color: #854D0E;
-  border: 1px solid rgba(202, 138, 4, 0.34);
-  box-shadow: 5px 6px 12px rgba(180, 125, 0, 0.12), inset 2px 2px 4px rgba(255, 255, 255, 0.92), inset -2px -2px 4px rgba(202, 138, 4, 0.08);
-  transform: translate3d(2px, -1px, 0);
+  border: 1px solid rgba(202, 138, 4, 0.3);
+  box-shadow: 3px 4px 10px rgba(180, 125, 0, 0.1), inset 1px 1px 2px rgba(255, 255, 255, 0.9);
+}
+
+.crm-nav-item.active::before {
+  content: '';
+  position: absolute;
+  left: -1px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 60%;
+  background: linear-gradient(180deg, #EAB308, #CA8A04);
+  border-radius: 0 3px 3px 0;
 }
 
 .crm-nav-badge {
@@ -1803,27 +1836,51 @@ html[data-font-size="large"] .crm-dashboard { font-size: 17px; }
 .crm-sidebar-footer-actions {
   display: flex;
   flex-direction: row;
-  gap: 8px;
+  gap: 6px;
   align-items: center;
 }
 
 .crm-sidebar-footer-actions.collapsed {
   flex-direction: column;
+  gap: 6px;
 }
 
+/* Settings button: takes remaining space */
+.crm-sidebar-footer-actions .crm-nav-item:first-child {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Icon-only buttons (theme toggle, sign out) */
+.crm-sidebar-footer-actions .crm-theme-toggle,
 .crm-sidebar-footer-actions .crm-nav-item:last-child {
-  width: auto;
-  padding: 11px;
+  width: 38px;
+  min-width: 38px;
+  height: 38px;
+  padding: 0;
   justify-content: center;
+  flex-shrink: 0;
 }
 
+.crm-sidebar.collapsed .crm-sidebar-footer-actions .crm-nav-item:first-child,
+.crm-sidebar.collapsed .crm-sidebar-footer-actions .crm-theme-toggle,
 .crm-sidebar.collapsed .crm-sidebar-footer-actions .crm-nav-item:last-child {
   width: 100%;
+  min-width: 100%;
+  height: 40px;
 }
 
+/* Sign out hover = red */
 .crm-sidebar-footer-actions .crm-nav-item:last-child:hover {
   background: rgba(239, 68, 68, 0.08);
   color: #EF4444;
+  border-color: rgba(239, 68, 68, 0.15);
+}
+
+/* Theme toggle hover = gold */
+.crm-sidebar-footer-actions .crm-theme-toggle:hover {
+  color: #854D0E;
+  border-color: rgba(234, 179, 8, 0.18);
 }
 
 /* Main */
@@ -5916,13 +5973,13 @@ html[data-font-size="large"] .crm-dashboard { font-size: 17px; }
    ========================================== */
 /* Pipeline funnel widget in sidebar */
 .crm-pipeline-funnel {
-  background: linear-gradient(180deg, rgba(234, 179, 8, 0.03) 0%, rgba(234, 179, 8, 0.01) 100%);
-  border: 1px solid rgba(234, 179, 8, 0.15);
-  border-radius: 12px;
-  padding: 12px 10px;
+  background: linear-gradient(180deg, rgba(234, 179, 8, 0.04) 0%, rgba(234, 179, 8, 0.01) 100%);
+  border: 1px solid rgba(234, 179, 8, 0.12);
+  border-radius: 10px;
+  padding: 10px 8px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .crm-pipeline-funnel-summary {
@@ -20954,5 +21011,2819 @@ a.crm-drawer-contact-item:hover {
   .automation-action-config {
     padding-left: 10px;
   }
+}
+
+/* ===== DARK MODE ===== */
+html.crm-dark {
+  --bg-light: #0b1120;
+  --bg-card: #131c31;
+  --bg-card-alt: #162038;
+  --bg-card-hover: #1a2640;
+  --bg-surface: #131c31;
+  --border-subtle: rgba(148, 163, 184, 0.12);
+  --text-main: #e2e8f0;
+  --text-muted: #94a3b8;
+  --text-dark: #64748b;
+  --shadow-card: 0 10px 30px rgba(0, 0, 0, 0.3);
+  --shadow-3d-card: 6px 8px 20px rgba(0, 0, 0, 0.25), 2px 3px 8px rgba(0, 0, 0, 0.15), inset 1px 1px 0 rgba(148, 163, 184, 0.08);
+  --shadow-3d-card-hover: 10px 14px 30px rgba(0, 0, 0, 0.35), 4px 6px 12px rgba(0, 0, 0, 0.2), inset 1px 1px 0 rgba(148, 163, 184, 0.1);
+  /* Override appearance settings that are set via JS to white */
+  --app-crm-bg: #0b1120;
+  --app-sidebar-bg: #0f172a;
+  --app-btn-bg: #1a2640;
+  --app-btn-text: #e2e8f0;
+}
+
+html.crm-dark body {
+  background-color: #0b1120;
+  background-image:
+    radial-gradient(circle at 50% 0%, rgba(234, 179, 8, 0.06) 0%, transparent 45%),
+    radial-gradient(circle at 85% 15%, rgba(59, 130, 246, 0.03) 0%, transparent 35%),
+    linear-gradient(to right, rgba(148, 163, 184, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(148, 163, 184, 0.03) 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, 28px 28px, 28px 28px;
+  background-attachment: fixed;
+  color: #e2e8f0;
+}
+
+/* CRM dashboard container dark */
+html.crm-dark .crm-dashboard {
+  background: #0b1120 !important;
+}
+
+/* Generic text color overrides for main content */
+html.crm-dark .crm-main,
+html.crm-dark .crm-main * {
+  color-scheme: dark;
+}
+
+/* Headings and text in main content */
+html.crm-dark .crm-main h1,
+html.crm-dark .crm-main h2,
+html.crm-dark .crm-main h3,
+html.crm-dark .crm-main h4 {
+  color: #e2e8f0;
+}
+html.crm-dark .crm-main p {
+  color: #94a3b8;
+}
+html.crm-dark .crm-main label,
+html.crm-dark .crm-main span,
+html.crm-dark .crm-main div {
+  color: inherit;
+}
+
+/* Generic card/panel surfaces */
+html.crm-dark .crm-main .card,
+html.crm-dark .crm-main .panel,
+html.crm-dark .crm-main .box,
+html.crm-dark .crm-main .container,
+html.crm-dark .crm-main .wrapper {
+  background: #131c31;
+  border-color: rgba(148, 163, 184, 0.1);
+}
+
+/* Generic input/select/textarea in main content */
+html.crm-dark .crm-main input,
+html.crm-dark .crm-main select,
+html.crm-dark .crm-main textarea {
+  background-color: #0f172a;
+  border-color: rgba(148, 163, 184, 0.12);
+  color: #e2e8f0;
+}
+html.crm-dark .crm-main input::placeholder,
+html.crm-dark .crm-main textarea::placeholder {
+  color: #64748b;
+}
+html.crm-dark .crm-main input:focus,
+html.crm-dark .crm-main select:focus,
+html.crm-dark .crm-main textarea:focus {
+  border-color: rgba(234, 179, 8, 0.4);
+}
+html.crm-dark .crm-main select option {
+  background: #131c31;
+  color: #e2e8f0;
+}
+
+/* Generic buttons (non-gold) */
+html.crm-dark .crm-main button:not(.gold-cta):not(.crm-btn-add-lead):not(.crm-add-lead-submit):not([class*="btn-add"]):not([class*="btn-primary"]):not([class*="gold"]) {
+  background-color: #1a2640;
+  border-color: rgba(148, 163, 184, 0.12);
+  color: #e2e8f0;
+}
+html.crm-dark .crm-main button:not(.gold-cta):not(.crm-btn-add-lead):not(.crm-add-lead-submit):not([class*="btn-add"]):not([class*="btn-primary"]):not([class*="gold"]):hover {
+  background-color: #243353;
+}
+
+/* Tables in main content */
+html.crm-dark .crm-main table {
+  border-color: rgba(148, 163, 184, 0.1);
+}
+html.crm-dark .crm-main table th {
+  background: #0f172a;
+  color: #94a3b8;
+  border-color: rgba(148, 163, 184, 0.1);
+}
+html.crm-dark .crm-main table td {
+  border-color: rgba(148, 163, 184, 0.06);
+  color: #e2e8f0;
+}
+html.crm-dark .crm-main table tbody tr:hover {
+  background: rgba(148, 163, 184, 0.04);
+}
+
+/* Links */
+html.crm-dark .crm-main a {
+  color: #60a5fa;
+}
+html.crm-dark .crm-main a:hover {
+  color: #93c5fd;
+}
+
+html.crm-dark ::selection {
+  background-color: #CA8A04;
+  color: #0b1120;
+}
+
+html.crm-dark ::-webkit-scrollbar-track {
+  background: #0b1120;
+}
+html.crm-dark ::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #CA8A04 0%, #854D0E 100%);
+}
+
+/* Sidebar dark */
+html.crm-dark .crm-sidebar {
+  background: linear-gradient(145deg, #0f172a 0%, #131c31 72%, #162038 100%) !important;
+  border-color: rgba(148, 163, 184, 0.1);
+  box-shadow: 16px 20px 36px rgba(0, 0, 0, 0.3), inset 1px 1px 0 rgba(148, 163, 184, 0.06);
+}
+html.crm-dark .crm-sidebar-brand {
+  border-bottom-color: rgba(148, 163, 184, 0.1);
+  background: linear-gradient(135deg, rgba(19, 28, 49, 0.8), rgba(22, 32, 56, 0.42));
+}
+html.crm-dark .crm-sidebar-brand h2 { color: #e2e8f0; }
+html.crm-dark .crm-sidebar-brand span { color: #CA8A04; }
+html.crm-dark .crm-sidebar-toggle {
+  border-color: rgba(202, 138, 4, 0.25);
+  background: rgba(202, 138, 4, 0.1);
+  color: #CA8A04;
+}
+html.crm-dark .crm-sidebar-toggle:hover {
+  background: rgba(202, 138, 4, 0.2);
+  border-color: rgba(202, 138, 4, 0.4);
+}
+html.crm-dark .crm-sidebar-toggle-collapsed {
+  border-color: rgba(202, 138, 4, 0.25);
+  background: rgba(202, 138, 4, 0.1);
+  color: #CA8A04;
+}
+html.crm-dark .crm-sidebar-toggle-collapsed:hover {
+  background: rgba(202, 138, 4, 0.2);
+  border-color: rgba(202, 138, 4, 0.4);
+}
+html.crm-dark .crm-nav-item {
+  color: #94a3b8;
+  box-shadow: 0 1px 0 rgba(148, 163, 184, 0.04);
+}
+html.crm-dark .crm-nav-item:hover {
+  background: linear-gradient(145deg, #1a2640, #162038);
+  color: #CA8A04;
+  border-color: rgba(202, 138, 4, 0.15);
+  box-shadow: 4px 5px 10px rgba(0, 0, 0, 0.15), inset 1px 1px 0 rgba(148, 163, 184, 0.08);
+}
+html.crm-dark .crm-nav-item.active {
+  background: linear-gradient(145deg, #1a1a0a 0%, #262008 100%);
+  color: #EAB308;
+  border-color: rgba(202, 138, 4, 0.3);
+  box-shadow: 5px 6px 12px rgba(0, 0, 0, 0.2), inset 1px 1px 0 rgba(234, 179, 8, 0.1);
+}
+html.crm-dark .crm-nav-label { color: #64748b; }
+html.crm-dark .crm-nav-label::after { background: linear-gradient(90deg, rgba(148, 163, 184, 0.15), transparent); }
+html.crm-dark .crm-nav-item:hover {
+  background: linear-gradient(145deg, #1a2640, #162038);
+  border-color: rgba(202, 138, 4, 0.15);
+  box-shadow: 2px 3px 8px rgba(0, 0, 0, 0.15);
+}
+html.crm-dark .crm-nav-item.active {
+  background: linear-gradient(145deg, #1a1a0a 0%, #262008 100%);
+  border-color: rgba(202, 138, 4, 0.3);
+  box-shadow: 3px 4px 10px rgba(0, 0, 0, 0.2);
+}
+html.crm-dark .crm-nav-item.active::before {
+  background: linear-gradient(180deg, #EAB308, #CA8A04);
+}
+html.crm-dark .crm-pipeline-funnel {
+  background: linear-gradient(180deg, rgba(234, 179, 8, 0.04) 0%, rgba(234, 179, 8, 0.01) 100%);
+  border-color: rgba(202, 138, 4, 0.1);
+}
+html.crm-dark .crm-pipeline-funnel-total-num { color: #e2e8f0; }
+html.crm-dark .crm-pipeline-funnel-total-label { color: #64748b; }
+html.crm-dark .crm-pipeline-funnel-row-label { color: #94a3b8; }
+html.crm-dark .crm-pipeline-funnel-bar-track { background: rgba(148, 163, 184, 0.08); }
+html.crm-dark .crm-pipeline-funnel-all { color: #64748b; border-top-color: rgba(202, 138, 4, 0.06); }
+html.crm-dark .crm-sidebar-footer-actions .crm-nav-item:last-child:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: #f87171;
+  border-color: rgba(239, 68, 68, 0.15);
+}
+html.crm-dark .crm-sidebar-footer-actions .crm-theme-toggle:hover {
+  color: #EAB308;
+  border-color: rgba(234, 179, 8, 0.15);
+}
+html.crm-dark .crm-nav-badge {
+  background: rgba(234, 179, 8, 0.15);
+  color: #EAB308;
+}
+html.crm-dark .crm-nav-user {
+  background: rgba(234, 179, 8, 0.04);
+}
+html.crm-dark .crm-nav-user-info strong { color: #e2e8f0; }
+html.crm-dark .crm-nav-user-info span { color: #CA8A04; }
+html.crm-dark .crm-sidebar-footer {
+  border-top-color: rgba(148, 163, 184, 0.1);
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.2), rgba(22, 32, 56, 0.46));
+}
+html.crm-dark .crm-sidebar-footer .crm-nav-user:hover {
+  background: rgba(234, 179, 8, 0.08);
+}
+html.crm-dark .crm-sidebar-footer .crm-nav-item:hover {
+  background: rgba(234, 179, 8, 0.08);
+}
+html.crm-dark .crm-theme-toggle {
+  color: #94a3b8;
+}
+html.crm-dark .crm-theme-toggle:hover {
+  color: #EAB308;
+}
+
+/* Main content dark */
+html.crm-dark .crm-main { background: transparent; }
+html.crm-dark .crm-topbar { border-bottom-color: rgba(148, 163, 184, 0.1); }
+html.crm-dark .crm-topbar h1 { color: #e2e8f0; }
+html.crm-dark .crm-topbar p { color: #94a3b8; }
+
+html.crm-dark .crm-notif-btn {
+  border-color: rgba(202, 138, 4, 0.4);
+  background: #131c31;
+  color: #CA8A04;
+}
+html.crm-dark .crm-notif-btn:hover {
+  border-color: #CA8A04;
+  background: rgba(234, 179, 8, 0.08);
+}
+html.crm-dark .crm-notif-dot {
+  border-color: #131c31;
+}
+html.crm-dark .crm-notif-panel {
+  background: #131c31;
+  border-color: rgba(202, 138, 4, 0.3);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+}
+html.crm-dark .crm-notif-header {
+  border-bottom-color: rgba(202, 138, 4, 0.2);
+  color: #e2e8f0;
+}
+html.crm-dark .crm-notif-close { color: #64748b; }
+html.crm-dark .crm-notif-close:hover { background: #1a2640; color: #94a3b8; }
+html.crm-dark .crm-notif-item { border-bottom-color: rgba(148, 163, 184, 0.06); }
+html.crm-dark .crm-notif-item:hover { background: #1a2640; }
+html.crm-dark .crm-notif-name { color: #e2e8f0; }
+html.crm-dark .crm-notif-date { color: #94a3b8; }
+html.crm-dark .crm-notif-note { color: #64748b; }
+
+/* Buttons dark */
+html.crm-dark .crm-btn-add-lead {
+  background: linear-gradient(145deg, #EAB308 0%, #CA8A04 100%);
+  color: #0b1120;
+}
+html.crm-dark .crm-btn-bulk-upload {
+  background: #1a2640;
+  border-color: rgba(148, 163, 184, 0.15);
+  color: #e2e8f0;
+}
+html.crm-dark .crm-btn-bulk-upload:hover {
+  background: #243353;
+  border-color: rgba(148, 163, 184, 0.25);
+}
+html.crm-dark .crm-btn-dialer {
+  background: #1a2640;
+  border-color: rgba(148, 163, 184, 0.15);
+  color: #e2e8f0;
+}
+html.crm-dark .crm-btn-dialer:hover { background: #243353; }
+html.crm-dark .crm-btn-secondary {
+  background: #1a2640;
+  border-color: rgba(148, 163, 184, 0.15);
+  color: #e2e8f0;
+}
+html.crm-dark .crm-btn-secondary:hover { background: #243353; }
+html.crm-dark .crm-btn-refresh {
+  background: #1a2640;
+  border-color: rgba(148, 163, 184, 0.15);
+  color: #e2e8f0;
+}
+html.crm-dark .crm-btn-refresh:hover { background: #243353; }
+
+/* View toggle dark */
+html.crm-dark .crm-view-toggle {
+  background: #131c31;
+  border-color: rgba(148, 163, 184, 0.12);
+}
+html.crm-dark .crm-view-toggle button { color: #94a3b8; }
+html.crm-dark .crm-view-toggle button.active {
+  background: rgba(234, 179, 8, 0.15);
+  color: #EAB308;
+}
+
+/* Stat cards dark */
+html.crm-dark .crm-stat-card {
+  background: #131c31;
+  border-color: rgba(148, 163, 184, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+html.crm-dark .crm-stat-card:hover {
+  border-color: rgba(148, 163, 184, 0.18);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+html.crm-dark .crm-stat-label { color: #94a3b8; }
+html.crm-dark .crm-stat-value { color: #e2e8f0; }
+html.crm-dark .crm-stat-icon { background: rgba(234, 179, 8, 0.1); }
+
+/* Table dark */
+html.crm-dark .crm-table-card {
+  background: #131c31;
+  border-color: rgba(148, 163, 184, 0.1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+html.crm-dark .crm-table-card input,
+html.crm-dark .crm-table-card select {
+  background: #0f172a;
+  border-color: rgba(148, 163, 184, 0.12);
+  color: #e2e8f0;
+}
+html.crm-dark .crm-table-card input::placeholder { color: #64748b; }
+html.crm-dark .crm-table-card input:focus,
+html.crm-dark .crm-table-card select:focus {
+  border-color: rgba(234, 179, 8, 0.4);
+}
+html.crm-dark .crm-table th {
+  color: #94a3b8;
+  border-bottom-color: rgba(148, 163, 184, 0.12);
+}
+html.crm-dark .crm-table td {
+  border-bottom-color: rgba(148, 163, 184, 0.06);
+}
+html.crm-dark .crm-table-row:hover {
+  background: rgba(148, 163, 184, 0.04);
+}
+html.crm-dark .crm-row-selected {
+  background: rgba(234, 179, 8, 0.06) !important;
+}
+html.crm-dark .crm-lead-info strong { color: #e2e8f0; }
+html.crm-dark .crm-lead-info span { color: #64748b; }
+html.crm-dark .crm-lead-avatar {
+  background: linear-gradient(135deg, #CA8A04 0%, #854D0E 100%);
+  color: #fff;
+}
+html.crm-dark .crm-contact-item {
+  color: #94a3b8;
+}
+html.crm-dark .crm-contact-email { color: #64748b; }
+html.crm-dark .crm-product-tag { background: rgba(148, 163, 184, 0.08); color: #94a3b8; }
+html.crm-dark .crm-date-tag { color: #64748b; background: rgba(148, 163, 184, 0.06); }
+html.crm-dark .crm-tag-mini { background: rgba(234, 179, 8, 0.1); color: #CA8A04; }
+html.crm-dark .crm-tag-empty { color: #475569; }
+
+/* Filter bar dark */
+html.crm-dark .crm-filter-bar {
+  background: #131c31;
+  border-color: rgba(148, 163, 184, 0.1);
+}
+html.crm-dark .crm-filter-chip {
+  background: #1a2640;
+  border-color: rgba(148, 163, 184, 0.12);
+  color: #94a3b8;
+}
+html.crm-dark .crm-filter-chip:hover {
+  border-color: rgba(234, 179, 8, 0.3);
+  color: #CA8A04;
+}
+html.crm-dark .crm-filter-chip.active {
+  background: rgba(234, 179, 8, 0.12);
+  border-color: rgba(234, 179, 8, 0.35);
+  color: #EAB308;
+}
+
+/* Pagination dark */
+html.crm-dark .crm-pagination-info { color: #94a3b8; }
+html.crm-dark .crm-page-btn {
+  background: #1a2640;
+  border-color: rgba(148, 163, 184, 0.12);
+  color: #e2e8f0;
+}
+html.crm-dark .crm-page-btn:hover:not(:disabled) {
+  background: #243353;
+}
+html.crm-dark .crm-page-btn:disabled { opacity: 0.4; }
+html.crm-dark .crm-page-num { color: #94a3b8; }
+html.crm-dark .crm-pagination {
+  border-top-color: rgba(148, 163, 184, 0.08);
+}
+
+/* Table toolbar dark */
+html.crm-dark .crm-table-toolbar {
+  border-bottom-color: rgba(148, 163, 184, 0.08);
+}
+html.crm-dark .crm-search-wrap > svg { color: #64748b; }
+html.crm-dark .crm-search-wrap input {
+  background: #0f172a;
+  border-color: rgba(148, 163, 184, 0.12);
+  color: #e2e8f0;
+}
+html.crm-dark .crm-search-wrap input:focus {
+  border-color: rgba(234, 179, 8, 0.4);
+  background: #131c31;
+  box-shadow: 0 0 0 3px rgba(234, 179, 8, 0.1);
+}
+html.crm-dark .crm-filter-wrap > svg { color: #64748b; }
+html.crm-dark .crm-filter-wrap select {
+  background: #0f172a;
+  border-color: rgba(148, 163, 184, 0.12);
+  color: #e2e8f0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+}
+html.crm-dark .crm-filter-wrap select:focus {
+  border-color: rgba(234, 179, 8, 0.4);
+  background-color: #131c31;
+  box-shadow: 0 0 0 3px rgba(234, 179, 8, 0.1);
+}
+html.crm-dark .crm-filter-wrap select option,
+html.crm-dark .crm-table-card select option {
+  background: #131c31;
+  color: #e2e8f0;
+}
+
+/* Date filter dark */
+html.crm-dark .crm-date-filter-wrap {
+  background: #0f172a;
+  border-color: rgba(234, 179, 8, 0.3);
+}
+html.crm-dark .crm-date-filter-wrap:hover {
+  border-color: rgba(234, 179, 8, 0.5);
+  background: rgba(234, 179, 8, 0.05);
+}
+html.crm-dark .crm-date-filter-wrap:focus-within {
+  border-color: rgba(234, 179, 8, 0.4);
+  background: rgba(234, 179, 8, 0.05);
+  box-shadow: 0 0 0 3px rgba(234, 179, 8, 0.1);
+}
+html.crm-dark .crm-date-filter-icon { color: #64748b; }
+html.crm-dark .crm-date-filter-select {
+  color: #e2e8f0;
+}
+html.crm-dark .crm-date-filter-select option {
+  background: #131c31;
+  color: #e2e8f0;
+}
+
+/* Custom date inputs dark */
+html.crm-dark .crm-custom-date-input {
+  background: #0f172a;
+  border-color: rgba(234, 179, 8, 0.3);
+  color: #e2e8f0;
+  color-scheme: dark;
+}
+html.crm-dark .crm-custom-date-input:focus {
+  border-color: rgba(234, 179, 8, 0.4);
+  background: rgba(234, 179, 8, 0.05);
+  box-shadow: 0 0 0 3px rgba(234, 179, 8, 0.1);
+}
+html.crm-dark .crm-custom-date-input:hover {
+  border-color: rgba(234, 179, 8, 0.5);
+  background: rgba(234, 179, 8, 0.05);
+}
+html.crm-dark .crm-custom-date-sep { color: #64748b; }
+
+/* Table header sortable hover dark */
+html.crm-dark .crm-th-sortable:hover {
+  background: rgba(148, 163, 184, 0.04);
+}
+html.crm-dark .crm-table thead tr {
+  border-bottom-color: rgba(148, 163, 184, 0.12);
+}
+html.crm-dark .crm-table th {
+  background: #0f172a;
+}
+
+/* Product tag specific colors in dark mode */
+html.crm-dark .crm-product-tag.algo {
+  background: rgba(34, 197, 94, 0.12);
+  color: #4ade80;
+}
+html.crm-dark .crm-product-tag.tradingview_premium {
+  background: rgba(234, 179, 8, 0.12);
+  color: #facc15;
+}
+
+/* Row email button dark */
+html.crm-dark .crm-row-email-btn {
+  background: rgba(59, 130, 246, 0.15) !important;
+  color: #93c5fd !important;
+}
+
+/* Mobile dark */
+html.crm-dark .crm-mobile-header {
+  background: #0f172a;
+  border-bottom-color: rgba(148, 163, 184, 0.1);
+}
+html.crm-dark .crm-mobile-header-title span { color: #e2e8f0; }
+html.crm-dark .crm-mobile-search-bar { background: #0f172a; }
+html.crm-dark .crm-mobile-search-wrap {
+  background: #131c31;
+  border-color: rgba(148, 163, 184, 0.12);
+}
+html.crm-dark .crm-mobile-search-wrap input {
+  color: #e2e8f0;
+}
+html.crm-dark .crm-mobile-search-wrap input::placeholder { color: #64748b; }
+html.crm-dark .crm-mobile-filter-btn {
+  background: #131c31;
+  border-color: rgba(148, 163, 184, 0.12);
+  color: #e2e8f0;
+}
+html.crm-dark .crm-mobile-filter-panel {
+  background: #131c31;
+  border-color: rgba(148, 163, 184, 0.1);
+}
+html.crm-dark .crm-mobile-filter-group select {
+  background: #0f172a;
+  border-color: rgba(148, 163, 184, 0.12);
+  color: #e2e8f0;
+}
+html.crm-dark .crm-mobile-lead-card {
+  background: #131c31;
+  border-color: rgba(148, 163, 184, 0.08);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+html.crm-dark .crm-mobile-lead-card.selected {
+  border-color: rgba(234, 179, 8, 0.3);
+  background: rgba(234, 179, 8, 0.04);
+}
+html.crm-dark .crm-mobile-card-info strong { color: #e2e8f0; }
+html.crm-dark .crm-mobile-card-info span { color: #64748b; }
+html.crm-dark .crm-mobile-card-phone { color: #94a3b8; }
+html.crm-dark .crm-mobile-card-location { color: #64748b; }
+html.crm-dark .crm-mobile-page-title h1 { color: #e2e8f0; }
+html.crm-dark .crm-mobile-page-title p { color: #94a3b8; }
+html.crm-dark .crm-mobile-customize-btn {
+  background: #1a2640;
+  border-color: rgba(148, 163, 184, 0.12);
+  color: #e2e8f0;
+}
+html.crm-dark .crm-mobile-customize-panel {
+  background: #131c31;
+  border-color: rgba(148, 163, 184, 0.1);
+}
+html.crm-dark .crm-mobile-customize-heading strong { color: #e2e8f0; }
+html.crm-dark .crm-mobile-customize-heading span { color: #94a3b8; }
+html.crm-dark .crm-mobile-customize-option {
+  background: #0f172a;
+  border-color: rgba(148, 163, 184, 0.1);
+  color: #e2e8f0;
+}
+html.crm-dark .crm-mobile-customize-option.active {
+  background: rgba(234, 179, 8, 0.1);
+  border-color: rgba(234, 179, 8, 0.3);
+}
+html.crm-dark .crm-mobile-bulk-bar {
+  background: #131c31;
+  border-color: rgba(148, 163, 184, 0.1);
+}
+html.crm-dark .crm-mobile-bulk-bar span { color: #e2e8f0; }
+html.crm-dark .crm-mobile-sidebar {
+  background: #0f172a;
+}
+html.crm-dark .crm-mobile-sidebar-overlay { background: rgba(0, 0, 0, 0.5); }
+
+/* Drawer/Modal dark */
+html.crm-dark .crm-drawer {
+  background: #131c31;
+  box-shadow: -8px 0 40px rgba(0, 0, 0, 0.4);
+}
+html.crm-dark .crm-drawer-header {
+  background: #0f172a;
+  border-bottom-color: rgba(148, 163, 184, 0.1);
+}
+html.crm-dark .crm-drawer-header h2 { color: #e2e8f0; }
+html.crm-dark .crm-drawer-header p { color: #94a3b8; }
+html.crm-dark .crm-drawer-label { color: #64748b; }
+html.crm-dark .crm-drawer-contact-item {
+  background: #0f172a;
+  border-color: rgba(148, 163, 184, 0.08);
+  color: #e2e8f0;
+}
+html.crm-dark .crm-drawer-section input,
+html.crm-dark .crm-drawer-section select,
+html.crm-dark .crm-drawer-section textarea {
+  background: #0f172a;
+  border-color: rgba(148, 163, 184, 0.12);
+  color: #e2e8f0;
+}
+html.crm-dark .crm-drawer-overlay { background: rgba(0, 0, 0, 0.5); }
+
+/* Add lead modal dark */
+html.crm-dark .crm-add-lead-modal {
+  background: #131c31;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+}
+html.crm-dark .crm-add-lead-modal h3 { color: #e2e8f0; }
+html.crm-dark .crm-add-lead-field span { color: #94a3b8; }
+html.crm-dark .crm-add-lead-field input,
+html.crm-dark .crm-add-lead-field select,
+html.crm-dark .crm-add-lead-field textarea {
+  background: #0f172a;
+  border-color: rgba(148, 163, 184, 0.12);
+  color: #e2e8f0;
+}
+html.crm-dark .crm-add-lead-field input::placeholder,
+html.crm-dark .crm-add-lead-field textarea::placeholder { color: #64748b; }
+html.crm-dark .crm-add-lead-submit {
+  background: linear-gradient(145deg, #EAB308 0%, #CA8A04 100%);
+  color: #0b1120;
+}
+html.crm-dark .crm-delete-cancel {
+  background: #1a2640;
+  border-color: rgba(148, 163, 184, 0.12);
+  color: #e2e8f0;
+}
+
+/* Bulk delete modal dark */
+html.crm-dark .crm-bulk-delete-modal {
+  background: #131c31;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+}
+html.crm-dark .crm-bulk-delete-modal h3 { color: #e2e8f0; }
+html.crm-dark .crm-bulk-delete-modal p { color: #94a3b8; }
+
+/* Empty/loading state dark */
+html.crm-dark .crm-empty-state { color: #64748b; }
+html.crm-dark .crm-empty-state h3 { color: #94a3b8; }
+html.crm-dark .crm-loading-state p { color: #64748b; }
+html.crm-dark .crm-error-banner {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+}
+
+/* Pipeline dark */
+html.crm-dark .crm-pipeline-column {
+  background: #0f172a;
+  border-color: rgba(148, 163, 184, 0.08);
+}
+html.crm-dark .crm-pipeline-column-header { color: #e2e8f0; }
+html.crm-dark .crm-pipeline-card {
+  background: #131c31;
+  border-color: rgba(148, 163, 184, 0.08);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+html.crm-dark .crm-pipeline-card:hover {
+  border-color: rgba(148, 163, 184, 0.15);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+html.crm-dark .crm-pipeline-card strong { color: #e2e8f0; }
+html.crm-dark .crm-pipeline-card span { color: #64748b; }
+
+/* ===== DASH3D- (3D Dashboard) DARK MODE ===== */
+
+/* Stat cards */
+html.crm-dark .dash3d-stat-card {
+  background: #131c31;
+  border-color: rgba(148, 163, 184, 0.1);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+html.crm-dark .dash3d-stat-clickable:hover .dash3d-stat-card {
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3), 0 0 30px var(--card-glow, rgba(59,130,246,0.15));
+}
+html.crm-dark .dash3d-stat-shine {
+  background: linear-gradient(180deg, rgba(255,255,255,0.06), transparent);
+}
+html.crm-dark .dash3d-stat-value {
+  color: #e2e8f0;
+}
+html.crm-dark .dash3d-stat-label {
+  color: #94a3b8;
+}
+html.crm-dark .dash3d-stat-bar {
+  background: rgba(148, 163, 184, 0.12);
+}
+html.crm-dark .dash3d-stat-trend {
+  color: #4ade80;
+  background: rgba(22, 163, 74, 0.12);
+}
+
+/* Cards */
+html.crm-dark .dash3d-card {
+  background: #131c31;
+  border-color: rgba(148, 163, 184, 0.1);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+}
+html.crm-dark .dash3d-card-scene:hover .dash3d-card {
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+html.crm-dark .dash3d-card-header {
+  border-bottom-color: rgba(148, 163, 184, 0.08);
+}
+html.crm-dark .dash3d-card-title {
+  color: #94a3b8;
+}
+html.crm-dark .dash3d-card-title h2 {
+  color: #e2e8f0;
+}
+html.crm-dark .dash3d-card-link {
+  color: #06b6d4;
+}
+html.crm-dark .dash3d-card-link:hover {
+  color: #22d3ee;
+}
+
+/* Pipeline */
+html.crm-dark .dash3d-pipeline-total-badge {
+  color: #94a3b8;
+  background: rgba(148, 163, 184, 0.12);
+}
+html.crm-dark .dash3d-pipeline-stage-card {
+  background: #0f172a;
+  border-color: rgba(148, 163, 184, 0.08);
+}
+html.crm-dark .dash3d-pipeline-stage-card:hover {
+  background: #162038;
+  border-color: var(--stage-color, rgba(148, 163, 184, 0.2));
+}
+html.crm-dark .dash3d-pipeline-stage-count {
+  color: #e2e8f0;
+}
+html.crm-dark .dash3d-pipeline-stage-label {
+  color: #94a3b8;
+}
+html.crm-dark .dash3d-pipeline-stage-track {
+  background: rgba(148, 163, 184, 0.1);
+}
+
+/* Quick Actions */
+html.crm-dark .dash3d-quick-btn {
+  border-color: rgba(148, 163, 184, 0.1);
+  background: #0f172a;
+  color: #cbd5e1;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+html.crm-dark .dash3d-quick-btn:hover {
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.25);
+}
+
+/* Recent / Follow-up lists */
+html.crm-dark .dash3d-recent-row {
+  border-bottom-color: rgba(148, 163, 184, 0.06);
+}
+html.crm-dark .dash3d-recent-row:hover {
+  background: #0f172a;
+}
+html.crm-dark .dash3d-recent-name {
+  color: #e2e8f0;
+}
+html.crm-dark .dash3d-recent-meta {
+  color: #64748b;
+}
+html.crm-dark .dash3d-recent-time {
+  color: #64748b;
+}
+html.crm-dark .dash3d-recent-empty {
+  color: #475569;
+}
+html.crm-dark .dash3d-recent-empty p {
+  color: #64748b;
+}
+
+/* Lead Source Breakdown */
+html.crm-dark .dash3d-source-row {
+  border-bottom-color: rgba(148, 163, 184, 0.06);
+}
+html.crm-dark .dash3d-source-row:hover {
+  background: #0f172a;
+}
+html.crm-dark .dash3d-source-label {
+  color: #e2e8f0;
+}
+html.crm-dark .dash3d-source-pct {
+  color: #64748b;
+}
+html.crm-dark .dash3d-source-track {
+  background: rgba(148, 163, 184, 0.1);
+}
+
+/* Task cards */
+html.crm-dark .dash3d-task-card {
+  background: #0f172a;
+  border-color: rgba(148, 163, 184, 0.08);
+}
+html.crm-dark .dash3d-task-card:hover {
+  background: #162038;
+  border-color: var(--task-color, rgba(148, 163, 184, 0.2));
+}
+html.crm-dark .dash3d-task-count {
+  color: #e2e8f0;
+}
+html.crm-dark .dash3d-task-label {
+  color: #94a3b8;
+}
+html.crm-dark .dash3d-tasks-all-done {
+  color: #4ade80;
+}
+
+/* Hero (already dark-themed, but ensure subtitle adapts) */
+html.crm-dark .dash3d-hero-sub {
+  color: #64748b;
+}
+
+/* Dashboard overview dark */
+html.crm-dark .dash-overview { background: transparent; }
+html.crm-dark .dash-page-header h1 { color: #e2e8f0; }
+html.crm-dark .dash-page-header p { color: #94a3b8; }
+html.crm-dark .dash-card {
+  background: #131c31;
+  border-color: rgba(148, 163, 184, 0.1);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+html.crm-dark .dash-card:hover {
+  border-color: rgba(148, 163, 184, 0.18);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+html.crm-dark .dash-card h3 { color: #e2e8f0; }
+html.crm-dark .dash-card p { color: #94a3b8; }
+html.crm-dark .dash-stat-value { color: #e2e8f0; }
+html.crm-dark .dash-stat-label { color: #94a3b8; }
+
+/* Generic dark overrides for remaining surfaces */
+html.crm-dark .crm-drawer-section,
+html.crm-dark .crm-drawer-body { background: transparent; }
+html.crm-dark .crm-contact-static { background: rgba(59, 130, 246, 0.06); border-color: rgba(59, 130, 246, 0.1); }
+html.crm-dark .crm-drawer-section .crm-contact-static select { color: #e2e8f0; }
+html.crm-dark .crm-drawer-section .crm-contact-static select option { background: #131c31; }
+
+/* ============================================
+   COMPREHENSIVE DARK MODE CATCH-ALL
+   Targets all sub-page components inside .crm-main
+   ============================================ */
+
+/* Force dark background on the main content area and all direct children containers */
+html.crm-dark .crm-main > * {
+  color: #e2e8f0;
+}
+
+/* All elements with white/light backgrounds — broad catch-all */
+html.crm-dark .crm-main [style*="background: #fff"],
+html.crm-dark .crm-main [style*="background:#fff"],
+html.crm-dark .crm-main [style*="background: white"],
+html.crm-dark .crm-main [style*="background:white"],
+html.crm-dark .crm-main [style*="background: #FFFFFF"],
+html.crm-dark .crm-main [style*="background:#FFFFFF"],
+html.crm-dark .crm-main [style*="background: #ffffff"],
+html.crm-dark .crm-main [style*="background:#ffffff"],
+html.crm-dark .crm-main [style*="background: #F8FAFC"],
+html.crm-dark .crm-main [style*="background:#F8FAFC"],
+html.crm-dark .crm-main [style*="background: #f8fafc"],
+html.crm-dark .crm-main [style*="background:#f8fafc"],
+html.crm-dark .crm-main [style*="background: #F1F5F9"],
+html.crm-dark .crm-main [style*="background:#F1F5F9"],
+html.crm-dark .crm-main [style*="background: #f1f5f9"],
+html.crm-dark .crm-main [style*="background:#f1f5f9"],
+html.crm-dark .crm-main [style*="background: #FEFCE8"],
+html.crm-dark .crm-main [style*="background:#FEFCE8"],
+html.crm-dark .crm-main [style*="background: #fefce8"],
+html.crm-dark .crm-main [style*="background:#fefce8"],
+html.crm-dark .crm-main [style*="background: #fffdf2"],
+html.crm-dark .crm-main [style*="background:#fffdf2"],
+html.crm-dark .crm-main [style*="background: #FEF3C7"],
+html.crm-dark .crm-main [style*="background:#FEF3C7"],
+html.crm-dark .crm-main [style*="background: #fef3c7"],
+html.crm-dark .crm-main [style*="background:#fef3c7"],
+html.crm-dark .crm-main [style*="background: #FAFAFA"],
+html.crm-dark .crm-main [style*="background:#FAFAFA"],
+html.crm-dark .crm-main [style*="background: #fafafa"],
+html.crm-dark .crm-main [style*="background:#fafafa"] {
+  background: #131c31 !important;
+}
+
+/* Inline color overrides for dark mode text */
+html.crm-dark .crm-main [style*="color: #0F172A"],
+html.crm-dark .crm-main [style*="color:#0F172A"],
+html.crm-dark .crm-main [style*="color: #0f172a"],
+html.crm-dark .crm-main [style*="color:#0f172a"],
+html.crm-dark .crm-main [style*="color: #1F2937"],
+html.crm-dark .crm-main [style*="color:#1F2937"],
+html.crm-dark .crm-main [style*="color: #1f2937"],
+html.crm-dark .crm-main [style*="color:#1f2937"],
+html.crm-dark .crm-main [style*="color: #111827"],
+html.crm-dark .crm-main [style*="color:#111827"],
+html.crm-dark .crm-main [style*="color: #111827"],
+html.crm-dark .crm-main [style*="color:#111827"],
+html.crm-dark .crm-main [style*="color: #000"],
+html.crm-dark .crm-main [style*="color:#000"],
+html.crm-dark .crm-main [style*="color: #000000"],
+html.crm-dark .crm-main [style*="color:#000000"],
+html.crm-dark .crm-main [style*="color: black"],
+html.crm-dark .crm-main [style*="color:black"] {
+  color: #e2e8f0 !important;
+}
+
+/* Muted text colors */
+html.crm-dark .crm-main [style*="color: #64748B"],
+html.crm-dark .crm-main [style*="color:#64748B"],
+html.crm-dark .crm-main [style*="color: #64748b"],
+html.crm-dark .crm-main [style*="color:#64748b"],
+html.crm-dark .crm-main [style*="color: #475569"],
+html.crm-dark .crm-main [style*="color:#475569"],
+html.crm-dark .crm-main [style*="color: #94A3B8"],
+html.crm-dark .crm-main [style*="color:#94A3B8"],
+html.crm-dark .crm-main [style*="color: #94a3b8"],
+html.crm-dark .crm-main [style*="color:#94a3b8"] {
+  color: #94a3b8 !important;
+}
+
+/* Sub-page header patterns */
+html.crm-dark .hub-header,
+html.crm-dark .settings-page-header,
+html.crm-dark .folup-header,
+html.crm-dark .broadcast-header,
+html.crm-dark .analytics-header,
+html.crm-dark .ib-leads-header,
+html.crm-dark .broker-header,
+html.crm-dark .lead-tracker-header,
+html.crm-dark .automation-builder,
+html.crm-dark .goal-header,
+html.crm-dark .winloss-header,
+html.crm-dark .dup-header,
+html.crm-dark .leaderboard-header,
+html.crm-dark .templates-header,
+html.crm-dark .team-dash-header {
+  background: transparent;
+}
+
+html.crm-dark .hub-header h1,
+html.crm-dark .hub-header h2,
+html.crm-dark .settings-page-header h1,
+html.crm-dark .settings-page-header h2,
+html.crm-dark .folup-header h1,
+html.crm-dark .folup-header h2,
+html.crm-dark .broadcast-header h1,
+html.crm-dark .broadcast-header h2,
+html.crm-dark .analytics-header h1,
+html.crm-dark .analytics-header h2,
+html.crm-dark .ib-leads-header h1,
+html.crm-dark .ib-leads-header h2,
+html.crm-dark .broker-header h1,
+html.crm-dark .lead-tracker-header h1,
+html.crm-dark .automation-builder h1,
+html.crm-dark .automation-builder h2,
+html.crm-dark .goal-header h1,
+html.crm-dark .winloss-header h1,
+html.crm-dark .dup-header h1,
+html.crm-dark .leaderboard-header h1,
+html.crm-dark .templates-header h1 {
+  color: #e2e8f0;
+}
+
+html.crm-dark .hub-header p,
+html.crm-dark .settings-page-header p,
+html.crm-dark .folup-header p,
+html.crm-dark .broadcast-header p,
+html.crm-dark .analytics-header p,
+html.crm-dark .ib-leads-header p,
+html.crm-dark .broker-header p,
+html.crm-dark .lead-tracker-header p,
+html.crm-dark .automation-builder p,
+html.crm-dark .goal-header p,
+html.crm-dark .winloss-header p,
+html.crm-dark .dup-header p,
+html.crm-dark .leaderboard-header p,
+html.crm-dark .templates-header p {
+  color: #94a3b8;
+}
+
+/* Back buttons in sub-pages */
+html.crm-dark .dash-back-btn,
+html.crm-dark .hub-back-btn,
+html.crm-dark .folup-back-btn,
+html.crm-dark .settings-back-btn,
+html.crm-dark .broadcast-back-btn,
+html.crm-dark .analytics-back-btn,
+html.crm-dark .ib-leads-back-btn,
+html.crm-dark .broker-back-btn,
+html.crm-dark .lead-tracker-back-btn,
+html.crm-dark .automation-back-btn,
+html.crm-dark .goal-back-btn,
+html.crm-dark .winloss-back-btn,
+html.crm-dark .dup-back-btn,
+html.crm-dark .leaderboard-back-btn,
+html.crm-dark .templates-back-btn {
+  background: #1a2640;
+  border-color: rgba(148, 163, 184, 0.12);
+  color: #e2e8f0;
+}
+html.crm-dark .dash-back-btn:hover,
+html.crm-dark .hub-back-btn:hover,
+html.crm-dark .folup-back-btn:hover,
+html.crm-dark .settings-back-btn:hover,
+html.crm-dark .broadcast-back-btn:hover,
+html.crm-dark .analytics-back-btn:hover,
+html.crm-dark .ib-leads-back-btn:hover,
+html.crm-dark .broker-back-btn:hover,
+html.crm-dark .lead-tracker-back-btn:hover,
+html.crm-dark .automation-back-btn:hover,
+html.crm-dark .goal-back-btn:hover,
+html.crm-dark .winloss-back-btn:hover,
+html.crm-dark .dup-back-btn:hover,
+html.crm-dark .leaderboard-back-btn:hover,
+html.crm-dark .templates-back-btn:hover {
+  background: #243353;
+  color: #EAB308;
+}
+
+/* Sub-page cards and panels */
+html.crm-dark .hub-card,
+html.crm-dark .hub-tile,
+html.crm-dark .hub-option,
+html.crm-dark .settings-card,
+html.crm-dark .settings-section,
+html.crm-dark .settings-panel,
+html.crm-dark .settings-row,
+html.crm-dark .folup-card,
+html.crm-dark .folup-row,
+html.crm-dark .broadcast-card,
+html.crm-dark .broadcast-panel,
+html.crm-dark .analytics-card,
+html.crm-dark .analytics-panel,
+html.crm-dark .ib-leads-card,
+html.crm-dark .ib-leads-table-wrap,
+html.crm-dark .broker-card,
+html.crm-dark .broker-table-wrap,
+html.crm-dark .lead-tracker-card,
+html.crm-dark .automation-flow-card,
+html.crm-dark .automation-card,
+html.crm-dark .goal-card,
+html.crm-dark .winloss-card,
+html.crm-dark .dup-card,
+html.crm-dark .leaderboard-card,
+html.crm-dark .templates-card,
+html.crm-dark .team-dash-card,
+html.crm-dark .team-dash-panel,
+html.crm-dark .popup-card,
+html.crm-dark .popup-panel {
+  background: #131c31 !important;
+  border-color: rgba(148, 163, 184, 0.1) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2) !important;
+  color: #e2e8f0;
+}
+
+html.crm-dark .hub-card:hover,
+html.crm-dark .hub-tile:hover,
+html.crm-dark .hub-option:hover,
+html.crm-dark .settings-card:hover,
+html.crm-dark .folup-card:hover,
+html.crm-dark .broadcast-card:hover,
+html.crm-dark .analytics-card:hover,
+html.crm-dark .ib-leads-card:hover,
+html.crm-dark .broker-card:hover,
+html.crm-dark .lead-tracker-card:hover,
+html.crm-dark .automation-flow-card:hover,
+html.crm-dark .goal-card:hover,
+html.crm-dark .winloss-card:hover,
+html.crm-dark .dup-card:hover,
+html.crm-dark .leaderboard-card:hover,
+html.crm-dark .templates-card:hover,
+html.crm-dark .team-dash-card:hover,
+html.crm-dark .popup-card:hover {
+  border-color: rgba(148, 163, 184, 0.18) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Sub-page card headings */
+html.crm-dark .hub-card h3,
+html.crm-dark .hub-card h4,
+html.crm-dark .hub-tile h3,
+html.crm-dark .settings-card h3,
+html.crm-dark .settings-card h4,
+html.crm-dark .folup-card h3,
+html.crm-dark .broadcast-card h3,
+html.crm-dark .analytics-card h3,
+html.crm-dark .ib-leads-card h3,
+html.crm-dark .broker-card h3,
+html.crm-dark .lead-tracker-card h3,
+html.crm-dark .automation-flow-card h3,
+html.crm-dark .goal-card h3,
+html.crm-dark .winloss-card h3,
+html.crm-dark .dup-card h3,
+html.crm-dark .leaderboard-card h3,
+html.crm-dark .templates-card h3,
+html.crm-dark .team-dash-card h3,
+html.crm-dark .popup-card h3 {
+  color: #e2e8f0;
+}
+
+html.crm-dark .hub-card p,
+html.crm-dark .hub-tile p,
+html.crm-dark .settings-card p,
+html.crm-dark .folup-card p,
+html.crm-dark .broadcast-card p,
+html.crm-dark .analytics-card p,
+html.crm-dark .ib-leads-card p,
+html.crm-dark .broker-card p,
+html.crm-dark .lead-tracker-card p,
+html.crm-dark .automation-flow-card p,
+html.crm-dark .goal-card p,
+html.crm-dark .winloss-card p,
+html.crm-dark .dup-card p,
+html.crm-dark .leaderboard-card p,
+html.crm-dark .templates-card p,
+html.crm-dark .team-dash-card p,
+html.crm-dark .popup-card p {
+  color: #94a3b8;
+}
+
+/* Sub-page inputs */
+html.crm-dark .hub-card input,
+html.crm-dark .hub-card select,
+html.crm-dark .hub-card textarea,
+html.crm-dark .settings-card input,
+html.crm-dark .settings-card select,
+html.crm-dark .settings-card textarea,
+html.crm-dark .folup-card input,
+html.crm-dark .folup-card select,
+html.crm-dark .folup-card textarea,
+html.crm-dark .broadcast-card input,
+html.crm-dark .broadcast-card select,
+html.crm-dark .broadcast-card textarea,
+html.crm-dark .analytics-card input,
+html.crm-dark .analytics-card select,
+html.crm-dark .analytics-card textarea,
+html.crm-dark .ib-leads-card input,
+html.crm-dark .ib-leads-card select,
+html.crm-dark .ib-leads-card textarea,
+html.crm-dark .broker-card input,
+html.crm-dark .broker-card select,
+html.crm-dark .broker-card textarea,
+html.crm-dark .lead-tracker-card input,
+html.crm-dark .lead-tracker-card select,
+html.crm-dark .lead-tracker-card textarea,
+html.crm-dark .automation-flow-card input,
+html.crm-dark .automation-flow-card select,
+html.crm-dark .automation-flow-card textarea,
+html.crm-dark .goal-card input,
+html.crm-dark .goal-card select,
+html.crm-dark .goal-card textarea,
+html.crm-dark .templates-card input,
+html.crm-dark .templates-card select,
+html.crm-dark .templates-card textarea,
+html.crm-dark .team-dash-card input,
+html.crm-dark .team-dash-card select,
+html.crm-dark .team-dash-card textarea,
+html.crm-dark .popup-card input,
+html.crm-dark .popup-card select,
+html.crm-dark .popup-card textarea {
+  background-color: #0f172a;
+  border-color: rgba(148, 163, 184, 0.12);
+  color: #e2e8f0;
+}
+
+/* Sub-page labels */
+html.crm-dark .hub-card label,
+html.crm-dark .settings-card label,
+html.crm-dark .settings-section label,
+html.crm-dark .folup-card label,
+html.crm-dark .broadcast-card label,
+html.crm-dark .analytics-card label,
+html.crm-dark .ib-leads-card label,
+html.crm-dark .broker-card label,
+html.crm-dark .lead-tracker-card label,
+html.crm-dark .automation-flow-card label,
+html.crm-dark .goal-card label,
+html.crm-dark .templates-card label,
+html.crm-dark .team-dash-card label,
+html.crm-dark .popup-card label {
+  color: #94a3b8;
+}
+
+/* Sub-page stat numbers */
+html.crm-dark .hub-stat-num,
+html.crm-dark .folup-stat-num,
+html.crm-dark .analytics-stat-num,
+html.crm-dark .goal-stat-num,
+html.crm-dark .leaderboard-stat-num,
+html.crm-dark .automation-stat-num,
+html.crm-dark .broker-stat-num,
+html.crm-dark .lead-tracker-stat-num {
+  color: #e2e8f0;
+}
+
+/* Sub-page stat labels */
+html.crm-dark .hub-stat-label,
+html.crm-dark .folup-stat-label,
+html.crm-dark .analytics-stat-label,
+html.crm-dark .goal-stat-label,
+html.crm-dark .leaderboard-stat-label,
+html.crm-dark .automation-stat-label,
+html.crm-dark .broker-stat-label,
+html.crm-dark .lead-tracker-stat-label {
+  color: #94a3b8;
+}
+
+/* Sub-page empty states */
+html.crm-dark .hub-empty,
+html.crm-dark .settings-empty,
+html.crm-dark .folup-empty,
+html.crm-dark .broadcast-empty,
+html.crm-dark .analytics-empty,
+html.crm-dark .ib-leads-empty,
+html.crm-dark .broker-empty,
+html.crm-dark .lead-tracker-empty,
+html.crm-dark .automation-empty,
+html.crm-dark .goal-empty,
+html.crm-dark .winloss-empty,
+html.crm-dark .dup-empty,
+html.crm-dark .leaderboard-empty,
+html.crm-dark .templates-empty,
+html.crm-dark .team-dash-empty,
+html.crm-dark .popup-empty {
+  color: #64748b;
+}
+html.crm-dark .hub-empty h3,
+html.crm-dark .folup-empty h3,
+html.crm-dark .broadcast-empty h3,
+html.crm-dark .analytics-empty h3,
+html.crm-dark .automation-empty h3,
+html.crm-dark .goal-empty h3,
+html.crm-dark .templates-empty h3,
+html.crm-dark .team-dash-empty h3 {
+  color: #94a3b8;
+}
+
+/* Sub-page tables */
+html.crm-dark .hub-table,
+html.crm-dark .hub-table-card,
+html.crm-dark .folup-table,
+html.crm-dark .analytics-table,
+html.crm-dark .ib-leads-table,
+html.crm-dark .broker-table,
+html.crm-dark .lead-tracker-table,
+html.crm-dark .leaderboard-table,
+html.crm-dark .templates-table,
+html.crm-dark .team-dash-table {
+  background: #131c31;
+  border-color: rgba(148, 163, 184, 0.1);
+}
+
+html.crm-dark .hub-table th,
+html.crm-dark .hub-table-card th,
+html.crm-dark .folup-table th,
+html.crm-dark .analytics-table th,
+html.crm-dark .ib-leads-table th,
+html.crm-dark .broker-table th,
+html.crm-dark .lead-tracker-table th,
+html.crm-dark .leaderboard-table th,
+html.crm-dark .templates-table th,
+html.crm-dark .team-dash-table th {
+  color: #94a3b8;
+  border-bottom-color: rgba(148, 163, 184, 0.12);
+  background: #0f172a;
+}
+
+html.crm-dark .hub-table td,
+html.crm-dark .hub-table-card td,
+html.crm-dark .folup-table td,
+html.crm-dark .analytics-table td,
+html.crm-dark .ib-leads-table td,
+html.crm-dark .broker-table td,
+html.crm-dark .lead-tracker-table td,
+html.crm-dark .leaderboard-table td,
+html.crm-dark .templates-table td,
+html.crm-dark .team-dash-table td {
+  color: #e2e8f0;
+  border-bottom-color: rgba(148, 163, 184, 0.06);
+}
+
+/* Sub-page table container wrappers */
+html.crm-dark .hub-table-wrap,
+html.crm-dark .folup-table-wrap,
+html.crm-dark .analytics-table-wrap,
+html.crm-dark .ib-leads-table-wrap,
+html.crm-dark .broker-table-wrap,
+html.crm-dark .lead-tracker-table-wrap,
+html.crm-dark .leaderboard-table-wrap,
+html.crm-dark .templates-table-wrap,
+html.crm-dark .team-dash-table-wrap {
+  background: #131c31;
+  border-color: rgba(148, 163, 184, 0.1);
+}
+
+/* Chat/Inbox areas */
+html.crm-dark .chat-inbox,
+html.crm-dark .wa-inbox,
+html.crm-dark .email-inbox-container,
+html.crm-dark .inbox-hub,
+html.crm-dark .inbox-panel,
+html.crm-dark .inbox-sidebar,
+html.crm-dark .inbox-conversation,
+html.crm-dark .inbox-message,
+html.crm-dark .inbox-message-list,
+html.crm-dark .inbox-header {
+  background: #131c31;
+  border-color: rgba(148, 163, 184, 0.1);
+  color: #e2e8f0;
+}
+
+html.crm-dark .chat-inbox-header,
+html.crm-dark .wa-inbox-header,
+html.crm-dark .email-inbox-header {
+  background: #0f172a;
+  border-bottom-color: rgba(148, 163, 184, 0.1);
+  color: #e2e8f0;
+}
+
+html.crm-dark .chat-message-bubble,
+html.crm-dark .wa-message-bubble,
+html.crm-dark .email-message-bubble,
+html.crm-dark .inbox-message-bubble {
+  background: #1a2640;
+  color: #e2e8f0;
+}
+
+html.crm-dark .chat-message-bubble.sent,
+html.crm-dark .wa-message-bubble.sent,
+html.crm-dark .email-message-bubble.sent,
+html.crm-dark .inbox-message-bubble.sent {
+  background: rgba(234, 179, 8, 0.15);
+  color: #e2e8f0;
+}
+
+html.crm-dark .chat-input-area,
+html.crm-dark .wa-input-area,
+html.crm-dark .email-input-area,
+html.crm-dark .inbox-input-area,
+html.crm-dark .chat-input-wrap,
+html.crm-dark .wa-input-wrap,
+html.crm-dark .email-input-wrap,
+html.crm-dark .inbox-input-wrap {
+  background: #0f172a;
+  border-color: rgba(148, 163, 184, 0.1);
+}
+
+html.crm-dark .chat-input-area input,
+html.crm-dark .chat-input-area textarea,
+html.crm-dark .wa-input-area input,
+html.crm-dark .wa-input-area textarea,
+html.crm-dark .email-input-area input,
+html.crm-dark .email-input-area textarea,
+html.crm-dark .inbox-input-area input,
+html.crm-dark .inbox-input-area textarea {
+  background: #131c31;
+  border-color: rgba(148, 163, 184, 0.12);
+  color: #e2e8f0;
+}
+
+html.crm-dark .chat-contact-item,
+html.crm-dark .wa-contact-item,
+html.crm-dark .email-contact-item,
+html.crm-dark .inbox-contact-item {
+  border-bottom-color: rgba(148, 163, 184, 0.06);
+}
+
+html.crm-dark .chat-contact-item:hover,
+html.crm-dark .wa-contact-item:hover,
+html.crm-dark .email-contact-item:hover,
+html.crm-dark .inbox-contact-item:hover {
+  background: rgba(148, 163, 184, 0.05);
+}
+
+html.crm-dark .chat-contact-item.active,
+html.crm-dark .wa-contact-item.active,
+html.crm-dark .email-contact-item.active,
+html.crm-dark .inbox-contact-item.active {
+  background: rgba(234, 179, 8, 0.08);
+}
+
+html.crm-dark .chat-contact-name,
+html.crm-dark .wa-contact-name,
+html.crm-dark .email-contact-name,
+html.crm-dark .inbox-contact-name {
+  color: #e2e8f0;
+}
+
+html.crm-dark .chat-contact-preview,
+html.crm-dark .wa-contact-preview,
+html.crm-dark .email-contact-preview,
+html.crm-dark .inbox-contact-preview,
+html.crm-dark .chat-contact-time,
+html.crm-dark .wa-contact-time,
+html.crm-dark .email-contact-time,
+html.crm-dark .inbox-contact-time {
+  color: #64748b;
+}
+
+/* Broadcast panels */
+html.crm-dark .broadcast-panel,
+html.crm-dark .broadcast-form,
+html.crm-dark .broadcast-list,
+html.crm-dark .broadcast-item,
+html.crm-dark .telegram-broadcast-panel,
+html.crm-dark .whatsapp-broadcast-panel,
+html.crm-dark .email-broadcast-panel {
+  background: #131c31;
+  border-color: rgba(148, 163, 184, 0.1);
+  color: #e2e8f0;
+}
+
+html.crm-dark .broadcast-item:hover,
+html.crm-dark .telegram-broadcast-item:hover,
+html.crm-dark .whatsapp-broadcast-item:hover,
+html.crm-dark .email-broadcast-item:hover {
+  background: rgba(148, 163, 184, 0.05);
+}
+
+/* Analytics charts and panels */
+html.crm-dark .analytics-chart-wrap,
+html.crm-dark .analytics-chart-container,
+html.crm-dark .analytics-panel-body,
+html.crm-dark .analytics-funnel,
+html.crm-dark .analytics-bar-chart,
+html.crm-dark .analytics-line-chart {
+  background: #0f172a;
+  border-color: rgba(148, 163, 184, 0.08);
+}
+
+html.crm-dark .analytics-chart-wrap svg text,
+html.crm-dark .analytics-chart-container svg text,
+html.crm-dark .analytics-bar-chart svg text,
+html.crm-dark .analytics-line-chart svg text {
+  fill: #94a3b8;
+}
+
+html.crm-dark .analytics-chart-wrap svg .recharts-cartesian-grid line,
+html.crm-dark .analytics-chart-container svg .recharts-cartesian-grid line {
+  stroke: rgba(148, 163, 184, 0.08);
+}
+
+/* Settings page */
+html.crm-dark .settings-tab,
+html.crm-dark .settings-tab-item,
+html.crm-dark .settings-nav-item {
+  background: transparent;
+  color: #94a3b8;
+  border-color: transparent;
+}
+
+html.crm-dark .settings-tab.active,
+html.crm-dark .settings-tab-item.active,
+html.crm-dark .settings-nav-item.active {
+  background: rgba(234, 179, 8, 0.1);
+  color: #EAB308;
+  border-color: rgba(234, 179, 8, 0.2);
+}
+
+html.crm-dark .settings-tab:hover,
+html.crm-dark .settings-tab-item:hover,
+html.crm-dark .settings-nav-item:hover {
+  background: rgba(148, 163, 184, 0.05);
+  color: #e2e8f0;
+}
+
+html.crm-dark .settings-toggle,
+html.crm-dark .settings-switch {
+  background: #1a2640;
+  border-color: rgba(148, 163, 184, 0.12);
+}
+
+/* Goal tracking */
+html.crm-dark .goal-progress-bar-track {
+  background: rgba(148, 163, 184, 0.1);
+}
+
+/* Win/Loss */
+html.crm-dark .winloss-card.win {
+  background: rgba(34, 197, 94, 0.08);
+  border-color: rgba(34, 197, 94, 0.15);
+}
+html.crm-dark .winloss-card.loss {
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.15);
+}
+
+/* Duplicate detection */
+html.crm-dark .dup-card-match {
+  background: rgba(234, 179, 8, 0.06);
+  border-color: rgba(234, 179, 8, 0.15);
+}
+
+/* Leaderboard */
+html.crm-dark .leaderboard-row {
+  border-bottom-color: rgba(148, 163, 184, 0.06);
+}
+html.crm-dark .leaderboard-row:hover {
+  background: rgba(148, 163, 184, 0.04);
+}
+html.crm-dark .leaderboard-rank {
+  color: #CA8A04;
+}
+
+/* Templates */
+html.crm-dark .templates-grid {
+  background: transparent;
+}
+html.crm-dark .templates-item {
+  background: #131c31;
+  border-color: rgba(148, 163, 184, 0.1);
+}
+html.crm-dark .templates-item:hover {
+  border-color: rgba(234, 179, 8, 0.2);
+}
+
+/* Team dashboard */
+html.crm-dark .team-dash-member-row,
+html.crm-dark .team-dash-row {
+  border-bottom-color: rgba(148, 163, 184, 0.06);
+}
+html.crm-dark .team-dash-member-row:hover,
+html.crm-dark .team-dash-row:hover {
+  background: rgba(148, 163, 184, 0.04);
+}
+
+/* Automation builder */
+html.crm-dark .automation-flow-grid {
+  background: transparent;
+}
+html.crm-dark .automation-trigger-node,
+html.crm-dark .automation-action-node,
+html.crm-dark .automation-condition-node {
+  background: #1a2640;
+  border-color: rgba(148, 163, 184, 0.12);
+  color: #e2e8f0;
+}
+
+/* Popup form builder */
+html.crm-dark .popup-form-preview,
+html.crm-dark .popup-form-canvas {
+  background: #0f172a;
+  border-color: rgba(148, 163, 184, 0.1);
+}
+
+/* Broker tracker */
+html.crm-dark .broker-options {
+  background: transparent;
+}
+html.crm-dark .broker-option {
+  background: #131c31;
+  border-color: rgba(148, 163, 184, 0.1);
+  color: #e2e8f0;
+}
+html.crm-dark .broker-option:hover {
+  border-color: rgba(234, 179, 8, 0.2);
+}
+html.crm-dark .broker-option.selected {
+  background: rgba(234, 179, 8, 0.08);
+  border-color: rgba(234, 179, 8, 0.3);
+}
+html.crm-dark .broker-option span {
+  color: #e2e8f0;
+}
+html.crm-dark .broker-option.selected span {
+  color: #EAB308;
+}
+
+/* IB leads */
+html.crm-dark .ib-leads-page {
+  background: transparent;
+}
+html.crm-dark .ib-leads-header-actions button {
+  background: #1a2640;
+  border-color: rgba(148, 163, 184, 0.12);
+  color: #e2e8f0;
+}
+
+/* IB stat cards */
+html.crm-dark .ib-stat-card {
+  background: #131c31;
+  border-color: rgba(148, 163, 184, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+html.crm-dark .ib-stat-card:hover {
+  border-color: rgba(148, 163, 184, 0.18);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+html.crm-dark .ib-stat-value { color: #e2e8f0; }
+html.crm-dark .ib-stat-label { color: #94a3b8; }
+
+/* IB table card */
+html.crm-dark .ib-table-card {
+  background: #131c31;
+  border-color: rgba(148, 163, 184, 0.1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+/* IB type badges */
+html.crm-dark .ib-type-standard {
+  background: rgba(59, 130, 246, 0.12);
+  color: #93c5fd;
+  border-color: rgba(59, 130, 246, 0.2);
+}
+html.crm-dark .ib-type-premium {
+  background: rgba(234, 179, 8, 0.12);
+  color: #facc15;
+  border-color: rgba(234, 179, 8, 0.2);
+}
+html.crm-dark .ib-type-white_label {
+  background: rgba(139, 92, 246, 0.12);
+  color: #c4b5fd;
+  border-color: rgba(139, 92, 246, 0.2);
+}
+
+/* IB view toggle */
+html.crm-dark .ib-view-toggle {
+  background: #131c31;
+  border-color: rgba(148, 163, 184, 0.12);
+}
+html.crm-dark .ib-view-toggle button { color: #94a3b8; }
+html.crm-dark .ib-view-toggle button.active {
+  background: rgba(234, 179, 8, 0.15);
+  color: #EAB308;
+}
+
+/* IB buttons */
+html.crm-dark .ib-btn-add,
+html.crm-dark .ib-btn-import,
+html.crm-dark .ib-btn-export,
+html.crm-dark .ib-btn-refresh {
+  background: #1a2640;
+  border-color: rgba(148, 163, 184, 0.12);
+  color: #e2e8f0;
+}
+
+/* IB mobile header */
+html.crm-dark .ib-mobile-header-bar {
+  background: #0f172a;
+  border-bottom-color: rgba(148, 163, 184, 0.1);
+}
+html.crm-dark .ib-mobile-header-title { color: #e2e8f0; }
+html.crm-dark .ib-mobile-icon-btn {
+  background: #1a2640;
+  color: #e2e8f0;
+}
+html.crm-dark .ib-mobile-icon-btn:hover { background: #243353; }
+html.crm-dark .ib-mobile-action-btn {
+  background: #131c31;
+  border-color: rgba(148, 163, 184, 0.12);
+  color: #94a3b8;
+}
+html.crm-dark .ib-mobile-action-btn:hover {
+  border-color: rgba(148, 163, 184, 0.2);
+  background: #1a2640;
+}
+html.crm-dark .ib-mobile-view-toggle {
+  border-color: rgba(148, 163, 184, 0.12);
+}
+html.crm-dark .ib-mobile-view-toggle button { color: #94a3b8; }
+html.crm-dark .ib-mobile-view-toggle button.active {
+  background: rgba(234, 179, 8, 0.15);
+  color: #EAB308;
+}
+html.crm-dark .ib-mobile-page-title h1 { color: #e2e8f0; }
+html.crm-dark .ib-mobile-page-title p { color: #94a3b8; }
+
+/* IB pipeline */
+html.crm-dark .ib-pipeline-board { background: transparent; }
+html.crm-dark .ib-pipeline-column {
+  background: #0f172a;
+  border-color: rgba(148, 163, 184, 0.08);
+}
+html.crm-dark .ib-pipeline-column:hover {
+  border-color: rgba(148, 163, 184, 0.15);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+html.crm-dark .ib-pipeline-col-header {
+  border-bottom-color: rgba(148, 163, 184, 0.08);
+}
+html.crm-dark .ib-pipeline-col-title span { color: #e2e8f0; }
+html.crm-dark .ib-pipeline-empty { color: #475569; }
+html.crm-dark .ib-pipeline-card {
+  background: #131c31;
+  border-color: rgba(148, 163, 184, 0.08);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+html.crm-dark .ib-pipeline-card:hover {
+  border-color: rgba(148, 163, 184, 0.15);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+html.crm-dark .ib-pipeline-card-info strong { color: #e2e8f0; }
+html.crm-dark .ib-pipeline-card-info span { color: #64748b; }
+html.crm-dark .ib-pipeline-avatar {
+  background: linear-gradient(135deg, #CA8A04 0%, #854D0E 100%);
+  color: #fff;
+}
+html.crm-dark .ib-pipeline-hot { color: #facc15; }
+html.crm-dark .ib-pipeline-phone { color: #94a3b8; }
+html.crm-dark .ib-pipeline-phone svg { color: #64748b; }
+html.crm-dark .ib-pipeline-broker { color: #93c5fd; }
+html.crm-dark .ib-pipeline-tag {
+  background: rgba(234, 179, 8, 0.1);
+  color: #CA8A04;
+}
+html.crm-dark .ib-pipeline-date { color: #64748b; }
+html.crm-dark .ib-pipeline-select {
+  background: #0f172a;
+  color: #e2e8f0;
+  border-color: rgba(148, 163, 184, 0.12);
+}
+html.crm-dark .ib-pipeline-select option {
+  background: #131c31;
+  color: #e2e8f0;
+}
+html.crm-dark .ib-pipeline-scroll::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.2); }
+
+/* IB lead drawer */
+html.crm-dark .ib-lead-drawer { background: #131c31; }
+html.crm-dark .ib-lead-drawer .crm-drawer-body { background: #131c31; }
+html.crm-dark .ib-profile-header {
+  background: linear-gradient(135deg, #0c4a6e 0%, #075985 50%, #0369a1 100%);
+}
+html.crm-dark .ib-profile-close {
+  background: rgba(255, 255, 255, 0.1);
+  color: #cbd5e1;
+}
+html.crm-dark .ib-profile-close:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+html.crm-dark .ib-profile-avatar {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+}
+html.crm-dark .ib-profile-action {
+  background: rgba(255, 255, 255, 0.08);
+  color: #e2e8f0;
+  border-color: rgba(255, 255, 255, 0.12);
+}
+html.crm-dark .ib-profile-action:hover {
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+/* IB import modal */
+html.crm-dark .ib-import-header h3 { color: #e2e8f0; }
+html.crm-dark .ib-import-header p { color: #94a3b8; }
+html.crm-dark .ib-import-idle p { color: #94a3b8; }
+html.crm-dark .ib-import-col-tag { color: #64748b; }
+html.crm-dark .ib-import-bar-track { background: rgba(148, 163, 184, 0.12); }
+html.crm-dark .ib-import-stat { color: #94a3b8; }
+html.crm-dark .ib-import-result-errors ul { color: #fca5a5; }
+html.crm-dark .ib-import-result-errors strong { color: #f87171; }
+
+/* IB confirm modal */
+html.crm-dark .crm-confirm-modal {
+  background: #131c31;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+html.crm-dark .crm-confirm-modal h3 { color: #e2e8f0; }
+html.crm-dark .crm-confirm-modal p { color: #94a3b8; }
+html.crm-dark .crm-confirm-cancel {
+  background: #1a2640;
+  border-color: rgba(148, 163, 184, 0.12);
+  color: #e2e8f0;
+}
+html.crm-dark .crm-confirm-cancel:hover { background: #243353; }
+
+/* Follow-ups */
+html.crm-dark .folup-page {
+  background: transparent;
+}
+html.crm-dark .folup-list {
+  background: transparent;
+}
+html.crm-dark .folup-item {
+  background: #131c31;
+  border-color: rgba(148, 163, 184, 0.08);
+}
+html.crm-dark .folup-item:hover {
+  border-color: rgba(148, 163, 184, 0.15);
+}
+html.crm-dark .folup-item.overdue {
+  border-color: rgba(239, 68, 68, 0.2);
+  background: rgba(239, 68, 68, 0.04);
+}
+
+/* Lead tracker */
+html.crm-dark .lead-tracker-page {
+  background: transparent;
+}
+
+/* Modal overlays in dark mode */
+html.crm-dark .crm-main .modal-overlay,
+html.crm-dark .crm-main .modal-backdrop,
+html.crm-dark .crm-overlay {
+  background: rgba(0, 0, 0, 0.5);
+}
+
+html.crm-dark .crm-main .modal,
+html.crm-dark .crm-main .modal-content,
+html.crm-dark .crm-main .modal-body {
+  background: #131c31;
+  border-color: rgba(148, 163, 184, 0.1);
+  color: #e2e8f0;
+}
+
+/* Toast notifications */
+html.crm-dark .crm-main .toast,
+html.crm-dark .crm-main .toast-success,
+html.crm-dark .crm-main .toast-error,
+html.crm-dark .crm-main .toast-info {
+  background: #1a2640;
+  border-color: rgba(148, 163, 184, 0.12);
+  color: #e2e8f0;
+}
+
+/* Badge/pill/tag elements in sub-pages */
+html.crm-dark .crm-main .badge,
+html.crm-dark .crm-main .pill,
+html.crm-dark .crm-main .tag,
+html.crm-dark .crm-main .chip {
+  background: rgba(148, 163, 184, 0.1);
+  color: #94a3b8;
+  border-color: rgba(148, 163, 184, 0.12);
+}
+
+/* Divider/separator lines */
+html.crm-dark .crm-main hr,
+html.crm-dark .crm-main .divider,
+html.crm-dark .crm-main .separator {
+  border-color: rgba(148, 163, 184, 0.1);
+}
+
+/* Form groups in sub-pages */
+html.crm-dark .crm-main .form-group,
+html.crm-dark .crm-main .form-row,
+html.crm-dark .crm-main .form-field {
+  background: transparent;
+}
+
+html.crm-dark .crm-main .form-group label,
+html.crm-dark .crm-main .form-row label,
+html.crm-dark .crm-main .form-field label {
+  color: #94a3b8;
+}
+
+/* List items in sub-pages */
+html.crm-dark .crm-main .list-item,
+html.crm-dark .crm-main .list-row {
+  border-bottom-color: rgba(148, 163, 184, 0.06);
+}
+html.crm-dark .crm-main .list-item:hover,
+html.crm-dark .crm-main .list-row:hover {
+  background: rgba(148, 163, 184, 0.04);
+}
+
+/* Code blocks / pre */
+html.crm-dark .crm-main pre,
+html.crm-dark .crm-main code {
+  background: #0f172a;
+  color: #e2e8f0;
+  border-color: rgba(148, 163, 184, 0.1);
+}
+
+/* Scrollbar for sub-page content */
+html.crm-dark .crm-main ::-webkit-scrollbar-track {
+  background: #0b1120;
+}
+html.crm-dark .crm-main ::-webkit-scrollbar-thumb {
+  background: rgba(202, 138, 4, 0.3);
+}
+
+/* ===== SETTINGS PAGE DARK MODE ===== */
+
+/* Settings page background */
+html.crm-dark .crm-settings-page {
+  background: #0b1120;
+}
+
+/* Settings header */
+html.crm-dark .crm-settings-header {
+  background: #0f172a !important;
+  border-bottom-color: rgba(148, 163, 184, 0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+html.crm-dark .crm-settings-header h1 {
+  color: #e2e8f0;
+}
+html.crm-dark .crm-settings-header p {
+  color: #94a3b8;
+}
+
+/* Settings back button */
+html.crm-dark .crm-settings-back-btn {
+  background: #131c31;
+  border-color: rgba(148, 163, 184, 0.12);
+  color: #94a3b8;
+}
+html.crm-dark .crm-settings-back-btn:hover {
+  background: #1a2640;
+  color: #e2e8f0;
+  border-color: rgba(148, 163, 184, 0.2);
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.15);
+}
+
+/* Settings header icon */
+html.crm-dark .crm-settings-header-icon {
+  background: linear-gradient(135deg, #1a2640, #243353);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Settings sidebar tabs */
+html.crm-dark .crm-settings-tab {
+  color: #94a3b8;
+}
+html.crm-dark .crm-settings-tab:hover {
+  background: rgba(148, 163, 184, 0.06);
+  color: #e2e8f0;
+}
+html.crm-dark .crm-settings-tab-icon {
+  background: rgba(148, 163, 184, 0.08);
+  color: #94a3b8;
+}
+
+/* Settings active tab */
+html.crm-dark .crm-settings-tab-active {
+  background: #131c31;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(148, 163, 184, 0.12);
+}
+
+/* Settings content card */
+html.crm-dark .crm-settings-card {
+  background: #131c31 !important;
+  border-color: rgba(148, 163, 184, 0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+html.crm-dark .crm-settings-card-header {
+  border-bottom-color: rgba(148, 163, 184, 0.1);
+}
+html.crm-dark .crm-settings-card-title {
+  color: #e2e8f0;
+}
+html.crm-dark .crm-settings-card-desc {
+  color: #94a3b8;
+}
+
+/* Settings labels */
+html.crm-dark .crm-settings-label {
+  color: #94a3b8;
+}
+
+/* Settings footer */
+html.crm-dark .crm-settings-footer {
+  background: #131c31;
+  border-top-color: rgba(234, 179, 8, 0.2);
+}
+
+/* Settings form fields (crm-add-lead-field used inside settings) */
+html.crm-dark .crm-settings-body .crm-add-lead-field > span {
+  color: #e2e8f0;
+}
+html.crm-dark .crm-settings-body .crm-add-lead-field input,
+html.crm-dark .crm-settings-body .crm-add-lead-field select,
+html.crm-dark .crm-settings-body .crm-add-lead-field textarea {
+  background-color: #0f172a;
+  border-color: rgba(148, 163, 184, 0.12);
+  color: #e2e8f0;
+}
+html.crm-dark .crm-settings-body .crm-add-lead-field input::placeholder,
+html.crm-dark .crm-settings-body .crm-add-lead-field textarea::placeholder {
+  color: #64748b;
+}
+html.crm-dark .crm-settings-body .crm-add-lead-field input:focus,
+html.crm-dark .crm-settings-body .crm-add-lead-field select:focus,
+html.crm-dark .crm-settings-body .crm-add-lead-field textarea:focus {
+  border-color: rgba(234, 179, 8, 0.4);
+  background: #0f172a;
+  box-shadow: 0 0 0 3px rgba(234, 179, 8, 0.1);
+}
+html.crm-dark .crm-settings-body .crm-add-lead-field input:disabled {
+  background: #131c31 !important;
+  color: #64748b !important;
+}
+html.crm-dark .crm-settings-body select option {
+  background: #131c31;
+  color: #e2e8f0;
+}
+
+/* ===== APPEARANCE SETTINGS DARK MODE ===== */
+
+html.crm-dark .appearance-section {
+  background: #131c31;
+  border-color: rgba(148, 163, 184, 0.1);
+}
+html.crm-dark .appearance-section:hover {
+  border-color: rgba(148, 163, 184, 0.18);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.2);
+}
+html.crm-dark .appearance-section-title {
+  color: #e2e8f0;
+}
+html.crm-dark .appearance-section-desc {
+  color: #94a3b8;
+}
+
+/* Appearance color picker */
+html.crm-dark .appearance-color-picker {
+  border-color: rgba(148, 163, 184, 0.15);
+}
+html.crm-dark .appearance-color-text {
+  border-color: rgba(148, 163, 184, 0.12);
+  color: #e2e8f0;
+  background: #0f172a;
+}
+
+/* Appearance swatches */
+html.crm-dark .appearance-swatch {
+  border-color: #131c31;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+html.crm-dark .appearance-swatch-active {
+  border-color: #e2e8f0;
+}
+
+/* Appearance step buttons */
+html.crm-dark .appearance-step-btn {
+  border-color: rgba(148, 163, 184, 0.12);
+  background: #131c31;
+  color: #e2e8f0;
+}
+html.crm-dark .appearance-step-btn:hover:not(:disabled) {
+  border-color: rgba(148, 163, 184, 0.2);
+  background: #1a2640;
+}
+
+/* Appearance slider value */
+html.crm-dark .appearance-slider-value {
+  color: #e2e8f0;
+}
+
+/* Appearance presets */
+html.crm-dark .appearance-preset-btn {
+  border-color: rgba(148, 163, 184, 0.12);
+  background: #131c31;
+  color: #94a3b8;
+}
+html.crm-dark .appearance-preset-btn:hover {
+  border-color: rgba(148, 163, 184, 0.2);
+  color: #e2e8f0;
+}
+
+/* Appearance toggle row */
+html.crm-dark .appearance-toggle-row {
+  background: #0f172a;
+  border-color: rgba(148, 163, 184, 0.1);
+}
+html.crm-dark .appearance-toggle-label {
+  color: #e2e8f0;
+}
+html.crm-dark .appearance-toggle-sub {
+  color: #94a3b8;
+}
+html.crm-dark .appearance-toggle-knob {
+  background: #e2e8f0;
+}
+
+/* Appearance font buttons */
+html.crm-dark .appearance-font-btn {
+  border-color: rgba(148, 163, 184, 0.12);
+  background: #131c31;
+}
+html.crm-dark .appearance-font-btn:hover {
+  border-color: rgba(148, 163, 184, 0.2);
+}
+html.crm-dark .appearance-font-preview {
+  color: #e2e8f0;
+}
+html.crm-dark .appearance-font-label {
+  color: #94a3b8;
+}
+
+/* Appearance preview */
+html.crm-dark .appearance-preview-box {
+  background: #0f172a;
+  border-color: rgba(148, 163, 184, 0.1);
+}
+html.crm-dark .appearance-preview-card {
+  background: #131c31;
+  border-color: var(--app-border-color, rgba(148, 163, 184, 0.12));
+}
+html.crm-dark .appearance-preview-input {
+  background: #0f172a;
+  color: #e2e8f0;
+  border-color: var(--app-border-color, rgba(148, 163, 184, 0.12));
+}
+html.crm-dark .appearance-btn-preview {
+  background: #0f172a;
+  border-color: rgba(148, 163, 184, 0.1);
+}
+
+/* Appearance cost input */
+html.crm-dark .appearance-cost-prefix {
+  color: #94a3b8;
+}
+html.crm-dark .appearance-cost-input {
+  border-color: rgba(148, 163, 184, 0.12);
+  color: #e2e8f0;
+  background: #0f172a;
+}
+
+/* Appearance landing color */
+html.crm-dark .appearance-landing-color {
+  border-color: rgba(148, 163, 184, 0.15);
+}
+html.crm-dark .appearance-landing-color-text {
+  border-color: rgba(148, 163, 184, 0.12);
+  color: #e2e8f0;
+  background: #0f172a;
+}
+
+/* Appearance style buttons */
+html.crm-dark .appearance-style-btn {
+  border-color: rgba(148, 163, 184, 0.12);
+  background: #131c31;
+  color: #94a3b8;
+}
+html.crm-dark .appearance-style-btn:hover {
+  border-color: rgba(148, 163, 184, 0.2);
+  color: #e2e8f0;
+}
+
+/* Appearance landing preview */
+html.crm-dark .appearance-landing-preview {
+  border-color: rgba(148, 163, 184, 0.1);
+}
+html.crm-dark .appearance-landing-preview-bar {
+  background: #0f172a;
+  color: #94a3b8;
+}
+
+/* ===== ADD LEAD MODAL DARK MODE ===== */
+html.crm-dark .crm-add-lead-modal {
+  background: #0f172a;
+  border-color: rgba(148, 163, 184, 0.1);
+  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.5);
+}
+html.crm-dark .crm-add-lead-header {
+  background: #131c31;
+  border-bottom-color: rgba(148, 163, 184, 0.1);
+}
+html.crm-dark .crm-add-lead-title h2 {
+  color: #e2e8f0;
+}
+html.crm-dark .crm-add-lead-title p {
+  color: #94a3b8;
+}
+html.crm-dark .crm-add-lead-icon {
+  background: rgba(234, 179, 8, 0.1);
+  border-color: rgba(234, 179, 8, 0.2);
+  color: #EAB308;
+}
+html.crm-dark .crm-add-lead-kicker {
+  color: #CA8A04;
+}
+html.crm-dark .crm-add-lead-form {
+  background: transparent;
+}
+html.crm-dark .crm-add-lead-field > span {
+  color: #e2e8f0;
+}
+html.crm-dark .crm-add-lead-field input,
+html.crm-dark .crm-add-lead-field select,
+html.crm-dark .crm-add-lead-field textarea {
+  background: #0f172a;
+  border-color: rgba(148, 163, 184, 0.12);
+  color: #e2e8f0;
+}
+html.crm-dark .crm-add-lead-field input:hover,
+html.crm-dark .crm-add-lead-field select:hover,
+html.crm-dark .crm-add-lead-field textarea:hover {
+  border-color: rgba(148, 163, 184, 0.2);
+}
+html.crm-dark .crm-add-lead-field input:focus,
+html.crm-dark .crm-add-lead-field select:focus,
+html.crm-dark .crm-add-lead-field textarea:focus {
+  border-color: rgba(234, 179, 8, 0.4);
+  background: #0f172a;
+  box-shadow: 0 0 0 3px rgba(234, 179, 8, 0.1);
+}
+html.crm-dark .crm-add-lead-field input::placeholder,
+html.crm-dark .crm-add-lead-field textarea::placeholder {
+  color: #64748b;
+}
+html.crm-dark .crm-add-lead-service-field {
+  background: #131c31;
+  border-color: rgba(148, 163, 184, 0.1);
+}
+html.crm-dark .crm-add-lead-service-field > span {
+  color: #e2e8f0;
+}
+html.crm-dark .crm-add-lead-products button {
+  background: #131c31;
+  border-color: rgba(148, 163, 184, 0.1);
+  color: #94a3b8;
+}
+html.crm-dark .crm-add-lead-products button:hover {
+  border-color: rgba(234, 179, 8, 0.3);
+  background: rgba(234, 179, 8, 0.05);
+}
+html.crm-dark .crm-add-lead-products button.selected {
+  border-color: rgba(234, 179, 8, 0.4);
+  background: rgba(234, 179, 8, 0.08);
+  color: #EAB308;
+  box-shadow: inset 0 0 0 1px rgba(234, 179, 8, 0.3), 0 4px 12px rgba(234, 179, 8, 0.06);
+}
+html.crm-dark .crm-add-lead-cancel {
+  background: #131c31;
+  border-color: rgba(234, 179, 8, 0.3);
+  color: #EAB308;
+}
+html.crm-dark .crm-add-lead-cancel:hover:not(:disabled) {
+  background: rgba(234, 179, 8, 0.08);
+  border-color: #CA8A04;
+}
+html.crm-dark .crm-add-lead-submit {
+  background: linear-gradient(180deg, #FACC15 0%, #EAB308 60%, #CA8A04 100%);
+  color: #422006;
+  border-color: #CA8A04;
+}
+
+/* ===== GENERIC MODAL/POPUP DARK MODE ===== */
+html.crm-dark .crm-modal,
+html.crm-dark .crm-popup,
+html.crm-dark [class*="modal"]:not(.crm-add-lead-modal) {
+  background: #131c31 !important;
+  border-color: rgba(148, 163, 184, 0.1) !important;
+  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.5) !important;
+}
+html.crm-dark [class*="modal-overlay"],
+html.crm-dark [class*="modal-backdrop"] {
+  background: rgba(0, 0, 0, 0.6) !important;
+}
+
+/* ===== TOGGLE SWITCH DARK MODE ===== */
+html.crm-dark .appearance-toggle-switch:not([style*="background"]) {
+  background: #1a2640;
+}
+
+/* ===== COLOR PRESET SWATCHES IN APPEARANCE ===== */
+html.crm-dark .crm-dashboard .crm-settings-card .appearance-swatches .appearance-swatch {
+  border-color: #131c31;
+}
+
+/* Ensure inputs inside settings are properly dark */
+html.crm-dark .crm-settings-content input:not([type="checkbox"]):not([type="radio"]):not([type="color"]),
+html.crm-dark .crm-settings-content select,
+html.crm-dark .crm-settings-content textarea {
+  background-color: #0f172a !important;
+  border-color: rgba(148, 163, 184, 0.12) !important;
+  color: #e2e8f0 !important;
+}
+html.crm-dark .crm-settings-content input::placeholder,
+html.crm-dark .crm-settings-content textarea::placeholder {
+  color: #64748b !important;
+}
+html.crm-dark .crm-settings-content input:focus,
+html.crm-dark .crm-settings-content select:focus,
+html.crm-dark .crm-settings-content textarea:focus {
+  border-color: rgba(234, 179, 8, 0.4) !important;
+  box-shadow: 0 0 0 3px rgba(234, 179, 8, 0.1) !important;
+}
+html.crm-dark .crm-settings-content select option {
+  background: #131c31;
+  color: #e2e8f0;
+}
+
+/* ===== MISC ELEMENTS IN SETTINGS DARK MODE ===== */
+html.crm-dark .crm-settings-content code,
+html.crm-dark .crm-settings-content pre {
+  background: #0f172a;
+  color: #e2e8f0;
+}
+html.crm-dark .crm-settings-content strong {
+  color: #e2e8f0;
+}
+
+/* ===== FOLLOW-UPS PAGE DARK MODE ===== */
+
+html.crm-dark .crm-followups-back {
+  background: #131c31;
+  border-color: rgba(148, 163, 184, 0.12);
+  color: #94a3b8;
+}
+html.crm-dark .crm-followups-back:hover {
+  border-color: rgba(148, 163, 184, 0.2);
+  color: #e2e8f0;
+  background: #1a2640;
+}
+html.crm-dark .crm-followups-header h1 {
+  color: #e2e8f0;
+}
+html.crm-dark .crm-followups-header p {
+  color: #94a3b8;
+}
+
+/* Follow-ups stats */
+html.crm-dark .crm-followups-stat {
+  background: #131c31;
+  border-color: rgba(148, 163, 184, 0.1);
+}
+html.crm-dark .crm-followups-stat.alert {
+  border-color: rgba(239, 68, 68, 0.25);
+  background: rgba(239, 68, 68, 0.04);
+}
+html.crm-dark .crm-followups-stat-num {
+  color: #e2e8f0;
+}
+html.crm-dark .crm-followups-stat.alert .crm-followups-stat-num {
+  color: #ef4444;
+}
+html.crm-dark .crm-followups-stat-label {
+  color: #94a3b8;
+}
+
+/* Follow-ups tabs */
+html.crm-dark .crm-followups-tabs {
+  border-bottom-color: rgba(148, 163, 184, 0.1);
+}
+html.crm-dark .crm-followups-tab {
+  color: #64748b;
+}
+html.crm-dark .crm-followups-tab:hover {
+  color: #cbd5e1;
+}
+html.crm-dark .crm-followups-tab.active {
+  color: #e2e8f0;
+}
+html.crm-dark .crm-followups-tab-badge {
+  background: rgba(148, 163, 184, 0.12);
+  color: #94a3b8;
+}
+
+/* Follow-ups search */
+html.crm-dark .crm-followups-search {
+  background: #0f172a;
+  border-color: rgba(148, 163, 184, 0.12);
+  color: #e2e8f0;
+}
+html.crm-dark .crm-followups-search:focus {
+  border-color: rgba(245, 158, 11, 0.4);
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
+}
+html.crm-dark .crm-followups-search::placeholder {
+  color: #64748b;
+}
+
+/* Follow-ups empty/loading */
+html.crm-dark .crm-followups-loading,
+html.crm-dark .crm-followups-empty {
+  color: #64748b;
+}
+html.crm-dark .crm-followups-empty h3 {
+  color: #94a3b8;
+}
+html.crm-dark .crm-followups-empty p {
+  color: #64748b;
+}
+
+/* Follow-ups cards */
+html.crm-dark .crm-followups-card {
+  background: #131c31;
+  border-color: rgba(148, 163, 184, 0.1);
+  border-left-color: rgba(148, 163, 184, 0.15);
+}
+html.crm-dark .crm-followups-card:hover {
+  border-color: rgba(148, 163, 184, 0.18);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+html.crm-dark .crm-followups-card.overdue {
+  background: rgba(239, 68, 68, 0.03);
+}
+html.crm-dark .crm-followups-card-name {
+  color: #e2e8f0;
+}
+html.crm-dark .crm-followups-card.done .crm-followups-card-name {
+  color: #64748b;
+}
+html.crm-dark .crm-followups-card-date {
+  color: #94a3b8;
+}
+html.crm-dark .crm-followups-card-date svg {
+  color: #64748b;
+}
+html.crm-dark .crm-followups-card-note {
+  background: #0f172a;
+  border-color: rgba(148, 163, 184, 0.08);
+  border-left-color: rgba(148, 163, 184, 0.15);
+}
+html.crm-dark .crm-followups-card-note p {
+  color: #94a3b8;
+}
+html.crm-dark .crm-followups-card-note-icon {
+  color: #64748b;
+}
+html.crm-dark .crm-followups-card-meta span {
+  color: #64748b;
+}
+html.crm-dark .crm-followups-card-meta svg {
+  color: rgba(148, 163, 184, 0.3);
+}
+html.crm-dark .crm-followups-card-actions {
+  border-top-color: rgba(148, 163, 184, 0.08);
+}
+
+/* Follow-ups action buttons — keep semi-transparent tints, they work in dark */
+
+/* ===== MOBILE SIDEBAR DARK MODE ===== */
+html.crm-dark .crm-mobile-sidebar {
+  background: #0f172a;
+  border-right-color: rgba(234, 179, 8, 0.15);
+}
+html.crm-dark .crm-mobile-sidebar-close {
+  background: rgba(234, 179, 8, 0.08);
+  color: #EAB308;
+}
+
+/* ===== DASH-WINLOSS DARK MODE ===== */
+html.crm-dark .dash-winloss-add-form {
+  background: #131c31;
+  border-color: rgba(148, 163, 184, 0.1);
+}
+html.crm-dark .dash-winloss-select,
+html.crm-dark .dash-winloss-input {
+  background: #0f172a;
+  border-color: rgba(148, 163, 184, 0.12);
+  color: #e2e8f0;
+}
+html.crm-dark .dash-winloss-select option {
+  background: #131c31;
+  color: #e2e8f0;
+}
+html.crm-dark .dash-winloss-bar-label {
+  color: #94a3b8;
+}
+html.crm-dark .dash-winloss-bar-count {
+  color: #e2e8f0;
+}
+html.crm-dark .dash-winloss-breakdown {
+  color: #94a3b8;
+}
+html.crm-dark .dash-winloss-no-leads {
+  color: #64748b;
+}
+html.crm-dark .dash-winloss-tabs {
+  border-bottom-color: rgba(148, 163, 184, 0.1);
+}
+html.crm-dark .dash-winloss-tabs button {
+  color: #64748b;
+}
+html.crm-dark .dash-winloss-tabs button.active {
+  color: #e2e8f0;
+  border-bottom-color: #EAB308;
+}
+
+/* ===== DASH-GOAL DARK MODE ===== */
+html.crm-dark .dash-goal-card {
+  background: #131c31;
+  border-color: rgba(148, 163, 184, 0.1);
+}
+html.crm-dark .dash-goal-header-info h3 {
+  color: #e2e8f0;
+}
+html.crm-dark .dash-goal-label {
+  color: #94a3b8;
+}
+html.crm-dark .dash-goal-target,
+html.crm-dark .dash-goal-actual {
+  color: #e2e8f0;
+}
+html.crm-dark .dash-goal-remaining {
+  color: #94a3b8;
+}
+html.crm-dark .dash-goal-pct {
+  color: #e2e8f0;
+}
+html.crm-dark .dash-goal-progress-track {
+  background: rgba(148, 163, 184, 0.1);
+}
+html.crm-dark .dash-goal-input {
+  background: #0f172a;
+  border-color: rgba(148, 163, 184, 0.12);
+  color: #e2e8f0;
+}
+html.crm-dark .dash-goal-period {
+  color: #94a3b8;
+}
+
+/* ===== DASH-LEADERBOARD DARK MODE ===== */
+html.crm-dark .dash-leaderboard-controls {
+  background: #131c31;
+  border-color: rgba(148, 163, 184, 0.1);
+}
+html.crm-dark .dash-leaderboard-sort {
+  background: #0f172a;
+  border-color: rgba(148, 163, 184, 0.12);
+  color: #e2e8f0;
+}
+html.crm-dark .dash-leaderboard-sort option {
+  background: #131c31;
+  color: #e2e8f0;
+}
+html.crm-dark .dash-leaderboard-list {
+  background: #131c31;
+  border-color: rgba(148, 163, 184, 0.1);
+}
+html.crm-dark .dash-leaderboard-rank-num {
+  color: #e2e8f0;
+}
+html.crm-dark .dash-leaderboard-name {
+  color: #e2e8f0;
+}
+html.crm-dark .dash-leaderboard-role {
+  color: #94a3b8;
+}
+html.crm-dark .dash-leaderboard-stat-label {
+  color: #94a3b8;
+}
+html.crm-dark .dash-leaderboard-stat-val {
+  color: #e2e8f0;
+}
+html.crm-dark .dash-leaderboard-bar-track {
+  background: rgba(148, 163, 184, 0.08);
+}
+html.crm-dark .dash-leaderboard-bar-val {
+  color: #94a3b8;
+}
+
+/* ===== DASH-RECENT DARK MODE ===== */
+html.crm-dark .dash-recent-row {
+  border-bottom-color: rgba(148, 163, 184, 0.06);
+}
+html.crm-dark .dash-recent-name {
+  color: #e2e8f0;
+}
+html.crm-dark .dash-recent-meta {
+  color: #94a3b8;
+}
+html.crm-dark .dash-recent-empty {
+  color: #64748b;
+}
+
+/* ===== AH- (Analytics Hub) DARK MODE ===== */
+html.crm-dark .ah-tabbar {
+  background: #0f172a;
+  border-bottom-color: rgba(148, 163, 184, 0.1);
+}
+html.crm-dark .ah-tab {
+  color: #64748b;
+}
+html.crm-dark .ah-tab:hover {
+  color: #cbd5e1;
+  background: rgba(255, 255, 255, 0.03);
+}
+html.crm-dark .ah-tab-active {
+  color: #60A5FA;
+  border-bottom-color: #3B82F6;
+}
+html.crm-dark .ah-content {
+  background: transparent;
+  color: #e2e8f0;
+}
+
+/* ===== EA- (Email Analytics + Revenue Forecast) DARK MODE ===== */
+
+/* Stat cards */
+html.crm-dark .ea-stat-card {
+  background: #131c31;
+  border-color: rgba(148, 163, 184, 0.1);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+}
+html.crm-dark .ea-stat-card:hover {
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.3);
+}
+html.crm-dark .ea-stat-sub {
+  color: #94a3b8;
+  background: rgba(148, 163, 184, 0.12);
+}
+html.crm-dark .ea-stat-value {
+  color: #e2e8f0;
+}
+html.crm-dark .ea-stat-label {
+  color: #94a3b8;
+}
+
+/* Cards */
+html.crm-dark .ea-card {
+  background: #131c31;
+  border-color: rgba(148, 163, 184, 0.1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+html.crm-dark .ea-card-elevated {
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+}
+html.crm-dark .ea-card-elevated:hover {
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+}
+html.crm-dark .ea-card-header {
+  border-bottom-color: rgba(148, 163, 184, 0.08);
+}
+html.crm-dark .ea-card-title h2 {
+  color: #e2e8f0;
+}
+html.crm-dark .ea-card-icon-green {
+  background: rgba(22, 163, 74, 0.1);
+  color: #22C55E;
+}
+
+/* Legend */
+html.crm-dark .ea-legend-item {
+  color: #94a3b8;
+}
+
+/* Chart empty */
+html.crm-dark .ea-chart-empty {
+  color: #64748b;
+}
+
+/* Bar labels */
+html.crm-dark .ea-bar-label {
+  color: #64748b;
+}
+
+/* Funnel */
+html.crm-dark .ea-funnel-step-icon {
+  background: #0f172a;
+}
+html.crm-dark .ea-funnel-step-label {
+  color: #cbd5e1;
+}
+html.crm-dark .ea-funnel-step-value {
+  color: #e2e8f0;
+}
+html.crm-dark .ea-funnel-step-bar-track {
+  background: rgba(148, 163, 184, 0.1);
+}
+html.crm-dark .ea-funnel-drop {
+  color: #64748b;
+}
+
+/* Metric tiles */
+html.crm-dark .ea-metric-tile {
+  background: #131c31;
+  border-color: rgba(148, 163, 184, 0.1);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+}
+html.crm-dark .ea-metric-tile:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+html.crm-dark .ea-metric-value {
+  color: #e2e8f0;
+}
+html.crm-dark .ea-metric-label {
+  color: #94a3b8;
+}
+
+/* Log table */
+html.crm-dark .ea-log-count {
+  color: #94a3b8;
+  background: rgba(148, 163, 184, 0.12);
+}
+html.crm-dark .ea-search-wrap {
+  border-color: rgba(148, 163, 184, 0.12);
+  background: #0f172a;
+  color: #64748b;
+}
+html.crm-dark .ea-search-wrap input {
+  color: #e2e8f0;
+}
+html.crm-dark .ea-search-wrap input::placeholder {
+  color: #64748b;
+}
+html.crm-dark .ea-status-select {
+  border-color: rgba(148, 163, 184, 0.12);
+  background: #0f172a;
+  color: #e2e8f0;
+}
+html.crm-dark .ea-status-select option {
+  background: #131c31;
+  color: #e2e8f0;
+}
+html.crm-dark .ea-log-loading,
+html.crm-dark .ea-log-empty {
+  color: #64748b;
+}
+html.crm-dark .ea-log-empty h3 {
+  color: #94a3b8;
+}
+html.crm-dark .ea-log-empty p {
+  color: #64748b;
+}
+
+/* Email items */
+html.crm-dark .ea-email-item {
+  border-bottom-color: rgba(148, 163, 184, 0.06);
+}
+html.crm-dark .ea-email-item:hover {
+  background: #0f172a;
+}
+html.crm-dark .ea-email-item-selected {
+  background: rgba(59, 130, 246, 0.06);
+}
+html.crm-dark .ea-email-recipient {
+  color: #e2e8f0;
+}
+html.crm-dark .ea-email-subject-text {
+  color: #cbd5e1;
+}
+html.crm-dark .ea-email-preview {
+  color: #64748b;
+}
+html.crm-dark .ea-email-time {
+  color: #64748b;
+}
+html.crm-dark .ea-email-check {
+  color: #475569;
+}
+html.crm-dark .ea-email-check:hover {
+  color: #94a3b8;
+}
+html.crm-dark .ea-email-delete-btn {
+  color: #64748b;
+}
+html.crm-dark .ea-email-delete-btn:hover {
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+}
+
+/* Bulk select bar */
+html.crm-dark .ea-bulk-select-btn {
+  border-color: rgba(148, 163, 184, 0.12);
+  background: #0f172a;
+  color: #94a3b8;
+}
+html.crm-dark .ea-bulk-select-btn:hover {
+  border-color: #3B82F6;
+  color: #60A5FA;
+  background: rgba(59, 130, 246, 0.08);
+}
+
+/* Modals */
+html.crm-dark .ea-modal {
+  background: #131c31;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+}
+html.crm-dark .ea-modal-title {
+  color: #e2e8f0;
+}
+html.crm-dark .ea-modal-text {
+  color: #94a3b8;
+}
+html.crm-dark .ea-modal-cancel {
+  border-color: rgba(148, 163, 184, 0.12);
+  background: #0f172a;
+  color: #cbd5e1;
+}
+html.crm-dark .ea-modal-cancel:hover {
+  background: #1a2640;
+  border-color: rgba(148, 163, 184, 0.2);
+}
+
+/* Pagination */
+html.crm-dark .ea-pagination {
+  border-top-color: rgba(148, 163, 184, 0.08);
+}
+html.crm-dark .ea-pagination button {
+  border-color: rgba(148, 163, 184, 0.12);
+  background: #0f172a;
+  color: #cbd5e1;
+}
+html.crm-dark .ea-pagination button:hover:not(:disabled) {
+  border-color: #3B82F6;
+  color: #60A5FA;
+  background: rgba(59, 130, 246, 0.08);
+}
+html.crm-dark .ea-page-info {
+  color: #94a3b8;
+}
+
+/* Revenue Forecast inline-style elements: override via dark-mode utility vars */
+html.crm-dark .ea-container {
+  --rf-text-secondary: #94a3b8;
+  --rf-text-expected: #cbd5e1;
 }
 

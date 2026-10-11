@@ -132,7 +132,7 @@ export default function FollowUpsPage({ session, onBack, onCall }: { session: Se
     { key: 'overdue', label: 'Overdue', count: overdueCount, color: '#ef4444' },
     { key: 'upcoming', label: 'Upcoming', count: upcomingCount, color: '#f59e0b' },
     { key: 'done', label: 'Completed', count: doneCount, color: '#22c55e' },
-    { key: 'all', label: 'All', count: followups.length, color: '#64748b' },
+    { key: 'all', label: 'All', count: followups.length, color: 'var(--text-dark)' },
   ];
 
   return (

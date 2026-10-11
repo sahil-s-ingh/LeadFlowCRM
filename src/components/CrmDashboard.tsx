@@ -20,10 +20,10 @@ import {
   Bell, CalendarClock, BellRing, Shuffle, ClipboardList, History, Droplets, MessageSquare, RotateCcw,
   BookOpen, Palette, MousePointerClick, EyeOff,
   PanelLeft, Type, Signal, GitMerge, ShieldAlert, Activity,
-  Building2, Trophy, Target, TrendingDown, GitBranch,
+  Building2, Trophy, Target, TrendingDown, GitBranch, Hash, Radar,
 
   Webhook, ArrowDownLeft, LayoutTemplate, Inbox as InboxIcon,
-  HelpCircle,
+  HelpCircle, Sun, Moon,
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import DashboardOverview from '@/components/DashboardOverview';
@@ -48,6 +48,10 @@ import WinLossAnalysis from '@/components/WinLossAnalysis';
 import DuplicateDetectionView from '@/components/DuplicateDetectionView';
 import LeadFollowupHeatmap from '@/components/LeadFollowupHeatmap';
 import AutomationBuilder from '@/components/AutomationBuilder';
+import BrokerTrackerPage from '@/components/BrokerTrackerPage';
+import LeadTrackerPage from '@/components/LeadTrackerPage';
+import LeadSourceBadge from '@/components/LeadSourceBadge';
+import { SourceLogo } from '@/components/BrandLogos';
 
 type LeadStatus = 'new' | 'called_no_response' | 'called_responded' | 'interested' | 'not_interested' | 'converted';
 
@@ -72,7 +76,12 @@ type Lead = {
   deleted_by?: string | null;
   lead_score?: number;
   lead_source?: string | null;
+  broker_id?: string | null;
+  account_type?: 'new_account' | 'existing_account' | null;
+  partner_code?: string | null;
 };
+
+const SOURCE_OPTIONS = ['Manual Entry', 'Meta Ads', 'Google Ads', 'YouTube Ads', 'Telegram Channel', 'WhatsApp Group', 'Landing Page', 'Direct Link', 'Popup Form', 'Bulk Upload', 'Webhook'];
 
 type SortKey = 'created_at' | 'full_name' | 'state' | 'trading_product' | 'status';
 type SortDir = 'asc' | 'desc';
@@ -89,7 +98,7 @@ const MOBILE_STAT_OPTIONS: { key: MobileStatKey; label: string }[] = [
 ];
 
 type DateFilterPreset = 'all' | 'today' | 'yesterday' | 'last_7_days' | 'this_week' | 'this_month' | 'this_year' | 'custom';
-type ActiveView = 'dashboard' | 'leads' | 'ib_leads' | 'inbox_hub' | 'inbox' | 'whatsapp' | 'email_inbox' | 'settings' | 'drip' | 'analytics_hub' | 'email_analytics' | 'message_templates' | 'broadcast_hub' | 'broadcast' | 'email_broadcast' | 'telegram_broadcast' | 'activity_timeline' | 'revenue_forecast' | 'direct_link' | 'followups' | 'leaderboard' | 'goals' | 'win_loss' | 'duplicates' | 'heatmap' | 'automations';
+type ActiveView = 'dashboard' | 'leads' | 'ib_leads' | 'inbox_hub' | 'inbox' | 'whatsapp' | 'email_inbox' | 'settings' | 'drip' | 'analytics_hub' | 'email_analytics' | 'message_templates' | 'broadcast_hub' | 'broadcast' | 'email_broadcast' | 'telegram_broadcast' | 'activity_timeline' | 'revenue_forecast' | 'direct_link' | 'followups' | 'leaderboard' | 'goals' | 'win_loss' | 'duplicates' | 'heatmap' | 'automations' | 'brokers' | 'lead_tracker';
 
 type UserRole = 'owner' | 'admin' | 'manager' | 'agent';
 
@@ -488,6 +497,7 @@ type NewLeadForm = {
   status: LeadStatus;
   notes: string;
   fund_amount: number | null;
+  lead_source: string;
 };
 
 const DEFAULT_STAGE_EVENTS: Record<LeadStatus, string> = {
@@ -594,7 +604,17 @@ export default function CrmDashboard({ session }: { session: Session }) {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     try { return localStorage.getItem('crm-sidebar-collapsed') === 'true'; } catch { return false; }
-  });
+  }, []);
+
+  const [darkMode, setDarkMode] = useState<boolean>(() => {
+    try { return localStorage.getItem('crm-dark-mode') === 'true'; } catch { return false; }
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('crm-dark', darkMode);
+    try { localStorage.setItem('crm-dark-mode', String(darkMode)); } catch { /* ignore */ }
+  }, [darkMode]);
+
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [mobileNav, setMobileNav] = useState<'leads' | 'pipeline'>('leads');
   const [mobileCustomizeOpen, setMobileCustomizeOpen] = useState(false);
@@ -641,6 +661,11 @@ export default function CrmDashboard({ session }: { session: Session }) {
   const [showWhatsAppInbox, setShowWhatsAppInbox] = useState(true);
   const [showEmailInbox, setShowEmailInbox] = useState(true);
   const [showIbLeads, setShowIbLeads] = useState(true);
+  const [sectionVisibility, setSectionVisibility] = useState<Record<string, boolean>>({
+    leads: true, brokers: true, ib_leads: true, inbox: true, broadcasts: true,
+    analytics: true, lead_tracker: true, templates: true, followups: true,
+    automations: true, pipeline: true,
+  });
   const [sidebarSections, setSidebarSections] = useState<Record<string, boolean>>(() => {
     try {
       const saved = localStorage.getItem('crm-sidebar-sections');
@@ -953,10 +978,10 @@ export default function CrmDashboard({ session }: { session: Session }) {
     (async () => {
       const { data } = await supabase
         .from('appearance_settings')
-        .select('border_color, border_width, border_radius, btn_bg_color, btn_text_color, btn_border_color, btn_border_width, btn_border_radius, show_telegram_inbox, show_whatsapp_inbox, show_email_inbox, show_ib_leads, crm_bg_color, sidebar_color, font_size, setup_cost')
+        .select('border_color, border_width, border_radius, btn_bg_color, btn_text_color, btn_border_color, btn_border_width, btn_border_radius, show_telegram_inbox, show_whatsapp_inbox, show_email_inbox, show_ib_leads, show_leads, show_brokers, show_inbox, show_broadcasts, show_analytics, show_lead_tracker, show_templates, show_followups, show_automations, show_pipeline, crm_bg_color, sidebar_color, font_size, setup_cost')
         .maybeSingle();
       if (data) {
-        const a = data as { border_color: string; border_width: number; border_radius: number; btn_bg_color: string; btn_text_color: string; btn_border_color: string; btn_border_width: number; btn_border_radius: number; show_telegram_inbox: boolean; show_whatsapp_inbox: boolean; show_email_inbox: boolean; crm_bg_color: string | null; sidebar_color: string | null; font_size: string | null; setup_cost: number | null };
+        const a = data as { border_color: string; border_width: number; border_radius: number; btn_bg_color: string; btn_text_color: string; btn_border_color: string; btn_border_width: number; btn_border_radius: number; show_telegram_inbox: boolean; show_whatsapp_inbox: boolean; show_email_inbox: boolean; show_ib_leads: boolean; show_leads: boolean; show_brokers: boolean; show_inbox: boolean; show_broadcasts: boolean; show_analytics: boolean; show_lead_tracker: boolean; show_templates: boolean; show_followups: boolean; show_automations: boolean; show_pipeline: boolean; crm_bg_color: string | null; sidebar_color: string | null; font_size: string | null; setup_cost: number | null };
         document.documentElement.style.setProperty('--app-border-color', a.border_color || '#EAB308');
         document.documentElement.style.setProperty('--app-border-width', `${a.border_width ?? 1.5}px`);
         document.documentElement.style.setProperty('--app-border-radius', `${a.border_radius ?? 16}px`);
@@ -971,7 +996,20 @@ export default function CrmDashboard({ session }: { session: Session }) {
         setShowTelegramInbox(a.show_telegram_inbox !== false);
         setShowWhatsAppInbox(a.show_whatsapp_inbox !== false);
         setShowEmailInbox(a.show_email_inbox !== false);
-        setShowIbLeads((a as Record<string, unknown>).show_ib_leads !== false);
+        setShowIbLeads(a.show_ib_leads !== false);
+        setSectionVisibility({
+          leads: a.show_leads !== false,
+          brokers: a.show_brokers !== false,
+          ib_leads: a.show_ib_leads !== false,
+          inbox: a.show_inbox !== false,
+          broadcasts: a.show_broadcasts !== false,
+          analytics: a.show_analytics !== false,
+          lead_tracker: a.show_lead_tracker !== false,
+          templates: a.show_templates !== false,
+          followups: a.show_followups !== false,
+          automations: a.show_automations !== false,
+          pipeline: a.show_pipeline !== false,
+        });
         if (a.setup_cost != null) setSetupCostPerClient(a.setup_cost);
       }
     })();
@@ -1562,7 +1600,7 @@ export default function CrmDashboard({ session }: { session: Session }) {
         tags: [],
         assigned_to: assigneeId,
         user_id: session.user.id,
-        lead_source: 'Manual Entry',
+        lead_source: form.lead_source || 'Manual Entry',
       })
       .select()
       .single();
@@ -1992,18 +2030,25 @@ export default function CrmDashboard({ session }: { session: Session }) {
           <a className={`crm-nav-item ${activeView === 'dashboard' ? 'active' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`} onClick={() => { setActiveView('dashboard'); setMobileSidebarOpen(false); }} style={{ cursor: 'pointer' }} title={sidebarCollapsed ? 'Dashboard' : undefined}>
             <LayoutGrid size={18} /> {!sidebarCollapsed && 'Dashboard'}
           </a>
+          {sectionVisibility.leads && (
           <a className={`crm-nav-item ${activeView === 'leads' ? 'active' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`} onClick={() => { setActiveView('leads'); setMobileSidebarOpen(false); setMobileNav('leads'); }} style={{ cursor: 'pointer' }} title={sidebarCollapsed ? 'Leads' : undefined}>
             <Users size={18} /> {!sidebarCollapsed && 'Leads'}
             {!sidebarCollapsed && <span className="crm-nav-badge">{stats.total}</span>}
           </a>
-          {showIbLeads && (
+          )}
+          {showIbLeads && sectionVisibility.ib_leads && (
             <a className={`crm-nav-item ${activeView === 'ib_leads' ? 'active' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`} onClick={() => { setActiveView('ib_leads'); setMobileSidebarOpen(false); setMobileNav('leads'); }} style={{ cursor: 'pointer' }} title={sidebarCollapsed ? 'IB Leads' : undefined}>
               <Building2 size={18} /> {!sidebarCollapsed && 'IB Leads'}
             </a>
           )}
+          {sectionVisibility.brokers && (
+          <a className={`crm-nav-item ${activeView === 'brokers' ? 'active' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`} onClick={() => { setActiveView('brokers'); setMobileSidebarOpen(false); setMobileNav('leads'); }} style={{ cursor: 'pointer' }} title={sidebarCollapsed ? 'Broker Tracker' : undefined}>
+            <TrendingUp size={18} /> {!sidebarCollapsed && 'Broker Tracker'}
+          </a>
+          )}
         </div>
         )}
-        {sidebarSections.inbox && (
+        {sidebarSections.inbox && sectionVisibility.inbox && (
         <div className="crm-nav-section">
           {!sidebarCollapsed && <span className="crm-nav-label">INBOX</span>}
           <a className={`crm-nav-item ${activeView === 'inbox_hub' ? 'active' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`} onClick={() => { if (permissions.inbox) { setActiveView('inbox_hub'); setMobileSidebarOpen(false); setMobileNav('leads'); } }} style={{ cursor: permissions.inbox ? 'pointer' : 'not-allowed', position: 'relative', opacity: permissions.inbox ? 1 : 0.4 }} title={sidebarCollapsed ? 'Shared Inbox' : undefined}>
@@ -2020,28 +2065,37 @@ export default function CrmDashboard({ session }: { session: Session }) {
         {permissions.broadcasts && sidebarSections.campaigns && (
         <div className="crm-nav-section">
           {!sidebarCollapsed && <span className="crm-nav-label">CAMPAIGNS</span>}
+          {sectionVisibility.broadcasts && (
           <a className={`crm-nav-item ${activeView === 'broadcast_hub' ? 'active' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`} onClick={() => { setActiveView('broadcast_hub'); setMobileSidebarOpen(false); setMobileNav('leads'); }} style={{ cursor: 'pointer' }} title={sidebarCollapsed ? 'Broadcasts' : undefined}>
             <Send size={18} /> {!sidebarCollapsed && 'Broadcasts'}
           </a>
+          )}
         </div>
         )}
         {permissions.analytics && sidebarSections.analytics && (
         <div className="crm-nav-section">
           {!sidebarCollapsed && <span className="crm-nav-label">ANALYTICS</span>}
+          {sectionVisibility.analytics && (
           <a className={`crm-nav-item ${activeView === 'analytics_hub' ? 'active' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`} onClick={() => { setActiveView('analytics_hub'); setMobileSidebarOpen(false); setMobileNav('leads'); }} style={{ cursor: 'pointer' }} title={sidebarCollapsed ? 'Analytics' : undefined}>
             <BarChart3 size={18} /> {!sidebarCollapsed && 'Analytics'}
           </a>
+          )}
+          {sectionVisibility.lead_tracker && (
+          <a className={`crm-nav-item ${activeView === 'lead_tracker' ? 'active' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`} onClick={() => { setActiveView('lead_tracker'); setMobileSidebarOpen(false); setMobileNav('leads'); }} style={{ cursor: 'pointer' }} title={sidebarCollapsed ? 'Lead Tracker' : undefined}>
+            <Radar size={18} /> {!sidebarCollapsed && 'Lead Tracker'}
+          </a>
+          )}
         </div>
         )}
         {(permissions.broadcasts || permissions.followUps) && sidebarSections.tools && (
         <div className="crm-nav-section">
           {!sidebarCollapsed && <span className="crm-nav-label">TOOLS</span>}
-          {permissions.broadcasts && (
+          {permissions.broadcasts && sectionVisibility.templates && (
           <a className={`crm-nav-item ${activeView === 'message_templates' ? 'active' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`} onClick={() => { setActiveView('message_templates'); setMobileSidebarOpen(false); setMobileNav('leads'); }} style={{ cursor: 'pointer' }} title={sidebarCollapsed ? 'Templates' : undefined}>
             <FileTextIcon size={18} /> {!sidebarCollapsed && 'Templates'}
           </a>
           )}
-          {permissions.followUps && (
+          {permissions.followUps && sectionVisibility.followups && (
           <a className={`crm-nav-item ${activeView === 'followups' ? 'active' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`} onClick={() => { setActiveView('followups'); setMobileSidebarOpen(false); setMobileNav('leads'); }} style={{ cursor: 'pointer', position: 'relative' }} title={sidebarCollapsed ? 'Follow-Ups' : undefined}>
             <Bell size={18} /> {!sidebarCollapsed && 'Follow-Ups'}
             {!sidebarCollapsed && dashFollowups.filter((f) => f.status === 'pending' && new Date(f.reminder_at).getTime() <= Date.now()).length > 0 && (
@@ -2054,14 +2108,14 @@ export default function CrmDashboard({ session }: { session: Session }) {
             )}
           </a>
           )}
-          {permissions.automations && (
+          {permissions.automations && sectionVisibility.automations && (
           <a className={`crm-nav-item ${activeView === 'automations' ? 'active' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`} onClick={() => { setActiveView('automations'); setMobileSidebarOpen(false); setMobileNav('leads'); }} style={{ cursor: 'pointer' }} title={sidebarCollapsed ? 'Automations' : undefined}>
             <Zap size={18} /> {!sidebarCollapsed && 'Automations'}
           </a>
           )}
         </div>
         )}
-        {!sidebarCollapsed && sidebarSections.pipeline && (
+        {!sidebarCollapsed && sidebarSections.pipeline && sectionVisibility.pipeline && (
         <div className="crm-nav-section">
           <span className="crm-nav-label">PIPELINE</span>
           <div className="crm-pipeline-funnel">
@@ -2138,9 +2192,18 @@ export default function CrmDashboard({ session }: { session: Session }) {
             </button>
           )}
           <button
+            className={`crm-nav-item crm-theme-toggle ${sidebarCollapsed ? 'collapsed' : ''}`}
+            onClick={() => setDarkMode((v) => !v)}
+            style={{ cursor: 'pointer', flexShrink: 0 }}
+            title={darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            aria-label={darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+          >
+            {darkMode ? <Sun size={18} /> : <Moon size={18} />}
+          </button>
+          <button
             className={`crm-nav-item ${sidebarCollapsed ? 'collapsed' : ''}`}
             onClick={handleSignOut}
-            style={{ cursor: 'pointer', color: '#94a3b8', flexShrink: 0 }}
+            style={{ cursor: 'pointer', color: 'var(--text-dark)', flexShrink: 0 }}
             title="Sign out"
             aria-label="Sign out"
           >
@@ -2157,7 +2220,7 @@ export default function CrmDashboard({ session }: { session: Session }) {
       {autoAssignToast && (
         <div style={{
           position: 'fixed', top: '20px', right: '20px', zIndex: 9999,
-          background: '#0f766e', color: '#fff', borderRadius: '10px',
+          background: '#0f766e', color: 'var(--bg-card)', borderRadius: '10px',
           padding: '12px 18px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
           display: 'flex', alignItems: 'center', gap: '10px',
           fontSize: '0.85rem', fontWeight: 600,
@@ -2231,7 +2294,7 @@ export default function CrmDashboard({ session }: { session: Session }) {
             onCall={(number) => { window.location.href = `tel:${number.replace(/[^+\d]/g, '')}`; }}
           />
         ) : activeView === 'settings' ? (
-          <SettingsPage session={session} userRole={userRole} permissions={permissions} customPermissions={customPermissions} onBack={() => setActiveView('leads')} onSignOut={handleSignOut} onInboxVisibilityChange={(tg, wa, em, ib) => { setShowTelegramInbox(tg); setShowWhatsAppInbox(wa); setShowEmailInbox(em); setShowIbLeads(ib); }} onOpenRecycleBin={() => { fetchTrashedLeads(); setShowTrashModal(true); }} pipelineAutoAssignEnabled={pipelineAutoAssignEnabled} pipelineAutoAssignStages={pipelineAutoAssignStages} onPipelineAutoAssignChange={(enabled, stages) => { setPipelineAutoAssignEnabled(enabled); setPipelineAutoAssignStages(stages); }} onStageLabelsChange={async () => { const { data } = await supabase.from('pipeline_stage_labels').select('stage_key, label'); if (data) { const map: Record<string, string> = {}; for (const row of data as { stage_key: string; label: string }[]) { map[row.stage_key] = row.label; } setStageLabelMap(map); } }} sidebarSections={sidebarSections} onSidebarSectionChange={updateSidebarSection} />
+          <SettingsPage session={session} userRole={userRole} permissions={permissions} customPermissions={customPermissions} onBack={() => setActiveView('leads')} onSignOut={handleSignOut} onInboxVisibilityChange={(tg, wa, em, ib) => { setShowTelegramInbox(tg); setShowWhatsAppInbox(wa); setShowEmailInbox(em); setShowIbLeads(ib); }} onOpenRecycleBin={() => { fetchTrashedLeads(); setShowTrashModal(true); }} pipelineAutoAssignEnabled={pipelineAutoAssignEnabled} pipelineAutoAssignStages={pipelineAutoAssignStages} onPipelineAutoAssignChange={(enabled, stages) => { setPipelineAutoAssignEnabled(enabled); setPipelineAutoAssignStages(stages); }} onStageLabelsChange={async () => { const { data } = await supabase.from('pipeline_stage_labels').select('stage_key, label'); if (data) { const map: Record<string, string> = {}; for (const row of data as { stage_key: string; label: string }[]) { map[row.stage_key] = row.label; } setStageLabelMap(map); } }} sidebarSections={sidebarSections} onSidebarSectionChange={updateSidebarSection} sectionVisibility={sectionVisibility} onSectionVisibilityChange={(key, visible) => setSectionVisibility((prev) => ({ ...prev, [key]: visible }))} />
         ) : activeView === 'analytics_hub' ? (
           <AnalyticsHub session={session} onBack={() => setActiveView('dashboard')} />
         ) : activeView === 'message_templates' ? (
@@ -2252,6 +2315,10 @@ export default function CrmDashboard({ session }: { session: Session }) {
           <DuplicateDetectionView leads={leads} onBack={() => setActiveView('dashboard')} onMerge={mergeDuplicates} assigneeMap={assigneeMap} />
         ) : activeView === 'automations' ? (
           <AutomationBuilder session={session} onBack={() => setActiveView('dashboard')} stages={pipelineStages} />
+        ) : activeView === 'brokers' ? (
+          <BrokerTrackerPage session={session} onBack={() => setActiveView('dashboard')} />
+        ) : activeView === 'lead_tracker' ? (
+          <LeadTrackerPage leads={leads} onBack={() => setActiveView('dashboard')} />
         ) : activeView === 'heatmap' ? (
           <div className="dash-overview">
             <div className="dash-page-header">
@@ -2566,7 +2633,7 @@ export default function CrmDashboard({ session }: { session: Session }) {
               )}
               <button
                 onClick={() => { setDupesOnly((v) => !v); setPage(0); }}
-                style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 14px', border: dupesOnly ? '1px solid rgba(245,158,11,0.4)' : '1px solid #e2e8f0', borderRadius: '8px', background: dupesOnly ? 'rgba(245,158,11,0.08)' : '#fff', color: dupesOnly ? '#d97706' : '#64748b', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s', whiteSpace: 'nowrap' }}
+                style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 14px', border: dupesOnly ? '1px solid rgba(245,158,11,0.4)' : '1px solid var(--border-subtle)', borderRadius: '8px', background: dupesOnly ? 'rgba(245,158,11,0.08)' : 'var(--bg-card)', color: dupesOnly ? '#d97706' : 'var(--text-dark)', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s', whiteSpace: 'nowrap' }}
               >
                 <AlertTriangle size={15} /> {dupesOnly ? 'Duplicates Only' : 'Duplicates'}
               </button>
@@ -2583,9 +2650,9 @@ export default function CrmDashboard({ session }: { session: Session }) {
               {permissions.deleteLeads && (
                 <button
                   onClick={() => { setShowFilterDeleteModal(true); setFilterDeleteResult(null); }}
-                  style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 14px', border: '1px solid #e2e8f0', borderRadius: '8px', background: '#fff', color: '#dc2626', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s', whiteSpace: 'nowrap' }}
+                  style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 14px', border: '1px solid var(--border-subtle)', borderRadius: '8px', background: 'var(--bg-card)', color: '#dc2626', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s', whiteSpace: 'nowrap' }}
                   onMouseEnter={(e) => { e.currentTarget.style.background = '#dc2626'; e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = '#dc2626'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.color = '#dc2626'; e.currentTarget.style.borderColor = '#e2e8f0'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--bg-card)'; e.currentTarget.style.color = '#dc2626'; e.currentTarget.style.borderColor = 'var(--border-subtle)'; }}
                 >
                   <Filter size={15} /> Delete by Filter
                 </button>
@@ -2616,9 +2683,9 @@ export default function CrmDashboard({ session }: { session: Session }) {
                     </th>
                     <th>Contact</th>
                     <th>Status</th>
-                    <th>Score</th>
                     <th>Assigned</th>
                     <th>Tags</th>
+                    <th>Source</th>
                     <th className="crm-th-sortable" onClick={() => handleSort('trading_product')}>
                       <div className="crm-th-inner">Product
                         <span className={`crm-sort-arrow ${sortKey === 'trading_product' ? `active ${sortDir}` : ''}`}>
@@ -2684,28 +2751,15 @@ export default function CrmDashboard({ session }: { session: Session }) {
                             {stage.icon} {stage.label}
                           </span>
                         </td>
-                        <td>
-                          {(() => {
-                            const score = lead.lead_score ?? 0;
-                            const scoreColor = score >= 60 ? '#16a34a' : score >= 30 ? '#f59e0b' : '#94a3b8';
-                            const scoreBg = score >= 60 ? 'rgba(22,163,74,0.1)' : score >= 30 ? 'rgba(245,158,11,0.1)' : 'rgba(148,163,184,0.1)';
-                            const scoreLabel = score >= 60 ? 'Hot' : score >= 30 ? 'Warm' : 'Cold';
-                            return (
-                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.72rem', fontWeight: 700, color: scoreColor, background: scoreBg, padding: '3px 8px', borderRadius: '6px', border: `1px solid ${scoreColor}20` }}>
-                                <Zap size={11} /> {score} · {scoreLabel}
-                              </span>
-                            );
-                          })()}
-                        </td>
                         <td onClick={(e) => e.stopPropagation()}>
                           <select
                             value={lead.assigned_to || ''}
                             onChange={(e) => updateLead(lead.id, { assigned_to: e.target.value || null })}
                             aria-label={`Assign ${lead.full_name}`}
                             style={{
-                              border: lead.assigned_to ? '1px solid rgba(15,118,110,0.2)' : '1px solid #e2e8f0',
-                              background: lead.assigned_to ? 'rgba(15,118,110,0.06)' : '#fff',
-                              color: lead.assigned_to ? '#0f766e' : '#94a3b8',
+                              border: lead.assigned_to ? '1px solid rgba(15,118,110,0.2)' : '1px solid var(--border-subtle)',
+                              background: lead.assigned_to ? 'rgba(15,118,110,0.06)' : 'var(--bg-card)',
+                              color: lead.assigned_to ? '#0f766e' : 'var(--text-dark)',
                               borderRadius: '6px',
                               padding: '4px 8px',
                               fontSize: '0.76rem',
@@ -2731,6 +2785,9 @@ export default function CrmDashboard({ session }: { session: Session }) {
                           </div>
                         </td>
                         <td>
+                          <LeadSourceBadge source={lead.lead_source} size={16} />
+                        </td>
+                        <td>
                           <span className={`crm-product-tag ${lead.trading_product}`}>
                             {lead.trading_product === 'algo' ? <><Bot size={13} /> Algo</> : <><BarChart3 size={13} /> TV Premium</>}
                           </span>
@@ -2741,7 +2798,7 @@ export default function CrmDashboard({ session }: { session: Session }) {
                               ${lead.fund_amount.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
                             </span>
                           ) : (
-                            <span style={{ color: '#94a3b8', fontSize: '0.82rem' }}>—</span>
+                            <span style={{ color: 'var(--text-dark)', fontSize: '0.82rem' }}>—</span>
                           )}
                         </td>
                         <td><span className="crm-date-tag">{formatDate(lead.created_at)}</span></td>
@@ -2862,7 +2919,7 @@ export default function CrmDashboard({ session }: { session: Session }) {
                   <label>Duplicates</label>
                   <button
                     onClick={() => { setDupesOnly((v) => !v); setPage(0); }}
-                    style={{ display: 'flex', alignItems: 'center', gap: '6px', width: '100%', padding: '9px 12px', border: dupesOnly ? '1px solid rgba(245,158,11,0.4)' : '1px solid #e2e8f0', borderRadius: '8px', background: dupesOnly ? 'rgba(245,158,11,0.08)' : '#fff', color: dupesOnly ? '#d97706' : '#64748b', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s' }}
+                    style={{ display: 'flex', alignItems: 'center', gap: '6px', width: '100%', padding: '9px 12px', border: dupesOnly ? '1px solid rgba(245,158,11,0.4)' : '1px solid var(--border-subtle)', borderRadius: '8px', background: dupesOnly ? 'rgba(245,158,11,0.08)' : 'var(--bg-card)', color: dupesOnly ? '#d97706' : 'var(--text-dark)', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s' }}
                   >
                     <AlertTriangle size={15} /> {dupesOnly ? 'Showing duplicates only' : 'Show duplicates only'}
                   </button>
@@ -2886,7 +2943,7 @@ export default function CrmDashboard({ session }: { session: Session }) {
               <div style={{ display: 'flex', gap: '8px', padding: '0 16px 12px' }}>
                 <button
                   onClick={() => { setShowFilterDeleteModal(true); setFilterDeleteResult(null); }}
-                  style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '10px', border: '1px solid #e2e8f0', borderRadius: '8px', background: '#fff', color: '#dc2626', fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer' }}
+                  style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '10px', border: '1px solid var(--border-subtle)', borderRadius: '8px', background: 'var(--bg-card)', color: '#dc2626', fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer' }}
                 >
                   <Filter size={15} /> Delete by Filter
                 </button>
@@ -2972,16 +3029,6 @@ export default function CrmDashboard({ session }: { session: Session }) {
                       <span className="crm-status-badge crm-mobile-status-badge" style={{ background: colors.bg, color: colors.text, border: `1px solid ${colors.border}` }}>
                         {stage.icon}
                       </span>
-                      {(() => {
-                        const score = lead.lead_score ?? 0;
-                        const scoreColor = score >= 60 ? '#16a34a' : score >= 30 ? '#f59e0b' : '#94a3b8';
-                        const scoreBg = score >= 60 ? 'rgba(22,163,74,0.1)' : score >= 30 ? 'rgba(245,158,11,0.1)' : 'rgba(148,163,184,0.1)';
-                        return (
-                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', fontSize: '0.62rem', fontWeight: 700, color: scoreColor, background: scoreBg, padding: '2px 6px', borderRadius: '5px', whiteSpace: 'nowrap', flexShrink: 0 }}>
-                            <Zap size={10} /> {score}
-                          </span>
-                        );
-                      })()}
                     </div>
                     <div className="crm-mobile-card-body">
                       <button type="button" className="crm-mobile-card-phone" onClick={(e) => { e.stopPropagation(); window.location.href = `tel:${lead.mobile_number.replace(/[^+\d]/g, '')}`; }} style={{ cursor: 'pointer', font: 'inherit' }}>
@@ -3104,7 +3151,7 @@ export default function CrmDashboard({ session }: { session: Session }) {
               </div>
             ) : (
               <>
-                <p style={{ fontSize: '0.82rem', color: '#64748b', marginBottom: '16px' }}>
+                <p style={{ fontSize: '0.82rem', color: 'var(--text-dark)', marginBottom: '16px' }}>
                   Enter a fund amount to apply to all selected leads. Enter 0 to clear the fund amount.
                 </p>
                 <div style={{ position: 'relative', marginBottom: '16px' }}>
@@ -3116,7 +3163,7 @@ export default function CrmDashboard({ session }: { session: Session }) {
                     value={bulkFundValue}
                     onChange={(e) => setBulkFundValue(e.target.value)}
                     placeholder="Enter fund amount"
-                    style={{ width: '100%', padding: '10px 14px 10px 32px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '0.85rem' }}
+                    style={{ width: '100%', padding: '10px 14px 10px 32px', border: '1px solid var(--border-subtle)', borderRadius: '8px', fontSize: '0.85rem' }}
                   />
                 </div>
                 <div className="crm-bulk-delete-actions">
@@ -3163,13 +3210,13 @@ export default function CrmDashboard({ session }: { session: Session }) {
               </div>
             ) : (
               <>
-                <p style={{ fontSize: '0.82rem', color: '#64748b', marginBottom: '16px' }}>
+                <p style={{ fontSize: '0.82rem', color: 'var(--text-dark)', marginBottom: '16px' }}>
                   Select a team member to assign all selected leads. Choose "Unassigned" to remove assignment.
                 </p>
                 <select
                   value={bulkAssignValue}
                   onChange={(e) => setBulkAssignValue(e.target.value)}
-                  style={{ width: '100%', padding: '10px 14px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '0.85rem', cursor: 'pointer', marginBottom: '16px' }}
+                  style={{ width: '100%', padding: '10px 14px', border: '1px solid var(--border-subtle)', borderRadius: '8px', fontSize: '0.85rem', cursor: 'pointer', marginBottom: '16px' }}
                 >
                   <option value="">Unassigned</option>
                   {Object.entries(assigneeMap).map(([id, name]) => (
@@ -3219,13 +3266,13 @@ export default function CrmDashboard({ session }: { session: Session }) {
               </div>
             ) : (
               <>
-                <p style={{ fontSize: '0.82rem', color: '#64748b', marginBottom: '16px' }}>
+                <p style={{ fontSize: '0.82rem', color: 'var(--text-dark)', marginBottom: '16px' }}>
                   Select a new status for all selected leads. This will update their pipeline stage and fire automation triggers.
                 </p>
                 <select
                   value={bulkStatusValue}
                   onChange={(e) => setBulkStatusValue(e.target.value as LeadStatus)}
-                  style={{ width: '100%', padding: '10px 14px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '0.85rem', cursor: 'pointer', marginBottom: '16px' }}
+                  style={{ width: '100%', padding: '10px 14px', border: '1px solid var(--border-subtle)', borderRadius: '8px', fontSize: '0.85rem', cursor: 'pointer', marginBottom: '16px' }}
                 >
                   {pipelineStages.map((s) => (
                     <option key={s.key} value={s.key}>{s.label}</option>
@@ -3268,10 +3315,10 @@ export default function CrmDashboard({ session }: { session: Session }) {
                 <p style={{ fontSize: '0.9rem', fontWeight: 600, color: '#16a34a', margin: '0 0 4px' }}>
                   Broadcast created successfully!
                 </p>
-                <p style={{ fontSize: '0.82rem', color: '#64748b', margin: '0 0 16px' }}>
+                <p style={{ fontSize: '0.82rem', color: 'var(--text-dark)', margin: '0 0 16px' }}>
                   {bulkWaResult.sent} sent · {bulkWaResult.failed} failed · {bulkWaResult.total} total recipients
                 </p>
-                <p style={{ fontSize: '0.78rem', color: '#94a3b8', margin: '0 0 16px' }}>
+                <p style={{ fontSize: '0.78rem', color: 'var(--text-dark)', margin: '0 0 16px' }}>
                   Go to Broadcasts to start sending the campaign.
                 </p>
                 <button className="crm-delete-cancel" onClick={() => { setShowBulkWa(false); clearSelection(); }}>
@@ -3280,18 +3327,18 @@ export default function CrmDashboard({ session }: { session: Session }) {
               </div>
             ) : (
               <>
-                <p style={{ fontSize: '0.82rem', color: '#64748b', margin: '0 0 16px' }}>
+                <p style={{ fontSize: '0.82rem', color: 'var(--text-dark)', margin: '0 0 16px' }}>
                   Select an approved WhatsApp template to send to the selected leads.
                 </p>
 
-                <div style={{ maxHeight: '280px', overflowY: 'auto', margin: '0 0 12px', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '6px' }}>
+                <div style={{ maxHeight: '280px', overflowY: 'auto', margin: '0 0 12px', border: '1px solid var(--border-subtle)', borderRadius: '10px', padding: '6px' }}>
                   {bulkWaTemplatesLoading ? (
-                    <div style={{ textAlign: 'center', padding: '32px', color: '#94a3b8', fontSize: '0.82rem' }}>
+                    <div style={{ textAlign: 'center', padding: '32px', color: 'var(--text-dark)', fontSize: '0.82rem' }}>
                       <Loader2 size={24} className="crm-spin" style={{ marginBottom: '8px' }} />
                       <p>Loading templates...</p>
                     </div>
                   ) : bulkWaTemplates.length === 0 ? (
-                    <div style={{ textAlign: 'center', padding: '32px', color: '#94a3b8', fontSize: '0.82rem' }}>
+                    <div style={{ textAlign: 'center', padding: '32px', color: 'var(--text-dark)', fontSize: '0.82rem' }}>
                       <MessageCircle size={28} style={{ marginBottom: '8px', opacity: 0.3 }} />
                       <p>No approved templates found. Create and approve templates first in the Templates page.</p>
                     </div>
@@ -3308,20 +3355,20 @@ export default function CrmDashboard({ session }: { session: Session }) {
                             display: 'flex', flexDirection: 'column', gap: '4px',
                             padding: '10px 12px', borderRadius: '8px', cursor: 'pointer',
                             border: isSelected ? '2px solid #128c7e' : '1px solid #f0f2f5',
-                            background: isSelected ? 'rgba(18,140,126,0.06)' : '#fff',
+                            background: isSelected ? 'rgba(18,140,126,0.06)' : 'var(--bg-card)',
                             marginBottom: '4px', transition: 'all 0.15s',
                           }}
                         >
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-                            <strong style={{ fontSize: '0.82rem', color: '#1f2937' }}>{tpl.name}</strong>
+                            <strong style={{ fontSize: '0.82rem', color: 'var(--text-main)' }}>{tpl.name}</strong>
                             <span style={{ fontSize: '0.65rem', fontWeight: 600, color: '#16a34a', background: 'rgba(22,163,74,0.1)', padding: '2px 8px', borderRadius: '100px' }}>
                               {tpl.category}
                             </span>
                           </div>
-                          <span style={{ fontSize: '0.74rem', color: '#64748b', lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                          <span style={{ fontSize: '0.74rem', color: 'var(--text-dark)', lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
                             {bodyText || 'No body text'}
                           </span>
-                          <span style={{ fontSize: '0.65rem', color: '#94a3b8' }}>{tpl.language}</span>
+                          <span style={{ fontSize: '0.65rem', color: 'var(--text-dark)' }}>{tpl.language}</span>
                         </div>
                       );
                     })
@@ -3334,12 +3381,12 @@ export default function CrmDashboard({ session }: { session: Session }) {
                   </div>
                 )}
 
-                <div style={{ maxHeight: '120px', overflowY: 'auto', margin: '0 0 12px', padding: '8px 12px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '0.76rem' }}>
+                <div style={{ maxHeight: '120px', overflowY: 'auto', margin: '0 0 12px', padding: '8px 12px', background: 'var(--bg-light)', borderRadius: '8px', border: '1px solid var(--border-subtle)', fontSize: '0.76rem' }}>
                   {leads.filter((l) => selectedIds.has(l.id) && l.mobile_number?.trim()).slice(0, 30).map((l) => (
-                    <div key={l.id} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '2px 0', color: '#475569' }}>
+                    <div key={l.id} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '2px 0', color: 'var(--text-muted)' }}>
                       <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#128c7e', flexShrink: 0 }} />
                       <strong>{l.full_name}</strong>
-                      <span style={{ color: '#94a3b8' }}>— {l.mobile_number}</span>
+                      <span style={{ color: 'var(--text-dark)' }}>— {l.mobile_number}</span>
                     </div>
                   ))}
                   {leads.filter((l) => selectedIds.has(l.id) && l.mobile_number?.trim()).length === 0 && (
@@ -3348,7 +3395,7 @@ export default function CrmDashboard({ session }: { session: Session }) {
                     </div>
                   )}
                   {leads.filter((l) => selectedIds.has(l.id) && l.mobile_number?.trim()).length > 30 && (
-                    <div style={{ textAlign: 'center', padding: '4px', color: '#94a3b8', fontSize: '0.72rem' }}>
+                    <div style={{ textAlign: 'center', padding: '4px', color: 'var(--text-dark)', fontSize: '0.72rem' }}>
                       ...and {leads.filter((l) => selectedIds.has(l.id) && l.mobile_number?.trim()).length - 30} more
                     </div>
                   )}
@@ -3470,16 +3517,16 @@ export default function CrmDashboard({ session }: { session: Session }) {
             </div>
             <h3>Delete {selectedIds.size} lead{selectedIds.size !== 1 ? 's' : ''}?</h3>
             <p>These leads will be moved to the Recycle Bin. You can restore them within 30 days before they are permanently removed.</p>
-            <div style={{ maxHeight: '160px', overflowY: 'auto', margin: '12px 0', padding: '8px 12px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '0.78rem' }}>
+            <div style={{ maxHeight: '160px', overflowY: 'auto', margin: '12px 0', padding: '8px 12px', background: 'var(--bg-light)', borderRadius: '8px', border: '1px solid var(--border-subtle)', fontSize: '0.78rem' }}>
               {leads.filter((l) => selectedIds.has(l.id)).slice(0, 50).map((l) => (
-                <div key={l.id} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '3px 0', color: '#475569' }}>
+                <div key={l.id} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '3px 0', color: 'var(--text-muted)' }}>
                   <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#dc2626', flexShrink: 0 }} />
                   <strong>{l.full_name}</strong>
-                  <span style={{ color: '#94a3b8' }}>— {l.email}</span>
+                  <span style={{ color: 'var(--text-dark)' }}>— {l.email}</span>
                 </div>
               ))}
               {selectedIds.size > 50 && (
-                <div style={{ textAlign: 'center', padding: '4px', color: '#94a3b8', fontSize: '0.75rem' }}>
+                <div style={{ textAlign: 'center', padding: '4px', color: 'var(--text-dark)', fontSize: '0.75rem' }}>
                   ...and {selectedIds.size - 50} more
                 </div>
               )}
@@ -3513,7 +3560,7 @@ export default function CrmDashboard({ session }: { session: Session }) {
               <Filter size={32} />
             </div>
             <h3>Delete Leads by Filter</h3>
-            <p style={{ fontSize: '0.82rem', color: '#64748b' }}>Soft-delete all leads matching the criteria below. They will be moved to the Recycle Bin.</p>
+            <p style={{ fontSize: '0.82rem', color: 'var(--text-dark)' }}>Soft-delete all leads matching the criteria below. They will be moved to the Recycle Bin.</p>
             {filterDeleteResult !== null ? (
               <div style={{ textAlign: 'center', padding: '24px' }}>
                 <CheckCircle2 size={40} style={{ color: '#16a34a', marginBottom: '8px' }} />
@@ -3528,8 +3575,8 @@ export default function CrmDashboard({ session }: { session: Session }) {
               <>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', margin: '16px 0' }}>
                   <label style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <span style={{ fontSize: '0.78rem', fontWeight: 600, color: '#475569' }}>Status</span>
-                    <select value={filterDeleteStatus} onChange={(e) => setFilterDeleteStatus(e.target.value)} style={{ padding: '8px 12px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '0.85rem', cursor: 'pointer' }}>
+                    <span style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-muted)' }}>Status</span>
+                    <select value={filterDeleteStatus} onChange={(e) => setFilterDeleteStatus(e.target.value)} style={{ padding: '8px 12px', border: '1px solid var(--border-subtle)', borderRadius: '8px', fontSize: '0.85rem', cursor: 'pointer' }}>
                       <option value="all">All statuses</option>
                       <option value="new">New</option>
                       <option value="called_no_response">Called - No Response</option>
@@ -3540,16 +3587,16 @@ export default function CrmDashboard({ session }: { session: Session }) {
                     </select>
                   </label>
                   <label style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <span style={{ fontSize: '0.78rem', fontWeight: 600, color: '#475569' }}>Product</span>
-                    <select value={filterDeleteProduct} onChange={(e) => setFilterDeleteProduct(e.target.value)} style={{ padding: '8px 12px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '0.85rem', cursor: 'pointer' }}>
+                    <span style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-muted)' }}>Product</span>
+                    <select value={filterDeleteProduct} onChange={(e) => setFilterDeleteProduct(e.target.value)} style={{ padding: '8px 12px', border: '1px solid var(--border-subtle)', borderRadius: '8px', fontSize: '0.85rem', cursor: 'pointer' }}>
                       <option value="all">All products</option>
                       <option value="algo">Trading Algo</option>
                       <option value="tradingview_premium">TradingView Premium</option>
                     </select>
                   </label>
                   <label style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <span style={{ fontSize: '0.78rem', fontWeight: 600, color: '#475569' }}>Older than (days)</span>
-                    <input type="number" min="1" max="3650" value={filterDeleteDays} onChange={(e) => setFilterDeleteDays(Math.max(1, parseInt(e.target.value) || 1))} style={{ padding: '8px 12px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '0.85rem' }} />
+                    <span style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-muted)' }}>Older than (days)</span>
+                    <input type="number" min="1" max="3650" value={filterDeleteDays} onChange={(e) => setFilterDeleteDays(Math.max(1, parseInt(e.target.value) || 1))} style={{ padding: '8px 12px', border: '1px solid var(--border-subtle)', borderRadius: '8px', fontSize: '0.85rem' }} />
                   </label>
                 </div>
                 <div className="crm-bulk-delete-actions">
@@ -3598,14 +3645,14 @@ export default function CrmDashboard({ session }: { session: Session }) {
         <>
           <div className="crm-drawer-overlay" onClick={() => !emptyingTrash && setShowTrashModal(false)} />
           <div className="crm-bulk-delete-modal" style={{ maxWidth: '560px' }}>
-            <div className="crm-bulk-delete-icon" style={{ background: 'rgba(100,116,139,0.1)', color: '#64748b' }}>
+            <div className="crm-bulk-delete-icon" style={{ background: 'rgba(100,116,139,0.1)', color: 'var(--text-dark)' }}>
               <Trash2 size={32} />
             </div>
             <h3>Recycle Bin</h3>
-            <p style={{ fontSize: '0.82rem', color: '#64748b' }}>Deleted leads are stored here for 30 days. Restore them or permanently delete.</p>
-            <div style={{ maxHeight: '320px', overflowY: 'auto', margin: '12px 0', padding: '4px', border: '1px solid #e2e8f0', borderRadius: '8px' }}>
+            <p style={{ fontSize: '0.82rem', color: 'var(--text-dark)' }}>Deleted leads are stored here for 30 days. Restore them or permanently delete.</p>
+            <div style={{ maxHeight: '320px', overflowY: 'auto', margin: '12px 0', padding: '4px', border: '1px solid var(--border-subtle)', borderRadius: '8px' }}>
               {trashedLeads.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '32px', color: '#94a3b8', fontSize: '0.85rem' }}>
+                <div style={{ textAlign: 'center', padding: '32px', color: 'var(--text-dark)', fontSize: '0.85rem' }}>
                   <Trash2 size={28} style={{ marginBottom: '8px', opacity: 0.3 }} />
                   <p>Recycle bin is empty.</p>
                 </div>
@@ -3614,18 +3661,18 @@ export default function CrmDashboard({ session }: { session: Session }) {
                   const deletedDate = new Date(l.deleted_at!);
                   const daysLeft = Math.max(0, 30 - Math.floor((Date.now() - deletedDate.getTime()) / 86400000));
                   return (
-                    <div key={l.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderBottom: '1px solid #f1f5f9' }}>
-                      <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.75rem', color: '#64748b', flexShrink: 0 }}>
+                    <div key={l.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderBottom: '1px solid var(--border-subtle)' }}>
+                      <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--bg-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.75rem', color: 'var(--text-dark)', flexShrink: 0 }}>
                         {l.full_name.split(' ').map((n) => n[0]).slice(0, 2).join('').toUpperCase()}
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <strong style={{ fontSize: '0.82rem', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{l.full_name}</strong>
-                        <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>{l.email} — {daysLeft} day{daysLeft !== 1 ? 's' : ''} left</span>
+                        <span style={{ fontSize: '0.72rem', color: 'var(--text-dark)' }}>{l.email} — {daysLeft} day{daysLeft !== 1 ? 's' : ''} left</span>
                       </div>
-                      <button onClick={() => restoreLead(l.id)} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '5px 10px', border: '1px solid #e2e8f0', borderRadius: '6px', background: '#fff', fontSize: '0.72rem', fontWeight: 600, color: '#16a34a', cursor: 'pointer', flexShrink: 0 }} onMouseEnter={(e) => { e.currentTarget.style.background = '#16a34a'; e.currentTarget.style.color = '#fff'; }} onMouseLeave={(e) => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.color = '#16a34a'; }}>
+                      <button onClick={() => restoreLead(l.id)} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '5px 10px', border: '1px solid var(--border-subtle)', borderRadius: '6px', background: 'var(--bg-card)', fontSize: '0.72rem', fontWeight: 600, color: '#16a34a', cursor: 'pointer', flexShrink: 0 }} onMouseEnter={(e) => { e.currentTarget.style.background = '#16a34a'; e.currentTarget.style.color = '#fff'; }} onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--bg-card)'; e.currentTarget.style.color = '#16a34a'; }}>
                         <RotateCcw size={13} /> Restore
                       </button>
-                      <button onClick={() => permanentlyDeleteLead(l.id)} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '5px 10px', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '6px', background: '#fff', fontSize: '0.72rem', fontWeight: 600, color: '#dc2626', cursor: 'pointer', flexShrink: 0 }} onMouseEnter={(e) => { e.currentTarget.style.background = '#dc2626'; e.currentTarget.style.color = '#fff'; }} onMouseLeave={(e) => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.color = '#dc2626'; }}>
+                      <button onClick={() => permanentlyDeleteLead(l.id)} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '5px 10px', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '6px', background: 'var(--bg-card)', fontSize: '0.72rem', fontWeight: 600, color: '#dc2626', cursor: 'pointer', flexShrink: 0 }} onMouseEnter={(e) => { e.currentTarget.style.background = '#dc2626'; e.currentTarget.style.color = '#fff'; }} onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--bg-card)'; e.currentTarget.style.color = '#dc2626'; }}>
                         <Trash2 size={13} /> Delete
                       </button>
                     </div>
@@ -3635,7 +3682,7 @@ export default function CrmDashboard({ session }: { session: Session }) {
             </div>
             {trashedLeads.length > 0 && (
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '8px' }}>
-                <span style={{ fontSize: '0.78rem', color: '#94a3b8' }}>{trashedLeads.length} lead{trashedLeads.length !== 1 ? 's' : ''} in trash</span>
+                <span style={{ fontSize: '0.78rem', color: 'var(--text-dark)' }}>{trashedLeads.length} lead{trashedLeads.length !== 1 ? 's' : ''} in trash</span>
                 <div style={{ display: 'flex', gap: '8px' }}>
                   <button onClick={restoreAll} disabled={restoringAll || emptyingTrash} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 14px', border: '1px solid rgba(22,163,74,0.3)', borderRadius: '6px', background: 'rgba(22,163,74,0.06)', fontSize: '0.78rem', fontWeight: 600, color: '#16a34a', cursor: 'pointer' }}>
                     {restoringAll ? <Loader2 size={14} className="crm-spin" /> : <RotateCcw size={14} />} Restore All
@@ -3660,7 +3707,7 @@ export default function CrmDashboard({ session }: { session: Session }) {
           <div className="crm-drawer-overlay" style={{ zIndex: 9999 }} onClick={rejectIncomingCall} />
           <div style={{
             position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
-            zIndex: 10000, background: '#fff', borderRadius: '20px', padding: '32px 40px',
+            zIndex: 10000, background: 'var(--bg-card)', borderRadius: '20px', padding: '32px 40px',
             boxShadow: '0 25px 60px rgba(0,0,0,0.25)', textAlign: 'center', maxWidth: '360px', width: '90%',
           }}>
             <div style={{
@@ -3668,16 +3715,16 @@ export default function CrmDashboard({ session }: { session: Session }) {
               margin: '0 auto 16px', display: 'flex', alignItems: 'center', justifyContent: 'center',
               animation: 'crm-pulse 1.5s infinite',
             }}>
-              <PhoneCall size={28} style={{ color: '#fff' }} />
+              <PhoneCall size={28} style={{ color: 'var(--bg-card)' }} />
             </div>
-            <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#1e293b', margin: '0 0 4px' }}>Incoming WhatsApp Call</h3>
-            <p style={{ fontSize: '0.88rem', color: '#64748b', margin: '0 0 24px' }}>{incomingCall.phoneNumber}</p>
+            <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-main)', margin: '0 0 4px' }}>Incoming WhatsApp Call</h3>
+            <p style={{ fontSize: '0.88rem', color: 'var(--text-dark)', margin: '0 0 24px' }}>{incomingCall.phoneNumber}</p>
             <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
               <button
                 onClick={rejectIncomingCall}
                 style={{
                   display: 'flex', alignItems: 'center', gap: '6px', padding: '12px 24px',
-                  borderRadius: '12px', border: 'none', background: '#dc2626', color: '#fff',
+                  borderRadius: '12px', border: 'none', background: '#dc2626', color: 'var(--bg-card)',
                   fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer',
                 }}
               >
@@ -3688,7 +3735,7 @@ export default function CrmDashboard({ session }: { session: Session }) {
                 disabled={callConnecting}
                 style={{
                   display: 'flex', alignItems: 'center', gap: '6px', padding: '12px 24px',
-                  borderRadius: '12px', border: 'none', background: callConnecting ? '#94a3b8' : '#16a34a', color: '#fff',
+                  borderRadius: '12px', border: 'none', background: callConnecting ? '#94a3b8' : '#16a34a', color: 'var(--bg-card)',
                   fontSize: '0.85rem', fontWeight: 600, cursor: callConnecting ? 'not-allowed' : 'pointer',
                 }}
               >
@@ -3703,17 +3750,17 @@ export default function CrmDashboard({ session }: { session: Session }) {
       {activeCall && (
         <div style={{
           position: 'fixed', bottom: '20px', right: '20px', zIndex: 10000,
-          background: '#fff', borderRadius: '16px', padding: '16px 20px',
+          background: 'var(--bg-card)', borderRadius: '16px', padding: '16px 20px',
           boxShadow: '0 10px 30px rgba(0,0,0,0.15)', display: 'flex', alignItems: 'center', gap: '12px',
         }}>
           <div style={{
             width: '40px', height: '40px', borderRadius: '50%', background: '#16a34a',
             display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
           }}>
-            <PhoneCall size={18} style={{ color: '#fff' }} />
+            <PhoneCall size={18} style={{ color: 'var(--bg-card)' }} />
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <p style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e293b', margin: 0 }}>{activeCall.phoneNumber}</p>
+            <p style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-main)', margin: 0 }}>{activeCall.phoneNumber}</p>
             <p style={{ fontSize: '0.72rem', color: '#16a34a', margin: 0, display: 'flex', alignItems: 'center', gap: '4px' }}>
               <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#16a34a', animation: 'crm-pulse 1.5s infinite' }} />
               Connected
@@ -3723,7 +3770,7 @@ export default function CrmDashboard({ session }: { session: Session }) {
             onClick={endActiveCall}
             style={{
               display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px',
-              borderRadius: '10px', border: 'none', background: '#dc2626', color: '#fff',
+              borderRadius: '10px', border: 'none', background: '#dc2626', color: 'var(--bg-card)',
               fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', flexShrink: 0,
             }}
           >
@@ -3856,10 +3903,10 @@ function BulkMergeModal({ allLeads, duplicateLeadIds, onClose, onMerge }: {
         ) : merging ? (
           <div style={{ textAlign: 'center', padding: '24px' }}>
             <Loader2 size={32} className="crm-spin" style={{ color: '#16a34a', marginBottom: '12px' }} />
-            <p style={{ fontSize: '0.88rem', fontWeight: 600, color: '#334155', marginBottom: '8px' }}>
+            <p style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px' }}>
               Merging group {progress.current} of {progress.total}...
             </p>
-            <div style={{ width: '100%', maxWidth: '320px', height: '6px', background: '#e2e8f0', borderRadius: '3px', margin: '0 auto', overflow: 'hidden' }}>
+            <div style={{ width: '100%', maxWidth: '320px', height: '6px', background: 'var(--border-subtle)', borderRadius: '3px', margin: '0 auto', overflow: 'hidden' }}>
               <div style={{
                 width: `${progress.total > 0 ? (progress.current / progress.total) * 100 : 0}%`,
                 height: '100%',
@@ -3871,13 +3918,13 @@ function BulkMergeModal({ allLeads, duplicateLeadIds, onClose, onMerge }: {
           </div>
         ) : (
           <>
-            <p style={{ fontSize: '0.82rem', color: '#64748b' }}>
+            <p style={{ fontSize: '0.82rem', color: 'var(--text-dark)' }}>
               Found <strong>{duplicateGroups.length}</strong> duplicate group{duplicateGroups.length !== 1 ? 's' : ''} containing <strong>{totalDuplicates}</strong> leads. This will merge each group into the most complete lead and move the rest to the Recycle Bin.
             </p>
 
-            <div style={{ maxHeight: '240px', overflowY: 'auto', margin: '12px 0', padding: '4px', border: '1px solid #e2e8f0', borderRadius: '8px' }}>
+            <div style={{ maxHeight: '240px', overflowY: 'auto', margin: '12px 0', padding: '4px', border: '1px solid var(--border-subtle)', borderRadius: '8px' }}>
               {duplicateGroups.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '24px', color: '#94a3b8', fontSize: '0.85rem' }}>
+                <div style={{ textAlign: 'center', padding: '24px', color: 'var(--text-dark)', fontSize: '0.85rem' }}>
                   <CheckCircle2 size={28} style={{ marginBottom: '8px', opacity: 0.3 }} />
                   <p>No duplicates found.</p>
                 </div>
@@ -3890,9 +3937,9 @@ function BulkMergeModal({ allLeads, duplicateLeadIds, onClose, onMerge }: {
                     return curScore > bestScore ? l : best;
                   });
                   return (
-                    <div key={idx} style={{ padding: '10px 12px', borderBottom: idx < duplicateGroups.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
+                    <div key={idx} style={{ padding: '10px 12px', borderBottom: idx < duplicateGroups.length - 1 ? '1px solid var(--border-subtle)' : 'none' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
-                        <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#94a3b8' }}>Group {idx + 1}</span>
+                        <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-dark)' }}>Group {idx + 1}</span>
                         <span style={{ fontSize: '0.72rem', color: '#16a34a', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
                           <Check size={11} /> Keep: {keep.full_name}
                         </span>
@@ -4003,9 +4050,9 @@ function MergeDuplicatesModal({ lead, allLeads, onClose, onMerge }: {
   };
 
   const FieldRow = ({ label, value, isBetter }: { label: string; value: string; isBetter?: boolean }) => (
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: '1px solid #f1f5f9' }}>
-      <span style={{ fontSize: '0.74rem', color: '#94a3b8', fontWeight: 500 }}>{label}</span>
-      <span style={{ fontSize: '0.78rem', fontWeight: 600, color: isBetter ? '#16a34a' : '#334155', textAlign: 'right', maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: '1px solid var(--border-subtle)' }}>
+      <span style={{ fontSize: '0.74rem', color: 'var(--text-dark)', fontWeight: 500 }}>{label}</span>
+      <span style={{ fontSize: '0.78rem', fontWeight: 600, color: isBetter ? '#16a34a' : 'var(--text-muted)', textAlign: 'right', maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
         {value || '—'}
       </span>
     </div>
@@ -4019,7 +4066,7 @@ function MergeDuplicatesModal({ lead, allLeads, onClose, onMerge }: {
           <GitMerge size={32} />
         </div>
         <h3>Merge Duplicate Leads</h3>
-        <p style={{ fontSize: '0.82rem', color: '#64748b' }}>
+        <p style={{ fontSize: '0.82rem', color: 'var(--text-dark)' }}>
           {duplicates.length} lead{duplicates.length !== 1 ? 's' : ''} share the same email or phone number. Pick which one to keep — the others will be merged into it and moved to the Recycle Bin.
         </p>
 
@@ -4040,27 +4087,27 @@ function MergeDuplicatesModal({ lead, allLeads, onClose, onMerge }: {
                     style={{
                       flex: '1 1 200px',
                       minWidth: '200px',
-                      border: isSelected ? '2px solid #16a34a' : '1px solid #e2e8f0',
+                      border: isSelected ? '2px solid #16a34a' : '1px solid var(--border-subtle)',
                       borderRadius: '10px',
                       padding: '12px',
                       cursor: 'pointer',
-                      background: isSelected ? 'rgba(34,197,94,0.04)' : '#fff',
+                      background: isSelected ? 'rgba(34,197,94,0.04)' : 'var(--bg-card)',
                       transition: 'all 0.15s',
                       position: 'relative',
                     }}
                   >
                     {isSelected && (
-                      <div style={{ position: 'absolute', top: '8px', right: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '20px', height: '20px', borderRadius: '50%', background: '#16a34a', color: '#fff' }}>
+                      <div style={{ position: 'absolute', top: '8px', right: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '20px', height: '20px', borderRadius: '50%', background: '#16a34a', color: 'var(--bg-card)' }}>
                         <Check size={13} />
                       </div>
                     )}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
-                      <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.8rem', color: '#64748b', flexShrink: 0 }}>
+                      <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'var(--bg-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.8rem', color: 'var(--text-dark)', flexShrink: 0 }}>
                         {l.full_name.split(' ').map((n) => n[0]).slice(0, 2).join('').toUpperCase()}
                       </div>
                       <div style={{ minWidth: 0 }}>
                         <strong style={{ fontSize: '0.82rem', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{l.full_name}</strong>
-                        <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>{new Date(l.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+                        <span style={{ fontSize: '0.7rem', color: 'var(--text-dark)' }}>{new Date(l.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
                       </div>
                     </div>
                     <FieldRow label="Email" value={l.email} isBetter={isSelected && !keepLead.email && !!l.email} />
@@ -4080,7 +4127,7 @@ function MergeDuplicatesModal({ lead, allLeads, onClose, onMerge }: {
                 <strong>Keep:</strong> {keepLead.full_name} &nbsp;|&nbsp;
                 <strong>Remove:</strong> {removeLeads.map((l) => l.full_name).join(', ')}
               </p>
-              <p style={{ fontSize: '0.72rem', color: '#64748b', margin: '6px 0 0 0', lineHeight: 1.4 }}>
+              <p style={{ fontSize: '0.72rem', color: 'var(--text-dark)', margin: '6px 0 0 0', lineHeight: 1.4 }}>
                 Missing fields from the removed leads will be filled into the kept lead. Tags will be combined. Notes will be appended. The removed leads go to the Recycle Bin.
               </p>
             </div>
@@ -4497,7 +4544,7 @@ function DialerPanel({ onClose, number, setNumber, callInitiated, setCallInitiat
         <div className="crm-dialer-body">
           {/* Call mode toggle */}
           {waConfigured && (
-            <div style={{ display: 'flex', gap: '6px', marginBottom: '12px', padding: '4px', background: '#f1f5f9', borderRadius: '10px' }}>
+            <div style={{ display: 'flex', gap: '6px', marginBottom: '12px', padding: '4px', background: 'var(--bg-light)', borderRadius: '10px' }}>
               <button
                 type="button"
                 onClick={() => { setCallMode('phone'); setCallInitiated(false); setCallStatus(''); setCallError(''); }}
@@ -4507,7 +4554,7 @@ function DialerPanel({ onClose, number, setNumber, callInitiated, setCallInitiat
                   border: 'none',
                   borderRadius: '8px',
                   background: callMode === 'phone' ? '#fff' : 'transparent',
-                  color: callMode === 'phone' ? '#1e293b' : '#94a3b8',
+                  color: callMode === 'phone' ? '#1e293b' : 'var(--text-dark)',
                   fontSize: '0.78rem',
                   fontWeight: 600,
                   cursor: 'pointer',
@@ -4530,7 +4577,7 @@ function DialerPanel({ onClose, number, setNumber, callInitiated, setCallInitiat
                   border: 'none',
                   borderRadius: '8px',
                   background: callMode === 'whatsapp' ? '#fff' : 'transparent',
-                  color: callMode === 'whatsapp' ? '#16a34a' : '#94a3b8',
+                  color: callMode === 'whatsapp' ? '#16a34a' : 'var(--text-dark)',
                   fontSize: '0.78rem',
                   fontWeight: 600,
                   cursor: 'pointer',
@@ -4577,7 +4624,7 @@ function DialerPanel({ onClose, number, setNumber, callInitiated, setCallInitiat
               </div>
             )}
             {callMode === 'phone' && twilioConfigured === false && (
-              <div style={{ padding: '6px 12px', fontSize: '0.72rem', color: '#94a3b8', textAlign: 'center' }}>
+              <div style={{ padding: '6px 12px', fontSize: '0.72rem', color: 'var(--text-dark)', textAlign: 'center' }}>
                 Using device dialer. Configure a calling provider in Settings for virtual calling.
               </div>
             )}
@@ -4592,11 +4639,11 @@ function DialerPanel({ onClose, number, setNumber, callInitiated, setCallInitiat
               </div>
             )}
             {callMode === 'whatsapp' && permissionState === 'none' && number.trim() && (
-              <div style={{ padding: '10px 14px', background: '#fef3c7', borderRadius: '10px', border: '1px solid #fde68a', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div style={{ padding: '10px 14px', background: 'var(--bg-card-hover)', borderRadius: '10px', border: '1px solid #fde68a', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem', color: '#92400e', fontWeight: 600 }}>
                   <ShieldAlert size={14} /> Call permission required
                 </div>
-                <p style={{ fontSize: '0.72rem', color: '#78350f', lineHeight: 1.4 }}>
+                <p style={{ fontSize: '0.72rem', color: 'var(--gold-dark)', lineHeight: 1.4 }}>
                   WhatsApp requires the recipient to grant call permission before you can place a call. Send a permission request and wait for their response.
                 </p>
                 {permissionSent ? (
@@ -4617,7 +4664,7 @@ function DialerPanel({ onClose, number, setNumber, callInitiated, setCallInitiat
                       border: 'none',
                       borderRadius: '8px',
                       background: '#16a34a',
-                      color: '#fff',
+                      color: 'var(--bg-card)',
                       fontSize: '0.78rem',
                       fontWeight: 600,
                       cursor: requestingPermission ? 'not-allowed' : 'pointer',
@@ -4643,9 +4690,9 @@ function DialerPanel({ onClose, number, setNumber, callInitiated, setCallInitiat
                 type="button"
                 onClick={() => setRecordEnabled((v) => !v)}
                 style={{
-                  flex: 1, padding: '8px 10px', border: `1.5px solid ${recordEnabled ? '#16a34a' : '#e2e8f0'}`,
-                  borderRadius: '8px', background: recordEnabled ? 'rgba(22,163,74,0.08)' : '#fff',
-                  color: recordEnabled ? '#16a34a' : '#64748b', fontSize: '0.72rem', fontWeight: 600,
+                  flex: 1, padding: '8px 10px', border: `1.5px solid ${recordEnabled ? '#16a34a' : 'var(--border-subtle)'}`,
+                  borderRadius: '8px', background: recordEnabled ? 'rgba(22,163,74,0.08)' : 'var(--bg-card)',
+                  color: recordEnabled ? '#16a34a' : 'var(--text-dark)', fontSize: '0.72rem', fontWeight: 600,
                   cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px',
                   transition: 'all 0.2s',
                 }}
@@ -4656,9 +4703,9 @@ function DialerPanel({ onClose, number, setNumber, callInitiated, setCallInitiat
                 type="button"
                 onClick={() => setTranscribeEnabled((v) => !v)}
                 style={{
-                  flex: 1, padding: '8px 10px', border: `1.5px solid ${transcribeEnabled ? '#0891b2' : '#e2e8f0'}`,
-                  borderRadius: '8px', background: transcribeEnabled ? 'rgba(8,145,178,0.08)' : '#fff',
-                  color: transcribeEnabled ? '#0891b2' : '#64748b', fontSize: '0.72rem', fontWeight: 600,
+                  flex: 1, padding: '8px 10px', border: `1.5px solid ${transcribeEnabled ? '#0891b2' : 'var(--border-subtle)'}`,
+                  borderRadius: '8px', background: transcribeEnabled ? 'rgba(8,145,178,0.08)' : 'var(--bg-card)',
+                  color: transcribeEnabled ? '#0891b2' : 'var(--text-dark)', fontSize: '0.72rem', fontWeight: 600,
                   cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px',
                   transition: 'all 0.2s',
                 }}
@@ -4756,6 +4803,7 @@ function AddLeadModal({ onClose, onAdd, onMerge, existingLeads, stages }: {
     status: 'new',
     notes: '',
     fund_amount: null,
+    lead_source: 'Manual Entry',
   });
   const [saving, setSaving] = useState(false);
   const [merging, setMerging] = useState(false);
@@ -4902,6 +4950,14 @@ function AddLeadModal({ onClose, onAdd, onMerge, existingLeads, stages }: {
               </select>
             </label>
             <label className="crm-add-lead-field">
+              <span>Lead Source</span>
+              <select value={form.lead_source} onChange={(e) => update('lead_source', e.target.value)} style={{ cursor: 'pointer' }}>
+                {SOURCE_OPTIONS.map((s) => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+            </label>
+            <label className="crm-add-lead-field">
               <span>Fund Amount (USD, optional)</span>
               <input
                 type="number"
@@ -4964,7 +5020,7 @@ function AddLeadModal({ onClose, onAdd, onMerge, existingLeads, stages }: {
                 <p style={{ fontSize: '0.78rem', color: '#a16207', margin: '0 0 6px 0', lineHeight: 1.4 }}>
                   A lead with this {normalizeEmail(form.email) === normalizeEmail(duplicateLead.email) && form.email ? 'email' : 'phone number'} already exists in your CRM.
                 </p>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', fontSize: '0.75rem', color: '#78350f', marginBottom: '10px' }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', fontSize: '0.75rem', color: 'var(--gold-dark)', marginBottom: '10px' }}>
                   <span style={{ background: 'rgba(245,158,11,0.12)', padding: '2px 8px', borderRadius: '6px', fontWeight: 600 }}>
                     {duplicateLead.full_name}
                   </span>
@@ -5003,7 +5059,7 @@ function AddLeadModal({ onClose, onAdd, onMerge, existingLeads, stages }: {
                         }
                         setMerging(false);
                       }}
-                      style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 16px', border: 'none', borderRadius: '8px', background: merging ? '#94a3b8' : '#2563eb', color: '#fff', fontSize: '0.8rem', fontWeight: 600, cursor: merging ? 'not-allowed' : 'pointer' }}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 16px', border: 'none', borderRadius: '8px', background: merging ? '#94a3b8' : '#2563eb', color: 'var(--bg-card)', fontSize: '0.8rem', fontWeight: 600, cursor: merging ? 'not-allowed' : 'pointer' }}
                     >
                       {merging ? <Loader2 size={14} className="animate-spin" /> : <GitMerge size={14} />}
                       {merging ? 'Merging...' : 'Merge into Existing'}
@@ -5011,7 +5067,7 @@ function AddLeadModal({ onClose, onAdd, onMerge, existingLeads, stages }: {
                     <button
                       type="submit"
                       disabled={!canSubmit || saving || merging}
-                      style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 16px', border: '1px solid rgba(245,158,11,0.4)', borderRadius: '8px', background: '#fff', color: '#92400e', fontSize: '0.8rem', fontWeight: 600, cursor: !canSubmit || saving || merging ? 'not-allowed' : 'pointer' }}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 16px', border: '1px solid rgba(245,158,11,0.4)', borderRadius: '8px', background: 'var(--bg-card)', color: '#92400e', fontSize: '0.8rem', fontWeight: 600, cursor: !canSubmit || saving || merging ? 'not-allowed' : 'pointer' }}
                     >
                       {saving ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
                       Create as New Lead
@@ -5580,10 +5636,10 @@ function PipelineView({ leads, onLeadClick, onStatusChange, formatDate, assignee
                   <span className="crm-pipeline-dot" style={{ background: colors.dot }} />
                   <span style={{ color: colors.text }}>{stage.icon} {stage.label}</span>
                 </div>
-                <span className="crm-pipeline-count" style={{ background: colors.dot, color: '#fff' }}>{stageLeads.length}</span>
+                <span className="crm-pipeline-count" style={{ background: colors.dot, color: 'var(--bg-card)' }}>{stageLeads.length}</span>
               </div>
               {stageFund > 0 && (
-                <div style={{ padding: '6px 12px', fontSize: '0.7rem', fontWeight: 700, color: '#16a34a', background: 'rgba(22,163,74,0.04)', borderBottom: '1px solid #f1f5f9' }}>
+                <div style={{ padding: '6px 12px', fontSize: '0.7rem', fontWeight: 700, color: '#16a34a', background: 'rgba(22,163,74,0.04)', borderBottom: '1px solid var(--border-subtle)' }}>
                   ${stageFund.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} total
                 </div>
               )}
@@ -5725,7 +5781,7 @@ function QualificationSection({ lead }: { lead: Lead }) {
       <div className="crm-drawer-section">
         <label className="crm-drawer-label"><HelpCircle size={14} style={{ display: 'inline', marginRight: '4px' }} /> QUALIFICATION ANSWERS</label>
         <div className="crm-qual-empty">
-          <HelpCircle size={24} style={{ color: '#cbd5e1', marginBottom: '4px' }} />
+          <HelpCircle size={24} style={{ color: 'var(--text-dark)', marginBottom: '4px' }} />
           <p>No qualification answers recorded for this lead.</p>
         </div>
       </div>
@@ -5792,7 +5848,21 @@ function LeadDetailDrawer({ lead, onClose, onUpdate, onDelete, formatDate, onSen
   const [editState, setEditState] = useState(lead.state);
   const [editProduct, setEditProduct] = useState(lead.trading_product);
   const [editMetaLeadId, setEditMetaLeadId] = useState(lead.meta_lead_id || '');
+  const [editSource, setEditSource] = useState(lead.lead_source || 'Manual Entry');
   const [savingInfo, setSavingInfo] = useState(false);
+  const [brokers, setBrokers] = useState<{ id: string; name: string; website: string | null; logo_url: string | null }[]>([]);
+
+  useEffect(() => {
+    (async () => {
+      const { data: brokerData } = await supabase
+        .from('brokers')
+        .select('id, name, website, logo_url')
+        .eq('is_active', true)
+        .order('sort_order', { ascending: true })
+        .order('created_at', { ascending: true });
+      if (brokerData) setBrokers(brokerData as { id: string; name: string; website: string | null; logo_url: string | null }[]);
+    })();
+  }, []);
 
   useEffect(() => {
     setEditName(lead.full_name);
@@ -5801,7 +5871,8 @@ function LeadDetailDrawer({ lead, onClose, onUpdate, onDelete, formatDate, onSen
     setEditState(lead.state);
     setEditProduct(lead.trading_product);
     setEditMetaLeadId(lead.meta_lead_id || '');
-  }, [lead.id, lead.full_name, lead.email, lead.mobile_number, lead.state, lead.trading_product, lead.meta_lead_id]);
+    setEditSource(lead.lead_source || 'Manual Entry');
+  }, [lead.id, lead.full_name, lead.email, lead.mobile_number, lead.state, lead.trading_product, lead.meta_lead_id, lead.lead_source]);
 
   const handleSaveInfo = () => {
     setSavingInfo(true);
@@ -5812,9 +5883,10 @@ function LeadDetailDrawer({ lead, onClose, onUpdate, onDelete, formatDate, onSen
       state: editState.trim() || lead.state,
       trading_product: editProduct,
       meta_lead_id: editMetaLeadId.trim() || null,
+      lead_source: editSource,
     };
     onUpdate(lead.id, updates);
-    logActivity('lead_edit', `Lead info updated: ${updates.full_name}`, { fields: ['full_name', 'email', 'mobile_number', 'state', 'trading_product', 'meta_lead_id'] });
+    logActivity('lead_edit', `Lead info updated: ${updates.full_name}`, { fields: ['full_name', 'email', 'mobile_number', 'state', 'trading_product', 'meta_lead_id', 'lead_source'] });
     setSavingInfo(false);
     setIsEditing(false);
   };
@@ -5826,6 +5898,7 @@ function LeadDetailDrawer({ lead, onClose, onUpdate, onDelete, formatDate, onSen
     setEditState(lead.state);
     setEditProduct(lead.trading_product);
     setEditMetaLeadId(lead.meta_lead_id || '');
+    setEditSource(lead.lead_source || 'Manual Entry');
     setIsEditing(false);
   };
 
@@ -6055,15 +6128,15 @@ function LeadDetailDrawer({ lead, onClose, onUpdate, onDelete, formatDate, onSen
             <label className="crm-drawer-label" style={{ marginBottom: 0 }}>CONTACT</label>
             {isEditing ? (
               <div style={{ display: 'flex', gap: '6px' }}>
-                <button onClick={cancelEdit} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 10px', border: '1px solid #e2e8f0', borderRadius: '6px', background: '#fff', fontSize: '0.75rem', fontWeight: 600, color: '#64748b', cursor: 'pointer' }}>
+                <button onClick={cancelEdit} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 10px', border: '1px solid var(--border-subtle)', borderRadius: '6px', background: 'var(--bg-card)', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-dark)', cursor: 'pointer' }}>
                   <X size={13} /> Cancel
                 </button>
-                <button onClick={handleSaveInfo} disabled={savingInfo} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 10px', border: 'none', borderRadius: '6px', background: '#2563eb', fontSize: '0.75rem', fontWeight: 600, color: '#fff', cursor: 'pointer' }}>
+                <button onClick={handleSaveInfo} disabled={savingInfo} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 10px', border: 'none', borderRadius: '6px', background: '#2563eb', fontSize: '0.75rem', fontWeight: 600, color: 'var(--bg-card)', cursor: 'pointer' }}>
                   {savingInfo ? <Loader2 size={13} className="crm-spin" /> : <Save size={13} />} Save
                 </button>
               </div>
             ) : (
-              <button onClick={() => setIsEditing(true)} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 10px', border: '1px solid #e2e8f0', borderRadius: '6px', background: '#f8fafc', fontSize: '0.75rem', fontWeight: 600, color: '#2563eb', cursor: 'pointer', transition: 'all 0.15s' }} onMouseEnter={(e) => { e.currentTarget.style.background = '#2563eb'; e.currentTarget.style.color = '#fff'; }} onMouseLeave={(e) => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.color = '#2563eb'; }}>
+              <button onClick={() => setIsEditing(true)} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 10px', border: '1px solid var(--border-subtle)', borderRadius: '6px', background: 'var(--bg-light)', fontSize: '0.75rem', fontWeight: 600, color: '#2563eb', cursor: 'pointer', transition: 'all 0.15s' }} onMouseEnter={(e) => { e.currentTarget.style.background = '#2563eb'; e.currentTarget.style.color = '#fff'; }} onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--bg-light)'; e.currentTarget.style.color = '#2563eb'; }}>
                 <Edit3 size={13} /> Edit Info
               </button>
             )}
@@ -6098,6 +6171,14 @@ function LeadDetailDrawer({ lead, onClose, onUpdate, onDelete, formatDate, onSen
                 <span>Meta Lead ID</span>
                 <input type="text" value={editMetaLeadId} onChange={(e) => setEditMetaLeadId(e.target.value)} placeholder="Auto-captured from Facebook (optional)" />
               </label>
+              <label className="crm-add-lead-field">
+                <span>Lead Source</span>
+                <select value={editSource} onChange={(e) => setEditSource(e.target.value)} style={{ cursor: 'pointer' }}>
+                  {SOURCE_OPTIONS.map((s) => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
+              </label>
             </div>
           ) : (
             <div className="crm-drawer-contacts">
@@ -6116,7 +6197,7 @@ function LeadDetailDrawer({ lead, onClose, onUpdate, onDelete, formatDate, onSen
                   value={lead.trading_product}
                   onChange={(e) => onUpdate(lead.id, { trading_product: e.target.value as Lead['trading_product'] })}
                   aria-label="Trading product"
-                  style={{ flex: 1, border: 0, background: 'transparent', color: '#334155', font: 'inherit', fontWeight: 600, outline: 'none', cursor: 'pointer' }}
+                  style={{ flex: 1, border: 0, background: 'transparent', color: 'var(--text-muted)', font: 'inherit', fontWeight: 600, outline: 'none', cursor: 'pointer' }}
                 >
                   <option value="algo">Trading Algo</option>
                   <option value="tradingview_premium">TradingView Premium Indicator</option>
@@ -6136,14 +6217,37 @@ function LeadDetailDrawer({ lead, onClose, onUpdate, onDelete, formatDate, onSen
                     onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
                     placeholder="0"
                     aria-label="Fund amount"
-                    style={{ width: '120px', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '4px 8px', font: 'inherit', fontWeight: 700, color: '#16a34a', outline: 'none' }}
+                    style={{ width: '120px', border: '1px solid var(--border-subtle)', borderRadius: '6px', padding: '4px 8px', font: 'inherit', fontWeight: 700, color: '#16a34a', outline: 'none' }}
                   />
-                  <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>USD</span>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-dark)' }}>USD</span>
                 </div>
               </div>
             </div>
           )}
         </div>
+
+        {/* Lead Source (editable when not editing info) */}
+        {!isEditing && (
+        <div className="crm-drawer-section">
+          <label className="crm-drawer-label">LEAD SOURCE</label>
+          <div className="crm-drawer-contact-item crm-contact-static" style={{ background: 'rgba(59,130,246,0.04)', border: '1px solid rgba(59,130,246,0.12)', borderRadius: '8px', padding: '10px 12px' }}>
+            <SourceLogo source={lead.lead_source || 'Landing Page'} size={18} />
+            <select
+              value={lead.lead_source || 'Manual Entry'}
+              onChange={(e) => {
+                onUpdate(lead.id, { lead_source: e.target.value });
+                logActivity('lead_source_change', `Lead source changed to "${e.target.value}"`, { lead_source: e.target.value });
+              }}
+              aria-label="Lead source"
+              style={{ flex: 1, border: 0, background: 'transparent', color: 'var(--text-muted)', font: 'inherit', fontWeight: 600, outline: 'none', cursor: 'pointer' }}
+            >
+              {SOURCE_OPTIONS.map((s) => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+        )}
 
         {/* Meta Lead ID (read-only when not editing) */}
         {!isEditing && (
@@ -6157,7 +6261,7 @@ function LeadDetailDrawer({ lead, onClose, onUpdate, onDelete, formatDate, onSen
               onChange={(e) => onUpdate(lead.id, { meta_lead_id: e.target.value })}
               placeholder="Auto-captured from Facebook Lead Ads (optional)"
               aria-label="Meta Lead ID"
-              style={{ flex: 1, border: 0, background: 'transparent', color: '#334155', font: 'inherit', fontWeight: 600, outline: 'none' }}
+              style={{ flex: 1, border: 0, background: 'transparent', color: 'var(--text-muted)', font: 'inherit', fontWeight: 600, outline: 'none' }}
             />
           </div>
         </div>
@@ -6180,17 +6284,17 @@ function LeadDetailDrawer({ lead, onClose, onUpdate, onDelete, formatDate, onSen
                 onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
                 placeholder="0"
                 aria-label="Purchase value"
-                style={{ width: '120px', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '4px 8px', font: 'inherit', fontWeight: 700, color: '#16a34a', outline: 'none' }}
+                style={{ width: '120px', border: '1px solid var(--border-subtle)', borderRadius: '6px', padding: '4px 8px', font: 'inherit', fontWeight: 700, color: '#16a34a', outline: 'none' }}
               />
-              <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>USD</span>
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-dark)' }}>USD</span>
             </div>
-            <span style={{ fontSize: '0.72rem', color: '#64748b', marginLeft: 'auto', textAlign: 'right', maxWidth: '120px' }}>Sent to Meta as Purchase event value</span>
+            <span style={{ fontSize: '0.72rem', color: 'var(--text-dark)', marginLeft: 'auto', textAlign: 'right', maxWidth: '120px' }}>Sent to Meta as Purchase event value</span>
           </div>
           <label className="crm-drawer-label" style={{ marginTop: '12px' }}>SETUP COST</label>
           <div className="crm-drawer-contact-item crm-contact-static" style={{ background: 'rgba(37,99,235,0.06)', border: '1px solid rgba(37,99,235,0.15)', borderRadius: '8px', padding: '10px 12px' }}>
             <DollarSign size={16} style={{ color: '#2563eb' }} />
             <span style={{ fontWeight: 700, color: '#2563eb', fontSize: '0.9rem' }}>${setupCostPerClient.toFixed(2)}</span>
-            <span style={{ fontSize: '0.75rem', color: '#64748b', marginLeft: 'auto' }}>Auto-counted on conversion</span>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-dark)', marginLeft: 'auto' }}>Auto-counted on conversion</span>
           </div>
         </div>
         )}
@@ -6204,7 +6308,7 @@ function LeadDetailDrawer({ lead, onClose, onUpdate, onDelete, formatDate, onSen
               value={lead.assigned_to || ''}
               onChange={(e) => onUpdate(lead.id, { assigned_to: e.target.value || null })}
               aria-label="Assigned to"
-              style={{ flex: 1, border: 0, background: 'transparent', color: '#334155', font: 'inherit', fontWeight: 600, outline: 'none', cursor: 'pointer' }}
+              style={{ flex: 1, border: 0, background: 'transparent', color: 'var(--text-muted)', font: 'inherit', fontWeight: 600, outline: 'none', cursor: 'pointer' }}
             >
               <option value="">Unassigned</option>
               {teamMembers.map((m) => (
@@ -6213,6 +6317,72 @@ function LeadDetailDrawer({ lead, onClose, onUpdate, onDelete, formatDate, onSen
             </select>
           </div>
         </div>
+
+        {/* Broker Selection — visible when lead is interested, called_responded, or not_interested (unconverted but engaged) */}
+        {(lead.status === 'interested' || lead.status === 'called_responded' || lead.status === 'not_interested' || lead.status === 'converted' || lead.status === 'called_no_response') && brokers.length > 0 && (
+        <div className="crm-drawer-section">
+          <label className="crm-drawer-label">BROKER</label>
+          <div className="crm-drawer-contact-item crm-contact-static" style={{ background: 'rgba(37,99,235,0.04)', border: '1px solid rgba(37,99,235,0.12)', borderRadius: '8px', padding: '10px 12px' }}>
+            <Building2 size={16} style={{ color: '#2563eb' }} />
+            <select
+              value={lead.broker_id || ''}
+              onChange={(e) => {
+                const brokerId = e.target.value || null;
+                onUpdate(lead.id, { broker_id: brokerId });
+                const brokerName = brokers.find((b) => b.id === brokerId)?.name || 'None';
+                logActivity('broker_assigned', `Broker set to "${brokerName}"`, { broker_id: brokerId });
+              }}
+              aria-label="Broker"
+              style={{ flex: 1, border: 0, background: 'transparent', color: 'var(--text-muted)', font: 'inherit', fontWeight: 600, outline: 'none', cursor: 'pointer' }}
+            >
+              <option value="">No broker selected</option>
+              {brokers.map((b) => (
+                <option key={b.id} value={b.id}>{b.name}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+        )}
+
+        {/* Account Type & Partner Code — visible when a broker is selected */}
+        {lead.broker_id && brokers.length > 0 && (
+        <div className="crm-drawer-section">
+          <label className="crm-drawer-label">ACCOUNT TRACKING</label>
+
+          {/* Account Type */}
+          <div className="crm-drawer-contact-item crm-contact-static" style={{ background: 'rgba(13,148,136,0.04)', border: '1px solid rgba(13,148,136,0.12)', borderRadius: '8px', padding: '10px 12px', marginBottom: '8px' }}>
+            <UserCheck size={16} style={{ color: '#0d9488' }} />
+            <select
+              value={lead.account_type || ''}
+              onChange={(e) => {
+                const val = (e.target.value || null) as 'new_account' | 'existing_account' | null;
+                onUpdate(lead.id, { account_type: val });
+                logActivity('account_type_change', `Account type set to "${val === 'new_account' ? 'New Account' : val === 'existing_account' ? 'Existing Account' : 'None'}"`, { account_type: val });
+              }}
+              aria-label="Account type"
+              style={{ flex: 1, border: 0, background: 'transparent', color: 'var(--text-muted)', font: 'inherit', fontWeight: 600, outline: 'none', cursor: 'pointer' }}
+            >
+              <option value="">Account type — not set</option>
+              <option value="new_account">New Account (client opened a new one)</option>
+              <option value="existing_account">Existing Account (client already had one)</option>
+            </select>
+          </div>
+
+          {/* Partner Code */}
+          <div className="crm-drawer-contact-item crm-contact-static" style={{ background: 'rgba(37,99,235,0.04)', border: '1px solid rgba(37,99,235,0.12)', borderRadius: '8px', padding: '10px 12px' }}>
+            <Hash size={16} style={{ color: '#2563eb' }} />
+            <input
+              type="text"
+              value={lead.partner_code || ''}
+              onChange={(e) => onUpdate(lead.id, { partner_code: e.target.value || null })}
+              onBlur={() => logActivity('partner_code_change', `Partner code set to "${lead.partner_code || 'None'}"`, { partner_code: lead.partner_code })}
+              placeholder="Partner / referral code"
+              aria-label="Partner code"
+              style={{ flex: 1, border: 0, background: 'transparent', color: 'var(--text-muted)', font: 'inherit', fontWeight: 600, outline: 'none' }}
+            />
+          </div>
+        </div>
+        )}
 
         {/* Qualification Answers */}
         <QualificationSection lead={lead} />
@@ -6375,7 +6545,7 @@ function LeadDetailDrawer({ lead, onClose, onUpdate, onDelete, formatDate, onSen
             </a>
           </div>
           <div className="crm-quick-actions" style={{ marginTop: '8px' }}>
-            <button className="crm-quick-btn" style={{ background: 'linear-gradient(135deg, #1e40af, #2563eb)', color: '#fff', border: 'none', cursor: 'pointer' }} onClick={() => onSendEmail(lead)}>
+            <button className="crm-quick-btn" style={{ background: 'linear-gradient(135deg, #1e40af, #2563eb)', color: 'var(--bg-card)', border: 'none', cursor: 'pointer' }} onClick={() => onSendEmail(lead)}>
               <Send size={18} /> Send Email
             </button>
           </div>
@@ -6385,11 +6555,11 @@ function LeadDetailDrawer({ lead, onClose, onUpdate, onDelete, formatDate, onSen
         <div className="crm-drawer-section">
           <label className="crm-drawer-label"><History size={14} style={{ display: 'inline', marginRight: '4px' }} /> ACTIVITY TIMELINE</label>
           {activitiesLoading ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px', color: '#94a3b8', fontSize: '0.82rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px', color: 'var(--text-dark)', fontSize: '0.82rem' }}>
               <Loader2 size={16} className="crm-spin" /> Loading activities...
             </div>
           ) : activities.length === 0 ? (
-            <div style={{ padding: '16px', textAlign: 'center', color: '#94a3b8', fontSize: '0.82rem' }}>
+            <div style={{ padding: '16px', textAlign: 'center', color: 'var(--text-dark)', fontSize: '0.82rem' }}>
               <History size={28} style={{ marginBottom: '6px', opacity: 0.3 }} />
               <p>No activity recorded yet. Status changes, notes, tags, and follow-ups will appear here.</p>
             </div>
@@ -6414,7 +6584,7 @@ function LeadDetailDrawer({ lead, onClose, onUpdate, onDelete, formatDate, onSen
                   <div key={act.id} className="crm-activity-item">
                     {idx < activities.length - 1 && <div className="crm-activity-line" />}
                     <div className="crm-activity-dot">
-                      {iconMap[act.activity_type] || <History size={14} style={{ color: '#94a3b8' }} />}
+                      {iconMap[act.activity_type] || <History size={14} style={{ color: 'var(--text-dark)' }} />}
                     </div>
                     <div className="crm-activity-body">
                       <span className="crm-activity-desc">{act.description}</span>
@@ -6733,8 +6903,8 @@ function EmailComposeModal({ lead, session, onClose }: {
                 onClick={() => setShowTemplatePicker((v) => !v)}
                 style={{
                   width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  padding: '10px 14px', borderRadius: '8px', border: '1px solid #e2e8f0',
-                  background: '#f8fafc', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600, color: '#475569',
+                  padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--border-subtle)',
+                  background: 'var(--bg-light)', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)',
                   transition: 'all 0.2s',
                 }}
               >
@@ -6747,7 +6917,7 @@ function EmailComposeModal({ lead, session, onClose }: {
               {showTemplatePicker && (
                 <div style={{
                   position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, zIndex: 50,
-                  background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px',
+                  background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', borderRadius: '8px',
                   boxShadow: '0 8px 24px rgba(0,0,0,0.12)', maxHeight: '240px', overflowY: 'auto',
                 }}>
                   {templates.map((tpl) => (
@@ -6757,14 +6927,14 @@ function EmailComposeModal({ lead, session, onClose }: {
                       onClick={() => applyTemplate(tpl)}
                       style={{
                         width: '100%', textAlign: 'left', padding: '10px 14px', border: 'none',
-                        background: 'transparent', cursor: 'pointer', borderBottom: '1px solid #f1f5f9',
+                        background: 'transparent', cursor: 'pointer', borderBottom: '1px solid var(--border-subtle)',
                         display: 'flex', flexDirection: 'column', gap: '2px',
                       }}
-                      onMouseEnter={(e) => { e.currentTarget.style.background = '#f8fafc'; }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--bg-light)'; }}
                       onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
                     >
-                      <span style={{ fontSize: '0.83rem', fontWeight: 600, color: '#1e293b' }}>{tpl.name}</span>
-                      <span style={{ fontSize: '0.74rem', color: '#94a3b8' }}>{tpl.subject}</span>
+                      <span style={{ fontSize: '0.83rem', fontWeight: 600, color: 'var(--text-main)' }}>{tpl.name}</span>
+                      <span style={{ fontSize: '0.74rem', color: 'var(--text-dark)' }}>{tpl.subject}</span>
                     </button>
                   ))}
                 </div>
@@ -6805,13 +6975,13 @@ function EmailComposeModal({ lead, session, onClose }: {
             onDragLeave={handleDragLeave}
             onClick={() => fileInputRef.current?.click()}
             style={{
-              border: `2px dashed ${isDragging ? '#2563eb' : '#cbd5e1'}`,
+              border: `2px dashed ${isDragging ? '#2563eb' : 'var(--text-dark)'}`,
               borderRadius: '10px',
               padding: '16px',
               textAlign: 'center',
               cursor: 'pointer',
               transition: 'all 0.2s',
-              background: isDragging ? 'rgba(37,99,235,0.05)' : '#f8fafc',
+              background: isDragging ? 'rgba(37,99,235,0.05)' : 'var(--bg-light)',
               marginBottom: '12px',
             }}
           >
@@ -6823,11 +6993,11 @@ function EmailComposeModal({ lead, session, onClose }: {
               onChange={handleFileSelect}
               style={{ display: 'none' }}
             />
-            <Paperclip size={20} style={{ color: '#64748b', marginBottom: '6px' }} />
-            <p style={{ fontSize: '0.82rem', color: '#475569', fontWeight: 600, margin: 0 }}>
+            <Paperclip size={20} style={{ color: 'var(--text-dark)', marginBottom: '6px' }} />
+            <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 600, margin: 0 }}>
               {isDragging ? 'Drop files here' : 'Attach photos, videos, audio, or documents'}
             </p>
-            <p style={{ fontSize: '0.72rem', color: '#94a3b8', margin: '4px 0 0 0' }}>
+            <p style={{ fontSize: '0.72rem', color: 'var(--text-dark)', margin: '4px 0 0 0' }}>
               Click to browse or drag & drop — max 25MB per file, 50MB total
             </p>
           </div>
@@ -6843,9 +7013,9 @@ function EmailComposeModal({ lead, session, onClose }: {
                     alignItems: 'center',
                     gap: '10px',
                     padding: '10px 12px',
-                    background: '#f1f5f9',
+                    background: 'var(--bg-light)',
                     borderRadius: '8px',
-                    border: '1px solid #e2e8f0',
+                    border: '1px solid var(--border-subtle)',
                   }}
                 >
                   {att.previewUrl ? (
@@ -6855,15 +7025,15 @@ function EmailComposeModal({ lead, session, onClose }: {
                       style={{ width: '40px', height: '40px', objectFit: 'cover', borderRadius: '6px', flexShrink: 0 }}
                     />
                   ) : (
-                    <div style={{ width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#e2e8f0', borderRadius: '6px', flexShrink: 0, color: '#475569' }}>
+                    <div style={{ width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--border-subtle)', borderRadius: '6px', flexShrink: 0, color: 'var(--text-muted)' }}>
                       {getFileIcon(att.file)}
                     </div>
                   )}
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ fontSize: '0.8rem', fontWeight: 600, color: '#1e293b', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    <p style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-main)', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       {att.file.name}
                     </p>
-                    <p style={{ fontSize: '0.72rem', color: '#94a3b8', margin: '2px 0 0 0' }}>
+                    <p style={{ fontSize: '0.72rem', color: 'var(--text-dark)', margin: '2px 0 0 0' }}>
                       {formatFileSize(att.file.size)}
                     </p>
                   </div>
@@ -6877,7 +7047,7 @@ function EmailComposeModal({ lead, session, onClose }: {
                   </button>
                 </div>
               ))}
-              <p style={{ fontSize: '0.72rem', color: '#94a3b8', margin: 0, textAlign: 'right' }}>
+              <p style={{ fontSize: '0.72rem', color: 'var(--text-dark)', margin: 0, textAlign: 'right' }}>
                 {attachments.length} file{attachments.length !== 1 ? 's' : ''} — {formatFileSize(totalAttachmentSize)}
               </p>
             </div>
@@ -6917,7 +7087,7 @@ function EmailComposeModal({ lead, session, onClose }: {
 }
 
 // ===================== Settings Modal =====================
-function SettingsPage({ session, userRole, permissions, customPermissions, onBack, onSignOut, onInboxVisibilityChange, onOpenRecycleBin, pipelineAutoAssignEnabled, pipelineAutoAssignStages, onPipelineAutoAssignChange, onStageLabelsChange, sidebarSections, onSidebarSectionChange }: {
+function SettingsPage({ session, userRole, permissions, customPermissions, onBack, onSignOut, onInboxVisibilityChange, onOpenRecycleBin, pipelineAutoAssignEnabled, pipelineAutoAssignStages, onPipelineAutoAssignChange, onStageLabelsChange, sidebarSections, onSidebarSectionChange, sectionVisibility, onSectionVisibilityChange }: {
   session: Session;
   userRole: UserRole;
   permissions: PermissionFlags;
@@ -6932,8 +7102,10 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
   onStageLabelsChange?: () => void;
   sidebarSections?: Record<string, boolean>;
   onSidebarSectionChange?: (key: string, visible: boolean) => void;
+  sectionVisibility?: Record<string, boolean>;
+  onSectionVisibilityChange?: (key: string, visible: boolean) => void;
 }) {
-  const [activeTab, setActiveTab] = useState<'account' | 'email' | 'scheduled_emails' | 'telegram' | 'whatsapp' | 'twilio' | 'team' | 'team_dashboard' | 'role_management' | 'lead_distribution' | 'pipeline_autoassign' | 'pipeline_stages' | 'followup' | 'meta' | 'assignment' | 'appearance' | 'direct_link' | 'recycle_bin' | 'webhooks' | 'google_sheets' | 'danger'>('account');
+  const [activeTab, setActiveTab] = useState<'account' | 'email' | 'scheduled_emails' | 'telegram' | 'whatsapp' | 'twilio' | 'team' | 'team_dashboard' | 'role_management' | 'lead_distribution' | 'pipeline_autoassign' | 'pipeline_stages' | 'followup' | 'meta' | 'assignment' | 'appearance' | 'direct_link' | 'recycle_bin' | 'webhooks' | 'google_sheets' | 'section_visibility' | 'danger'>('account');
 
   // Account state
   const [firstName, setFirstName] = useState('');
@@ -7250,6 +7422,20 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
   const [appearanceSaved, setAppearanceSaved] = useState(false);
   const [setupCost, setSetupCost] = useState(10);
 
+  // Section visibility (per-page show/hide) state
+  const [localSectionVis, setLocalSectionVis] = useState<Record<string, boolean>>({
+    leads: true, brokers: true, ib_leads: true, inbox: true, broadcasts: true,
+    analytics: true, lead_tracker: true, templates: true, followups: true,
+    automations: true, pipeline: true,
+  });
+  const [sectionVisSaving, setSectionVisSaving] = useState(false);
+  const [sectionVisSaved, setSectionVisSaved] = useState(false);
+
+  useEffect(() => {
+    if (activeTab !== 'section_visibility') return;
+    if (sectionVisibility) setLocalSectionVis(sectionVisibility);
+  }, [activeTab, sectionVisibility]);
+
   // Landing page appearance state
   const [landingPrimary, setLandingPrimary] = useState('#EAB308');
   const [landingStyle, setLandingStyle] = useState<'vibrant' | 'muted' | 'monochrome'>('vibrant');
@@ -7440,6 +7626,20 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
         setShowWhatsAppInbox(a.show_whatsapp_inbox !== false);
         setShowEmailInbox(a.show_email_inbox !== false);
         setShowIbLeads(a.show_ib_leads !== false);
+        const sv = appearanceRes.data as Record<string, unknown>;
+        setLocalSectionVis({
+          leads: sv.show_leads !== false,
+          brokers: sv.show_brokers !== false,
+          ib_leads: sv.show_ib_leads !== false,
+          inbox: sv.show_inbox !== false,
+          broadcasts: sv.show_broadcasts !== false,
+          analytics: sv.show_analytics !== false,
+          lead_tracker: sv.show_lead_tracker !== false,
+          templates: sv.show_templates !== false,
+          followups: sv.show_followups !== false,
+          automations: sv.show_automations !== false,
+          pipeline: sv.show_pipeline !== false,
+        });
         document.documentElement.style.setProperty('--app-border-color', a.border_color || '#EAB308');
         document.documentElement.style.setProperty('--app-border-width', `${a.border_width ?? 1.5}px`);
         document.documentElement.style.setProperty('--app-border-radius', `${a.border_radius ?? 16}px`);
@@ -7961,6 +8161,39 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
     setTimeout(() => setSaved(false), 3000);
   };
 
+  const handleSaveSectionVisibility = async () => {
+    setSectionVisSaving(true);
+    setError('');
+    setSectionVisSaved(false);
+    try {
+      const payload = {
+        show_leads: localSectionVis.leads,
+        show_brokers: localSectionVis.brokers,
+        show_ib_leads: localSectionVis.ib_leads,
+        show_inbox: localSectionVis.inbox,
+        show_broadcasts: localSectionVis.broadcasts,
+        show_analytics: localSectionVis.analytics,
+        show_lead_tracker: localSectionVis.lead_tracker,
+        show_templates: localSectionVis.templates,
+        show_followups: localSectionVis.followups,
+        show_automations: localSectionVis.automations,
+        show_pipeline: localSectionVis.pipeline,
+        updated_at: new Date().toISOString(),
+      };
+      const { data: existing } = await supabase.from('appearance_settings').select('id').maybeSingle();
+      const result = existing
+        ? await supabase.from('appearance_settings').update(payload).eq('id', existing.id)
+        : await supabase.from('appearance_settings').insert({ ...payload, user_id: session.user.id });
+      if (result.error) { setError(result.error.message); setSectionVisSaving(false); return; }
+      Object.entries(localSectionVis).forEach(([key, val]) => onSectionVisibilityChange?.(key, val));
+      setSectionVisSaved(true);
+      setTimeout(() => setSectionVisSaved(false), 3000);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to save section visibility');
+    }
+    setSectionVisSaving(false);
+  };
+
   const handleSaveLandingAppearance = async () => {
     setLandingSaving(true);
     setError('');
@@ -8397,6 +8630,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
     : activeTab === 'assignment' ? true
     : activeTab === 'role_management' ? true
     : activeTab === 'appearance' ? true
+    : activeTab === 'section_visibility' ? true
     : activeTab === 'direct_link' ? true
     : activeTab === 'webhooks' ? true
     : activeTab === 'google_sheets' ? true
@@ -8423,6 +8657,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
     { key: 'google_sheets', label: 'Google Sheets', icon: <FileSpreadsheet size={18} />, accent: 'google_sheets', show: permissions.settings },
 
     { key: 'appearance', label: 'Appearance', icon: <Palette size={18} />, accent: 'appearance', show: permissions.settings },
+    { key: 'section_visibility', label: 'Section Visibility', icon: <Eye size={18} />, accent: 'section_visibility', show: permissions.settings },
     { key: 'direct_link', label: 'Direct Link Generator', icon: <Link2 size={18} />, accent: 'direct_link', show: permissions.settings },
     { key: 'recycle_bin', label: 'Recycle Bin', icon: <Trash2 size={18} />, accent: 'recycle_bin', show: permissions.deleteLeads },
     { key: 'danger', label: 'Delete Account', icon: <Trash2 size={18} />, accent: 'danger', show: true },
@@ -8445,9 +8680,9 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
         </div>
         <button
           onClick={onSignOut}
-          style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '9px 16px', border: '1px solid #E2E8F0', borderRadius: '10px', background: '#fff', color: '#64748B', fontSize: '0.83rem', fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s', flexShrink: 0 }}
+          style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '9px 16px', border: '1px solid var(--border-subtle)', borderRadius: '10px', background: 'var(--bg-card)', color: 'var(--text-dark)', fontSize: '0.83rem', fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s', flexShrink: 0 }}
           onMouseEnter={(e) => { e.currentTarget.style.background = '#EF4444'; e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = '#EF4444'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.color = '#64748B'; e.currentTarget.style.borderColor = '#E2E8F0'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--bg-card)'; e.currentTarget.style.color = 'var(--text-dark)'; e.currentTarget.style.borderColor = 'var(--border-subtle)'; }}
         >
           <LogOut size={18} /> Sign Out
         </button>
@@ -8487,9 +8722,9 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                   </div>
 
                   {/* Profile avatar preview */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px', background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0', marginBottom: '20px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px', background: 'var(--bg-light)', borderRadius: '10px', border: '1px solid var(--border-subtle)', marginBottom: '20px' }}>
                     <div style={{ position: 'relative', flexShrink: 0 }}>
-                      <div style={{ width: '64px', height: '64px', borderRadius: '50%', overflow: 'hidden', background: 'linear-gradient(135deg, #2563eb, #1e40af)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: '1.3rem', border: '2px solid #e2e8f0' }}>
+                      <div style={{ width: '64px', height: '64px', borderRadius: '50%', overflow: 'hidden', background: 'linear-gradient(135deg, #2563eb, #1e40af)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--bg-card)', fontWeight: 700, fontSize: '1.3rem', border: '2px solid var(--border-subtle)' }}>
                         {profilePicUrl ? (
                           <img src={profilePicUrl} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         ) : (
@@ -8504,7 +8739,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                         style={{
                           position: 'absolute', bottom: '-2px', right: '-2px',
                           width: '26px', height: '26px', borderRadius: '50%',
-                          border: '2px solid #fff', background: '#2563eb', color: '#fff',
+                          border: '2px solid #fff', background: '#2563eb', color: 'var(--bg-card)',
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
                           cursor: uploadingPic ? 'not-allowed' : 'pointer', boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
                           opacity: uploadingPic ? 0.6 : 1, transition: 'background 0.15s',
@@ -8556,15 +8791,15 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                       <strong style={{ fontSize: '0.9rem', display: 'block' }}>
                         {firstName || lastName ? `${firstName} ${lastName}`.trim() : 'Your Name'}
                       </strong>
-                      <span style={{ fontSize: '0.78rem', color: '#94a3b8' }}>{accountEmail}</span>
-                      <p style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: '4px' }}>Click the camera icon to upload a profile picture. Don't forget to save.</p>
+                      <span style={{ fontSize: '0.78rem', color: 'var(--text-dark)' }}>{accountEmail}</span>
+                      <p style={{ fontSize: '0.72rem', color: 'var(--text-dark)', marginTop: '4px' }}>Click the camera icon to upload a profile picture. Don't forget to save.</p>
                     </div>
                     {profilePicUrl && (
                       <button
                         type="button"
                         onClick={() => { setProfilePicUrl(null); setAccountSaved(false); }}
                         disabled={uploadingPic}
-                        style={{ padding: '6px 12px', border: '1px solid #e2e8f0', borderRadius: '6px', background: '#fff', cursor: 'pointer', fontSize: '0.72rem', fontWeight: 600, color: '#dc2626', display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}
+                        style={{ padding: '6px 12px', border: '1px solid var(--border-subtle)', borderRadius: '6px', background: 'var(--bg-card)', cursor: 'pointer', fontSize: '0.72rem', fontWeight: 600, color: '#dc2626', display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}
                       >
                         <Trash2 size={12} /> Remove
                       </button>
@@ -8586,7 +8821,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                     </label>
                     <label className="crm-add-lead-field">
                       <span>Email Address</span>
-                      <input type="email" value={accountEmail} disabled style={{ background: '#f1f5f9', cursor: 'not-allowed', color: '#94a3b8' }} />
+                      <input type="email" value={accountEmail} disabled style={{ background: 'var(--bg-light)', cursor: 'not-allowed', color: 'var(--text-dark)' }} />
                     </label>
                     <label className="crm-add-lead-field" style={{ gridColumn: '1 / -1' }}>
                       <span>Address Line</span>
@@ -8634,9 +8869,9 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                         onClick={() => setCallProvider(p.key)}
                         style={{
                           padding: '12px 16px',
-                          border: callProvider === p.key ? `2px solid ${p.color}` : '1px solid #e2e8f0',
+                          border: callProvider === p.key ? `2px solid ${p.color}` : '1px solid var(--border-subtle)',
                           borderRadius: '10px',
-                          background: callProvider === p.key ? `${p.color}10` : '#fff',
+                          background: callProvider === p.key ? `${p.color}10` : 'var(--bg-card)',
                           cursor: 'pointer',
                           display: 'flex',
                           flexDirection: 'column',
@@ -8649,14 +8884,14 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                       >
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                           <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: p.color }} />
-                          <strong style={{ fontSize: '0.85rem', color: callProvider === p.key ? p.color : '#1e293b' }}>{p.label}</strong>
+                          <strong style={{ fontSize: '0.85rem', color: callProvider === p.key ? p.color : 'var(--text-main)' }}>{p.label}</strong>
                         </div>
-                        <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>{p.desc}</span>
+                        <span style={{ fontSize: '0.72rem', color: 'var(--text-dark)' }}>{p.desc}</span>
                       </button>
                     ))}
                   </div>
 
-                  <div style={{ display: 'flex', gap: '8px', padding: '14px 16px', background: 'rgba(13,148,136,0.06)', border: '1px solid rgba(13,148,136,0.2)', borderRadius: '10px', marginBottom: '20px', fontSize: '0.8rem', color: '#475569', lineHeight: 1.5 }}>
+                  <div style={{ display: 'flex', gap: '8px', padding: '14px 16px', background: 'rgba(13,148,136,0.06)', border: '1px solid rgba(13,148,136,0.2)', borderRadius: '10px', marginBottom: '20px', fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
                     <PhoneCall size={16} style={{ color: '#0d9488', flexShrink: 0, marginTop: '2px' }} />
                     <div>
                       <strong style={{ color: '#0f766e' }}>How it works:</strong> When you dial a lead from the CRM, {callProvider === 'twilio' ? 'Twilio' : callProvider === 'exotel' ? 'Exotel' : 'Plivo'} first calls your phone (the agent number below). When you pick up, it connects you to the lead — so both of you see the virtual number, not each other's real numbers. Get started at{' '}
@@ -8667,27 +8902,27 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                   </div>
 
                   {/* Collapsible step-by-step setup guide */}
-                  <div style={{ marginBottom: '20px', border: '1px solid #e2e8f0', borderRadius: '10px', overflow: 'hidden' }}>
+                  <div style={{ marginBottom: '20px', border: '1px solid var(--border-subtle)', borderRadius: '10px', overflow: 'hidden' }}>
                     <button
                       type="button"
                       onClick={() => setShowCallingGuide(!showCallingGuide)}
                       style={{
                         width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                        padding: '14px 16px', border: 'none', background: '#f8fafc', cursor: 'pointer',
-                        fontSize: '0.85rem', fontWeight: 700, color: '#1e293b',
+                        padding: '14px 16px', border: 'none', background: 'var(--bg-light)', cursor: 'pointer',
+                        fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-main)',
                       }}
                     >
                       <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <BookOpen size={16} style={{ color: '#0d9488' }} />
                         Step-by-Step Setup Guide ({callProvider === 'twilio' ? 'Twilio' : callProvider === 'exotel' ? 'Exotel' : 'Plivo'})
                       </span>
-                      {showCallingGuide ? <ChevronUp size={18} style={{ color: '#94a3b8' }} /> : <ChevronDown size={18} style={{ color: '#94a3b8' }} />}
+                      {showCallingGuide ? <ChevronUp size={18} style={{ color: 'var(--text-dark)' }} /> : <ChevronDown size={18} style={{ color: 'var(--text-dark)' }} />}
                     </button>
                     {showCallingGuide && (
-                      <div style={{ padding: '16px', fontSize: '0.82rem', color: '#475569', lineHeight: 1.6 }}>
+                      <div style={{ padding: '16px', fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>
                         {callProvider === 'twilio' && (
                           <>
-                            <p style={{ fontWeight: 700, color: '#1e293b', marginBottom: '8px' }}>Twilio Setup</p>
+                            <p style={{ fontWeight: 700, color: 'var(--text-main)', marginBottom: '8px' }}>Twilio Setup</p>
                             <ol style={{ paddingLeft: '20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
                               <li><strong>Create a Twilio account</strong> — Go to <a href="https://www.twilio.com" target="_blank" rel="noopener noreferrer" style={{ color: '#0d9488' }}>twilio.com</a>, sign up, and verify your email and phone number. You get trial credits to test with.</li>
                               <li><strong>Copy your Account SID and Auth Token</strong> — In the <a href="https://console.twilio.com" target="_blank" rel="noopener noreferrer" style={{ color: '#0d9488' }}>Twilio Console</a>, your Account SID (starts with "AC") and Auth Token are on the dashboard home page. Click the eye icon to reveal the Auth Token.</li>
@@ -8701,7 +8936,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                         )}
                         {callProvider === 'exotel' && (
                           <>
-                            <p style={{ fontWeight: 700, color: '#1e293b', marginBottom: '8px' }}>Exotel Setup</p>
+                            <p style={{ fontWeight: 700, color: 'var(--text-main)', marginBottom: '8px' }}>Exotel Setup</p>
                             <ol style={{ paddingLeft: '20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
                               <li><strong>Create an Exotel account</strong> — Go to <a href="https://www.exotel.com" target="_blank" rel="noopener noreferrer" style={{ color: '#0d9488' }}>exotel.com</a> and sign up. Exotel may require business verification for Indian numbers.</li>
                               <li><strong>Get your API credentials</strong> — In the Exotel dashboard, go to Settings &gt; API. Copy your <strong>Account SID</strong> (a short name like "yourcompany") and <strong>Auth Token</strong>.</li>
@@ -8715,7 +8950,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                         )}
                         {callProvider === 'plivo' && (
                           <>
-                            <p style={{ fontWeight: 700, color: '#1e293b', marginBottom: '8px' }}>Plivo Setup</p>
+                            <p style={{ fontWeight: 700, color: 'var(--text-main)', marginBottom: '8px' }}>Plivo Setup</p>
                             <ol style={{ paddingLeft: '20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
                               <li><strong>Create a Plivo account</strong> — Go to <a href="https://www.plivo.com" target="_blank" rel="noopener noreferrer" style={{ color: '#0d9488' }}>plivo.com</a>, sign up, and verify your email and phone. You get free trial credits.</li>
                               <li><strong>Copy your Auth ID and Auth Token</strong> — In the <a href="https://console.plivo.com" target="_blank" rel="noopener noreferrer" style={{ color: '#0d9488' }}>Plivo Console</a>, go to Overview or Credentials. Copy the <strong>Auth ID</strong> and <strong>Auth Token</strong>.</li>
@@ -8727,13 +8962,13 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                             <p style={{ marginTop: '10px', padding: '10px 12px', background: 'rgba(234,179,8,0.08)', border: '1px solid rgba(234,179,8,0.2)', borderRadius: '6px', fontSize: '0.78rem', color: '#854d0e' }}><strong>Note:</strong> Plivo often has lower per-minute rates than Twilio — good for cost-conscious teams.</p>
                           </>
                         )}
-                        <div style={{ marginTop: '14px', paddingTop: '14px', borderTop: '1px solid #e2e8f0' }}>
-                          <p style={{ fontWeight: 700, color: '#1e293b', marginBottom: '6px' }}>Phone Number Format (E.164)</p>
+                        <div style={{ marginTop: '14px', paddingTop: '14px', borderTop: '1px solid var(--border-subtle)' }}>
+                          <p style={{ fontWeight: 700, color: 'var(--text-main)', marginBottom: '6px' }}>Phone Number Format (E.164)</p>
                           <p style={{ fontSize: '0.78rem' }}>All phone numbers must start with <strong>+</strong> followed by the country code and full number — no spaces, dashes, or parentheses.</p>
                           <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginTop: '6px' }}>
-                            <code style={{ fontSize: '0.72rem', background: '#f1f5f9', padding: '2px 6px', borderRadius: '4px' }}>+919876543210</code>
-                            <code style={{ fontSize: '0.72rem', background: '#f1f5f9', padding: '2px 6px', borderRadius: '4px' }}>+12125551234</code>
-                            <code style={{ fontSize: '0.72rem', background: '#f1f5f9', padding: '2px 6px', borderRadius: '4px' }}>+447911123456</code>
+                            <code style={{ fontSize: '0.72rem', background: 'var(--bg-light)', padding: '2px 6px', borderRadius: '4px' }}>+919876543210</code>
+                            <code style={{ fontSize: '0.72rem', background: 'var(--bg-light)', padding: '2px 6px', borderRadius: '4px' }}>+12125551234</code>
+                            <code style={{ fontSize: '0.72rem', background: 'var(--bg-light)', padding: '2px 6px', borderRadius: '4px' }}>+447911123456</code>
                           </div>
                         </div>
                       </div>
@@ -8749,7 +8984,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                       <span>{callProvider === 'plivo' ? 'Auth Token' : 'Auth Token'} <em>*</em></span>
                       <div style={{ position: 'relative' }}>
                         <input type={showTwilioToken ? 'text' : 'password'} required value={twilioAuthToken} onChange={(e) => setTwilioAuthToken(e.target.value)} placeholder={`Your ${callProvider === 'twilio' ? 'Twilio' : callProvider === 'exotel' ? 'Exotel' : 'Plivo'} token`} style={{ width: '100%', paddingRight: '40px' }} />
-                        <button type="button" onClick={() => setShowTwilioToken(!showTwilioToken)} style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', border: 'none', background: 'none', cursor: 'pointer', color: '#94a3b8', fontSize: '0.75rem', padding: '4px' }}>
+                        <button type="button" onClick={() => setShowTwilioToken(!showTwilioToken)} style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', border: 'none', background: 'none', cursor: 'pointer', color: 'var(--text-dark)', fontSize: '0.75rem', padding: '4px' }}>
                           {showTwilioToken ? 'Hide' : 'Show'}
                         </button>
                       </div>
@@ -8766,23 +9001,23 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
 
                   {twilioCallLogs.length > 0 && (
                     <div style={{ marginTop: '24px' }}>
-                      <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                         <History size={16} style={{ color: '#0d9488' }} /> Recent Calls
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '240px', overflowY: 'auto' }}>
                         {twilioCallLogs.map((log) => (
-                          <div key={log.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                          <div key={log.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', background: 'var(--bg-light)', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
                             <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(13,148,136,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                               <PhoneOutgoing size={15} style={{ color: '#0d9488' }} />
                             </div>
                             <div style={{ flex: 1, minWidth: 0 }}>
                               <strong style={{ fontSize: '0.82rem', display: 'block' }}>{log.lead_name || log.phone_number}</strong>
-                              <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>{log.phone_number} — {new Date(log.created_at).toLocaleString()}</span>
+                              <span style={{ fontSize: '0.72rem', color: 'var(--text-dark)' }}>{log.phone_number} — {new Date(log.created_at).toLocaleString()}</span>
                             </div>
                             <span style={{ fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', padding: '2px 8px', borderRadius: '4px', whiteSpace: 'nowrap', background: log.status === 'completed' ? 'rgba(22,163,74,0.15)' : log.status === 'failed' || log.status === 'no-answer' || log.status === 'busy' ? 'rgba(239,68,68,0.15)' : 'rgba(234,179,8,0.15)', color: log.status === 'completed' ? '#16a34a' : log.status === 'failed' || log.status === 'no-answer' || log.status === 'busy' ? '#dc2626' : '#854d0e' }}>
                               {log.status}
                             </span>
-                            {log.duration > 0 && <span style={{ fontSize: '0.72rem', color: '#94a3b8', whiteSpace: 'nowrap' }}>{log.duration}s</span>}
+                            {log.duration > 0 && <span style={{ fontSize: '0.72rem', color: 'var(--text-dark)', whiteSpace: 'nowrap' }}>{log.duration}s</span>}
                           </div>
                         ))}
                       </div>
@@ -8803,12 +9038,12 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                       value={inviteEmail}
                       onChange={(e) => { setInviteEmail(e.target.value); setTeamError(''); setTeamSuccess(''); }}
                       placeholder="employee@company.com"
-                      style={{ flex: '1', minWidth: '200px', padding: '10px 14px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '0.85rem' }}
+                      style={{ flex: '1', minWidth: '200px', padding: '10px 14px', border: '1px solid var(--border-subtle)', borderRadius: '8px', fontSize: '0.85rem' }}
                     />
                     <select
                       value={inviteRole}
                       onChange={(e) => setInviteRole(e.target.value as 'admin' | 'manager' | 'agent')}
-                      style={{ padding: '10px 14px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '0.85rem', cursor: 'pointer' }}
+                      style={{ padding: '10px 14px', border: '1px solid var(--border-subtle)', borderRadius: '8px', fontSize: '0.85rem', cursor: 'pointer' }}
                     >
                       <option value="agent">Agent (view leads only)</option>
                       <option value="manager">Manager (leads + inbox)</option>
@@ -8818,7 +9053,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                       type="button"
                       onClick={handleInviteMember}
                       disabled={!inviteEmail.trim() || inviting}
-                      style={{ padding: '10px 20px', border: 'none', borderRadius: '8px', background: '#7c3aed', color: '#fff', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}
+                      style={{ padding: '10px 20px', border: 'none', borderRadius: '8px', background: '#7c3aed', color: 'var(--bg-card)', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}
                     >
                       {inviting ? <Loader2 size={16} className="crm-spin" /> : <Plus size={16} />}
                       {inviting ? 'Inviting...' : 'Invite'}
@@ -8842,12 +9077,12 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                     {([
                       { role: 'admin', label: 'Admin', desc: 'Full access', color: '#dc2626' },
                       { role: 'manager', label: 'Manager', desc: 'Leads + Inbox', color: '#2563eb' },
-                      { role: 'agent', label: 'Agent', desc: 'View leads only', color: '#64748b' },
+                      { role: 'agent', label: 'Agent', desc: 'View leads only', color: 'var(--text-dark)' },
                     ] as const).map((r) => (
-                      <div key={r.role} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '4px 10px', background: '#f8fafc', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
+                      <div key={r.role} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '4px 10px', background: 'var(--bg-light)', borderRadius: '6px', border: '1px solid var(--border-subtle)' }}>
                         <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: r.color }} />
                         <span style={{ fontSize: '0.75rem', fontWeight: 600 }}>{r.label}</span>
-                        <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>{r.desc}</span>
+                        <span style={{ fontSize: '0.72rem', color: 'var(--text-dark)' }}>{r.desc}</span>
                       </div>
                     ))}
                   </div>
@@ -8855,14 +9090,14 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                   {/* Team members list */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     {teamMembers.length === 0 ? (
-                      <div style={{ textAlign: 'center', padding: '32px', color: '#94a3b8' }}>
+                      <div style={{ textAlign: 'center', padding: '32px', color: 'var(--text-dark)' }}>
                         <Users size={32} style={{ marginBottom: '8px', opacity: 0.4 }} />
                         <p style={{ fontSize: '0.85rem' }}>No team members yet. Invite your first employee above.</p>
                       </div>
                     ) : (
                       teamMembers.map((member) => (
-                        <div key={member.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
-                          <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: member.status === 'disabled' ? '#e2e8f0' : member.role === 'admin' ? 'rgba(220,38,38,0.15)' : member.role === 'manager' ? 'rgba(37,99,235,0.15)' : 'rgba(100,116,139,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.85rem', color: member.status === 'disabled' ? '#94a3b8' : member.role === 'admin' ? '#dc2626' : member.role === 'manager' ? '#2563eb' : '#64748b', flexShrink: 0 }}>
+                        <div key={member.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', background: 'var(--bg-light)', borderRadius: '10px', border: '1px solid var(--border-subtle)' }}>
+                          <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: member.status === 'disabled' ? 'var(--border-subtle)' : member.role === 'admin' ? 'rgba(220,38,38,0.15)' : member.role === 'manager' ? 'rgba(37,99,235,0.15)' : 'rgba(100,116,139,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.85rem', color: member.status === 'disabled' ? '#94a3b8' : member.role === 'admin' ? '#dc2626' : member.role === 'manager' ? '#2563eb' : 'var(--text-dark)', flexShrink: 0 }}>
                             {member.email[0]?.toUpperCase()}
                           </div>
                           <div style={{ flex: 1, minWidth: 0 }}>
@@ -8876,13 +9111,13 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                               <select
                                 value={member.role}
                                 onChange={(e) => handleUpdateMemberRole(member.id, e.target.value as 'admin' | 'manager' | 'agent')}
-                                style={{ fontSize: '0.75rem', padding: '3px 8px', border: '1px solid #e2e8f0', borderRadius: '4px', cursor: 'pointer', background: '#fff' }}
+                                style={{ fontSize: '0.75rem', padding: '3px 8px', border: '1px solid var(--border-subtle)', borderRadius: '4px', cursor: 'pointer', background: 'var(--bg-card)' }}
                               >
                                 <option value="agent">Agent</option>
                                 <option value="manager">Manager</option>
                                 <option value="admin">Admin</option>
                               </select>
-                              {member.full_name && <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>{member.full_name}</span>}
+                              {member.full_name && <span style={{ fontSize: '0.72rem', color: 'var(--text-dark)' }}>{member.full_name}</span>}
                             </div>
                           </div>
                           <div style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
@@ -8892,7 +9127,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                                 onClick={() => handleResendInvite(member)}
                                 disabled={inviting}
                                 title="Resend invite email"
-                                style={{ padding: '6px 10px', border: '1px solid #e2e8f0', borderRadius: '6px', background: '#fff', cursor: 'pointer', fontSize: '0.72rem', fontWeight: 600, color: '#2563eb', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '4px' }}
+                                style={{ padding: '6px 10px', border: '1px solid var(--border-subtle)', borderRadius: '6px', background: 'var(--bg-card)', cursor: 'pointer', fontSize: '0.72rem', fontWeight: 600, color: '#2563eb', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '4px' }}
                               >
                                 <Send size={13} /> Resend
                               </button>
@@ -8901,7 +9136,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                               type="button"
                               onClick={() => handleToggleMemberStatus(member)}
  title={member.status === 'active' ? 'Disable access' : 'Enable access'}
-                              style={{ padding: '6px 10px', border: '1px solid #e2e8f0', borderRadius: '6px', background: '#fff', cursor: 'pointer', fontSize: '0.72rem', fontWeight: 600, color: member.status === 'active' ? '#dc2626' : '#16a34a', whiteSpace: 'nowrap' }}
+                              style={{ padding: '6px 10px', border: '1px solid var(--border-subtle)', borderRadius: '6px', background: 'var(--bg-card)', cursor: 'pointer', fontSize: '0.72rem', fontWeight: 600, color: member.status === 'active' ? '#dc2626' : '#16a34a', whiteSpace: 'nowrap' }}
                             >
                               {member.status === 'active' ? 'Disable' : 'Enable'}
                             </button>
@@ -8909,7 +9144,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                               type="button"
                               onClick={() => handleRemoveMember(member.id)}
                               title="Remove member"
-                              style={{ padding: '6px 10px', border: '1px solid #e2e8f0', borderRadius: '6px', background: '#fff', cursor: 'pointer', color: '#dc2626', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                              style={{ padding: '6px 10px', border: '1px solid var(--border-subtle)', borderRadius: '6px', background: 'var(--bg-card)', cursor: 'pointer', color: '#dc2626', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                             >
                               <Trash2 size={14} />
                             </button>
@@ -8939,7 +9174,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                     {([
                       { role: 'admin', label: 'Admin', color: '#dc2626' },
                       { role: 'manager', label: 'Manager', color: '#2563eb' },
-                      { role: 'agent', label: 'Agent', color: '#64748b' },
+                      { role: 'agent', label: 'Agent', color: 'var(--text-dark)' },
                     ] as const).map((r) => (
                       <button
                         key={r.role}
@@ -8947,10 +9182,10 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                         onClick={() => setSelectedRoleForEditing(r.role)}
                         style={{
                           padding: '10px 20px',
-                          border: selectedRoleForEditing === r.role ? `2px solid ${r.color}` : '1px solid #e2e8f0',
+                          border: selectedRoleForEditing === r.role ? `2px solid ${r.color}` : '1px solid var(--border-subtle)',
                           borderRadius: '10px',
-                          background: selectedRoleForEditing === r.role ? `${r.color}15` : '#fff',
-                          color: selectedRoleForEditing === r.role ? r.color : '#64748b',
+                          background: selectedRoleForEditing === r.role ? `${r.color}15` : 'var(--bg-card)',
+                          color: selectedRoleForEditing === r.role ? r.color : 'var(--text-dark)',
                           fontSize: '0.85rem',
                           fontWeight: 700,
                           cursor: 'pointer',
@@ -8985,15 +9220,15 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                                   alignItems: 'center',
                                   justifyContent: 'space-between',
                                   padding: '14px 16px',
-                                  background: value ? `${groupColors[group]}08` : '#f8fafc',
+                                  background: value ? `${groupColors[group]}08` : 'var(--bg-light)',
                                   borderRadius: '10px',
-                                  border: `1px solid ${value ? `${groupColors[group]}30` : '#e2e8f0'}`,
+                                  border: `1px solid ${value ? `${groupColors[group]}30` : 'var(--border-subtle)'}`,
                                   transition: 'all 0.2s',
                                 }}
                               >
                                 <div style={{ flex: 1 }}>
-                                  <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#1e293b', marginBottom: '2px' }}>{perm.label}</div>
-                                  <div style={{ fontSize: '0.76rem', color: '#94a3b8' }}>{perm.desc}</div>
+                                  <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '2px' }}>{perm.label}</div>
+                                  <div style={{ fontSize: '0.76rem', color: 'var(--text-dark)' }}>{perm.desc}</div>
                                 </div>
                                 <button
                                   type="button"
@@ -9011,7 +9246,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                                     height: '24px',
                                     borderRadius: '12px',
                                     border: 'none',
-                                    background: value ? groupColors[group] : '#cbd5e1',
+                                    background: value ? groupColors[group] : 'var(--text-dark)',
                                     cursor: 'pointer',
                                     position: 'relative',
                                     transition: 'background 0.2s',
@@ -9025,7 +9260,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                                     width: '20px',
                                     height: '20px',
                                     borderRadius: '50%',
-                                    background: '#fff',
+                                    background: 'var(--bg-card)',
                                     boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
                                     transition: 'left 0.2s',
                                   }} />
@@ -9050,7 +9285,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                     </div>
                   )}
 
-                  <div style={{ marginTop: '16px', padding: '12px 16px', background: 'rgba(124,58,237,0.06)', border: '1px solid rgba(124,58,237,0.2)', borderRadius: '8px', fontSize: '0.78rem', color: '#475569', lineHeight: 1.5, display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+                  <div style={{ marginTop: '16px', padding: '12px 16px', background: 'rgba(124,58,237,0.06)', border: '1px solid rgba(124,58,237,0.2)', borderRadius: '8px', fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: 1.5, display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
                     <SlidersHorizontal size={14} style={{ color: '#7c3aed', flexShrink: 0, marginTop: '2px' }} />
                     <div>
                       <strong>Note:</strong> The Owner role always has full access and cannot be customized. Changes saved here override the default role permissions. If you haven't customized a role, the default permissions apply.
@@ -9081,7 +9316,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                       <span>SMTP Password <em>*</em></span>
                       <div style={{ position: 'relative' }}>
                         <input type={showPassword ? 'text' : 'password'} required value={smtpPassword} onChange={(e) => setSmtpPassword(e.target.value)} placeholder="App password or email password" style={{ width: '100%', paddingRight: '40px' }} />
-                        <button type="button" onClick={() => setShowPassword(!showPassword)} style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', border: 'none', background: 'none', cursor: 'pointer', color: '#94a3b8', fontSize: '0.75rem', padding: '4px' }}>
+                        <button type="button" onClick={() => setShowPassword(!showPassword)} style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', border: 'none', background: 'none', cursor: 'pointer', color: 'var(--text-dark)', fontSize: '0.75rem', padding: '4px' }}>
                           {showPassword ? 'Hide' : 'Show'}
                         </button>
                       </div>
@@ -9101,12 +9336,12 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                     <span style={{ fontSize: '0.88rem', fontWeight: 500 }}>Use TLS / STARTTLS (recommended for port 587)</span>
                   </label>
 
-                  <div style={{ marginTop: '24px', paddingTop: '20px', borderTop: '1px solid #e2e8f0' }}>
+                  <div style={{ marginTop: '24px', paddingTop: '20px', borderTop: '1px solid var(--border-subtle)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
                       <Mail size={18} style={{ color: '#2563eb' }} />
-                      <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#1e293b', margin: 0 }}>IMAP Configuration (Email Inbox)</h3>
+                      <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-main)', margin: 0 }}>IMAP Configuration (Email Inbox)</h3>
                     </div>
-                    <p style={{ fontSize: '0.82rem', color: '#94a3b8', marginBottom: '16px', lineHeight: 1.5 }}>Configure IMAP to receive and read emails in the Email Inbox. For Hostinger, use imap.hostinger.com on port 993 with TLS enabled.</p>
+                    <p style={{ fontSize: '0.82rem', color: 'var(--text-dark)', marginBottom: '16px', lineHeight: 1.5 }}>Configure IMAP to receive and read emails in the Email Inbox. For Hostinger, use imap.hostinger.com on port 993 with TLS enabled.</p>
 
                     <div className="crm-add-lead-grid">
                       <label className="crm-add-lead-field">
@@ -9125,7 +9360,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                         <span>IMAP Password</span>
                         <div style={{ position: 'relative' }}>
                           <input type={showImapPassword ? 'text' : 'password'} value={imapPassword} onChange={(e) => setImapPassword(e.target.value)} placeholder="Email password" style={{ width: '100%', paddingRight: '40px' }} />
-                          <button type="button" onClick={() => setShowImapPassword(!showImapPassword)} style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', border: 'none', background: 'none', cursor: 'pointer', color: '#94a3b8', fontSize: '0.75rem', padding: '4px' }}>
+                          <button type="button" onClick={() => setShowImapPassword(!showImapPassword)} style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', border: 'none', background: 'none', cursor: 'pointer', color: 'var(--text-dark)', fontSize: '0.75rem', padding: '4px' }}>
                             {showImapPassword ? 'Hide' : 'Show'}
                           </button>
                         </div>
@@ -9153,37 +9388,37 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                         <strong style={{ fontSize: '0.85rem' }}>Connected WhatsApp Numbers ({waNumbersList.length})</strong>
                       </div>
                       {editingWaNumberId === null && waPhoneNumberId.trim() === '' ? null : (
-                        <button type="button" onClick={resetWaForm} style={{ fontSize: '0.78rem', fontWeight: 600, color: '#64748b', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '4px 10px', cursor: 'pointer', background: '#fff' }}>Cancel</button>
+                        <button type="button" onClick={resetWaForm} style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-dark)', border: '1px solid var(--border-subtle)', borderRadius: '6px', padding: '4px 10px', cursor: 'pointer', background: 'var(--bg-card)' }}>Cancel</button>
                       )}
                     </div>
                     {waNumbersList.length === 0 ? (
-                      <div style={{ padding: '20px', textAlign: 'center', background: '#f8fafc', borderRadius: '10px', border: '1px dashed #e2e8f0' }}>
-                        <PhoneIcon size={32} style={{ color: '#cbd5e1', margin: '0 auto 8px', display: 'block' }} />
-                        <p style={{ fontSize: '0.82rem', color: '#94a3b8' }}>No WhatsApp numbers connected yet. Add your first number using the form below.</p>
+                      <div style={{ padding: '20px', textAlign: 'center', background: 'var(--bg-light)', borderRadius: '10px', border: '1px dashed var(--border-subtle)' }}>
+                        <PhoneIcon size={32} style={{ color: 'var(--text-dark)', margin: '0 auto 8px', display: 'block' }} />
+                        <p style={{ fontSize: '0.82rem', color: 'var(--text-dark)' }}>No WhatsApp numbers connected yet. Add your first number using the form below.</p>
                       </div>
                     ) : (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                         {waNumbersList.map((n, idx) => (
-                          <div key={n.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: '#f8fafc', borderRadius: '10px', border: editingWaNumberId === n.id ? '2px solid #25D366' : '1px solid #e2e8f0' }}>
+                          <div key={n.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: 'var(--bg-light)', borderRadius: '10px', border: editingWaNumberId === n.id ? '2px solid #25D366' : '1px solid var(--border-subtle)' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
-                              <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'linear-gradient(135deg, #25D366, #128C7E)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: '0.8rem', flexShrink: 0 }}>
+                              <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'linear-gradient(135deg, #25D366, #128C7E)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--bg-card)', fontWeight: 700, fontSize: '0.8rem', flexShrink: 0 }}>
                                 {idx + 1}
                               </div>
                               <div style={{ minWidth: 0 }}>
-                                <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                                   {n.label || n.connected_phone_number || n.phone_number_id}
                                   {idx === 0 && <span style={{ fontSize: '0.62rem', fontWeight: 700, padding: '1px 6px', borderRadius: '4px', background: 'rgba(37,211,102,0.15)', color: '#15803d' }}>PRIMARY</span>}
                                 </div>
-                                <div style={{ fontSize: '0.72rem', color: '#94a3b8', fontFamily: 'monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                <div style={{ fontSize: '0.72rem', color: 'var(--text-dark)', fontFamily: 'monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                   {n.connected_phone_number ? `${n.connected_phone_number} · ` : ''}ID: {n.phone_number_id}
                                 </div>
                               </div>
                             </div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
-                              <button type="button" onClick={() => startEditWaNumber(n)} style={{ fontSize: '0.75rem', fontWeight: 600, color: '#475569', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '4px 10px', cursor: 'pointer', background: '#fff', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              <button type="button" onClick={() => startEditWaNumber(n)} style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', border: '1px solid var(--border-subtle)', borderRadius: '6px', padding: '4px 10px', cursor: 'pointer', background: 'var(--bg-card)', display: 'flex', alignItems: 'center', gap: '4px' }}>
                                 <Edit3 size={12} /> Edit
                               </button>
-                              <button type="button" onClick={() => handleDeleteWaNumber(n.id)} disabled={deletingWaNumberId === n.id} style={{ fontSize: '0.75rem', fontWeight: 600, color: '#ef4444', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '6px', padding: '4px 10px', cursor: 'pointer', background: '#fff', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              <button type="button" onClick={() => handleDeleteWaNumber(n.id)} disabled={deletingWaNumberId === n.id} style={{ fontSize: '0.75rem', fontWeight: 600, color: '#ef4444', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '6px', padding: '4px 10px', cursor: 'pointer', background: 'var(--bg-card)', display: 'flex', alignItems: 'center', gap: '4px' }}>
                                 {deletingWaNumberId === n.id ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />} Delete
                               </button>
                             </div>
@@ -9194,7 +9429,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                   </div>
 
                   {/* Add / Edit number form */}
-                  <div style={{ marginBottom: '20px', padding: '20px', background: '#fff', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                  <div style={{ marginBottom: '20px', padding: '20px', background: 'var(--bg-card)', borderRadius: '10px', border: '1px solid var(--border-subtle)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
                       <Plus size={16} style={{ color: '#25D366' }} />
                       <strong style={{ fontSize: '0.85rem' }}>{editingWaNumberId ? 'Edit WhatsApp Number' : 'Add New WhatsApp Number'}</strong>
@@ -9213,7 +9448,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                       <label className="crm-add-lead-field" style={{ gridColumn: '1 / -1' }}>
                         <span>Label (optional)</span>
                         <input type="text" value={waLabel} onChange={(e) => setWaLabel(e.target.value)} placeholder="e.g. Sales Line, Support Line" />
-                        <small style={{ color: '#94a3b8', fontSize: '0.74rem', marginTop: '4px', display: 'block' }}>
+                        <small style={{ color: 'var(--text-dark)', fontSize: '0.74rem', marginTop: '4px', display: 'block' }}>
                           A friendly name to identify this number in the inbox filter.
                         </small>
                       </label>
@@ -9229,7 +9464,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                         <span>Access Token <em>*</em></span>
                         <div style={{ position: 'relative' }}>
                           <input type={showWaToken ? 'text' : 'password'} required value={waAccessToken} onChange={(e) => setWaAccessToken(e.target.value)} placeholder="EAAxxxxxxxxxxxxxxxxx" style={{ width: '100%', paddingRight: '40px', fontFamily: 'monospace', fontSize: '0.82rem' }} />
-                          <button type="button" onClick={() => setShowWaToken(!showWaToken)} style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', border: 'none', background: 'none', cursor: 'pointer', color: '#94a3b8', fontSize: '0.75rem', padding: '4px' }}>
+                          <button type="button" onClick={() => setShowWaToken(!showWaToken)} style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', border: 'none', background: 'none', cursor: 'pointer', color: 'var(--text-dark)', fontSize: '0.75rem', padding: '4px' }}>
                             {showWaToken ? 'Hide' : 'Show'}
                           </button>
                         </div>
@@ -9252,19 +9487,19 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                       </label>
                     </div>
                     <div style={{ marginTop: '14px', display: 'flex', gap: '8px' }}>
-                      <button type="button" onClick={handleSaveWaNumber} disabled={waNumSaving} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 20px', border: 'none', borderRadius: '8px', background: waNumSaving ? '#94a3b8' : '#25D366', color: '#fff', fontSize: '0.82rem', fontWeight: 600, cursor: waNumSaving ? 'not-allowed' : 'pointer' }}>
+                      <button type="button" onClick={handleSaveWaNumber} disabled={waNumSaving} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 20px', border: 'none', borderRadius: '8px', background: waNumSaving ? '#94a3b8' : '#25D366', color: 'var(--bg-card)', fontSize: '0.82rem', fontWeight: 600, cursor: waNumSaving ? 'not-allowed' : 'pointer' }}>
                         {waNumSaving ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
                         {waNumSaving ? 'Saving...' : editingWaNumberId ? 'Update Number' : 'Add Number'}
                       </button>
                       {(editingWaNumberId || waPhoneNumberId.trim() || waAccessToken.trim()) && (
-                        <button type="button" onClick={resetWaForm} style={{ padding: '8px 16px', border: '1px solid #e2e8f0', borderRadius: '8px', background: '#fff', color: '#475569', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer' }}>Clear</button>
+                        <button type="button" onClick={resetWaForm} style={{ padding: '8px 16px', border: '1px solid var(--border-subtle)', borderRadius: '8px', background: 'var(--bg-card)', color: 'var(--text-muted)', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer' }}>Clear</button>
                       )}
                     </div>
                   </div>
 
                   {/* Phone Number Status & Quality Rating — only for first number */}
                   {waNumbersList.length > 0 && waNumbersList[0]?.phone_number_id && waNumbersList[0]?.access_token && (
-                    <div style={{ marginBottom: '16px', padding: '16px', background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                    <div style={{ marginBottom: '16px', padding: '16px', background: 'var(--bg-light)', borderRadius: '10px', border: '1px solid var(--border-subtle)' }}>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <Signal size={16} style={{ color: '#25D366' }} />
@@ -9274,7 +9509,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                           type="button"
                           onClick={refreshWaStatus}
                           disabled={waStatusLoading}
-                          style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 10px', border: '1px solid #e2e8f0', borderRadius: '6px', background: '#fff', color: '#475569', fontSize: '0.72rem', fontWeight: 600, cursor: waStatusLoading ? 'not-allowed' : 'pointer', opacity: waStatusLoading ? 0.5 : 1 }}
+                          style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 10px', border: '1px solid var(--border-subtle)', borderRadius: '6px', background: 'var(--bg-card)', color: 'var(--text-muted)', fontSize: '0.72rem', fontWeight: 600, cursor: waStatusLoading ? 'not-allowed' : 'pointer', opacity: waStatusLoading ? 0.5 : 1 }}
                         >
                           {waStatusLoading ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
                           {waStatusLoading ? 'Checking...' : 'Refresh'}
@@ -9290,8 +9525,8 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                       {waPhoneStatus && !waStatusError && (
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '10px' }}>
                           {/* Connection Status */}
-                          <div style={{ padding: '10px 12px', background: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                            <div style={{ fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: '#94a3b8', marginBottom: '4px' }}>Connection Status</div>
+                          <div style={{ padding: '10px 12px', background: 'var(--bg-card)', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
+                            <div style={{ fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-dark)', marginBottom: '4px' }}>Connection Status</div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                               {waPhoneStatus.status === 'CONNECTED' ? (
                                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.8rem', fontWeight: 700, color: '#16a34a' }}>
@@ -9302,23 +9537,23 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                                   <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#dc2626', display: 'inline-block' }} /> Disconnected
                                 </span>
                               ) : (
-                                <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#64748b' }}>{waPhoneStatus.status || 'Unknown'}</span>
+                                <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-dark)' }}>{waPhoneStatus.status || 'Unknown'}</span>
                               )}
                             </div>
                           </div>
 
                           {/* Quality Rating */}
-                          <div style={{ padding: '10px 12px', background: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                            <div style={{ fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: '#94a3b8', marginBottom: '4px' }}>Quality Rating</div>
+                          <div style={{ padding: '10px 12px', background: 'var(--bg-card)', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
+                            <div style={{ fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-dark)', marginBottom: '4px' }}>Quality Rating</div>
                             {(() => {
                               const q = (waPhoneStatus.quality_rating || '').toUpperCase();
                               const colors: Record<string, { bg: string; text: string; label: string }> = {
                                 GREEN: { bg: 'rgba(34,197,94,0.12)', text: '#15803d', label: 'High' },
                                 YELLOW: { bg: 'rgba(234,179,8,0.12)', text: '#a16207', label: 'Medium' },
                                 RED: { bg: 'rgba(239,68,68,0.12)', text: '#b91c1c', label: 'Low' },
-                                UNKNOWN: { bg: 'rgba(100,116,139,0.12)', text: '#475569', label: 'Unknown' },
+                                UNKNOWN: { bg: 'rgba(100,116,139,0.12)', text: 'var(--text-muted)', label: 'Unknown' },
                               };
-                              const c = colors[q] || { bg: 'rgba(100,116,139,0.12)', text: '#475569', label: waPhoneStatus.quality_rating || 'Unknown' };
+                              const c = colors[q] || { bg: 'rgba(100,116,139,0.12)', text: 'var(--text-muted)', label: waPhoneStatus.quality_rating || 'Unknown' };
                               return (
                                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '2px 8px', borderRadius: '4px', background: c.bg, color: c.text, fontSize: '0.78rem', fontWeight: 700 }}>
                                   <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: c.text, display: 'inline-block' }} /> {c.label}
@@ -9328,8 +9563,8 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                           </div>
 
                           {/* Name Status */}
-                          <div style={{ padding: '10px 12px', background: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                            <div style={{ fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: '#94a3b8', marginBottom: '4px' }}>Display Name</div>
+                          <div style={{ padding: '10px 12px', background: 'var(--bg-card)', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
+                            <div style={{ fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-dark)', marginBottom: '4px' }}>Display Name</div>
                             {(() => {
                               const ns = (waPhoneStatus.name_status || '').toUpperCase();
                               const colors: Record<string, { bg: string; text: string }> = {
@@ -9337,7 +9572,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                                 REVIEW_PENDING: { bg: 'rgba(234,179,8,0.12)', text: '#a16207' },
                                 REJECTED: { bg: 'rgba(239,68,68,0.12)', text: '#b91c1c' },
                               };
-                              const c = colors[ns] || { bg: 'rgba(100,116,139,0.12)', text: '#475569' };
+                              const c = colors[ns] || { bg: 'rgba(100,116,139,0.12)', text: 'var(--text-muted)' };
                               return (
                                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '2px 8px', borderRadius: '4px', background: c.bg, color: c.text, fontSize: '0.72rem', fontWeight: 700 }}>
                                   {waPhoneStatus.verified_name || 'Not set'} {waPhoneStatus.name_status && waPhoneStatus.name_status !== 'APPROVED' && `(${waPhoneStatus.name_status.replace(/_/g, ' ').toLowerCase()})`}
@@ -9348,36 +9583,36 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
 
                           {/* Phone Number */}
                           {waPhoneStatus.display_phone_number && (
-                            <div style={{ padding: '10px 12px', background: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                              <div style={{ fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: '#94a3b8', marginBottom: '4px' }}>Phone Number</div>
-                              <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#1e293b', fontFamily: 'monospace' }}>{waPhoneStatus.display_phone_number}</span>
+                            <div style={{ padding: '10px 12px', background: 'var(--bg-card)', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
+                              <div style={{ fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-dark)', marginBottom: '4px' }}>Phone Number</div>
+                              <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-main)', fontFamily: 'monospace' }}>{waPhoneStatus.display_phone_number}</span>
                             </div>
                           )}
 
                           {/* Throughput Level */}
                           {waPhoneStatus.throughput?.level && (
-                            <div style={{ padding: '10px 12px', background: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                              <div style={{ fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: '#94a3b8', marginBottom: '4px' }}>Throughput</div>
-                              <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#1e293b' }}>{waPhoneStatus.throughput.level}</span>
+                            <div style={{ padding: '10px 12px', background: 'var(--bg-card)', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
+                              <div style={{ fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-dark)', marginBottom: '4px' }}>Throughput</div>
+                              <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-main)' }}>{waPhoneStatus.throughput.level}</span>
                             </div>
                           )}
                         </div>
                       )}
 
                       {!waPhoneStatus && !waStatusError && !waStatusLoading && (
-                        <div style={{ fontSize: '0.78rem', color: '#94a3b8', padding: '4px 0' }}>Click "Refresh" to check your number status.</div>
+                        <div style={{ fontSize: '0.78rem', color: 'var(--text-dark)', padding: '4px 0' }}>Click "Refresh" to check your number status.</div>
                       )}
                     </div>
                   )}
 
                   {/* Display Name Editor — only for first number */}
                   {waNumbersList.length > 0 && waNumbersList[0]?.phone_number_id && waNumbersList[0]?.access_token && (
-                    <div style={{ marginBottom: '16px', padding: '16px', background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                    <div style={{ marginBottom: '16px', padding: '16px', background: 'var(--bg-light)', borderRadius: '10px', border: '1px solid var(--border-subtle)' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
                         <Edit3 size={16} style={{ color: '#25D366' }} />
                         <strong style={{ fontSize: '0.85rem' }}>WhatsApp Display Name</strong>
                       </div>
-                      <p style={{ fontSize: '0.78rem', color: '#94a3b8', marginBottom: '12px', lineHeight: 1.5 }}>
+                      <p style={{ fontSize: '0.78rem', color: 'var(--text-dark)', marginBottom: '12px', lineHeight: 1.5 }}>
                         This is the name shown to customers on WhatsApp. After submitting, Meta reviews the new name (usually within a few hours). You'll need to re-register your number in Meta Business Manager once the name is approved.
                       </p>
                       <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
@@ -9386,7 +9621,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                           value={waDisplayName}
                           onChange={(e) => { setWaDisplayName(e.target.value); setWaDisplayNameError(''); setWaDisplayNameSuccess(false); }}
                           placeholder="e.g. LeadCentre Trading"
-                          style={{ flex: 1, minWidth: '200px', padding: '8px 12px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '0.82rem', fontFamily: 'inherit', background: '#fff' }}
+                          style={{ flex: 1, minWidth: '200px', padding: '8px 12px', border: '1px solid var(--border-subtle)', borderRadius: '8px', fontSize: '0.82rem', fontFamily: 'inherit', background: 'var(--bg-card)' }}
                         />
                         <button
                           type="button"
@@ -9417,7 +9652,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                             }
                             setWaDisplayNameSaving(false);
                           }}
-                          style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 16px', border: 'none', borderRadius: '8px', background: waDisplayNameSaving ? '#94a3b8' : '#25D366', color: '#fff', fontSize: '0.82rem', fontWeight: 600, cursor: waDisplayNameSaving ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap' }}
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 16px', border: 'none', borderRadius: '8px', background: waDisplayNameSaving ? '#94a3b8' : '#25D366', color: 'var(--bg-card)', fontSize: '0.82rem', fontWeight: 600, cursor: waDisplayNameSaving ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap' }}
                         >
                           {waDisplayNameSaving ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
                           {waDisplayNameSaving ? 'Submitting...' : 'Update Name'}
@@ -9443,12 +9678,12 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
 
                   {/* Re-register Number — required after display name approval */}
                   {waNumbersList.length > 0 && waNumbersList[0]?.phone_number_id && waNumbersList[0]?.access_token && (
-                    <div style={{ marginBottom: '16px', padding: '16px', background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                    <div style={{ marginBottom: '16px', padding: '16px', background: 'var(--bg-light)', borderRadius: '10px', border: '1px solid var(--border-subtle)' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
                         <RefreshCw size={16} style={{ color: '#25D366' }} />
                         <strong style={{ fontSize: '0.85rem' }}>Re-register Number (After Display Name Approval)</strong>
                       </div>
-                      <p style={{ fontSize: '0.78rem', color: '#94a3b8', marginBottom: '12px', lineHeight: 1.5 }}>
+                      <p style={{ fontSize: '0.78rem', color: 'var(--text-dark)', marginBottom: '12px', lineHeight: 1.5 }}>
                         When Meta approves your display name, you must re-register your phone number for the change to take effect. Click "Send Code" to receive a verification code via SMS or voice call, then enter it to complete re-registration.
                       </p>
                       {waRegStep === 'idle' && (
@@ -9476,7 +9711,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                             } catch { setWaRegError('Failed to send code'); }
                             setWaRegLoading(false);
                           }}
-                          style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 16px', border: 'none', borderRadius: '8px', background: waRegLoading ? '#94a3b8' : '#25D366', color: '#fff', fontSize: '0.82rem', fontWeight: 600, cursor: waRegLoading ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap' }}
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 16px', border: 'none', borderRadius: '8px', background: waRegLoading ? '#94a3b8' : '#25D366', color: 'var(--bg-card)', fontSize: '0.82rem', fontWeight: 600, cursor: waRegLoading ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap' }}
                         >
                           {waRegLoading ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
                           {waRegLoading ? 'Sending...' : 'Send Code'}
@@ -9489,7 +9724,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                             value={waRegCode}
                             onChange={(e) => { setWaRegCode(e.target.value); setWaRegError(''); }}
                             placeholder="Enter 6-digit code"
-                            style={{ flex: 1, minWidth: '160px', padding: '8px 12px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '0.82rem', fontFamily: 'monospace', background: '#fff' }}
+                            style={{ flex: 1, minWidth: '160px', padding: '8px 12px', border: '1px solid var(--border-subtle)', borderRadius: '8px', fontSize: '0.82rem', fontFamily: 'monospace', background: 'var(--bg-card)' }}
                           />
                           <button
                             type="button"
@@ -9519,7 +9754,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                               } catch { setWaRegError('Failed to verify code'); }
                               setWaRegLoading(false);
                             }}
-                            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 16px', border: 'none', borderRadius: '8px', background: waRegLoading ? '#94a3b8' : '#25D366', color: '#fff', fontSize: '0.82rem', fontWeight: 600, cursor: waRegLoading ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap' }}
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 16px', border: 'none', borderRadius: '8px', background: waRegLoading ? '#94a3b8' : '#25D366', color: 'var(--bg-card)', fontSize: '0.82rem', fontWeight: 600, cursor: waRegLoading ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap' }}
                           >
                             {waRegLoading ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
                             {waRegLoading ? 'Verifying...' : 'Verify Code'}
@@ -9527,7 +9762,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                           <button
                             type="button"
                             onClick={() => { setWaRegStep('idle'); setWaRegCode(''); setWaRegError(''); }}
-                            style={{ padding: '8px 12px', border: '1px solid #e2e8f0', borderRadius: '8px', background: '#fff', color: '#64748b', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer' }}
+                            style={{ padding: '8px 12px', border: '1px solid var(--border-subtle)', borderRadius: '8px', background: 'var(--bg-card)', color: 'var(--text-dark)', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer' }}
                           >
                             Cancel
                           </button>
@@ -9547,20 +9782,20 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                   )}
 
                   {/* Profile Picture — for primary number */}
-                  <div style={{ marginTop: '16px', padding: '16px', background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                  <div style={{ marginTop: '16px', padding: '16px', background: 'var(--bg-light)', borderRadius: '10px', border: '1px solid var(--border-subtle)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
                       <Camera size={16} style={{ color: '#25D366' }} />
                       <strong style={{ fontSize: '0.85rem' }}>WhatsApp Profile Picture (Primary Number)</strong>
                     </div>
-                    <p style={{ fontSize: '0.78rem', color: '#94a3b8', marginBottom: '14px', lineHeight: 1.5 }}>
+                    <p style={{ fontSize: '0.78rem', color: 'var(--text-dark)', marginBottom: '14px', lineHeight: 1.5 }}>
                       Upload a profile picture for your primary WhatsApp Business number. The image will be visible to customers who view your profile. Recommended size: 640x640 pixels.
                     </p>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
-                      <div style={{ position: 'relative', width: '80px', height: '80px', borderRadius: '50%', overflow: 'hidden', border: '2px solid #e2e8f0', background: '#fff', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <div style={{ position: 'relative', width: '80px', height: '80px', borderRadius: '50%', overflow: 'hidden', border: '2px solid var(--border-subtle)', background: 'var(--bg-card)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         {waProfilePicUrl ? (
                           <img src={waProfilePicUrl} alt="WhatsApp profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         ) : (
-                          <PhoneIcon size={28} style={{ color: '#cbd5e1' }} />
+                          <PhoneIcon size={28} style={{ color: 'var(--text-dark)' }} />
                         )}
                       </div>
                       <div style={{ flex: 1, minWidth: '200px' }}>
@@ -9616,7 +9851,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                           type="button"
                           onClick={() => waProfilePicInputRef.current?.click()}
                           disabled={waProfilePicUploading || waNumbersList.length === 0}
-                          style={{ padding: '8px 16px', border: 'none', borderRadius: '8px', background: waProfilePicUploading ? '#94a3b8' : '#25D366', color: '#fff', fontSize: '0.82rem', fontWeight: 600, cursor: waProfilePicUploading ? 'not-allowed' : 'pointer', display: 'inline-flex', alignItems: 'center', gap: '8px' }}
+                          style={{ padding: '8px 16px', border: 'none', borderRadius: '8px', background: waProfilePicUploading ? '#94a3b8' : '#25D366', color: 'var(--bg-card)', fontSize: '0.82rem', fontWeight: 600, cursor: waProfilePicUploading ? 'not-allowed' : 'pointer', display: 'inline-flex', alignItems: 'center', gap: '8px' }}
                         >
                           {waProfilePicUploading ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
                           {waProfilePicUploading ? 'Uploading...' : 'Upload Picture'}
@@ -9636,12 +9871,12 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                   </div>
 
                   {/* Webhook Setup */}
-                  <div style={{ marginTop: '16px', padding: '16px', background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                  <div style={{ marginTop: '16px', padding: '16px', background: 'var(--bg-light)', borderRadius: '10px', border: '1px solid var(--border-subtle)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
                       <Link2 size={16} style={{ color: '#25D366' }} />
                       <strong style={{ fontSize: '0.85rem' }}>Webhook Setup</strong>
                     </div>
-                    <p style={{ fontSize: '0.78rem', color: '#94a3b8', marginBottom: '12px', lineHeight: 1.5 }}>
+                    <p style={{ fontSize: '0.78rem', color: 'var(--text-dark)', marginBottom: '12px', lineHeight: 1.5 }}>
                       After saving, go to Meta Business Manager &gt; WhatsApp &gt; Configuration and add this Callback URL with the Verify Token above.
                     </p>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
@@ -9649,7 +9884,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                         type="text"
                         readOnly
                         value={`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/whatsapp-webhook`}
-                        style={{ flex: 1, padding: '8px 12px', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '0.78rem', fontFamily: 'monospace', background: '#fff', color: '#475569' }}
+                        style={{ flex: 1, padding: '8px 12px', border: '1px solid var(--border-subtle)', borderRadius: '6px', fontSize: '0.78rem', fontFamily: 'monospace', background: 'var(--bg-card)', color: 'var(--text-muted)' }}
                       />
                       <button
                         type="button"
@@ -9658,7 +9893,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                           setWaWebhookCopied(true);
                           setTimeout(() => setWaWebhookCopied(false), 2000);
                         }}
-                        style={{ padding: '8px 14px', border: 'none', borderRadius: '6px', background: '#25D366', color: '#fff', fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}
+                        style={{ padding: '8px 14px', border: 'none', borderRadius: '6px', background: '#25D366', color: 'var(--bg-card)', fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}
                       >
                         {waWebhookCopied ? <CheckCircle2 size={14} /> : <Copy size={14} />}
                         {waWebhookCopied ? 'Copied' : 'Copy'}
@@ -9670,20 +9905,20 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                   </div>
 
                   {/* Setup documentation */}
-                  <details style={{ marginTop: '20px', border: '1px solid #e2e8f0', borderRadius: '10px', background: '#f8fafc', overflow: 'hidden' }}>
-                    <summary style={{ padding: '14px 16px', cursor: 'pointer', fontWeight: 700, fontSize: '0.85rem', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '8px', listStyle: 'none', userSelect: 'none' }}>
+                  <details style={{ marginTop: '20px', border: '1px solid var(--border-subtle)', borderRadius: '10px', background: 'var(--bg-light)', overflow: 'hidden' }}>
+                    <summary style={{ padding: '14px 16px', cursor: 'pointer', fontWeight: 700, fontSize: '0.85rem', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px', listStyle: 'none', userSelect: 'none' }}>
                       <BookOpen size={18} style={{ color: '#25D366' }} />
                       Complete Setup Guide: How to configure the WhatsApp Business API
-                      <ChevronDown size={16} style={{ marginLeft: 'auto', color: '#94a3b8', transition: 'transform 0.2s' }} />
+                      <ChevronDown size={16} style={{ marginLeft: 'auto', color: 'var(--text-dark)', transition: 'transform 0.2s' }} />
                     </summary>
-                    <div style={{ padding: '0 16px 16px', fontSize: '0.82rem', color: '#475569', lineHeight: 1.7 }}>
+                    <div style={{ padding: '0 16px 16px', fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: 1.7 }}>
 
-                      <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', margin: '16px 0 8px' }}>What is the WhatsApp Business API?</h4>
+                      <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-main)', margin: '16px 0 8px' }}>What is the WhatsApp Business API?</h4>
                       <p style={{ margin: '0 0 12px' }}>
                         The WhatsApp Business API lets your CRM send and receive WhatsApp messages programmatically. Customers can message your business WhatsApp number, and their conversations appear in the WhatsApp Inbox tab — you can reply directly from the CRM just like a chat app.
                       </p>
 
-                      <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', margin: '16px 0 8px' }}>Prerequisites</h4>
+                      <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-main)', margin: '16px 0 8px' }}>Prerequisites</h4>
                       <ul style={{ margin: '0 0 12px', paddingLeft: '20px' }}>
                         <li>A <strong>Meta Business Manager</strong> account (free at <span style={{ fontFamily: 'monospace' }}>business.facebook.com</span>).</li>
                         <li>A verified Meta Business account (complete the verification process in Business Manager settings).</li>
@@ -9691,7 +9926,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                         <li>Admin or Developer access to the Business Manager.</li>
                       </ul>
 
-                      <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', margin: '16px 0 8px' }}>Step 1 — Create a Meta App with WhatsApp</h4>
+                      <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-main)', margin: '16px 0 8px' }}>Step 1 — Create a Meta App with WhatsApp</h4>
                       <ol style={{ margin: '0 0 12px', paddingLeft: '20px' }}>
                         <li>Go to <strong>Meta Business Manager</strong> &rarr; <strong>Apps</strong> &rarr; <strong>Create App</strong>.</li>
                         <li>Choose <strong>Business</strong> as the app type and give it a name (e.g., "LeadCentre WhatsApp").</li>
@@ -9699,7 +9934,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                         <li>You'll see a test phone number, Phone Number ID, and a temporary access token — note these down.</li>
                       </ol>
 
-                      <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', margin: '16px 0 8px' }}>Step 2 — Add a permanent phone number</h4>
+                      <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-main)', margin: '16px 0 8px' }}>Step 2 — Add a permanent phone number</h4>
                       <ol style={{ margin: '0 0 12px', paddingLeft: '20px' }}>
                         <li>In Meta Business Manager, go to <strong>WhatsApp Manager</strong> &rarr; <strong>Phone Numbers</strong>.</li>
                         <li>Click <strong>Add Phone Number</strong> and follow the setup wizard.</li>
@@ -9709,7 +9944,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                         <li>Paste it into the <strong>Phone Number ID</strong> field above.</li>
                       </ol>
 
-                      <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', margin: '16px 0 8px' }}>Step 3 — Generate a permanent Access Token</h4>
+                      <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-main)', margin: '16px 0 8px' }}>Step 3 — Generate a permanent Access Token</h4>
                       <ol style={{ margin: '0 0 12px', paddingLeft: '20px' }}>
                         <li>In Meta Business Manager, go to <strong>Business Settings</strong> &rarr; <strong>Users</strong> &rarr; <strong>System Users</strong>.</li>
                         <li>Click <strong>Add</strong> to create a System User (name it e.g., "CRM Integration").</li>
@@ -9721,12 +9956,12 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                         <li>Paste it into the <strong>Access Token</strong> field above.</li>
                       </ol>
 
-                      <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', margin: '16px 0 8px' }}>Step 4 — Find your WhatsApp Business Account ID</h4>
+                      <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-main)', margin: '16px 0 8px' }}>Step 4 — Find your WhatsApp Business Account ID</h4>
                       <p style={{ margin: '0 0 12px' }}>
                         The WhatsApp Business Account ID (WABA ID) is optional but recommended. Find it in Meta Business Manager under <strong>WhatsApp Manager</strong> &rarr; <strong>Account Details</strong>. It's a numeric ID that identifies your WhatsApp Business account. Paste it into the <strong>WhatsApp Business Account ID</strong> field above.
                       </p>
 
-                      <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', margin: '16px 0 8px' }}>Step 5 — Set up the Webhook</h4>
+                      <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-main)', margin: '16px 0 8px' }}>Step 5 — Set up the Webhook</h4>
                       <p style={{ margin: '0 0 8px' }}>
                         The webhook is what lets Meta forward incoming WhatsApp messages to your CRM. Follow these steps:
                       </p>
@@ -9741,7 +9976,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                         <li>After verification, click <strong>Subscribe</strong> for the <strong>messages</strong> webhook field. This tells Meta to send incoming messages to your webhook.</li>
                       </ol>
 
-                      <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', margin: '16px 0 8px' }}>Step 6 — Add a test number (for development)</h4>
+                      <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-main)', margin: '16px 0 8px' }}>Step 6 — Add a test number (for development)</h4>
                       <p style={{ margin: '0 0 12px' }}>
                         Before your number is approved for production, you can only message <strong>test phone numbers</strong>. To add your own number as a test recipient:
                       </p>
@@ -9752,7 +9987,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                         <li>Once your business number is verified and approved, you can message any number without adding them as a test recipient.</li>
                       </ol>
 
-                      <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', margin: '16px 0 8px' }}>Step 7 — Verify everything works</h4>
+                      <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-main)', margin: '16px 0 8px' }}>Step 7 — Verify everything works</h4>
                       <ol style={{ margin: '0 0 12px', paddingLeft: '20px' }}>
                         <li>Make sure all fields above are filled and settings are saved.</li>
                         <li>Send a message (e.g., "hi") to your WhatsApp Business number from a test phone.</li>
@@ -9760,7 +9995,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                         <li>Type a reply in the CRM and send it — the message should arrive on the customer's WhatsApp.</li>
                       </ol>
 
-                      <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', margin: '16px 0 8px' }}>Troubleshooting</h4>
+                      <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-main)', margin: '16px 0 8px' }}>Troubleshooting</h4>
                       <ul style={{ margin: '0 0 12px', paddingLeft: '20px' }}>
                         <li><strong>Messages not arriving in CRM:</strong> Double-check the webhook is subscribed to the "messages" field in Meta. Verify the Callback URL and Verify Token match exactly.</li>
                         <li><strong>"Invalid token" error when sending replies:</strong> The access token may have expired. Regenerate it in System Users and update it here.</li>
@@ -9770,26 +10005,26 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                         <li><strong>Template message errors:</strong> Free-form messages can only be sent within 24 hours of the customer's last message. Outside that window, you need an approved message template.</li>
                       </ul>
 
-                      <div style={{ marginTop: '12px', padding: '10px 14px', background: 'rgba(37,211,102,0.08)', borderRadius: '8px', border: '1px solid rgba(37,211,102,0.25)', fontSize: '0.78rem', color: '#475569' }}>
+                      <div style={{ marginTop: '12px', padding: '10px 14px', background: 'rgba(37,211,102,0.08)', borderRadius: '8px', border: '1px solid rgba(37,211,102,0.25)', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
                         <strong>Tip:</strong> Keep your Access Token secure. Anyone with the token can send messages from your WhatsApp Business number. If you suspect it was leaked, regenerate it in Meta and update it here immediately.
                       </div>
 
-                      <p style={{ marginTop: '12px', fontSize: '0.76rem', color: '#94a3b8' }}>
+                      <p style={{ marginTop: '12px', fontSize: '0.76rem', color: 'var(--text-dark)' }}>
                         Official Meta documentation: <span style={{ fontFamily: 'monospace' }}>developers.facebook.com/docs/whatsapp</span>
                       </p>
                     </div>
                   </details>
 
                   {/* Calling Setup Documentation */}
-                  <details style={{ marginTop: '20px', border: '1px solid #e2e8f0', borderRadius: '10px', background: '#f8fafc', overflow: 'hidden' }}>
-                    <summary style={{ padding: '14px 16px', cursor: 'pointer', fontWeight: 700, fontSize: '0.85rem', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '8px', listStyle: 'none', userSelect: 'none' }}>
+                  <details style={{ marginTop: '20px', border: '1px solid var(--border-subtle)', borderRadius: '10px', background: 'var(--bg-light)', overflow: 'hidden' }}>
+                    <summary style={{ padding: '14px 16px', cursor: 'pointer', fontWeight: 700, fontSize: '0.85rem', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px', listStyle: 'none', userSelect: 'none' }}>
                       <PhoneCall size={18} style={{ color: '#25D366' }} />
                       Complete Setup Guide: How to enable WhatsApp Calling (Voice Calls)
-                      <ChevronDown size={16} style={{ marginLeft: 'auto', color: '#94a3b8', transition: 'transform 0.2s' }} />
+                      <ChevronDown size={16} style={{ marginLeft: 'auto', color: 'var(--text-dark)', transition: 'transform 0.2s' }} />
                     </summary>
-                    <div style={{ padding: '0 16px 16px', fontSize: '0.82rem', color: '#475569', lineHeight: 1.7 }}>
+                    <div style={{ padding: '0 16px 16px', fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: 1.7 }}>
 
-                      <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', margin: '16px 0 8px' }}>What is WhatsApp Calling?</h4>
+                      <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-main)', margin: '16px 0 8px' }}>What is WhatsApp Calling?</h4>
                       <p style={{ margin: '0 0 12px' }}>
                         WhatsApp Calling lets you place voice calls to your contacts through WhatsApp — directly from the CRM. The call uses WebRTC in your browser, so you talk through your computer's microphone and speakers. The contact receives the call on their WhatsApp app just like a normal WhatsApp voice call. You can also receive incoming calls.
                       </p>
@@ -9801,7 +10036,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                         </div>
                       </div>
 
-                      <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', margin: '16px 0 8px' }}>Prerequisites</h4>
+                      <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-main)', margin: '16px 0 8px' }}>Prerequisites</h4>
                       <ul style={{ margin: '0 0 12px', paddingLeft: '20px' }}>
                         <li>WhatsApp messaging must already be configured (complete the guide above first).</li>
                         <li>A <strong>credit card or bank account</strong> added to your Meta Business Manager billing.</li>
@@ -9810,12 +10045,12 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                         <li>A browser with microphone access (Chrome, Edge, or Firefox recommended).</li>
                       </ul>
 
-                      <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', margin: '16px 0 8px' }}>Step 1 — Verify messaging is working</h4>
+                      <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-main)', margin: '16px 0 8px' }}>Step 1 — Verify messaging is working</h4>
                       <p style={{ margin: '0 0 12px' }}>
                         Before enabling calling, make sure WhatsApp messaging is already working: you can send and receive messages in the WhatsApp Inbox tab. Calling uses the same Phone Number ID and Access Token. If messaging isn't working yet, complete the messaging setup guide above first.
                       </p>
 
-                      <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', margin: '16px 0 8px' }}>Step 2 — Enable calling on your phone number</h4>
+                      <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-main)', margin: '16px 0 8px' }}>Step 2 — Enable calling on your phone number</h4>
                       <p style={{ margin: '0 0 8px' }}>
                         Calling is <strong>not</strong> enabled by default. You must turn it on through the API or through this CRM.
                       </p>
@@ -9830,7 +10065,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                       <p style={{ margin: '0 0 12px' }}>
                         Run this curl command, replacing <span style={{ fontFamily: 'monospace' }}>PHONE_NUMBER_ID</span> and <span style={{ fontFamily: 'monospace' }}>ACCESS_TOKEN</span> with your values:
                       </p>
-                      <pre style={{ background: '#1e293b', color: '#e2e8f0', padding: '12px', borderRadius: '8px', fontSize: '0.74rem', overflowX: 'auto', margin: '0 0 12px', lineHeight: 1.5 }}>
+                      <pre style={{ background: 'var(--text-main)', color: 'var(--border-subtle)', padding: '12px', borderRadius: '8px', fontSize: '0.74rem', overflowX: 'auto', margin: '0 0 12px', lineHeight: 1.5 }}>
 {`curl -X POST \\
   "https://graph.facebook.com/v21.0/PHONE_NUMBER_ID/settings" \\
   -H "Authorization: Bearer ACCESS_TOKEN" \\
@@ -9848,7 +10083,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                         To verify calling is enabled, send a GET request to the same URL (without the -d flag) and check that <span style={{ fontFamily: 'monospace' }}>calling.status</span> is <span style={{ fontFamily: 'monospace' }}>"ENABLED"</span>.
                       </p>
 
-                      <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', margin: '16px 0 8px' }}>Step 3 — Subscribe the webhook to "calls" events</h4>
+                      <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-main)', margin: '16px 0 8px' }}>Step 3 — Subscribe the webhook to "calls" events</h4>
                       <p style={{ margin: '0 0 8px' }}>
                         Your webhook is already configured for messaging. You also need to subscribe it to call events so Meta can send ringing, accepted, rejected, and ended notifications back to your CRM.
                       </p>
@@ -9863,7 +10098,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                         <strong>Note:</strong> Your CRM uses two webhook endpoints. The messaging webhook is <span style={{ fontFamily: 'monospace' }}>/functions/v1/whatsapp-webhook</span> and the calling webhook is <span style={{ fontFamily: 'monospace' }}>/functions/v1/whatsapp-call-signaling</span>. Both are already deployed — you just need to subscribe to the right fields in Meta.
                       </div>
 
-                      <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', margin: '16px 0 8px' }}>Step 4 — Add a payment method (Required)</h4>
+                      <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-main)', margin: '16px 0 8px' }}>Step 4 — Add a payment method (Required)</h4>
                       <p style={{ margin: '0 0 8px' }}>
                         This is the most commonly missed step. Meta requires a valid payment method on your WhatsApp Business Account before calls work. Without it, you'll get:
                       </p>
@@ -9882,7 +10117,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                         <strong>Tip:</strong> If you still get the payment error after adding a card, wait 24 hours and try again. Meta's billing system needs time to activate.
                       </div>
 
-                      <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', margin: '16px 0 8px' }}>Step 5 — Configure the calling webhook URL</h4>
+                      <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-main)', margin: '16px 0 8px' }}>Step 5 — Configure the calling webhook URL</h4>
                       <p style={{ margin: '0 0 8px' }}>
                         The calling webhook is a separate endpoint from the messaging webhook. You need to register it in Meta:
                       </p>
@@ -9895,7 +10130,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                         <li>Subscribe to the <strong>calls</strong> field (and keep <strong>messages</strong> subscribed for permission replies).</li>
                       </ol>
 
-                      <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', margin: '16px 0 8px' }}>Step 6 — Understand the call permission flow</h4>
+                      <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-main)', margin: '16px 0 8px' }}>Step 6 — Understand the call permission flow</h4>
                       <p style={{ margin: '0 0 8px' }}>
                         WhatsApp requires contacts to <strong>explicitly grant permission</strong> before a business can call them. This is a Meta privacy requirement. Here's how it works:
                       </p>
@@ -9915,7 +10150,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                         Permission can be <strong>permanent</strong> (contact grants it once, you can call anytime) or <strong>temporary</strong> (expires after a set time). Contacts can revoke permission at any time through WhatsApp settings.
                       </p>
 
-                      <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', margin: '16px 0 8px' }}>Step 7 — Make your first call</h4>
+                      <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-main)', margin: '16px 0 8px' }}>Step 7 — Make your first call</h4>
                       <ol style={{ margin: '0 0 12px', paddingLeft: '20px' }}>
                         <li>Open the <strong>WhatsApp Inbox</strong> tab in your CRM.</li>
                         <li>Select a conversation with a contact.</li>
@@ -9926,17 +10161,17 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                         <li>To end the call, click the <strong>End Call</strong> button.</li>
                       </ol>
 
-                      <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', margin: '16px 0 8px' }}>Step 8 — Receiving incoming calls</h4>
+                      <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-main)', margin: '16px 0 8px' }}>Step 8 — Receiving incoming calls</h4>
                       <p style={{ margin: '0 0 12px' }}>
                         When a contact calls your WhatsApp Business number, Meta sends a webhook event to your CRM. You'll see an incoming call notification in the WhatsApp inbox. Click <strong>Accept</strong> to answer (your browser will request microphone access) or <strong>Reject</strong> to decline.
                       </p>
 
-                      <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', margin: '16px 0 8px' }}>Step 9 — Recording and transcription (Optional)</h4>
+                      <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-main)', margin: '16px 0 8px' }}>Step 9 — Recording and transcription (Optional)</h4>
                       <p style={{ margin: '0 0 12px' }}>
                         When initiating a call, the CRM can optionally enable recording and transcription. Meta plays an automated announcement to both parties indicating the call is being recorded. After the call ends, Meta sends a webhook with the recording and/or transcript. These are stored in your database and can be downloaded from the call logs.
                       </p>
 
-                      <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', margin: '16px 0 8px' }}>Troubleshooting — Calling</h4>
+                      <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-main)', margin: '16px 0 8px' }}>Troubleshooting — Calling</h4>
                       <ul style={{ margin: '0 0 12px', paddingLeft: '20px' }}>
                         <li><strong>"Business eligibility payment issue for calling" (error 131044):</strong> No payment method on your WABA. Add one in Meta Business Manager &rarr; Billing. Wait 24 hours.</li>
                         <li><strong>"Call failed" immediately:</strong> Check that calling is enabled on your phone number (Step 2), your access token is valid, and the phone number has no special characters.</li>
@@ -9947,11 +10182,11 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                         <li><strong>Call rings but contact can't answer:</strong> The contact may not have WhatsApp calling enabled on their device, or their WhatsApp version is outdated.</li>
                       </ul>
 
-                      <div style={{ marginTop: '12px', padding: '10px 14px', background: 'rgba(37,211,102,0.08)', borderRadius: '8px', border: '1px solid rgba(37,211,102,0.25)', fontSize: '0.78rem', color: '#475569' }}>
+                      <div style={{ marginTop: '12px', padding: '10px 14px', background: 'rgba(37,211,102,0.08)', borderRadius: '8px', border: '1px solid rgba(37,211,102,0.25)', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
                         <strong>Tip:</strong> A full standalone copy of this guide is also saved as <span style={{ fontFamily: 'monospace' }}>docs/whatsapp-calling-setup.md</span> in your project files for reference.
                       </div>
 
-                      <p style={{ marginTop: '12px', fontSize: '0.76rem', color: '#94a3b8' }}>
+                      <p style={{ marginTop: '12px', fontSize: '0.76rem', color: 'var(--text-dark)' }}>
                         Official Meta calling documentation: <span style={{ fontFamily: 'monospace' }}>developers.facebook.com/docs/whatsapp/whatsapp-calling</span>
                       </p>
                     </div>
@@ -9967,7 +10202,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
 
                   <div style={{ background: 'rgba(8,145,178,0.06)', border: '1px solid rgba(8,145,178,0.2)', borderRadius: '10px', padding: '14px 16px', marginBottom: '16px', display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
                     <BellRing size={18} style={{ color: '#0891B2', flexShrink: 0, marginTop: '2px' }} />
-                    <div style={{ fontSize: '0.8rem', color: '#475569', lineHeight: 1.5 }}>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
                       <strong>How it works:</strong> Open any lead, click "Set Follow-up Reminder", pick a date and time. You'll get an email at that exact time with the lead's name and your notes.
                     </div>
                   </div>
@@ -9994,8 +10229,8 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                               type="button"
                               onClick={() => setReminderEmails(reminderEmails.filter((_, i) => i !== idx))}
                               style={{
-                                flexShrink: 0, width: '36px', height: '36px', border: '1px solid #e2e8f0',
-                                borderRadius: '8px', background: '#f8fafc', cursor: 'pointer',
+                                flexShrink: 0, width: '36px', height: '36px', border: '1px solid var(--border-subtle)',
+                                borderRadius: '8px', background: 'var(--bg-light)', cursor: 'pointer',
                                 display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ef4444',
                               }}
                               title="Remove"
@@ -10018,7 +10253,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                         <Plus size={15} /> Add another email
                       </button>
                     </div>
-                    <small style={{ color: '#94a3b8', fontSize: '0.74rem', marginTop: '4px', display: 'block' }}>
+                    <small style={{ color: 'var(--text-dark)', fontSize: '0.74rem', marginTop: '4px', display: 'block' }}>
                       Follow-up reminder emails will be sent to all addresses listed above.
                     </small>
                   </div>
@@ -10028,98 +10263,98 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                     <span style={{ fontSize: '0.88rem', fontWeight: 500 }}>Enable follow-up email reminders</span>
                   </label>
 
-                  <div style={{ marginTop: '20px', padding: '16px', background: enableChatNotifications ? 'rgba(8,145,178,0.06)' : '#f8fafc', borderRadius: '10px', border: `1px solid ${enableChatNotifications ? 'rgba(8,145,178,0.2)' : '#e2e8f0'}`, transition: 'all 0.2s' }}>
+                  <div style={{ marginTop: '20px', padding: '16px', background: enableChatNotifications ? 'rgba(8,145,178,0.06)' : 'var(--bg-light)', borderRadius: '10px', border: `1px solid ${enableChatNotifications ? 'rgba(8,145,178,0.2)' : 'var(--border-subtle)'}`, transition: 'all 0.2s' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                       <button
                         type="button"
                         onClick={() => setEnableChatNotifications(!enableChatNotifications)}
                         style={{
                           width: '44px', height: '24px', borderRadius: '12px', border: 'none',
-                          background: enableChatNotifications ? '#0891B2' : '#cbd5e1',
+                          background: enableChatNotifications ? '#0891B2' : 'var(--text-dark)',
                           position: 'relative', cursor: 'pointer', flexShrink: 0, transition: 'background 0.2s',
                         }}
                       >
                         <span style={{
                           position: 'absolute', top: '2px', left: enableChatNotifications ? '22px' : '2px',
-                          width: '20px', height: '20px', borderRadius: '50%', background: '#fff',
+                          width: '20px', height: '20px', borderRadius: '50%', background: 'var(--bg-card)',
                           boxShadow: '0 1px 3px rgba(0,0,0,0.2)', transition: 'left 0.2s',
                         }} />
                       </button>
                       <div>
-                        <span style={{ fontSize: '0.9rem', fontWeight: 600, color: '#0f172a' }}>Chat message email notifications</span>
-                        <span style={{ fontSize: '0.78rem', color: '#94a3b8', display: 'block' }}>Get an email when a team member sends a message in team chat</span>
+                        <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-main)' }}>Chat message email notifications</span>
+                        <span style={{ fontSize: '0.78rem', color: 'var(--text-dark)', display: 'block' }}>Get an email when a team member sends a message in team chat</span>
                       </div>
                     </div>
                   </div>
 
-                  <div style={{ marginTop: '12px', padding: '16px', background: enableWhatsAppNotifications ? 'rgba(37,211,102,0.06)' : '#f8fafc', borderRadius: '10px', border: `1px solid ${enableWhatsAppNotifications ? 'rgba(37,211,102,0.2)' : '#e2e8f0'}`, transition: 'all 0.2s' }}>
+                  <div style={{ marginTop: '12px', padding: '16px', background: enableWhatsAppNotifications ? 'rgba(37,211,102,0.06)' : 'var(--bg-light)', borderRadius: '10px', border: `1px solid ${enableWhatsAppNotifications ? 'rgba(37,211,102,0.2)' : 'var(--border-subtle)'}`, transition: 'all 0.2s' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                       <button
                         type="button"
                         onClick={() => setEnableWhatsAppNotifications(!enableWhatsAppNotifications)}
                         style={{
                           width: '44px', height: '24px', borderRadius: '12px', border: 'none',
-                          background: enableWhatsAppNotifications ? '#25D366' : '#cbd5e1',
+                          background: enableWhatsAppNotifications ? '#25D366' : 'var(--text-dark)',
                           position: 'relative', cursor: 'pointer', flexShrink: 0, transition: 'background 0.2s',
                         }}
                       >
                         <span style={{
                           position: 'absolute', top: '2px', left: enableWhatsAppNotifications ? '22px' : '2px',
-                          width: '20px', height: '20px', borderRadius: '50%', background: '#fff',
+                          width: '20px', height: '20px', borderRadius: '50%', background: 'var(--bg-card)',
                           boxShadow: '0 1px 3px rgba(0,0,0,0.2)', transition: 'left 0.2s',
                         }} />
                       </button>
                       <div>
-                        <span style={{ fontSize: '0.9rem', fontWeight: 600, color: '#0f172a' }}>WhatsApp inbox email notifications</span>
-                        <span style={{ fontSize: '0.78rem', color: '#94a3b8', display: 'block' }}>Get an email when a client sends a message on WhatsApp</span>
+                        <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-main)' }}>WhatsApp inbox email notifications</span>
+                        <span style={{ fontSize: '0.78rem', color: 'var(--text-dark)', display: 'block' }}>Get an email when a client sends a message on WhatsApp</span>
                       </div>
                     </div>
                   </div>
 
-                  <div style={{ marginTop: '12px', padding: '16px', background: enableTelegramNotifications ? 'rgba(0,136,204,0.06)' : '#f8fafc', borderRadius: '10px', border: `1px solid ${enableTelegramNotifications ? 'rgba(0,136,204,0.2)' : '#e2e8f0'}`, transition: 'all 0.2s' }}>
+                  <div style={{ marginTop: '12px', padding: '16px', background: enableTelegramNotifications ? 'rgba(0,136,204,0.06)' : 'var(--bg-light)', borderRadius: '10px', border: `1px solid ${enableTelegramNotifications ? 'rgba(0,136,204,0.2)' : 'var(--border-subtle)'}`, transition: 'all 0.2s' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                       <button
                         type="button"
                         onClick={() => setEnableTelegramNotifications(!enableTelegramNotifications)}
                         style={{
                           width: '44px', height: '24px', borderRadius: '12px', border: 'none',
-                          background: enableTelegramNotifications ? '#0088cc' : '#cbd5e1',
+                          background: enableTelegramNotifications ? '#0088cc' : 'var(--text-dark)',
                           position: 'relative', cursor: 'pointer', flexShrink: 0, transition: 'background 0.2s',
                         }}
                       >
                         <span style={{
                           position: 'absolute', top: '2px', left: enableTelegramNotifications ? '22px' : '2px',
-                          width: '20px', height: '20px', borderRadius: '50%', background: '#fff',
+                          width: '20px', height: '20px', borderRadius: '50%', background: 'var(--bg-card)',
                           boxShadow: '0 1px 3px rgba(0,0,0,0.2)', transition: 'left 0.2s',
                         }} />
                       </button>
                       <div>
-                        <span style={{ fontSize: '0.9rem', fontWeight: 600, color: '#0f172a' }}>Telegram inbox email notifications</span>
-                        <span style={{ fontSize: '0.78rem', color: '#94a3b8', display: 'block' }}>Get an email when a client sends a message on Telegram</span>
+                        <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-main)' }}>Telegram inbox email notifications</span>
+                        <span style={{ fontSize: '0.78rem', color: 'var(--text-dark)', display: 'block' }}>Get an email when a client sends a message on Telegram</span>
                       </div>
                     </div>
                   </div>
 
-                  <div style={{ marginTop: '20px', padding: '16px', background: enableAutoWelcomeEmail ? 'rgba(8,145,178,0.06)' : '#f8fafc', borderRadius: '10px', border: `1px solid ${enableAutoWelcomeEmail ? 'rgba(8,145,178,0.2)' : '#e2e8f0'}`, transition: 'all 0.2s' }}>
+                  <div style={{ marginTop: '20px', padding: '16px', background: enableAutoWelcomeEmail ? 'rgba(8,145,178,0.06)' : 'var(--bg-light)', borderRadius: '10px', border: `1px solid ${enableAutoWelcomeEmail ? 'rgba(8,145,178,0.2)' : 'var(--border-subtle)'}`, transition: 'all 0.2s' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: enableAutoWelcomeEmail ? '14px' : '0' }}>
                       <button
                         type="button"
                         onClick={() => setEnableAutoWelcomeEmail(!enableAutoWelcomeEmail)}
                         style={{
                           width: '44px', height: '24px', borderRadius: '12px', border: 'none',
-                          background: enableAutoWelcomeEmail ? '#0891B2' : '#cbd5e1',
+                          background: enableAutoWelcomeEmail ? '#0891B2' : 'var(--text-dark)',
                           position: 'relative', cursor: 'pointer', flexShrink: 0, transition: 'background 0.2s',
                         }}
                       >
                         <span style={{
                           position: 'absolute', top: '2px', left: enableAutoWelcomeEmail ? '22px' : '2px',
-                          width: '20px', height: '20px', borderRadius: '50%', background: '#fff',
+                          width: '20px', height: '20px', borderRadius: '50%', background: 'var(--bg-card)',
                           boxShadow: '0 1px 3px rgba(0,0,0,0.2)', transition: 'left 0.2s',
                         }} />
                       </button>
                       <div>
-                        <span style={{ fontSize: '0.9rem', fontWeight: 600, color: '#0f172a' }}>Auto welcome email on new lead</span>
-                        <span style={{ fontSize: '0.78rem', color: '#94a3b8', display: 'block' }}>Automatically send a welcome email when someone fills out your lead form</span>
+                        <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-main)' }}>Auto welcome email on new lead</span>
+                        <span style={{ fontSize: '0.78rem', color: 'var(--text-dark)', display: 'block' }}>Automatically send a welcome email when someone fills out your lead form</span>
                       </div>
                     </div>
                     {enableAutoWelcomeEmail && (
@@ -10127,39 +10362,39 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                         <label className="crm-add-lead-field" style={{ marginTop: '12px' }}>
                           <span>Email subject (optional)</span>
                           <input type="text" value={autoWelcomeEmailSubject} onChange={(e) => setAutoWelcomeEmailSubject(e.target.value)} placeholder="Welcome to {product}, {name}!" style={{ width: '100%' }} />
-                          <small style={{ color: '#94a3b8', fontSize: '0.74rem', marginTop: '4px', display: 'block' }}>Use {'{name}'}, {'{email}'}, {'{product}'}, {'{fund_amount}'}, {'{telegram_link}'}, {'{whatsapp_group_link}'}, {'{personal_phone_number}'} as placeholders.</small>
+                          <small style={{ color: 'var(--text-dark)', fontSize: '0.74rem', marginTop: '4px', display: 'block' }}>Use {'{name}'}, {'{email}'}, {'{product}'}, {'{fund_amount}'}, {'{telegram_link}'}, {'{whatsapp_group_link}'}, {'{personal_phone_number}'} as placeholders.</small>
                         </label>
                         <label className="crm-add-lead-field" style={{ marginTop: '10px' }}>
                           <span>Email body (optional)</span>
                           <textarea value={autoWelcomeEmailBody} onChange={(e) => setAutoWelcomeEmailBody(e.target.value)} rows={5} placeholder="Hi {name}, thank you for your interest in our {product}! We will get in touch with you shortly." style={{ width: '100%', fontFamily: 'inherit', resize: 'vertical' }} />
-                          <small style={{ color: '#94a3b8', fontSize: '0.74rem', marginTop: '4px', display: 'block' }}>Leave blank to use a default welcome message.</small>
+                          <small style={{ color: 'var(--text-dark)', fontSize: '0.74rem', marginTop: '4px', display: 'block' }}>Leave blank to use a default welcome message.</small>
                         </label>
 
-                        <div style={{ marginTop: '16px', padding: '12px', background: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                          <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#0f172a', marginBottom: '10px' }}>Welcome Email Enhancements</div>
+                        <div style={{ marginTop: '16px', padding: '12px', background: 'var(--bg-card)', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
+                          <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '10px' }}>Welcome Email Enhancements</div>
 
                           <label className="crm-add-lead-field" style={{ marginTop: '8px' }}>
                             <span>Urgency: Reply within (hours)</span>
                             <input type="number" min="1" max="168" value={welcomeUrgencyHours} onChange={(e) => setWelcomeUrgencyHours(Number(e.target.value) || 24)} placeholder="24" style={{ width: '100%' }} />
-                            <small style={{ color: '#94a3b8', fontSize: '0.74rem', marginTop: '4px', display: 'block' }}>Adds a line urging the lead to reply within this time. Set to 0 to disable.</small>
+                            <small style={{ color: 'var(--text-dark)', fontSize: '0.74rem', marginTop: '4px', display: 'block' }}>Adds a line urging the lead to reply within this time. Set to 0 to disable.</small>
                           </label>
 
                           <label className="crm-add-lead-field" style={{ marginTop: '8px' }}>
                             <span>Next steps checklist (optional)</span>
                             <textarea value={welcomeNextSteps} onChange={(e) => setWelcomeNextSteps(e.target.value)} rows={4} placeholder="1. Join our Telegram group&#10;2. Reply with your MT5 account number&#10;3. Wait for our team to approve access" style={{ width: '100%', fontFamily: 'inherit', resize: 'vertical' }} />
-                            <small style={{ color: '#94a3b8', fontSize: '0.74rem', marginTop: '4px', display: 'block' }}>Shown as a numbered action plan. Use {'{telegram_link}'}, {'{whatsapp_group_link}'}, {'{personal_phone_number}'} as placeholders.</small>
+                            <small style={{ color: 'var(--text-dark)', fontSize: '0.74rem', marginTop: '4px', display: 'block' }}>Shown as a numbered action plan. Use {'{telegram_link}'}, {'{whatsapp_group_link}'}, {'{personal_phone_number}'} as placeholders.</small>
                           </label>
 
                           <label className="crm-add-lead-field" style={{ marginTop: '8px' }}>
                             <span>Booking / Calendly link (optional)</span>
                             <input type="text" value={welcomeBookingLink} onChange={(e) => setWelcomeBookingLink(e.target.value)} placeholder="https://calendly.com/yourname/30min" style={{ width: '100%', fontFamily: 'monospace', fontSize: '0.82rem' }} />
-                            <small style={{ color: '#94a3b8', fontSize: '0.74rem', marginTop: '4px', display: 'block' }}>Adds a "Book a Call" button so leads can schedule directly. Use {'{booking_link}'} in your email body.</small>
+                            <small style={{ color: 'var(--text-dark)', fontSize: '0.74rem', marginTop: '4px', display: 'block' }}>Adds a "Book a Call" button so leads can schedule directly. Use {'{booking_link}'} in your email body.</small>
                           </label>
 
                           <label className="crm-add-lead-field" style={{ marginTop: '8px' }}>
                             <span>Testimonial / social proof (optional)</span>
                             <textarea value={welcomeTestimonial} onChange={(e) => setWelcomeTestimonial(e.target.value)} rows={3} placeholder="This algo changed my trading game. I went from consistent losses to 15% monthly returns." style={{ width: '100%', fontFamily: 'inherit', resize: 'vertical' }} />
-                            <small style={{ color: '#94a3b8', fontSize: '0.74rem', marginTop: '4px', display: 'block' }}>A short quote shown in a highlighted box to build credibility.</small>
+                            <small style={{ color: 'var(--text-dark)', fontSize: '0.74rem', marginTop: '4px', display: 'block' }}>A short quote shown in a highlighted box to build credibility.</small>
                           </label>
 
                           <label className="crm-add-lead-field" style={{ marginTop: '8px' }}>
@@ -10178,7 +10413,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
 
                   {allFollowups.length > 0 && (
                     <div style={{ marginTop: '24px' }}>
-                      <div style={{ fontSize: '0.78rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#64748b', marginBottom: '12px' }}>
+                      <div style={{ fontSize: '0.78rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-dark)', marginBottom: '12px' }}>
                         Upcoming & Recent Reminders ({allFollowups.length})
                       </div>
                       <div className="crm-reminder-list">
@@ -10210,7 +10445,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                   )}
 
                   {allFollowups.length === 0 && (
-                    <div style={{ textAlign: 'center', padding: '40px 20px', color: '#94a3b8' }}>
+                    <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text-dark)' }}>
                       <Bell size={36} style={{ marginBottom: '10px', opacity: 0.3 }} />
                       <p style={{ fontSize: '0.85rem' }}>No reminders scheduled yet. Open a lead and click "Set Follow-up Reminder" to create one.</p>
                     </div>
@@ -10237,11 +10472,11 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                           placeholder="123456789:ABCdefGhIJKlmNoPQRsTUVwxyz"
                           style={{ width: '100%', paddingRight: '40px', fontFamily: 'monospace', fontSize: '0.82rem' }}
                         />
-                        <button type="button" onClick={() => setShowBotToken(!showBotToken)} style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', border: 'none', background: 'none', cursor: 'pointer', color: '#94a3b8', fontSize: '0.75rem', padding: '4px' }}>
+                        <button type="button" onClick={() => setShowBotToken(!showBotToken)} style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', border: 'none', background: 'none', cursor: 'pointer', color: 'var(--text-dark)', fontSize: '0.75rem', padding: '4px' }}>
                           {showBotToken ? 'Hide' : 'Show'}
                         </button>
                       </div>
-                      <small style={{ color: '#94a3b8', fontSize: '0.74rem', marginTop: '4px', display: 'block' }}>
+                      <small style={{ color: 'var(--text-dark)', fontSize: '0.74rem', marginTop: '4px', display: 'block' }}>
                         Get this from @BotFather when you create your bot.
                       </small>
                     </label>
@@ -10258,7 +10493,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                         placeholder="Hi! Thanks for reaching out. Our team will get back to you shortly."
                         style={{ fontFamily: 'inherit', resize: 'vertical' }}
                       />
-                      <small style={{ color: '#94a3b8', fontSize: '0.74rem', marginTop: '4px', display: 'block' }}>
+                      <small style={{ color: 'var(--text-dark)', fontSize: '0.74rem', marginTop: '4px', display: 'block' }}>
                         Sent automatically when someone starts your bot with /start.
                       </small>
                     </label>
@@ -10271,7 +10506,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                         placeholder="https://t.me/your_channel"
                         style={{ fontFamily: 'monospace', fontSize: '0.82rem' }}
                       />
-                      <small style={{ color: '#94a3b8', fontSize: '0.74rem', marginTop: '4px', display: 'block' }}>
+                      <small style={{ color: 'var(--text-dark)', fontSize: '0.74rem', marginTop: '4px', display: 'block' }}>
                         This link appears as a "Join Telegram Community" button on your landing page after a visitor submits the form.
                       </small>
                     </label>
@@ -10284,7 +10519,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                         placeholder="https://chat.whatsapp.com/your_group"
                         style={{ fontFamily: 'monospace', fontSize: '0.82rem' }}
                       />
-                      <small style={{ color: '#94a3b8', fontSize: '0.74rem', marginTop: '4px', display: 'block' }}>
+                      <small style={{ color: 'var(--text-dark)', fontSize: '0.74rem', marginTop: '4px', display: 'block' }}>
                         This link is included in the auto welcome email sent to new leads so they can join your WhatsApp group.
                       </small>
                     </label>
@@ -10297,19 +10532,19 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                         placeholder="+91 98765 43210"
                         style={{ fontFamily: 'monospace', fontSize: '0.82rem' }}
                       />
-                      <small style={{ color: '#94a3b8', fontSize: '0.74rem', marginTop: '4px', display: 'block' }}>
+                      <small style={{ color: 'var(--text-dark)', fontSize: '0.74rem', marginTop: '4px', display: 'block' }}>
                         This number is included in the auto welcome email so leads can contact you directly.
                       </small>
                     </label>
                   </div>
 
                   {/* Webhook Setup */}
-                  <div style={{ marginTop: '16px', padding: '16px', background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                  <div style={{ marginTop: '16px', padding: '16px', background: 'var(--bg-light)', borderRadius: '10px', border: '1px solid var(--border-subtle)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
                       <Link2 size={16} style={{ color: '#0088cc' }} />
                       <strong style={{ fontSize: '0.85rem' }}>Webhook Setup</strong>
                     </div>
-                    <p style={{ fontSize: '0.78rem', color: '#94a3b8', marginBottom: '12px', lineHeight: 1.5 }}>
+                    <p style={{ fontSize: '0.78rem', color: 'var(--text-dark)', marginBottom: '12px', lineHeight: 1.5 }}>
                       After saving your bot token, click the button below to connect your bot to this CRM. This allows incoming messages to flow into your Inbox.
                     </p>
                     {webhookStatus === 'set' && (
@@ -10329,7 +10564,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                       style={{
                         padding: '8px 16px', border: 'none', borderRadius: '8px',
                         background: webhookStatus === 'set' ? 'rgba(22,163,74,0.1)' : '#0088cc',
-                        color: webhookStatus === 'set' ? '#16a34a' : '#fff',
+                        color: webhookStatus === 'set' ? '#16a34a' : 'var(--bg-card)',
                         fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer',
                         display: 'flex', alignItems: 'center', gap: '6px',
                       }}
@@ -10350,37 +10585,37 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
 
                   <div style={{ background: 'rgba(15,118,110,0.06)', border: '1px solid rgba(15,118,110,0.2)', borderRadius: '10px', padding: '14px 16px', marginBottom: '16px', display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
                     <GitBranch size={18} style={{ color: '#0f766e', flexShrink: 0, marginTop: '2px' }} />
-                    <div style={{ fontSize: '0.8rem', color: '#475569', lineHeight: 1.5 }}>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
                       <strong>How it works:</strong> A new lead starts unassigned. The first person to move it from “New” to any stage below (e.g., Called, Interested, Converted) automatically becomes its owner. You can still manually reassign from the lead detail panel or Lead Distribution tab at any time.
                     </div>
                   </div>
 
-                  <label className="crm-add-lead-field" style={{ flexDirection: 'row', alignItems: 'center', gap: '12px', padding: '16px', background: paEnabled ? 'rgba(15,118,110,0.06)' : '#f8fafc', borderRadius: '10px', border: `1px solid ${paEnabled ? 'rgba(15,118,110,0.2)' : '#e2e8f0'}`, cursor: 'pointer', transition: 'all 0.2s' }}>
+                  <label className="crm-add-lead-field" style={{ flexDirection: 'row', alignItems: 'center', gap: '12px', padding: '16px', background: paEnabled ? 'rgba(15,118,110,0.06)' : 'var(--bg-light)', borderRadius: '10px', border: `1px solid ${paEnabled ? 'rgba(15,118,110,0.2)' : 'var(--border-subtle)'}`, cursor: 'pointer', transition: 'all 0.2s' }}>
                     <button
                       type="button"
                       onClick={() => setPaEnabled(!paEnabled)}
                       style={{
                         width: '44px', height: '24px', borderRadius: '12px', border: 'none',
-                        background: paEnabled ? '#0f766e' : '#cbd5e1',
+                        background: paEnabled ? '#0f766e' : 'var(--text-dark)',
                         position: 'relative', cursor: 'pointer', flexShrink: 0, transition: 'background 0.2s',
                       }}
                     >
                       <span style={{
                         position: 'absolute', top: '2px', left: paEnabled ? '22px' : '2px',
-                        width: '20px', height: '20px', borderRadius: '50%', background: '#fff',
+                        width: '20px', height: '20px', borderRadius: '50%', background: 'var(--bg-card)',
                         boxShadow: '0 1px 3px rgba(0,0,0,0.2)', transition: 'left 0.2s',
                       }} />
                     </button>
                     <div>
-                      <span style={{ fontSize: '0.9rem', fontWeight: 600, color: '#0f172a' }}>Enable Pipeline Auto-Assign</span>
-                      <span style={{ fontSize: '0.78rem', color: '#94a3b8', display: 'block' }}>Moving a lead from “New” to another stage auto-assigns it to the person who made the change</span>
+                      <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-main)' }}>Enable Pipeline Auto-Assign</span>
+                      <span style={{ fontSize: '0.78rem', color: 'var(--text-dark)', display: 'block' }}>Moving a lead from “New” to another stage auto-assigns it to the person who made the change</span>
                     </div>
                   </label>
 
                   {paEnabled && (
                     <div style={{ marginTop: '20px' }}>
-                      <div style={{ fontSize: '0.78rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#64748b', marginBottom: '10px' }}>Trigger Stages</div>
-                      <p style={{ fontSize: '0.78rem', color: '#94a3b8', marginBottom: '12px' }}>Choose which stage changes trigger auto-assignment. When a lead is moved from “New” to any of these stages, it gets assigned to the person who moved it.</p>
+                      <div style={{ fontSize: '0.78rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-dark)', marginBottom: '10px' }}>Trigger Stages</div>
+                      <p style={{ fontSize: '0.78rem', color: 'var(--text-dark)', marginBottom: '12px' }}>Choose which stage changes trigger auto-assignment. When a lead is moved from “New” to any of these stages, it gets assigned to the person who moved it.</p>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                         {([
                           { key: 'called_no_response', label: 'Called — No Response', color: '#F59E0B' },
@@ -10391,7 +10626,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                         ]).map((stage) => {
                           const checked = paStages.includes(stage.key);
                           return (
-                            <label key={stage.key} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', background: checked ? 'rgba(15,118,110,0.04)' : '#f8fafc', borderRadius: '8px', border: `1px solid ${checked ? 'rgba(15,118,110,0.15)' : '#e2e8f0'}`, cursor: 'pointer', transition: 'all 0.15s' }}>
+                            <label key={stage.key} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', background: checked ? 'rgba(15,118,110,0.04)' : 'var(--bg-light)', borderRadius: '8px', border: `1px solid ${checked ? 'rgba(15,118,110,0.15)' : 'var(--border-subtle)'}`, cursor: 'pointer', transition: 'all 0.15s' }}>
                               <input
                                 type="checkbox"
                                 checked={checked}
@@ -10403,7 +10638,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                                 style={{ width: '18px', height: '18px', accentColor: '#0f766e' }}
                               />
                               <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: stage.color, flexShrink: 0 }} />
-                              <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#1e293b' }}>{stage.label}</span>
+                              <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-main)' }}>{stage.label}</span>
                             </label>
                           );
                         })}
@@ -10434,7 +10669,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                           onPipelineAutoAssignChange?.(paEnabled, paStages);
                         }
                       }}
-                      style={{ border: 'none', borderRadius: '10px', background: '#0f766e', color: '#fff', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', padding: '10px 20px', display: 'flex', alignItems: 'center', gap: '6px', opacity: paSaving ? 0.6 : 1 }}
+                      style={{ border: 'none', borderRadius: '10px', background: '#0f766e', color: 'var(--bg-card)', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', padding: '10px 20px', display: 'flex', alignItems: 'center', gap: '6px', opacity: paSaving ? 0.6 : 1 }}
                     >
                       {paSaving ? <Loader2 size={16} className="crm-spin" /> : <Save size={16} />} Save Settings
                     </button>
@@ -10450,17 +10685,17 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
 
                   <div style={{ background: 'rgba(15,118,110,0.06)', border: '1px solid rgba(15,118,110,0.2)', borderRadius: '10px', padding: '14px 16px', marginBottom: '16px', display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
                     <Tag size={18} style={{ color: '#0f766e', flexShrink: 0, marginTop: '2px' }} />
-                    <div style={{ fontSize: '0.8rem', color: '#475569', lineHeight: 1.5 }}>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
                       <strong>How it works:</strong> Each stage has a fixed internal key that powers automations, filters, and analytics. You're only changing the label that appears on screen — so your team sees terminology that makes sense for your business (e.g., "Contacted" instead of "Called - Responded"). Leave a field blank to use the default label.
                     </div>
                   </div>
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                     {PS_DEFAULT_STAGES.map((stage) => (
-                      <div key={stage.key} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                      <div key={stage.key} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', background: 'var(--bg-light)', borderRadius: '10px', border: '1px solid var(--border-subtle)' }}>
                         <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: stage.color, flexShrink: 0 }} />
                         <div style={{ flex: 1, minWidth: '200px' }}>
-                          <label style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#94a3b8', display: 'block', marginBottom: '4px' }}>
+                          <label style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-dark)', display: 'block', marginBottom: '4px' }}>
                             {stage.defaultLabel}
                           </label>
                           <input
@@ -10468,9 +10703,9 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                             value={psLabels[stage.key] ?? ''}
                             onChange={(e) => { setPsLabels((prev) => ({ ...prev, [stage.key]: e.target.value })); setPsSaved(false); }}
                             placeholder={stage.defaultLabel}
-                            style={{ width: '100%', padding: '8px 12px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '0.88rem', fontWeight: 600, color: '#0f172a', outline: 'none', transition: 'border 0.15s' }}
+                            style={{ width: '100%', padding: '8px 12px', border: '1px solid var(--border-subtle)', borderRadius: '8px', fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-main)', outline: 'none', transition: 'border 0.15s' }}
                             onFocus={(e) => { e.currentTarget.style.borderColor = '#0f766e'; }}
-                            onBlur={(e) => { e.currentTarget.style.borderColor = '#e2e8f0'; }}
+                            onBlur={(e) => { e.currentTarget.style.borderColor = 'var(--border-subtle)'; }}
                           />
                         </div>
                       </div>
@@ -10509,14 +10744,14 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                         }
                         setPsSaving(false);
                       }}
-                      style={{ border: 'none', borderRadius: '10px', background: '#0f766e', color: '#fff', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', padding: '10px 20px', display: 'flex', alignItems: 'center', gap: '6px', opacity: psSaving ? 0.6 : 1 }}
+                      style={{ border: 'none', borderRadius: '10px', background: '#0f766e', color: 'var(--bg-card)', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', padding: '10px 20px', display: 'flex', alignItems: 'center', gap: '6px', opacity: psSaving ? 0.6 : 1 }}
                     >
                       {psSaving ? <Loader2 size={16} className="crm-spin" /> : <Save size={16} />} Save Labels
                     </button>
                     <button
                       type="button"
                       onClick={() => { setPsLabels({}); setPsSaved(false); }}
-                      style={{ padding: '10px 16px', border: '1px solid #e2e8f0', borderRadius: '10px', background: '#fff', color: '#64748b', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                      style={{ padding: '10px 16px', border: '1px solid var(--border-subtle)', borderRadius: '10px', background: 'var(--bg-card)', color: 'var(--text-dark)', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
                     >
                       <RotateCcw size={14} /> Reset to Defaults
                     </button>
@@ -10531,38 +10766,38 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                   </div>
 
                   {assignmentMembers.length === 0 ? (
-                    <div style={{ textAlign: 'center', padding: '40px', color: '#94a3b8' }}>
+                    <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-dark)' }}>
                       <Users size={36} style={{ marginBottom: '10px', opacity: 0.4 }} />
                       <p style={{ fontSize: '0.88rem', marginBottom: '4px' }}>No active team members</p>
                       <p style={{ fontSize: '0.8rem' }}>Invite team members from the Team tab first. Only active members are eligible for auto-assignment.</p>
                     </div>
                   ) : (
                     <>
-                      <label className="crm-add-lead-field" style={{ flexDirection: 'row', alignItems: 'center', gap: '12px', padding: '16px', background: autoAssignEnabled ? 'rgba(15,118,110,0.06)' : '#f8fafc', borderRadius: '10px', border: `1px solid ${autoAssignEnabled ? 'rgba(15,118,110,0.2)' : '#e2e8f0'}`, cursor: 'pointer', transition: 'all 0.2s' }}>
+                      <label className="crm-add-lead-field" style={{ flexDirection: 'row', alignItems: 'center', gap: '12px', padding: '16px', background: autoAssignEnabled ? 'rgba(15,118,110,0.06)' : 'var(--bg-light)', borderRadius: '10px', border: `1px solid ${autoAssignEnabled ? 'rgba(15,118,110,0.2)' : 'var(--border-subtle)'}`, cursor: 'pointer', transition: 'all 0.2s' }}>
                         <button
                           type="button"
                           onClick={() => setAutoAssignEnabled(!autoAssignEnabled)}
                           style={{
                             width: '44px', height: '24px', borderRadius: '12px', border: 'none',
-                            background: autoAssignEnabled ? '#0f766e' : '#cbd5e1',
+                            background: autoAssignEnabled ? '#0f766e' : 'var(--text-dark)',
                             position: 'relative', cursor: 'pointer', flexShrink: 0, transition: 'background 0.2s',
                           }}
                         >
                           <span style={{
                             position: 'absolute', top: '2px', left: autoAssignEnabled ? '22px' : '2px',
-                            width: '20px', height: '20px', borderRadius: '50%', background: '#fff',
+                            width: '20px', height: '20px', borderRadius: '50%', background: 'var(--bg-card)',
                             boxShadow: '0 1px 3px rgba(0,0,0,0.2)', transition: 'left 0.2s',
                           }} />
                         </button>
                         <div>
-                          <span style={{ fontSize: '0.9rem', fontWeight: 600, color: '#0f172a' }}>Auto-assign leads</span>
-                          <span style={{ fontSize: '0.78rem', color: '#94a3b8', display: 'block' }}>New leads are automatically distributed to active team members</span>
+                          <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-main)' }}>Auto-assign leads</span>
+                          <span style={{ fontSize: '0.78rem', color: 'var(--text-dark)', display: 'block' }}>New leads are automatically distributed to active team members</span>
                         </div>
                       </label>
 
                       {autoAssignEnabled && (
                         <div style={{ marginTop: '16px' }}>
-                          <div style={{ fontSize: '0.78rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#64748b', marginBottom: '10px' }}>Assignment Strategy</div>
+                          <div style={{ fontSize: '0.78rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-dark)', marginBottom: '10px' }}>Assignment Strategy</div>
                           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                             {([
                               { key: 'round_robin' as const, label: 'Round Robin', desc: 'Cycle through agents in order' },
@@ -10574,14 +10809,14 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                                 type="button"
                                 onClick={() => setAssignmentStrategy(opt.key)}
                                 style={{
-                                  padding: '12px 16px', borderRadius: '10px', border: `2px solid ${assignmentStrategy === opt.key ? '#0f766e' : '#e2e8f0'}`,
-                                  background: assignmentStrategy === opt.key ? 'rgba(15,118,110,0.06)' : '#fff', cursor: 'pointer',
+                                  padding: '12px 16px', borderRadius: '10px', border: `2px solid ${assignmentStrategy === opt.key ? '#0f766e' : 'var(--border-subtle)'}`,
+                                  background: assignmentStrategy === opt.key ? 'rgba(15,118,110,0.06)' : 'var(--bg-card)', cursor: 'pointer',
                                   display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '2px', flex: '1', minWidth: '140px',
                                   transition: 'all 0.2s',
                                 }}
                               >
-                                <span style={{ fontSize: '0.85rem', fontWeight: 700, color: assignmentStrategy === opt.key ? '#0f766e' : '#1e293b' }}>{opt.label}</span>
-                                <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>{opt.desc}</span>
+                                <span style={{ fontSize: '0.85rem', fontWeight: 700, color: assignmentStrategy === opt.key ? '#0f766e' : 'var(--text-main)' }}>{opt.label}</span>
+                                <span style={{ fontSize: '0.72rem', color: 'var(--text-dark)' }}>{opt.desc}</span>
                               </button>
                             ))}
                           </div>
@@ -10589,18 +10824,18 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                       )}
 
                       <div style={{ marginTop: '20px' }}>
-                        <div style={{ fontSize: '0.78rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#64748b', marginBottom: '10px' }}>
+                        <div style={{ fontSize: '0.78rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-dark)', marginBottom: '10px' }}>
                           Eligible Agents ({assignmentMembers.length})
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                           {assignmentMembers.map((member, idx) => (
-                            <div key={member.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
-                              <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'linear-gradient(135deg, #0f766e, #14b8a6)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: '0.8rem', flexShrink: 0 }}>
+                            <div key={member.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', background: 'var(--bg-light)', borderRadius: '10px', border: '1px solid var(--border-subtle)' }}>
+                              <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'linear-gradient(135deg, #0f766e, #14b8a6)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--bg-card)', fontWeight: 700, fontSize: '0.8rem', flexShrink: 0 }}>
                                 {idx + 1}
                               </div>
                               <div style={{ flex: 1 }}>
                                 <strong style={{ fontSize: '0.85rem' }}>{member.full_name || member.email}</strong>
-                                <span style={{ fontSize: '0.72rem', color: '#94a3b8', display: 'block' }}>{member.email}</span>
+                                <span style={{ fontSize: '0.72rem', color: 'var(--text-dark)', display: 'block' }}>{member.email}</span>
                               </div>
                               <span style={{ fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', padding: '3px 8px', borderRadius: '4px', background: 'rgba(15,118,110,0.12)', color: '#0f766e' }}>
                                 {member.role}
@@ -10608,7 +10843,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                             </div>
                           ))}
                         </div>
-                        <p style={{ fontSize: '0.76rem', color: '#94a3b8', marginTop: '10px', lineHeight: 1.5 }}>
+                        <p style={{ fontSize: '0.76rem', color: 'var(--text-dark)', marginTop: '10px', lineHeight: 1.5 }}>
                           {assignmentStrategy === 'round_robin'
                             ? 'Leads are assigned in order, cycling back to the first agent after the last.'
                             : assignmentStrategy === 'workload'
@@ -10629,7 +10864,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
 
                   <div style={{ background: 'rgba(24,119,242,0.06)', border: '1px solid rgba(24,119,242,0.2)', borderRadius: '10px', padding: '14px 16px', marginBottom: '16px', display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
                     <TrendingUp size={18} style={{ color: '#1877F2', flexShrink: 0, marginTop: '2px' }} />
-                    <div style={{ fontSize: '0.8rem', color: '#475569', lineHeight: 1.5 }}>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
                       <strong>How it works:</strong> When you move a lead to a new stage (e.g., Interested or Converted), your CRM automatically sends that event to Meta. Meta uses this data to optimize your Lead Ads toward audiences that actually convert.
                     </div>
                   </div>
@@ -10638,7 +10873,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                     <label className="crm-add-lead-field" style={{ gridColumn: '1 / -1' }}>
                       <span>Meta Pixel ID <em>*</em></span>
                       <input type="text" required value={metaPixelId} onChange={(e) => setMetaPixelId(e.target.value)} placeholder="123456789012345" style={{ fontFamily: 'monospace', fontSize: '0.82rem' }} />
-                      <small style={{ color: '#94a3b8', fontSize: '0.74rem', marginTop: '4px', display: 'block' }}>
+                      <small style={{ color: 'var(--text-dark)', fontSize: '0.74rem', marginTop: '4px', display: 'block' }}>
                         Found in Meta Business Manager under Events Manager &gt; Data Sources &gt; your Pixel.
                       </small>
                     </label>
@@ -10653,11 +10888,11 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                           placeholder="EAAGxxxxxxxxxxxxxxxxx"
                           style={{ width: '100%', paddingRight: '40px', fontFamily: 'monospace', fontSize: '0.82rem' }}
                         />
-                        <button type="button" onClick={() => setShowMetaToken(!showMetaToken)} style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', border: 'none', background: 'none', cursor: 'pointer', color: '#94a3b8', fontSize: '0.75rem', padding: '4px' }}>
+                        <button type="button" onClick={() => setShowMetaToken(!showMetaToken)} style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', border: 'none', background: 'none', cursor: 'pointer', color: 'var(--text-dark)', fontSize: '0.75rem', padding: '4px' }}>
                           {showMetaToken ? 'Hide' : 'Show'}
                         </button>
                       </div>
-                      <small style={{ color: '#94a3b8', fontSize: '0.74rem', marginTop: '4px', display: 'block' }}>
+                      <small style={{ color: 'var(--text-dark)', fontSize: '0.74rem', marginTop: '4px', display: 'block' }}>
                         Generate a Conversions API access token in Meta Business Manager under Settings &gt; Conversions API.
                       </small>
                     </label>
@@ -10671,9 +10906,9 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                     </label>
                   </div>
 
-                  <div style={{ marginTop: '16px', padding: '16px', background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
-                    <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#64748b', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Purchase Event Value Settings</div>
-                    <p style={{ fontSize: '0.78rem', color: '#94a3b8', marginBottom: '16px' }}>Meta requires a <strong>value</strong> and <strong>currency</strong> for all Purchase events. When a lead is converted, the CRM sends the purchase value if set, then falls back to the fund amount, then to the default value below.</p>
+                  <div style={{ marginTop: '16px', padding: '16px', background: 'var(--bg-light)', borderRadius: '10px', border: '1px solid var(--border-subtle)' }}>
+                    <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-dark)', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Purchase Event Value Settings</div>
+                    <p style={{ fontSize: '0.78rem', color: 'var(--text-dark)', marginBottom: '16px' }}>Meta requires a <strong>value</strong> and <strong>currency</strong> for all Purchase events. When a lead is converted, the CRM sends the purchase value if set, then falls back to the fund amount, then to the default value below.</p>
                     <div className="crm-add-lead-grid">
                       <label className="crm-add-lead-field">
                         <span>Currency (ISO 4217)</span>
@@ -10713,7 +10948,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                           <option value="TZS">TZS — Tanzanian Shilling</option>
                           <option value="UGX">UGX — Ugandan Shilling</option>
                         </select>
-                        <small style={{ color: '#94a3b8', fontSize: '0.74rem', marginTop: '4px', display: 'block' }}>
+                        <small style={{ color: 'var(--text-dark)', fontSize: '0.74rem', marginTop: '4px', display: 'block' }}>
                           The currency code sent with every Purchase event to Meta.
                         </small>
                       </label>
@@ -10728,16 +10963,16 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                           placeholder="e.g. 100.00"
                           style={{ fontSize: '0.85rem', fontWeight: 600 }}
                         />
-                        <small style={{ color: '#94a3b8', fontSize: '0.74rem', marginTop: '4px', display: 'block' }}>
+                        <small style={{ color: 'var(--text-dark)', fontSize: '0.74rem', marginTop: '4px', display: 'block' }}>
                           Used only when a converted lead has no purchase value or fund amount set. Ensures Meta always receives a valid value.
                         </small>
                       </label>
                     </div>
                   </div>
 
-                  <div style={{ marginTop: '20px', padding: '16px', background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
-                    <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#64748b', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Event Mapping</div>
-                    <p style={{ fontSize: '0.78rem', color: '#94a3b8', marginBottom: '16px' }}>Choose which Meta event to send when a lead moves to each stage. Set to <strong>None</strong> to skip sending for that stage.</p>
+                  <div style={{ marginTop: '20px', padding: '16px', background: 'var(--bg-light)', borderRadius: '10px', border: '1px solid var(--border-subtle)' }}>
+                    <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-dark)', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Event Mapping</div>
+                    <p style={{ fontSize: '0.78rem', color: 'var(--text-dark)', marginBottom: '16px' }}>Choose which Meta event to send when a lead moves to each stage. Set to <strong>None</strong> to skip sending for that stage.</p>
                     {([
                       { key: 'new' as const, label: 'New Lead', color: '#3B82F6' },
                       { key: 'called_no_response' as const, label: 'Called — No Response', color: '#F59E0B' },
@@ -10746,17 +10981,17 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                       { key: 'not_interested' as const, label: 'Not Interested', color: '#EF4444' },
                       { key: 'converted' as const, label: 'Converted', color: '#16A34A' },
                     ]).map((stage) => (
-                      <div key={stage.key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid #e2e8f0' }}>
+                      <div key={stage.key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid var(--border-subtle)' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                           <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: stage.color, flexShrink: 0 }} />
-                          <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#1e293b' }}>{stage.label}</span>
+                          <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-main)' }}>{stage.label}</span>
                         </div>
                         <select
                           value={eventMapping[stage.key]}
                           onChange={(e) => setEventMapping((prev) => ({ ...prev, [stage.key]: e.target.value }))}
                           style={{
-                            padding: '6px 12px', borderRadius: '6px', border: '1px solid #cbd5e1',
-                            background: '#fff', fontSize: '0.82rem', fontWeight: 600, color: '#334155',
+                            padding: '6px 12px', borderRadius: '6px', border: '1px solid var(--border-subtle)',
+                            background: 'var(--bg-card)', fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-muted)',
                             cursor: 'pointer', outline: 'none', minWidth: '140px',
                           }}
                         >
@@ -10767,22 +11002,22 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                         </select>
                       </div>
                     ))}
-                    <div style={{ marginTop: '12px', padding: '10px 12px', background: 'rgba(24,119,242,0.06)', borderRadius: '8px', fontSize: '0.76rem', color: '#475569', lineHeight: 1.5 }}>
+                    <div style={{ marginTop: '12px', padding: '10px 12px', background: 'rgba(24,119,242,0.06)', borderRadius: '8px', fontSize: '0.76rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
                       <strong>Tip:</strong> The <strong>Purchase</strong> event automatically includes a <strong>value</strong> and <strong>currency</strong>. It uses the lead's purchase value if set, then the fund amount, then the default value from the settings above. <strong>None</strong> means no event is sent for that stage.
                     </div>
                   </div>
 
                   {/* Setup documentation */}
-                  <details style={{ marginTop: '20px', border: '1px solid #e2e8f0', borderRadius: '10px', background: '#f8fafc', overflow: 'hidden' }}>
-                    <summary style={{ padding: '14px 16px', cursor: 'pointer', fontWeight: 700, fontSize: '0.85rem', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '8px', listStyle: 'none', userSelect: 'none' }}>
+                  <details style={{ marginTop: '20px', border: '1px solid var(--border-subtle)', borderRadius: '10px', background: 'var(--bg-light)', overflow: 'hidden' }}>
+                    <summary style={{ padding: '14px 16px', cursor: 'pointer', fontWeight: 700, fontSize: '0.85rem', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px', listStyle: 'none', userSelect: 'none' }}>
                       <BookOpen size={18} style={{ color: '#1877F2' }} />
                       Complete Setup Guide: Meta Conversion API Configuration & Event Mapping
-                      <ChevronDown size={16} style={{ marginLeft: 'auto', color: '#94a3b8', transition: 'transform 0.2s' }} />
+                      <ChevronDown size={16} style={{ marginLeft: 'auto', color: 'var(--text-dark)', transition: 'transform 0.2s' }} />
                     </summary>
-                    <div style={{ padding: '0 16px 16px', fontSize: '0.82rem', color: '#475569', lineHeight: 1.7 }}>
+                    <div style={{ padding: '0 16px 16px', fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: 1.7 }}>
 
                       {/* What is CAPI */}
-                      <h4 style={{ fontSize: '0.88rem', fontWeight: 800, color: '#0F172A', margin: '16px 0 8px', paddingBottom: '6px', borderBottom: '2px solid #1877F2', display: 'inline-block' }}>What is the Meta Conversions API?</h4>
+                      <h4 style={{ fontSize: '0.88rem', fontWeight: 800, color: 'var(--text-main)', margin: '16px 0 8px', paddingBottom: '6px', borderBottom: '2px solid #1877F2', display: 'inline-block' }}>What is the Meta Conversions API?</h4>
                       <p style={{ margin: '0 0 12px' }}>
                         The Meta Conversions API (CAPI) is a server-side tracking method that sends conversion events directly from your CRM to Meta's servers — no browser pixel required. When you move a lead through your pipeline stages (New &rarr; Called &rarr; Interested &rarr; Converted), the CRM automatically sends the corresponding event to Meta. Meta uses this data to optimize your Facebook and Instagram Lead Ads, showing your ads to people more likely to actually convert rather than just fill out the form.
                       </p>
@@ -10791,7 +11026,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                       </div>
 
                       {/* Prerequisites */}
-                      <h4 style={{ fontSize: '0.88rem', fontWeight: 800, color: '#0F172A', margin: '16px 0 8px', paddingBottom: '6px', borderBottom: '2px solid #1877F2', display: 'inline-block' }}>Prerequisites</h4>
+                      <h4 style={{ fontSize: '0.88rem', fontWeight: 800, color: 'var(--text-main)', margin: '16px 0 8px', paddingBottom: '6px', borderBottom: '2px solid #1877F2', display: 'inline-block' }}>Prerequisites</h4>
                       <ul style={{ margin: '0 0 12px', paddingLeft: '20px' }}>
                         <li>A <strong>Meta Business Manager</strong> account (free at <span style={{ fontFamily: 'monospace' }}>business.facebook.com</span>).</li>
                         <li>A <strong>Facebook Page</strong> connected to your Business Manager.</li>
@@ -10801,86 +11036,86 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                       </ul>
 
                       {/* Step 1 */}
-                      <h4 style={{ fontSize: '0.88rem', fontWeight: 800, color: '#0F172A', margin: '16px 0 8px', paddingBottom: '6px', borderBottom: '2px solid #1877F2', display: 'inline-block' }}>Step 1 &mdash; Create or find your Meta Pixel</h4>
+                      <h4 style={{ fontSize: '0.88rem', fontWeight: 800, color: 'var(--text-main)', margin: '16px 0 8px', paddingBottom: '6px', borderBottom: '2px solid #1877F2', display: 'inline-block' }}>Step 1 &mdash; Create or find your Meta Pixel</h4>
                       <ol style={{ margin: '0 0 12px', paddingLeft: '20px' }}>
                         <li>Go to <strong>Meta Business Manager</strong> &rarr; <strong>Events Manager</strong>.</li>
                         <li>Click <strong>Data Sources</strong> in the left sidebar, then <strong>+ Add New Data Source</strong> &rarr; <strong>Web</strong>.</li>
                         <li>Name your Pixel (e.g., "LeadCentre CRM Pixel") and connect your website domain.</li>
-                        <li>Once created, open the Pixel settings and copy the <strong>Pixel ID</strong> — a long number like <span style={{ fontFamily: 'monospace', background: '#f1f5f9', padding: '2px 6px', borderRadius: '4px' }}>123456789012345</span>.</li>
+                        <li>Once created, open the Pixel settings and copy the <strong>Pixel ID</strong> — a long number like <span style={{ fontFamily: 'monospace', background: 'var(--bg-light)', padding: '2px 6px', borderRadius: '4px' }}>123456789012345</span>.</li>
                         <li>Paste that number into the <strong>Meta Pixel ID</strong> field above.</li>
                       </ol>
 
                       {/* Step 2 */}
-                      <h4 style={{ fontSize: '0.88rem', fontWeight: 800, color: '#0F172A', margin: '16px 0 8px', paddingBottom: '6px', borderBottom: '2px solid #1877F2', display: 'inline-block' }}>Step 2 &mdash; Generate a Conversions API Access Token</h4>
+                      <h4 style={{ fontSize: '0.88rem', fontWeight: 800, color: 'var(--text-main)', margin: '16px 0 8px', paddingBottom: '6px', borderBottom: '2px solid #1877F2', display: 'inline-block' }}>Step 2 &mdash; Generate a Conversions API Access Token</h4>
                       <ol style={{ margin: '0 0 12px', paddingLeft: '20px' }}>
                         <li>In <strong>Events Manager</strong>, open your Pixel's <strong>Settings</strong> tab.</li>
                         <li>Scroll to the <strong>Conversions API</strong> section and click <strong>Set up</strong>.</li>
                         <li>Choose <strong>Direct Integration</strong> (not Partner — this CRM connects directly).</li>
                         <li>Under <strong>Access Token</strong>, click <strong>Generate Access Token</strong>.</li>
-                        <li>A long string starting with <span style={{ fontFamily: 'monospace', background: '#f1f5f9', padding: '2px 6px', borderRadius: '4px' }}>EAAG...</span> will appear.</li>
+                        <li>A long string starting with <span style={{ fontFamily: 'monospace', background: 'var(--bg-light)', padding: '2px 6px', borderRadius: '4px' }}>EAAG...</span> will appear.</li>
                         <li><strong>Copy this token immediately</strong> — Meta only shows it once. Store it securely.</li>
                         <li>Paste it into the <strong>Access Token</strong> field above.</li>
                       </ol>
-                      <div style={{ padding: '10px 14px', background: '#fef3c7', borderRadius: '8px', border: '1px solid #fde68a', margin: '0 0 12px', fontSize: '0.78rem', color: '#92400e' }}>
+                      <div style={{ padding: '10px 14px', background: 'var(--bg-card-hover)', borderRadius: '8px', border: '1px solid #fde68a', margin: '0 0 12px', fontSize: '0.78rem', color: '#92400e' }}>
                         <strong>Important:</strong> If you lose this token, you'll need to generate a new one in Meta and paste it here again. The old token stops working.
                       </div>
 
                       {/* Step 3 */}
-                      <h4 style={{ fontSize: '0.88rem', fontWeight: 800, color: '#0F172A', margin: '16px 0 8px', paddingBottom: '6px', borderBottom: '2px solid #1877F2', display: 'inline-block' }}>Step 3 &mdash; Set the Graph API Version</h4>
+                      <h4 style={{ fontSize: '0.88rem', fontWeight: 800, color: 'var(--text-main)', margin: '16px 0 8px', paddingBottom: '6px', borderBottom: '2px solid #1877F2', display: 'inline-block' }}>Step 3 &mdash; Set the Graph API Version</h4>
                       <p style={{ margin: '0 0 12px' }}>
-                        The Graph API Version tells Meta which API version to use. The default is <span style={{ fontFamily: 'monospace', background: '#f1f5f9', padding: '2px 6px', borderRadius: '4px' }}>v18.0</span>, which is stable and recommended. Meta releases new versions periodically — check <span style={{ fontFamily: 'monospace' }}>developers.facebook.com/docs/graph-api</span> for the latest. Leave it as-is unless Meta has deprecated your version.
+                        The Graph API Version tells Meta which API version to use. The default is <span style={{ fontFamily: 'monospace', background: 'var(--bg-light)', padding: '2px 6px', borderRadius: '4px' }}>v18.0</span>, which is stable and recommended. Meta releases new versions periodically — check <span style={{ fontFamily: 'monospace' }}>developers.facebook.com/docs/graph-api</span> for the latest. Leave it as-is unless Meta has deprecated your version.
                       </p>
 
                       {/* Step 4 — Event Mapping */}
-                      <h4 style={{ fontSize: '0.88rem', fontWeight: 800, color: '#0F172A', margin: '16px 0 8px', paddingBottom: '6px', borderBottom: '2px solid #1877F2', display: 'inline-block' }}>Step 4 &mdash; Map your CRM stages to Meta events</h4>
+                      <h4 style={{ fontSize: '0.88rem', fontWeight: 800, color: 'var(--text-main)', margin: '16px 0 8px', paddingBottom: '6px', borderBottom: '2px solid #1877F2', display: 'inline-block' }}>Step 4 &mdash; Map your CRM stages to Meta events</h4>
                       <p style={{ margin: '0 0 12px' }}>
                         This is the most important step. The <strong>Event Mapping</strong> section above lets you choose which Meta event gets sent when a lead moves to each CRM stage. Each dropdown controls one stage:
                       </p>
                       <div style={{ overflowX: 'auto', margin: '0 0 12px' }}>
                         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.78rem' }}>
                           <thead>
-                            <tr style={{ background: '#e2e8f0' }}>
-                              <th style={{ padding: '8px 10px', textAlign: 'left', fontWeight: 700, color: '#1e293b', borderRadius: '6px 0 0 0' }}>CRM Stage</th>
-                              <th style={{ padding: '8px 10px', textAlign: 'left', fontWeight: 700, color: '#1e293b' }}>What it means</th>
-                              <th style={{ padding: '8px 10px', textAlign: 'left', fontWeight: 700, color: '#1e293b', borderRadius: '0 6px 0 0' }}>Default Meta Event</th>
+                            <tr style={{ background: 'var(--border-subtle)' }}>
+                              <th style={{ padding: '8px 10px', textAlign: 'left', fontWeight: 700, color: 'var(--text-main)', borderRadius: '6px 0 0 0' }}>CRM Stage</th>
+                              <th style={{ padding: '8px 10px', textAlign: 'left', fontWeight: 700, color: 'var(--text-main)' }}>What it means</th>
+                              <th style={{ padding: '8px 10px', textAlign: 'left', fontWeight: 700, color: 'var(--text-main)', borderRadius: '0 6px 0 0' }}>Default Meta Event</th>
                             </tr>
                           </thead>
                           <tbody>
-                            <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
+                            <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                               <td style={{ padding: '8px 10px', fontWeight: 600, color: '#3B82F6' }}>New Lead</td>
-                              <td style={{ padding: '8px 10px', color: '#64748b' }}>A brand new lead just entered your CRM</td>
-                              <td style={{ padding: '8px 10px', fontWeight: 600, color: '#1e293b' }}>Lead</td>
+                              <td style={{ padding: '8px 10px', color: 'var(--text-dark)' }}>A brand new lead just entered your CRM</td>
+                              <td style={{ padding: '8px 10px', fontWeight: 600, color: 'var(--text-main)' }}>Lead</td>
                             </tr>
-                            <tr style={{ borderBottom: '1px solid #e2e8f0', background: '#fafafa' }}>
+                            <tr style={{ borderBottom: '1px solid var(--border-subtle)', background: 'var(--bg-light)' }}>
                               <td style={{ padding: '8px 10px', fontWeight: 600, color: '#F59E0B' }}>Called &mdash; No Response</td>
-                              <td style={{ padding: '8px 10px', color: '#64748b' }}>You called but the lead didn't pick up</td>
-                              <td style={{ padding: '8px 10px', fontWeight: 600, color: '#1e293b' }}>Contact</td>
+                              <td style={{ padding: '8px 10px', color: 'var(--text-dark)' }}>You called but the lead didn't pick up</td>
+                              <td style={{ padding: '8px 10px', fontWeight: 600, color: 'var(--text-main)' }}>Contact</td>
                             </tr>
-                            <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
+                            <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                               <td style={{ padding: '8px 10px', fontWeight: 600, color: '#F59E0B' }}>Called &mdash; Responded</td>
-                              <td style={{ padding: '8px 10px', color: '#64748b' }}>You called and the lead answered</td>
-                              <td style={{ padding: '8px 10px', fontWeight: 600, color: '#1e293b' }}>Contact</td>
+                              <td style={{ padding: '8px 10px', color: 'var(--text-dark)' }}>You called and the lead answered</td>
+                              <td style={{ padding: '8px 10px', fontWeight: 600, color: 'var(--text-main)' }}>Contact</td>
                             </tr>
-                            <tr style={{ borderBottom: '1px solid #e2e8f0', background: '#fafafa' }}>
+                            <tr style={{ borderBottom: '1px solid var(--border-subtle)', background: 'var(--bg-light)' }}>
                               <td style={{ padding: '8px 10px', fontWeight: 600, color: '#8B5CF6' }}>Interested</td>
-                              <td style={{ padding: '8px 10px', color: '#64748b' }}>The lead showed interest in your product</td>
-                              <td style={{ padding: '8px 10px', fontWeight: 600, color: '#1e293b' }}>Contact</td>
+                              <td style={{ padding: '8px 10px', color: 'var(--text-dark)' }}>The lead showed interest in your product</td>
+                              <td style={{ padding: '8px 10px', fontWeight: 600, color: 'var(--text-main)' }}>Contact</td>
                             </tr>
-                            <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
+                            <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                               <td style={{ padding: '8px 10px', fontWeight: 600, color: '#EF4444' }}>Not Interested</td>
-                              <td style={{ padding: '8px 10px', color: '#64748b' }}>The lead declined your offer</td>
-                              <td style={{ padding: '8px 10px', fontWeight: 600, color: '#1e293b' }}>Lead</td>
+                              <td style={{ padding: '8px 10px', color: 'var(--text-dark)' }}>The lead declined your offer</td>
+                              <td style={{ padding: '8px 10px', fontWeight: 600, color: 'var(--text-main)' }}>Lead</td>
                             </tr>
-                            <tr style={{ background: '#fafafa' }}>
+                            <tr style={{ background: 'var(--bg-light)' }}>
                               <td style={{ padding: '8px 10px', fontWeight: 600, color: '#16A34A' }}>Converted</td>
-                              <td style={{ padding: '8px 10px', color: '#64748b' }}>The lead became a paying customer</td>
-                              <td style={{ padding: '8px 10px', fontWeight: 600, color: '#1e293b' }}>Purchase</td>
+                              <td style={{ padding: '8px 10px', color: 'var(--text-dark)' }}>The lead became a paying customer</td>
+                              <td style={{ padding: '8px 10px', fontWeight: 600, color: 'var(--text-main)' }}>Purchase</td>
                             </tr>
                           </tbody>
                         </table>
                       </div>
 
-                      <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', margin: '16px 0 8px' }}>How to customize the mapping</h4>
+                      <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-main)', margin: '16px 0 8px' }}>How to customize the mapping</h4>
                       <ol style={{ margin: '0 0 12px', paddingLeft: '20px' }}>
                         <li>Find the <strong>Event Mapping</strong> section above (below the Access Token field).</li>
                         <li>For each CRM stage, open the dropdown and select the Meta event you want to send.</li>
@@ -10889,51 +11124,51 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                         <li>The new mapping takes effect immediately — the next lead status change will use it.</li>
                       </ol>
 
-                      <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', margin: '16px 0 8px' }}>Available Meta events you can map to</h4>
+                      <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-main)', margin: '16px 0 8px' }}>Available Meta events you can map to</h4>
                       <div style={{ overflowX: 'auto', margin: '0 0 12px' }}>
                         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.78rem' }}>
                           <thead>
-                            <tr style={{ background: '#e2e8f0' }}>
-                              <th style={{ padding: '8px 10px', textAlign: 'left', fontWeight: 700, color: '#1e293b', borderRadius: '6px 0 0 0' }}>Event Name</th>
-                              <th style={{ padding: '8px 10px', textAlign: 'left', fontWeight: 700, color: '#1e293b', borderRadius: '0 6px 0 0' }}>When Meta uses it</th>
+                            <tr style={{ background: 'var(--border-subtle)' }}>
+                              <th style={{ padding: '8px 10px', textAlign: 'left', fontWeight: 700, color: 'var(--text-main)', borderRadius: '6px 0 0 0' }}>Event Name</th>
+                              <th style={{ padding: '8px 10px', textAlign: 'left', fontWeight: 700, color: 'var(--text-main)', borderRadius: '0 6px 0 0' }}>When Meta uses it</th>
                             </tr>
                           </thead>
                           <tbody>
-                            <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
+                            <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                               <td style={{ padding: '8px 10px', fontWeight: 600, color: '#1877F2' }}>Lead</td>
-                              <td style={{ padding: '8px 10px', color: '#64748b' }}>Someone submitted a lead form. Meta optimizes for form submissions.</td>
+                              <td style={{ padding: '8px 10px', color: 'var(--text-dark)' }}>Someone submitted a lead form. Meta optimizes for form submissions.</td>
                             </tr>
-                            <tr style={{ borderBottom: '1px solid #e2e8f0', background: '#fafafa' }}>
+                            <tr style={{ borderBottom: '1px solid var(--border-subtle)', background: 'var(--bg-light)' }}>
                               <td style={{ padding: '8px 10px', fontWeight: 600, color: '#1877F2' }}>Contact</td>
-                              <td style={{ padding: '8px 10px', color: '#64748b' }}>Someone was contacted (call, message). Meta optimizes for engagement.</td>
+                              <td style={{ padding: '8px 10px', color: 'var(--text-dark)' }}>Someone was contacted (call, message). Meta optimizes for engagement.</td>
                             </tr>
-                            <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
+                            <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                               <td style={{ padding: '8px 10px', fontWeight: 600, color: '#1877F2' }}>Purchase</td>
-                              <td style={{ padding: '8px 10px', color: '#64748b' }}>Someone completed a purchase. Includes the lead's fund amount as the value. Meta optimizes for revenue.</td>
+                              <td style={{ padding: '8px 10px', color: 'var(--text-dark)' }}>Someone completed a purchase. Includes the lead's fund amount as the value. Meta optimizes for revenue.</td>
                             </tr>
-                            <tr style={{ borderBottom: '1px solid #e2e8f0', background: '#fafafa' }}>
+                            <tr style={{ borderBottom: '1px solid var(--border-subtle)', background: 'var(--bg-light)' }}>
                               <td style={{ padding: '8px 10px', fontWeight: 600, color: '#1877F2' }}>AddToCart</td>
-                              <td style={{ padding: '8px 10px', color: '#64748b' }}>Someone added a product to cart. Useful for e-commerce-style funnels.</td>
+                              <td style={{ padding: '8px 10px', color: 'var(--text-dark)' }}>Someone added a product to cart. Useful for e-commerce-style funnels.</td>
                             </tr>
-                            <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
+                            <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                               <td style={{ padding: '8px 10px', fontWeight: 600, color: '#1877F2' }}>InitiateCheckout</td>
-                              <td style={{ padding: '8px 10px', color: '#64748b' }}>Someone started checkout. Maps well to "Interested" stage.</td>
+                              <td style={{ padding: '8px 10px', color: 'var(--text-dark)' }}>Someone started checkout. Maps well to "Interested" stage.</td>
                             </tr>
-                            <tr style={{ borderBottom: '1px solid #e2e8f0', background: '#fafafa' }}>
+                            <tr style={{ borderBottom: '1px solid var(--border-subtle)', background: 'var(--bg-light)' }}>
                               <td style={{ padding: '8px 10px', fontWeight: 600, color: '#1877F2' }}>Subscribe</td>
-                              <td style={{ padding: '8px 10px', color: '#64748b' }}>Someone subscribed to a service or newsletter.</td>
+                              <td style={{ padding: '8px 10px', color: 'var(--text-dark)' }}>Someone subscribed to a service or newsletter.</td>
                             </tr>
-                            <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
+                            <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                               <td style={{ padding: '8px 10px', fontWeight: 600, color: '#1877F2' }}>CompleteRegistration</td>
-                              <td style={{ padding: '8px 10px', color: '#64748b' }}>Someone completed a registration form.</td>
+                              <td style={{ padding: '8px 10px', color: 'var(--text-dark)' }}>Someone completed a registration form.</td>
                             </tr>
-                            <tr style={{ borderBottom: '1px solid #e2e8f0', background: '#fafafa' }}>
+                            <tr style={{ borderBottom: '1px solid var(--border-subtle)', background: 'var(--bg-light)' }}>
                               <td style={{ padding: '8px 10px', fontWeight: 600, color: '#1877F2' }}>Custom</td>
-                              <td style={{ padding: '8px 10px', color: '#64748b' }}>A custom event you've defined in Meta. Use for non-standard funnel steps.</td>
+                              <td style={{ padding: '8px 10px', color: 'var(--text-dark)' }}>A custom event you've defined in Meta. Use for non-standard funnel steps.</td>
                             </tr>
                             <tr>
-                              <td style={{ padding: '8px 10px', fontWeight: 600, color: '#94a3b8' }}>None (skip)</td>
-                              <td style={{ padding: '8px 10px', color: '#64748b' }}>No event is sent for this stage. Use for stages you don't want to track.</td>
+                              <td style={{ padding: '8px 10px', fontWeight: 600, color: 'var(--text-dark)' }}>None (skip)</td>
+                              <td style={{ padding: '8px 10px', color: 'var(--text-dark)' }}>No event is sent for this stage. Use for stages you don't want to track.</td>
                             </tr>
                           </tbody>
                         </table>
@@ -10949,7 +11184,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                       </div>
 
                       {/* Step 5 */}
-                      <h4 style={{ fontSize: '0.88rem', fontWeight: 800, color: '#0F172A', margin: '16px 0 8px', paddingBottom: '6px', borderBottom: '2px solid #1877F2', display: 'inline-block' }}>Step 5 &mdash; Enable and save</h4>
+                      <h4 style={{ fontSize: '0.88rem', fontWeight: 800, color: 'var(--text-main)', margin: '16px 0 8px', paddingBottom: '6px', borderBottom: '2px solid #1877F2', display: 'inline-block' }}>Step 5 &mdash; Enable and save</h4>
                       <ol style={{ margin: '0 0 12px', paddingLeft: '20px' }}>
                         <li>Check the <strong>"Enable conversion event sending"</strong> checkbox above.</li>
                         <li>Double-check your Pixel ID and Access Token have no extra spaces.</li>
@@ -10958,7 +11193,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                       </ol>
 
                       {/* Step 6 */}
-                      <h4 style={{ fontSize: '0.88rem', fontWeight: 800, color: '#0F172A', margin: '16px 0 8px', paddingBottom: '6px', borderBottom: '2px solid #1877F2', display: 'inline-block' }}>Step 6 &mdash; Verify events are received</h4>
+                      <h4 style={{ fontSize: '0.88rem', fontWeight: 800, color: 'var(--text-main)', margin: '16px 0 8px', paddingBottom: '6px', borderBottom: '2px solid #1877F2', display: 'inline-block' }}>Step 6 &mdash; Verify events are received</h4>
                       <ol style={{ margin: '0 0 12px', paddingLeft: '20px' }}>
                         <li>Move a test lead to a different stage (e.g., from "New" to "Interested").</li>
                         <li>Return to <strong>Events Manager</strong> &rarr; your Pixel &rarr; <strong>Test Events</strong> tab.</li>
@@ -10968,7 +11203,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                       </ol>
 
                       {/* What data is sent */}
-                      <h4 style={{ fontSize: '0.88rem', fontWeight: 800, color: '#0F172A', margin: '16px 0 8px', paddingBottom: '6px', borderBottom: '2px solid #1877F2', display: 'inline-block' }}>What data is sent to Meta?</h4>
+                      <h4 style={{ fontSize: '0.88rem', fontWeight: 800, color: 'var(--text-main)', margin: '16px 0 8px', paddingBottom: '6px', borderBottom: '2px solid #1877F2', display: 'inline-block' }}>What data is sent to Meta?</h4>
                       <p style={{ margin: '0 0 8px' }}>Each event includes the following information:</p>
                       <ul style={{ margin: '0 0 12px', paddingLeft: '20px' }}>
                         <li><strong>Event name</strong> — the Meta event you mapped to (Lead, Contact, Purchase, etc.)</li>
@@ -10979,45 +11214,45 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                         <li><strong>Status</strong> — the CRM stage name (new, interested, converted, etc.) sent as custom data</li>
                         <li><strong>Fund amount</strong> — included as the purchase value only when the event is "Purchase" and the lead has a fund amount set</li>
                       </ul>
-                      <div style={{ padding: '10px 14px', background: 'rgba(24,119,242,0.06)', borderRadius: '8px', border: '1px solid rgba(24,119,242,0.15)', margin: '0 0 12px', fontSize: '0.76rem', color: '#475569' }}>
+                      <div style={{ padding: '10px 14px', background: 'rgba(24,119,242,0.06)', borderRadius: '8px', border: '1px solid rgba(24,119,242,0.15)', margin: '0 0 12px', fontSize: '0.76rem', color: 'var(--text-muted)' }}>
                         <strong>Privacy note:</strong> All phone numbers and emails are SHA-256 hashed before being sent to Meta. Meta cannot see the raw data — only the hash. This complies with Meta's data handling requirements.
                       </div>
 
                       {/* Troubleshooting */}
-                      <h4 style={{ fontSize: '0.88rem', fontWeight: 800, color: '#0F172A', margin: '16px 0 8px', paddingBottom: '6px', borderBottom: '2px solid #EF4444', display: 'inline-block' }}>Troubleshooting</h4>
+                      <h4 style={{ fontSize: '0.88rem', fontWeight: 800, color: 'var(--text-main)', margin: '16px 0 8px', paddingBottom: '6px', borderBottom: '2px solid #EF4444', display: 'inline-block' }}>Troubleshooting</h4>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', margin: '0 0 12px' }}>
-                        <div style={{ padding: '10px 12px', background: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                        <div style={{ padding: '10px 12px', background: 'var(--bg-card)', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
                           <strong style={{ color: '#ef4444' }}>No events appearing in Meta</strong><br />
-                          <span style={{ color: '#64748b' }}>Check that "Enable" is checked and settings are saved. Verify the Pixel ID and Access Token have no trailing spaces. Make sure the Pixel ID is numeric only (no letters).</span>
+                          <span style={{ color: 'var(--text-dark)' }}>Check that "Enable" is checked and settings are saved. Verify the Pixel ID and Access Token have no trailing spaces. Make sure the Pixel ID is numeric only (no letters).</span>
                         </div>
-                        <div style={{ padding: '10px 12px', background: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                        <div style={{ padding: '10px 12px', background: 'var(--bg-card)', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
                           <strong style={{ color: '#ef4444' }}>Events show as errors (red X) in the log</strong><br />
-                          <span style={{ color: '#64748b' }}>The access token may have expired or been revoked. Regenerate it in Events Manager and paste the new token here. Also check that the Pixel ID matches the token's Pixel.</span>
+                          <span style={{ color: 'var(--text-dark)' }}>The access token may have expired or been revoked. Regenerate it in Events Manager and paste the new token here. Also check that the Pixel ID matches the token's Pixel.</span>
                         </div>
-                        <div style={{ padding: '10px 12px', background: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                        <div style={{ padding: '10px 12px', background: 'var(--bg-card)', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
                           <strong style={{ color: '#ef4444' }}>Events delayed in Meta Test Events tab</strong><br />
-                          <span style={{ color: '#64748b' }}>Meta can take 5-20 seconds to display server-side events. Wait, then refresh the Test Events page. Events sent successfully (green checkmark in the log below) will appear in Meta.</span>
+                          <span style={{ color: 'var(--text-dark)' }}>Meta can take 5-20 seconds to display server-side events. Wait, then refresh the Test Events page. Events sent successfully (green checkmark in the log below) will appear in Meta.</span>
                         </div>
-                        <div style={{ padding: '10px 12px', background: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                        <div style={{ padding: '10px 12px', background: 'var(--bg-card)', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
                           <strong style={{ color: '#ef4444' }}>Wrong API version error</strong><br />
-                          <span style={{ color: '#64748b' }}>Make sure the version field is a valid format like <span style={{ fontFamily: 'monospace' }}>v18.0</span> (with the "v" prefix and ".0" suffix). Check Meta's docs for the current version.</span>
+                          <span style={{ color: 'var(--text-dark)' }}>Make sure the version field is a valid format like <span style={{ fontFamily: 'monospace' }}>v18.0</span> (with the "v" prefix and ".0" suffix). Check Meta's docs for the current version.</span>
                         </div>
-                        <div style={{ padding: '10px 12px', background: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                        <div style={{ padding: '10px 12px', background: 'var(--bg-card)', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
                           <strong style={{ color: '#ef4444' }}>Purchase event has no value</strong><br />
-                          <span style={{ color: '#64748b' }}>The lead must have a fund amount set before moving to "Converted" status. Edit the lead, add the fund amount, then change the status to "Converted".</span>
+                          <span style={{ color: 'var(--text-dark)' }}>The lead must have a fund amount set before moving to "Converted" status. Edit the lead, add the fund amount, then change the status to "Converted".</span>
                         </div>
-                        <div style={{ padding: '10px 12px', background: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                        <div style={{ padding: '10px 12px', background: 'var(--bg-card)', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
                           <strong style={{ color: '#ef4444' }}>Stage mapped to "None" but still sending events</strong><br />
-                          <span style={{ color: '#64748b' }}>Make sure you clicked Save Settings after changing the mapping. If the issue persists, refresh the page and verify the dropdown still shows "None".</span>
+                          <span style={{ color: 'var(--text-dark)' }}>Make sure you clicked Save Settings after changing the mapping. If the issue persists, refresh the page and verify the dropdown still shows "None".</span>
                         </div>
                       </div>
 
                       {/* Security tip */}
-                      <div style={{ marginTop: '12px', padding: '10px 14px', background: 'rgba(24,119,242,0.08)', borderRadius: '8px', border: '1px solid rgba(24,119,242,0.2)', fontSize: '0.78rem', color: '#475569' }}>
+                      <div style={{ marginTop: '12px', padding: '10px 14px', background: 'rgba(24,119,242,0.08)', borderRadius: '8px', border: '1px solid rgba(24,119,242,0.2)', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
                         <strong>Security tip:</strong> Keep your Access Token secure. Anyone with the token can send events to your Pixel. If you suspect it was leaked, regenerate it in Meta and update it here immediately. Never share it in screenshots or support chats.
                       </div>
 
-                      <p style={{ marginTop: '12px', fontSize: '0.76rem', color: '#94a3b8' }}>
+                      <p style={{ marginTop: '12px', fontSize: '0.76rem', color: 'var(--text-dark)' }}>
                         Official Meta documentation: <span style={{ fontFamily: 'monospace' }}>developers.facebook.com/docs/marketing-api/conversions-api</span>
                       </p>
                     </div>
@@ -11025,17 +11260,17 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
 
                   {metaConversionLog.length > 0 && (
                     <div style={{ marginTop: '20px' }}>
-                      <div style={{ fontSize: '0.78rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#64748b', marginBottom: '12px' }}>
+                      <div style={{ fontSize: '0.78rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-dark)', marginBottom: '12px' }}>
                         Recent Conversion Events ({metaConversionLog.length})
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                         {metaConversionLog.map((log) => (
-                          <div key={log.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 12px', background: '#f8fafc', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '0.78rem' }}>
+                          <div key={log.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 12px', background: 'var(--bg-light)', borderRadius: '6px', border: '1px solid var(--border-subtle)', fontSize: '0.78rem' }}>
                             {log.success
                               ? <CheckCircle2 size={14} style={{ color: '#16a34a', flexShrink: 0 }} />
                               : <XCircle size={14} style={{ color: '#ef4444', flexShrink: 0 }} />}
-                            <span style={{ fontWeight: 600, color: '#1e293b' }}>{log.event_name}</span>
-                            <span style={{ color: '#94a3b8' }}>{new Date(log.created_at).toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' })}</span>
+                            <span style={{ fontWeight: 600, color: 'var(--text-main)' }}>{log.event_name}</span>
+                            <span style={{ color: 'var(--text-dark)' }}>{new Date(log.created_at).toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' })}</span>
                             {log.error_message && <span style={{ color: '#ef4444', fontSize: '0.72rem', marginLeft: 'auto' }}>{log.error_message}</span>}
                           </div>
                         ))}
@@ -11072,8 +11307,8 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                             <Users size={18} />
                           </div>
                           <div>
-                            <div style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1.1rem', fontWeight: 800, color: '#0F172A' }}>Sample Card Title</div>
-                            <div style={{ fontSize: '0.78rem', color: '#64748B' }}>This is how your cards will look</div>
+                            <div style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-main)' }}>Sample Card Title</div>
+                            <div style={{ fontSize: '0.78rem', color: 'var(--text-dark)' }}>This is how your cards will look</div>
                           </div>
                         </div>
                         <input
@@ -11103,7 +11338,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                         <input type="text" value={borderColor} onChange={(e) => setBorderColor(e.target.value)} placeholder="#e2e8f0" className="appearance-color-text" />
                       </div>
                       <div className="appearance-swatches" style={{ marginTop: '10px' }}>
-                        {['#e2e8f0', '#cbd5e1', '#94a3b8', '#3B82F6', '#16a34a', '#EAB308', '#EF4444', '#8B5CF6'].map((c) => (
+                        {['var(--border-subtle)', 'var(--border-subtle)', '#94a3b8', '#3B82F6', '#16a34a', '#EAB308', '#EF4444', '#8B5CF6'].map((c) => (
                           <button key={c} type="button" onClick={() => setBorderColor(c)}
                             className={`appearance-swatch ${borderColor === c ? 'appearance-swatch-active' : ''}`}
                             style={{ background: c }} />
@@ -11232,7 +11467,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                           <button key={opt.val} type="button" onClick={() => setFontSize(opt.val)}
                             className={`appearance-font-btn ${fontSize === opt.val ? 'appearance-font-active' : ''}`}>
                             <span className="appearance-font-preview" style={{ fontSize: opt.size, color: fontSize === opt.val ? '#EC4899' : '#0F172A' }}>{opt.preview}</span>
-                            <span className="appearance-font-label" style={{ color: fontSize === opt.val ? '#EC4899' : '#64748B' }}>{opt.label}</span>
+                            <span className="appearance-font-label" style={{ color: fontSize === opt.val ? '#EC4899' : 'var(--text-dark)' }}>{opt.label}</span>
                           </button>
                         ))}
                       </div>
@@ -11264,7 +11499,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                             </div>
                             <button type="button" onClick={item.toggle}
                               className="appearance-toggle-switch"
-                              style={{ background: item.active ? '#16a34a' : '#cbd5e1' }}
+                              style={{ background: item.active ? '#16a34a' : 'var(--text-dark)' }}
                               aria-label={`Toggle ${item.label}`}>
                               <span className="appearance-toggle-knob" style={{ left: item.active ? '25px' : '3px' }} />
                             </button>
@@ -11305,7 +11540,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                             <button type="button"
                               onClick={() => onSidebarSectionChange?.(item.key, !isVisible)}
                               className="appearance-toggle-switch"
-                              style={{ background: isVisible ? '#16a34a' : '#cbd5e1' }}
+                              style={{ background: isVisible ? '#16a34a' : 'var(--text-dark)' }}
                               aria-label={`Toggle ${item.label}`}>
                               <span className="appearance-toggle-knob" style={{ left: isVisible ? '25px' : '3px' }} />
                             </button>
@@ -11344,7 +11579,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                           <input type="text" value={btnTextColor} onChange={(e) => setBtnTextColor(e.target.value)} placeholder="#FFFFFF" className="appearance-color-text" />
                         </div>
                         <div className="appearance-swatches" style={{ marginTop: '8px' }}>
-                          {['#FFFFFF', '#F8FAFC', '#E2E8F0', '#0F172A', '#FDE68A', '#A7F3D0', '#BFDBFE', '#FECACA'].map((c) => (
+                          {['#FFFFFF', '#F8FAFC', 'var(--border-subtle)', '#0F172A', '#FDE68A', '#A7F3D0', '#BFDBFE', '#FECACA'].map((c) => (
                             <button key={c} type="button" onClick={() => setBtnTextColor(c)}
                               className={`appearance-swatch ${btnTextColor === c ? 'appearance-swatch-active' : ''}`} style={{ background: c }} />
                           ))}
@@ -11359,7 +11594,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                           <input type="text" value={btnBorderColor} onChange={(e) => setBtnBorderColor(e.target.value)} placeholder="#EAB308" className="appearance-color-text" />
                         </div>
                         <div className="appearance-swatches" style={{ marginTop: '8px' }}>
-                          {['#EAB308', '#3B82F6', '#16a34a', '#EF4444', '#8B5CF6', '#0F172A', '#CBD5E1', '#FFFFFF'].map((c) => (
+                          {['#EAB308', '#3B82F6', '#16a34a', '#EF4444', '#8B5CF6', '#0F172A', 'var(--border-subtle)', '#FFFFFF'].map((c) => (
                             <button key={c} type="button" onClick={() => setBtnBorderColor(c)}
                               className={`appearance-swatch ${btnBorderColor === c ? 'appearance-swatch-active' : ''}`} style={{ background: c }} />
                           ))}
@@ -11438,7 +11673,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                             onChange={(e) => setSetupCost(Math.max(0, parseFloat(e.target.value) || 0))}
                             className="appearance-cost-input" />
                         </div>
-                        <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>per converted lead</span>
+                        <span style={{ fontSize: '0.8rem', color: 'var(--text-dark)' }}>per converted lead</span>
                       </div>
                     </div>
 
@@ -11451,7 +11686,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                         <h3 className="appearance-section-title">Landing Page Colors</h3>
                       </div>
                       <p className="appearance-section-desc">Pick a primary color and style for your public landing page. The full palette is generated automatically.</p>
-                      <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', fontWeight: 600, color: '#1e293b', cursor: 'pointer', marginBottom: '14px' }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-main)', cursor: 'pointer', marginBottom: '14px' }}>
                         <input type="checkbox" checked={landingEnabled} onChange={(e) => setLandingEnabled(e.target.checked)} style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
                         Apply custom colors to landing page
                       </label>
@@ -11478,9 +11713,9 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                         value={landingMetaPixelId}
                         onChange={(e) => setLandingMetaPixelId(e.target.value)}
                         placeholder="e.g. 123456789012345"
-                        style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: '0.85rem', marginTop: '4px' }}
+                        style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: '1px solid var(--border-subtle)', fontSize: '0.85rem', marginTop: '4px' }}
                       />
-                      <p style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: '4px' }}>Enter your Meta Pixel ID to track PageView and Lead events on your landing page. Find it in Meta Events Manager.</p>
+                      <p style={{ fontSize: '0.72rem', color: 'var(--text-dark)', marginTop: '4px' }}>Enter your Meta Pixel ID to track PageView and Lead events on your landing page. Find it in Meta Events Manager.</p>
                       <div className="appearance-save-row" style={{ marginTop: '16px' }}>
                         <button type="button" onClick={handleSaveLandingAppearance} disabled={landingSaving} className="appearance-save-btn">
                           {landingSaving ? <Loader2 size={16} className="crm-spin" /> : <Save size={16} />} Save Landing Colors
@@ -11555,6 +11790,73 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                     </button>
                   </div>
                 </>
+              ) : activeTab === 'section_visibility' ? (
+                <>
+                  <div className="crm-settings-card-header">
+                    <h2 className="crm-settings-card-title"><Eye size={20} style={{ color: '#2563eb' }} /> Section Visibility</h2>
+                    <p className="crm-settings-card-desc">Choose which pages appear in the CRM sidebar. Hidden pages stay accessible via direct navigation but won't clutter your sidebar. Changes are saved to your account and sync across devices.</p>
+                  </div>
+
+                  {sectionVisSaved && (
+                    <div style={{ background: 'rgba(22,163,74,0.1)', border: '1px solid rgba(22,163,74,0.3)', borderRadius: '8px', padding: '12px 16px', color: '#16a34a', fontSize: '0.85rem', fontWeight: 600, marginTop: '16px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <CheckCircle2 size={16} /> Section visibility saved successfully.
+                    </div>
+                  )}
+
+                  {error && activeTab === 'section_visibility' && (
+                    <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '8px', padding: '12px 16px', color: '#dc2626', fontSize: '0.85rem', fontWeight: 600, marginTop: '16px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <AlertTriangle size={16} /> {error}
+                    </div>
+                  )}
+
+                  <div className="appearance-section" style={{ marginBottom: '20px' }}>
+                    <p className="appearance-section-desc" style={{ marginBottom: '16px' }}>Toggle individual pages on or off. Dashboard and Settings are always visible.</p>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      {[
+                        { key: 'leads', label: 'Leads', sub: 'View and manage all your leads', icon: <Users size={18} />, iconBg: 'rgba(59,130,246,0.1)', iconColor: '#3B82F6' },
+                        { key: 'brokers', label: 'Broker Tracker', sub: 'Track broker relationships and performance', icon: <TrendingUp size={18} />, iconBg: 'rgba(234,179,8,0.1)', iconColor: '#EAB308' },
+                        { key: 'ib_leads', label: 'IB Leads', sub: 'Introducing Broker leads and applications', icon: <Building2 size={18} />, iconBg: 'rgba(234,179,8,0.1)', iconColor: '#EAB308' },
+                        { key: 'inbox', label: 'Shared Inbox', sub: 'Telegram, WhatsApp, and Email conversations', icon: <InboxIcon size={18} />, iconBg: 'rgba(15,118,110,0.1)', iconColor: '#0F766E' },
+                        { key: 'broadcasts', label: 'Broadcasts', sub: 'Send bulk messages across channels', icon: <Send size={18} />, iconBg: 'rgba(234,179,8,0.1)', iconColor: '#EAB308' },
+                        { key: 'analytics', label: 'Analytics', sub: 'Dashboards and performance metrics', icon: <BarChart3 size={18} />, iconBg: 'rgba(59,130,246,0.1)', iconColor: '#3B82F6' },
+                        { key: 'lead_tracker', label: 'Lead Tracker', sub: 'Track lead activity and engagement', icon: <Radar size={18} />, iconBg: 'rgba(139,92,246,0.1)', iconColor: '#8B5CF6' },
+                        { key: 'templates', label: 'Templates', sub: 'Message templates for quick replies', icon: <FileTextIcon size={18} />, iconBg: 'rgba(245,158,11,0.1)', iconColor: '#F59E0B' },
+                        { key: 'followups', label: 'Follow-Ups', sub: 'Scheduled reminders and follow-up tasks', icon: <Bell size={18} />, iconBg: 'rgba(239,68,68,0.1)', iconColor: '#EF4444' },
+                        { key: 'automations', label: 'Automations', sub: 'Automated workflows and drip campaigns', icon: <Zap size={18} />, iconBg: 'rgba(245,158,11,0.1)', iconColor: '#F59E0B' },
+                        { key: 'pipeline', label: 'Pipeline Funnel', sub: 'Visual lead pipeline funnel in sidebar', icon: <Filter size={18} />, iconBg: 'rgba(139,92,246,0.1)', iconColor: '#8B5CF6' },
+                      ].map((item) => {
+                        const isVisible = localSectionVis[item.key] !== false;
+                        return (
+                          <div key={item.key} className="appearance-toggle-row">
+                            <div className="appearance-toggle-info">
+                              <div className="appearance-toggle-icon" style={{ background: item.iconBg, color: item.iconColor }}>{item.icon}</div>
+                              <div>
+                                <span className="appearance-toggle-label">{item.label}</span>
+                                <p className="appearance-toggle-sub">{item.sub}</p>
+                              </div>
+                            </div>
+                            <button type="button"
+                              onClick={() => setLocalSectionVis((prev) => ({ ...prev, [item.key]: !isVisible }))}
+                              className="appearance-toggle-switch"
+                              style={{ background: isVisible ? '#16a34a' : 'var(--text-dark)' }}
+                              aria-label={`Toggle ${item.label}`}>
+                              <span className="appearance-toggle-knob" style={{ left: isVisible ? '25px' : '3px' }} />
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="appearance-save-row" style={{ marginTop: '8px' }}>
+                    <button type="button" onClick={handleSaveSectionVisibility} disabled={sectionVisSaving} className="appearance-save-btn">
+                      {sectionVisSaving ? <Loader2 size={16} className="crm-spin" /> : <Save size={16} />} Save Section Visibility
+                    </button>
+                    {sectionVisSaved && (
+                      <span className="appearance-saved-badge"><CheckCircle2 size={16} /> Saved!</span>
+                    )}
+                  </div>
+                </>
               ) : activeTab === 'webhooks' ? (
                 <>
                   <div className="crm-settings-card-header">
@@ -11562,45 +11864,45 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                     <p className="crm-settings-card-desc">Send real-time event notifications to an external URL when leads are created, updated, or deleted. Connect your CRM to Zapier, Make.com, Slack, or your own server.</p>
                   </div>
 
-                  <div style={{ display: 'flex', gap: '8px', padding: '14px 16px', background: 'rgba(14,165,233,0.06)', border: '1px solid rgba(14,165,233,0.2)', borderRadius: '10px', marginBottom: '20px', fontSize: '0.8rem', color: '#475569', lineHeight: 1.5 }}>
+                  <div style={{ display: 'flex', gap: '8px', padding: '14px 16px', background: 'rgba(14,165,233,0.06)', border: '1px solid rgba(14,165,233,0.2)', borderRadius: '10px', marginBottom: '20px', fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
                     <Webhook size={16} style={{ color: '#0ea5e9', flexShrink: 0, marginTop: '2px' }} />
                     <div>
-                      <strong style={{ color: '#0369a1' }}>How it works:</strong> When a subscribed event happens (e.g. a new lead arrives), your CRM sends an HTTP POST with the lead data to your URL. The <code style={{ background: '#f1f5f9', padding: '1px 4px', borderRadius: '3px', fontSize: '0.75rem' }}>X-Webhook-Token</code> header carries your secret so the receiver can verify it's from you. Use the Test button to send a sample payload before relying on it.
+                      <strong style={{ color: '#0369a1' }}>How it works:</strong> When a subscribed event happens (e.g. a new lead arrives), your CRM sends an HTTP POST with the lead data to your URL. The <code style={{ background: 'var(--bg-light)', padding: '1px 4px', borderRadius: '3px', fontSize: '0.75rem' }}>X-Webhook-Token</code> header carries your secret so the receiver can verify it's from you. Use the Test button to send a sample payload before relying on it.
                     </div>
                   </div>
 
                   {/* Outbound webhook setup guide */}
-                  <details style={{ marginBottom: '20px', borderRadius: '10px', border: '1px solid #e2e8f0', background: '#f8fafc', overflow: 'hidden' }}>
-                    <summary style={{ padding: '12px 16px', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 700, color: '#1e293b', display: 'flex', alignItems: 'center', gap: '8px', listStyle: 'none', userSelect: 'none' }}>
+                  <details style={{ marginBottom: '20px', borderRadius: '10px', border: '1px solid var(--border-subtle)', background: 'var(--bg-light)', overflow: 'hidden' }}>
+                    <summary style={{ padding: '12px 16px', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px', listStyle: 'none', userSelect: 'none' }}>
                       <BookOpen size={15} style={{ color: '#0ea5e9' }} /> Step-by-step: Set up an outbound webhook (secret token)
                     </summary>
-                    <div style={{ padding: '0 16px 16px 16px', fontSize: '0.78rem', color: '#475569', lineHeight: 1.6 }}>
+                    <div style={{ padding: '0 16px 16px 16px', fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>
                       <ol style={{ paddingLeft: '18px', margin: 0, display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                        <li><strong>Get a destination URL</strong> from the service you want to notify. In Zapier, create a "Webhooks by Zapier" trigger and copy the catch URL (looks like <code style={{ background: '#fff', padding: '1px 4px', borderRadius: '3px' }}>https://hooks.zapier.com/hooks/catch/123/abc</code>). In Make.com, create a custom webhook module and copy its URL.</li>
+                        <li><strong>Get a destination URL</strong> from the service you want to notify. In Zapier, create a "Webhooks by Zapier" trigger and copy the catch URL (looks like <code style={{ background: 'var(--bg-card)', padding: '1px 4px', borderRadius: '3px' }}>https://hooks.zapier.com/hooks/catch/123/abc</code>). In Make.com, create a custom webhook module and copy its URL.</li>
                         <li><strong>Paste the URL</strong> into the <em>Destination URL</em> field in the form below.</li>
                         <li><strong>Give it a label</strong> (optional) so you can identify it later, e.g. "Zapier — Slack notification".</li>
-                        <li><strong>Set a secret token</strong> (optional but recommended). Type any random string here. This is sent as the <code style={{ background: '#fff', padding: '1px 4px', borderRadius: '3px' }}>X-Webhook-Token</code> HTTP header on every delivery, so the receiving server can verify the request came from your CRM. You can use any password generator or just type a random string.</li>
+                        <li><strong>Set a secret token</strong> (optional but recommended). Type any random string here. This is sent as the <code style={{ background: 'var(--bg-card)', padding: '1px 4px', borderRadius: '3px' }}>X-Webhook-Token</code> HTTP header on every delivery, so the receiving server can verify the request came from your CRM. You can use any password generator or just type a random string.</li>
                         <li><strong>Pick the events</strong> you want to subscribe to. Each checked event will trigger a POST to your URL when it happens:
                           <ul style={{ marginTop: '6px', paddingLeft: '18px', display: 'flex', flexDirection: 'column', gap: '3px' }}>
                             {WEBHOOK_EVENTS.map((ev) => (
-                              <li key={ev.key}><code style={{ background: '#fff', padding: '1px 4px', borderRadius: '3px' }}>{ev.key}</code> — {ev.label}</li>
+                              <li key={ev.key}><code style={{ background: 'var(--bg-card)', padding: '1px 4px', borderRadius: '3px' }}>{ev.key}</code> — {ev.label}</li>
                             ))}
                           </ul>
                         </li>
                         <li><strong>Keep "Active" checked</strong> so the webhook fires. Uncheck it to pause without deleting.</li>
                         <li><strong>Click "Add Webhook"</strong> to save it.</li>
                         <li><strong>Test it</strong> by clicking the <em>Test</em> button on the webhook card. A sample payload is sent immediately and the delivery log shows the HTTP status code your server returned. A 200 means success.</li>
-                        <li><strong>On the receiving end</strong>, verify the <code style={{ background: '#fff', padding: '1px 4px', borderRadius: '3px' }}>X-Webhook-Token</code> header matches your secret before trusting the payload. The body is JSON with <code style={{ background: '#fff', padding: '1px 4px', borderRadius: '3px' }}>event</code> and <code style={{ background: '#fff', padding: '1px 4px', borderRadius: '3px' }}>payload</code> fields.</li>
+                        <li><strong>On the receiving end</strong>, verify the <code style={{ background: 'var(--bg-card)', padding: '1px 4px', borderRadius: '3px' }}>X-Webhook-Token</code> header matches your secret before trusting the payload. The body is JSON with <code style={{ background: 'var(--bg-card)', padding: '1px 4px', borderRadius: '3px' }}>event</code> and <code style={{ background: 'var(--bg-card)', padding: '1px 4px', borderRadius: '3px' }}>payload</code> fields.</li>
                       </ol>
                     </div>
                   </details>
 
                   {/* Add / Edit form */}
-                  <div style={{ padding: '20px', background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0', marginBottom: '24px' }}>
-                    <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <div style={{ padding: '20px', background: 'var(--bg-light)', borderRadius: '10px', border: '1px solid var(--border-subtle)', marginBottom: '24px' }}>
+                    <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                       {editingWebhook ? <Pencil size={14} /> : <Plus size={16} />} {editingWebhook ? 'Edit Webhook' : 'Add New Webhook'}
                       {editingWebhook && (
-                        <button type="button" onClick={handleCancelEditWebhook} style={{ marginLeft: 'auto', border: 'none', background: 'none', cursor: 'pointer', color: '#64748b', fontSize: '0.75rem', fontWeight: 600 }}>Cancel edit</button>
+                        <button type="button" onClick={handleCancelEditWebhook} style={{ marginLeft: 'auto', border: 'none', background: 'none', cursor: 'pointer', color: 'var(--text-dark)', fontSize: '0.75rem', fontWeight: 600 }}>Cancel edit</button>
                       )}
                     </div>
                     <div className="crm-add-lead-grid">
@@ -11619,13 +11921,13 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                     </div>
 
                     <div style={{ marginTop: '14px' }}>
-                      <label style={{ fontSize: '0.78rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '8px' }}>Events to subscribe</label>
+                      <label style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: '8px' }}>Events to subscribe</label>
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                         {WEBHOOK_EVENTS.map((ev) => {
                           const checked = whEvents.includes(ev.key);
                           return (
                             <button key={ev.key} type="button" onClick={() => { setWhEvents((prev) => checked ? prev.filter((k) => k !== ev.key) : [...prev, ev.key]); setSaved(false); }}
-                              style={{ padding: '7px 14px', borderRadius: '8px', border: checked ? '1px solid #0ea5e9' : '1px solid #e2e8f0', background: checked ? 'rgba(14,165,233,0.08)' : '#fff', color: checked ? '#0369a1' : '#64748b', fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', transition: 'all 0.15s' }}>
+                              style={{ padding: '7px 14px', borderRadius: '8px', border: checked ? '1px solid #0ea5e9' : '1px solid var(--border-subtle)', background: checked ? 'rgba(14,165,233,0.08)' : 'var(--bg-card)', color: checked ? '#0369a1' : 'var(--text-dark)', fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', transition: 'all 0.15s' }}>
                               {checked ? <CheckSquare size={13} /> : <Square size={13} />} {ev.label}
                             </button>
                           );
@@ -11634,7 +11936,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                     </div>
 
                     <div style={{ marginTop: '14px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', color: '#475569', cursor: 'pointer', fontWeight: 600 }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', color: 'var(--text-muted)', cursor: 'pointer', fontWeight: 600 }}>
                         <input type="checkbox" checked={whActive} onChange={(e) => setWhActive(e.target.checked)} style={{ width: '16px', height: '16px', cursor: 'pointer' }} />
                         Active
                       </label>
@@ -11653,39 +11955,39 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
 
                   {/* Existing webhooks list */}
                   {webhooks.length === 0 ? (
-                    <div style={{ textAlign: 'center', padding: '40px', color: '#94a3b8', fontSize: '0.85rem' }}>
-                      <Webhook size={36} style={{ color: '#cbd5e1', marginBottom: '12px' }} />
+                    <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-dark)', fontSize: '0.85rem' }}>
+                      <Webhook size={36} style={{ color: 'var(--text-dark)', marginBottom: '12px' }} />
                       <p>No webhooks configured yet. Add one above to get started.</p>
                     </div>
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                       {webhooks.map((w) => (
-                        <div key={w.id} style={{ padding: '16px', background: '#fff', borderRadius: '10px', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        <div key={w.id} style={{ padding: '16px', background: 'var(--bg-card)', borderRadius: '10px', border: '1px solid var(--border-subtle)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: w.is_active ? 'rgba(14,165,233,0.1)' : '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                              <Webhook size={18} style={{ color: w.is_active ? '#0ea5e9' : '#94a3b8' }} />
+                            <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: w.is_active ? 'rgba(14,165,233,0.1)' : 'var(--bg-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                              <Webhook size={18} style={{ color: w.is_active ? '#0ea5e9' : 'var(--text-dark)' }} />
                             </div>
                             <div style={{ flex: 1, minWidth: 0 }}>
-                              <strong style={{ fontSize: '0.85rem', color: '#1e293b', display: 'block' }}>{w.label || 'Untitled Webhook'}</strong>
-                              <span style={{ fontSize: '0.72rem', color: '#94a3b8', wordBreak: 'break-all' }}>{w.url}</span>
+                              <strong style={{ fontSize: '0.85rem', color: 'var(--text-main)', display: 'block' }}>{w.label || 'Untitled Webhook'}</strong>
+                              <span style={{ fontSize: '0.72rem', color: 'var(--text-dark)', wordBreak: 'break-all' }}>{w.url}</span>
                             </div>
-                            <span style={{ fontSize: '0.68rem', fontWeight: 700, padding: '3px 8px', borderRadius: '6px', background: w.is_active ? 'rgba(22,163,74,0.1)' : '#f1f5f9', color: w.is_active ? '#16a34a' : '#94a3b8', flexShrink: 0 }}>{w.is_active ? 'Active' : 'Paused'}</span>
+                            <span style={{ fontSize: '0.68rem', fontWeight: 700, padding: '3px 8px', borderRadius: '6px', background: w.is_active ? 'rgba(22,163,74,0.1)' : 'var(--bg-light)', color: w.is_active ? '#16a34a' : 'var(--text-dark)', flexShrink: 0 }}>{w.is_active ? 'Active' : 'Paused'}</span>
                           </div>
                           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
                             {w.events.map((ev) => {
                               const evLabel = WEBHOOK_EVENTS.find((e) => e.key === ev)?.label || ev;
-                              return <span key={ev} style={{ fontSize: '0.68rem', padding: '2px 7px', borderRadius: '5px', background: '#f1f5f9', color: '#475569', fontWeight: 600 }}>{evLabel}</span>;
+                              return <span key={ev} style={{ fontSize: '0.68rem', padding: '2px 7px', borderRadius: '5px', background: 'var(--bg-light)', color: 'var(--text-muted)', fontWeight: 600 }}>{evLabel}</span>;
                             })}
                           </div>
                           <div style={{ display: 'flex', gap: '6px' }}>
                             <button type="button" onClick={() => handleTestWebhook(w.id)} disabled={webhookTesting === w.id}
-                            style={{ padding: '5px 12px', borderRadius: '6px', border: '1px solid #e2e8f0', background: '#fff', color: '#475569', fontSize: '0.72rem', fontWeight: 600, cursor: webhookTesting === w.id ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            style={{ padding: '5px 12px', borderRadius: '6px', border: '1px solid var(--border-subtle)', background: 'var(--bg-card)', color: 'var(--text-muted)', fontSize: '0.72rem', fontWeight: 600, cursor: webhookTesting === w.id ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
                               {webhookTesting === w.id ? <Loader2 size={12} className="crm-spin" /> : <Send size={12} />} Test
                             </button>
-                            <button type="button" onClick={() => handleEditWebhook(w)} style={{ padding: '5px 12px', borderRadius: '6px', border: '1px solid #e2e8f0', background: '#fff', color: '#475569', fontSize: '0.72rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <button type="button" onClick={() => handleEditWebhook(w)} style={{ padding: '5px 12px', borderRadius: '6px', border: '1px solid var(--border-subtle)', background: 'var(--bg-card)', color: 'var(--text-muted)', fontSize: '0.72rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
                               <Pencil size={12} /> Edit
                             </button>
-                            <button type="button" onClick={() => handleDeleteWebhook(w.id)} style={{ padding: '5px 12px', borderRadius: '6px', border: '1px solid rgba(239,68,68,0.3)', background: '#fff', color: '#dc2626', fontSize: '0.72rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <button type="button" onClick={() => handleDeleteWebhook(w.id)} style={{ padding: '5px 12px', borderRadius: '6px', border: '1px solid rgba(239,68,68,0.3)', background: 'var(--bg-card)', color: '#dc2626', fontSize: '0.72rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
                               <Trash2 size={12} /> Delete
                             </button>
                           </div>
@@ -11697,18 +11999,18 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                   {/* Delivery log */}
                   {webhookDeliveries.length > 0 && (
                     <div style={{ marginTop: '28px' }}>
-                      <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                         <History size={16} style={{ color: '#0ea5e9' }} /> Recent Deliveries
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '280px', overflowY: 'auto' }}>
                         {webhookDeliveries.map((d) => (
-                          <div key={d.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                          <div key={d.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', background: 'var(--bg-light)', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
                             <div style={{ width: '28px', height: '28px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, background: d.status === 'success' ? 'rgba(22,163,74,0.1)' : 'rgba(239,68,68,0.1)' }}>
                               {d.status === 'success' ? <CheckCircle2 size={14} style={{ color: '#16a34a' }} /> : <XCircle size={14} style={{ color: '#dc2626' }} />}
                             </div>
                             <div style={{ flex: 1, minWidth: 0 }}>
-                              <span style={{ fontSize: '0.78rem', fontWeight: 600, color: '#1e293b' }}>{d.event}</span>
-                              <span style={{ fontSize: '0.68rem', color: '#94a3b8', marginLeft: '8px' }}>{new Date(d.created_at).toLocaleString()}</span>
+                              <span style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-main)' }}>{d.event}</span>
+                              <span style={{ fontSize: '0.68rem', color: 'var(--text-dark)', marginLeft: '8px' }}>{new Date(d.created_at).toLocaleString()}</span>
                             </div>
                             <span style={{ fontSize: '0.68rem', fontWeight: 700, padding: '2px 7px', borderRadius: '5px', background: d.status === 'success' ? 'rgba(22,163,74,0.1)' : 'rgba(239,68,68,0.1)', color: d.status === 'success' ? '#16a34a' : '#dc2626', flexShrink: 0 }}>
                               {d.response_status ? `HTTP ${d.response_status}` : d.status}
@@ -11720,33 +12022,33 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                   )}
 
                   {/* Inbound Webhooks */}
-                  <div style={{ marginTop: '32px', paddingTop: '24px', borderTop: '1px solid #e2e8f0' }}>
+                  <div style={{ marginTop: '32px', paddingTop: '24px', borderTop: '1px solid var(--border-subtle)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
                       <ArrowDownLeft size={18} style={{ color: '#0ea5e9' }} />
-                      <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#1e293b', margin: 0 }}>Inbound Webhooks</h3>
+                      <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-main)', margin: 0 }}>Inbound Webhooks</h3>
                     </div>
-                    <p style={{ fontSize: '0.78rem', color: '#64748b', marginBottom: '16px' }}>
+                    <p style={{ fontSize: '0.78rem', color: 'var(--text-dark)', marginBottom: '16px' }}>
                       Generate an API key and use the URL below to receive leads from external tools like Zapier, Make.com, or your own forms. POST lead data as JSON to create leads automatically.
                     </p>
 
                     {/* Inbound webhook setup guide */}
-                    <details style={{ marginBottom: '16px', borderRadius: '10px', border: '1px solid #e2e8f0', background: '#f8fafc', overflow: 'hidden' }}>
-                      <summary style={{ padding: '12px 16px', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 700, color: '#1e293b', display: 'flex', alignItems: 'center', gap: '8px', listStyle: 'none', userSelect: 'none' }}>
+                    <details style={{ marginBottom: '16px', borderRadius: '10px', border: '1px solid var(--border-subtle)', background: 'var(--bg-light)', overflow: 'hidden' }}>
+                      <summary style={{ padding: '12px 16px', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px', listStyle: 'none', userSelect: 'none' }}>
                         <BookOpen size={15} style={{ color: '#0ea5e9' }} /> Step-by-step: Set up an inbound webhook (API key)
                       </summary>
-                      <div style={{ padding: '0 16px 16px 16px', fontSize: '0.78rem', color: '#475569', lineHeight: 1.6 }}>
+                      <div style={{ padding: '0 16px 16px 16px', fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>
                         <ol style={{ paddingLeft: '18px', margin: 0, display: 'flex', flexDirection: 'column', gap: '10px' }}>
                           <li><strong>Generate an API key</strong> by typing a label (e.g. "Zapier" or "Typeform") in the <em>Label</em> field above and clicking <em>Generate Key</em>. You can optionally add a source tag to group requests by origin.</li>
-                          <li><strong>Copy the webhook URL</strong> shown on the key card (click the <em>Copy</em> button). It looks like:<br /><code style={{ background: '#fff', padding: '4px 8px', borderRadius: '4px', fontSize: '0.72rem', display: 'inline-block', marginTop: '4px', wordBreak: 'break-all' }}>https://your-project.supabase.co/functions/v1/inbound-webhook?key=abc123...</code></li>
+                          <li><strong>Copy the webhook URL</strong> shown on the key card (click the <em>Copy</em> button). It looks like:<br /><code style={{ background: 'var(--bg-card)', padding: '4px 8px', borderRadius: '4px', fontSize: '0.72rem', display: 'inline-block', marginTop: '4px', wordBreak: 'break-all' }}>https://your-project.supabase.co/functions/v1/inbound-webhook?key=abc123...</code></li>
                           <li><strong>In your external tool</strong> (Zapier, Make.com, Typeform, or your own form), set up an action that sends an HTTP POST to that URL. The body must be JSON with lead fields. Required fields:
                             <ul style={{ marginTop: '6px', paddingLeft: '18px', display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                              <li><code style={{ background: '#fff', padding: '1px 4px', borderRadius: '3px' }}>full_name</code> (string) — the lead's name</li>
-                              <li><code style={{ background: '#fff', padding: '1px 4px', borderRadius: '3px' }}>mobile_number</code> (string) — phone number</li>
+                              <li><code style={{ background: 'var(--bg-card)', padding: '1px 4px', borderRadius: '3px' }}>full_name</code> (string) — the lead's name</li>
+                              <li><code style={{ background: 'var(--bg-card)', padding: '1px 4px', borderRadius: '3px' }}>mobile_number</code> (string) — phone number</li>
                             </ul>
-                            <span style={{ marginTop: '4px', display: 'block' }}>Optional fields: <code style={{ background: '#fff', padding: '1px 4px', borderRadius: '3px' }}>email</code>, <code style={{ background: '#fff', padding: '1px 4px', borderRadius: '3px' }}>state</code>, <code style={{ background: '#fff', padding: '1px 4px', borderRadius: '3px' }}>trading_product</code> ("algo" or "tradingview_premium"), <code style={{ background: '#fff', padding: '1px 4px', borderRadius: '3px' }}>fund_amount</code> (number), <code style={{ background: '#fff', padding: '1px 4px', borderRadius: '3px' }}>notes</code> (string), <code style={{ background: '#fff', padding: '1px 4px', borderRadius: '3px' }}>tags</code> (array of strings).</span>
+                            <span style={{ marginTop: '4px', display: 'block' }}>Optional fields: <code style={{ background: 'var(--bg-card)', padding: '1px 4px', borderRadius: '3px' }}>email</code>, <code style={{ background: 'var(--bg-card)', padding: '1px 4px', borderRadius: '3px' }}>state</code>, <code style={{ background: 'var(--bg-card)', padding: '1px 4px', borderRadius: '3px' }}>trading_product</code> ("algo" or "tradingview_premium"), <code style={{ background: 'var(--bg-card)', padding: '1px 4px', borderRadius: '3px' }}>fund_amount</code> (number), <code style={{ background: 'var(--bg-card)', padding: '1px 4px', borderRadius: '3px' }}>notes</code> (string), <code style={{ background: 'var(--bg-card)', padding: '1px 4px', borderRadius: '3px' }}>tags</code> (array of strings).</span>
                           </li>
-                          <li><strong>Example POST body</strong>:<br /><code style={{ background: '#fff', padding: '6px 10px', borderRadius: '4px', fontSize: '0.72rem', display: 'block', marginTop: '4px', whiteSpace: 'pre-wrap' }}>{`{\n  "full_name": "Jane Doe",\n  "mobile_number": "+919876543210",\n  "email": "jane@example.com",\n  "state": "Karnataka",\n  "trading_product": "algo",\n  "fund_amount": 50000,\n  "notes": "Interested in premium plan",\n  "tags": ["hot", "website"]\n}`}</code></li>
-                          <li><strong>Check the response</strong>. A successful request returns HTTP 200 with <code style={{ background: '#fff', padding: '1px 4px', borderRadius: '3px' }}>{`{ "success": true, "lead_id": "..." }`}</code>. If the phone number already exists, it returns status <code style={{ background: '#fff', padding: '1px 4px', borderRadius: '3px' }}>duplicate</code> and skips creating a new lead.</li>
+                          <li><strong>Example POST body</strong>:<br /><code style={{ background: 'var(--bg-card)', padding: '6px 10px', borderRadius: '4px', fontSize: '0.72rem', display: 'block', marginTop: '4px', whiteSpace: 'pre-wrap' }}>{`{\n  "full_name": "Jane Doe",\n  "mobile_number": "+919876543210",\n  "email": "jane@example.com",\n  "state": "Karnataka",\n  "trading_product": "algo",\n  "fund_amount": 50000,\n  "notes": "Interested in premium plan",\n  "tags": ["hot", "website"]\n}`}</code></li>
+                          <li><strong>Check the response</strong>. A successful request returns HTTP 200 with <code style={{ background: 'var(--bg-card)', padding: '1px 4px', borderRadius: '3px' }}>{`{ "success": true, "lead_id": "..." }`}</code>. If the phone number already exists, it returns status <code style={{ background: 'var(--bg-card)', padding: '1px 4px', borderRadius: '3px' }}>duplicate</code> and skips creating a new lead.</li>
                           <li><strong>Monitor the logs</strong> in the <em>Recent Inbound Requests</em> section below. Each request is logged with its status (success, duplicate, or failed) so you can troubleshoot.</li>
                           <li><strong>Pause or delete</strong> a key anytime. Pausing keeps the key but rejects new requests. Deleting removes it permanently — external tools using that key will stop working.</li>
                           <li><strong>Security</strong>: the API key in the URL acts as a secret. Anyone with the URL can POST leads to your CRM, so only share it with trusted services and never publish it publicly. You can rotate keys by deleting and generating a new one.</li>
@@ -11767,20 +12069,20 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                         placeholder="Label (e.g. Zapier, Typeform)"
                         value={inboundLabel}
                         onChange={(e) => setInboundLabel(e.target.value)}
-                        style={{ flex: '1', minWidth: '180px', padding: '9px 12px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '0.82rem', outline: 'none' }}
+                        style={{ flex: '1', minWidth: '180px', padding: '9px 12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', fontSize: '0.82rem', outline: 'none' }}
                       />
                       <input
                         type="text"
                         placeholder="Source tag (optional)"
                         value={inboundSource}
                         onChange={(e) => setInboundSource(e.target.value)}
-                        style={{ flex: '1', minWidth: '140px', padding: '9px 12px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '0.82rem', outline: 'none' }}
+                        style={{ flex: '1', minWidth: '140px', padding: '9px 12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', fontSize: '0.82rem', outline: 'none' }}
                       />
                       <button
                         type="button"
                         onClick={handleCreateInboundKey}
                         disabled={inboundSaving}
-                        style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '9px 16px', borderRadius: '8px', border: 'none', background: '#0ea5e9', color: '#fff', fontSize: '0.82rem', fontWeight: 600, cursor: inboundSaving ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap' }}
+                        style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '9px 16px', borderRadius: '8px', border: 'none', background: '#0ea5e9', color: 'var(--bg-card)', fontSize: '0.82rem', fontWeight: 600, cursor: inboundSaving ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap' }}
                       >
                         {inboundSaving ? <Loader2 size={14} className="crm-spin" /> : <Plus size={14} />} Generate Key
                       </button>
@@ -11788,39 +12090,39 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
 
                     {/* Existing keys */}
                     {inboundKeys.length === 0 ? (
-                      <div style={{ padding: '20px', textAlign: 'center', background: '#f8fafc', borderRadius: '10px', border: '1px dashed #e2e8f0' }}>
-                        <p style={{ fontSize: '0.82rem', color: '#94a3b8' }}>No inbound API keys yet. Generate one above to start receiving leads.</p>
+                      <div style={{ padding: '20px', textAlign: 'center', background: 'var(--bg-light)', borderRadius: '10px', border: '1px dashed var(--border-subtle)' }}>
+                        <p style={{ fontSize: '0.82rem', color: 'var(--text-dark)' }}>No inbound API keys yet. Generate one above to start receiving leads.</p>
                       </div>
                     ) : (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                         {inboundKeys.map((k) => {
                           const webhookUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/inbound-webhook?key=${k.api_key}`;
                           return (
-                            <div key={k.id} style={{ padding: '14px', background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                            <div key={k.id} style={{ padding: '14px', background: 'var(--bg-light)', borderRadius: '10px', border: '1px solid var(--border-subtle)' }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                                <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e293b' }}>{k.label}</span>
+                                <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-main)' }}>{k.label}</span>
                                 {k.source_tag && (
                                   <span style={{ fontSize: '0.68rem', fontWeight: 600, padding: '2px 8px', borderRadius: '5px', background: 'rgba(14,165,233,0.1)', color: '#0284c7' }}>
                                     {k.source_tag}
                                   </span>
                                 )}
-                                <span style={{ fontSize: '0.68rem', fontWeight: 600, padding: '2px 8px', borderRadius: '5px', marginLeft: 'auto', background: k.is_active ? 'rgba(22,163,74,0.1)' : 'rgba(107,114,128,0.1)', color: k.is_active ? '#16a34a' : '#64748b' }}>
+                                <span style={{ fontSize: '0.68rem', fontWeight: 600, padding: '2px 8px', borderRadius: '5px', marginLeft: 'auto', background: k.is_active ? 'rgba(22,163,74,0.1)' : 'rgba(107,114,128,0.1)', color: k.is_active ? '#16a34a' : 'var(--text-dark)' }}>
                                   {k.is_active ? 'Active' : 'Paused'}
                                 </span>
                               </div>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
-                                <code style={{ flex: 1, fontSize: '0.72rem', color: '#475569', background: '#fff', padding: '6px 10px', borderRadius: '6px', border: '1px solid #e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                <code style={{ flex: 1, fontSize: '0.72rem', color: 'var(--text-muted)', background: 'var(--bg-card)', padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--border-subtle)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                   {webhookUrl}
                                 </code>
-                                <button type="button" onClick={() => handleCopyInboundKey(k.id, webhookUrl)} style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #e2e8f0', background: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.72rem', fontWeight: 600, color: '#475569', whiteSpace: 'nowrap' }}>
+                                <button type="button" onClick={() => handleCopyInboundKey(k.id, webhookUrl)} style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--border-subtle)', background: 'var(--bg-card)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
                                   {copiedKeyId === k.id ? <Check size={12} style={{ color: '#16a34a' }} /> : <Copy size={12} />} {copiedKeyId === k.id ? 'Copied' : 'Copy'}
                                 </button>
                               </div>
                               <div style={{ display: 'flex', gap: '6px' }}>
-                                <button type="button" onClick={() => handleToggleInboundKey(k)} style={{ padding: '5px 10px', borderRadius: '6px', border: '1px solid #e2e8f0', background: '#fff', cursor: 'pointer', fontSize: '0.72rem', fontWeight: 600, color: '#475569' }}>
+                                <button type="button" onClick={() => handleToggleInboundKey(k)} style={{ padding: '5px 10px', borderRadius: '6px', border: '1px solid var(--border-subtle)', background: 'var(--bg-card)', cursor: 'pointer', fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)' }}>
                                   {k.is_active ? 'Pause' : 'Activate'}
                                 </button>
-                                <button type="button" onClick={() => handleDeleteInboundKey(k.id)} style={{ padding: '5px 10px', borderRadius: '6px', border: '1px solid rgba(239,68,68,0.3)', background: '#fff', cursor: 'pointer', fontSize: '0.72rem', fontWeight: 600, color: '#dc2626', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <button type="button" onClick={() => handleDeleteInboundKey(k.id)} style={{ padding: '5px 10px', borderRadius: '6px', border: '1px solid rgba(239,68,68,0.3)', background: 'var(--bg-card)', cursor: 'pointer', fontSize: '0.72rem', fontWeight: 600, color: '#dc2626', display: 'flex', alignItems: 'center', gap: '4px' }}>
                                   <Trash2 size={12} /> Delete
                                 </button>
                               </div>
@@ -11833,20 +12135,20 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                     {/* Inbound logs */}
                     {inboundLogs.length > 0 && (
                       <div style={{ marginTop: '20px' }}>
-                        <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e293b', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                           <History size={15} style={{ color: '#0ea5e9' }} /> Recent Inbound Requests
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', maxHeight: '240px', overflowY: 'auto' }}>
                           {inboundLogs.map((log) => {
                             const keyMatch = inboundKeys.find((k) => k.id === log.api_key_id);
                             return (
-                              <div key={log.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 12px', background: '#f8fafc', borderRadius: '7px', border: '1px solid #e2e8f0' }}>
+                              <div key={log.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 12px', background: 'var(--bg-light)', borderRadius: '7px', border: '1px solid var(--border-subtle)' }}>
                                 <div style={{ width: '24px', height: '24px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, background: log.status === 'success' ? 'rgba(22,163,74,0.1)' : log.status === 'duplicate' ? 'rgba(234,179,8,0.1)' : 'rgba(239,68,68,0.1)' }}>
                                   {log.status === 'success' ? <CheckCircle2 size={12} style={{ color: '#16a34a' }} /> : log.status === 'duplicate' ? <AlertTriangle size={12} style={{ color: '#ca8a04' }} /> : <XCircle size={12} style={{ color: '#dc2626' }} />}
                                 </div>
                                 <div style={{ flex: 1, minWidth: 0 }}>
-                                  <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#1e293b' }}>{keyMatch?.label || log.source || 'Unknown'}</span>
-                                  <span style={{ fontSize: '0.66rem', color: '#94a3b8', marginLeft: '6px' }}>{new Date(log.created_at).toLocaleString()}</span>
+                                  <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-main)' }}>{keyMatch?.label || log.source || 'Unknown'}</span>
+                                  <span style={{ fontSize: '0.66rem', color: 'var(--text-dark)', marginLeft: '6px' }}>{new Date(log.created_at).toLocaleString()}</span>
                                 </div>
                                 <span style={{ fontSize: '0.66rem', fontWeight: 700, padding: '2px 7px', borderRadius: '5px', flexShrink: 0, background: log.status === 'success' ? 'rgba(22,163,74,0.1)' : log.status === 'duplicate' ? 'rgba(234,179,8,0.1)' : 'rgba(239,68,68,0.1)', color: log.status === 'success' ? '#16a34a' : log.status === 'duplicate' ? '#ca8a04' : '#dc2626' }}>
                                   {log.status}
@@ -11867,15 +12169,15 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                   </div>
 
                   {/* Setup guide */}
-                  <details style={{ marginBottom: '16px', borderRadius: '10px', border: '1px solid #e2e8f0', background: '#f8fafc', overflow: 'hidden' }}>
-                    <summary style={{ padding: '12px 16px', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 700, color: '#1e293b', display: 'flex', alignItems: 'center', gap: '8px', listStyle: 'none', userSelect: 'none' }}>
+                  <details style={{ marginBottom: '16px', borderRadius: '10px', border: '1px solid var(--border-subtle)', background: 'var(--bg-light)', overflow: 'hidden' }}>
+                    <summary style={{ padding: '12px 16px', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px', listStyle: 'none', userSelect: 'none' }}>
                       <BookOpen size={15} style={{ color: '#16a34a' }} /> Step-by-step: Connect a Google Sheet
                     </summary>
-                    <div style={{ padding: '0 16px 16px 16px', fontSize: '0.78rem', color: '#475569', lineHeight: 1.6 }}>
+                    <div style={{ padding: '0 16px 16px 16px', fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>
                       <ol style={{ paddingLeft: '18px', margin: 0, display: 'flex', flexDirection: 'column', gap: '10px' }}>
                         <li><strong>Open your Google Sheet</strong> with the lead data (name, phone, email, etc.).</li>
                         <li><strong>Publish the sheet</strong>: Go to <em>File &gt; Share &gt; Publish to Web</em>. Choose the specific sheet tab, select <em>Comma-separated values (.csv)</em> as the format, and click <em>Publish</em>.</li>
-                        <li><strong>Copy the published CSV URL</strong> — it looks like <code style={{ background: '#fff', padding: '2px 6px', borderRadius: '4px', fontSize: '0.72rem' }}>https://docs.google.com/spreadsheets/d/e/XXXXX/pub?output=csv</code></li>
+                        <li><strong>Copy the published CSV URL</strong> — it looks like <code style={{ background: 'var(--bg-card)', padding: '2px 6px', borderRadius: '4px', fontSize: '0.72rem' }}>https://docs.google.com/spreadsheets/d/e/XXXXX/pub?output=csv</code></li>
                         <li><strong>Paste the URL</strong> in the <em>Published CSV URL</em> field below.</li>
                         <li><strong>Map columns</strong>: Type the exact column header names from your sheet (first row) into the mapping fields. For example, if your sheet has a column called "Phone Number", type that exactly in the <em>Mobile Number column</em> field. At minimum, map <em>Full Name</em> or <em>Mobile Number</em>.</li>
                         <li><strong>Save and sync</strong>: Click <em>Save Configuration</em>, then click <em>Sync Now</em> to import immediately. New rows will also auto-sync every 5 minutes.</li>
@@ -11896,36 +12198,36 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                   )}
 
                   {/* Config form */}
-                  <div style={{ padding: '16px', background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0', marginBottom: '20px' }}>
-                    <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', marginBottom: '12px' }}>
+                  <div style={{ padding: '16px', background: 'var(--bg-light)', borderRadius: '10px', border: '1px solid var(--border-subtle)', marginBottom: '20px' }}>
+                    <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '12px' }}>
                       {gsEditingId ? 'Edit Sheet Configuration' : 'Add New Sheet'}
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                      <input type="text" placeholder="Published CSV URL (https://docs.google.com/spreadsheets/d/e/XXX/pub?output=csv)" value={gsSheetUrl} onChange={(e) => setGsSheetUrl(e.target.value)} style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '0.82rem', outline: 'none' }} />
+                      <input type="text" placeholder="Published CSV URL (https://docs.google.com/spreadsheets/d/e/XXX/pub?output=csv)" value={gsSheetUrl} onChange={(e) => setGsSheetUrl(e.target.value)} style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', fontSize: '0.82rem', outline: 'none' }} />
                       <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                        <input type="text" placeholder="Sheet name (optional, e.g. 'Facebook Leads')" value={gsSheetName} onChange={(e) => setGsSheetName(e.target.value)} style={{ flex: '1', minWidth: '160px', padding: '9px 12px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '0.82rem', outline: 'none' }} />
-                        <input type="text" placeholder="Source tag" value={gsSourceTag} onChange={(e) => setGsSourceTag(e.target.value)} style={{ flex: '1', minWidth: '120px', padding: '9px 12px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '0.82rem', outline: 'none' }} />
-                        <select value={gsTradingProduct} onChange={(e) => setGsTradingProduct(e.target.value as 'algo' | 'tradingview_premium')} style={{ padding: '9px 12px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '0.82rem', outline: 'none' }}>
+                        <input type="text" placeholder="Sheet name (optional, e.g. 'Facebook Leads')" value={gsSheetName} onChange={(e) => setGsSheetName(e.target.value)} style={{ flex: '1', minWidth: '160px', padding: '9px 12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', fontSize: '0.82rem', outline: 'none' }} />
+                        <input type="text" placeholder="Source tag" value={gsSourceTag} onChange={(e) => setGsSourceTag(e.target.value)} style={{ flex: '1', minWidth: '120px', padding: '9px 12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', fontSize: '0.82rem', outline: 'none' }} />
+                        <select value={gsTradingProduct} onChange={(e) => setGsTradingProduct(e.target.value as 'algo' | 'tradingview_premium')} style={{ padding: '9px 12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', fontSize: '0.82rem', outline: 'none' }}>
                           <option value="algo">Default product: Algo</option>
                           <option value="tradingview_premium">Default product: TradingView Premium</option>
                         </select>
                       </div>
-                      <div style={{ fontSize: '0.78rem', fontWeight: 600, color: '#64748b', marginTop: '4px' }}>Column Mapping — type the exact header name from row 1 of your sheet:</div>
+                      <div style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-dark)', marginTop: '4px' }}>Column Mapping — type the exact header name from row 1 of your sheet:</div>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                        <input type="text" placeholder="Full Name column (e.g. Name)" value={gsMapFullName} onChange={(e) => setGsMapFullName(e.target.value)} style={{ padding: '8px 10px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '0.78rem', outline: 'none' }} />
-                        <input type="text" placeholder="Mobile Number column (e.g. Phone)" value={gsMapMobile} onChange={(e) => setGsMapMobile(e.target.value)} style={{ padding: '8px 10px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '0.78rem', outline: 'none' }} />
-                        <input type="text" placeholder="Email column (e.g. Email)" value={gsMapEmail} onChange={(e) => setGsMapEmail(e.target.value)} style={{ padding: '8px 10px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '0.78rem', outline: 'none' }} />
-                        <input type="text" placeholder="State column (e.g. State)" value={gsMapState} onChange={(e) => setGsMapState(e.target.value)} style={{ padding: '8px 10px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '0.78rem', outline: 'none' }} />
-                        <input type="text" placeholder="Trading Product column (optional)" value={gsMapProduct} onChange={(e) => setGsMapProduct(e.target.value)} style={{ padding: '8px 10px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '0.78rem', outline: 'none' }} />
-                        <input type="text" placeholder="Fund Amount column (optional)" value={gsMapFund} onChange={(e) => setGsMapFund(e.target.value)} style={{ padding: '8px 10px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '0.78rem', outline: 'none' }} />
-                        <input type="text" placeholder="Notes column (optional)" value={gsMapNotes} onChange={(e) => setGsMapNotes(e.target.value)} style={{ padding: '8px 10px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '0.78rem', outline: 'none', gridColumn: '1 / -1' }} />
+                        <input type="text" placeholder="Full Name column (e.g. Name)" value={gsMapFullName} onChange={(e) => setGsMapFullName(e.target.value)} style={{ padding: '8px 10px', borderRadius: '6px', border: '1px solid var(--border-subtle)', fontSize: '0.78rem', outline: 'none' }} />
+                        <input type="text" placeholder="Mobile Number column (e.g. Phone)" value={gsMapMobile} onChange={(e) => setGsMapMobile(e.target.value)} style={{ padding: '8px 10px', borderRadius: '6px', border: '1px solid var(--border-subtle)', fontSize: '0.78rem', outline: 'none' }} />
+                        <input type="text" placeholder="Email column (e.g. Email)" value={gsMapEmail} onChange={(e) => setGsMapEmail(e.target.value)} style={{ padding: '8px 10px', borderRadius: '6px', border: '1px solid var(--border-subtle)', fontSize: '0.78rem', outline: 'none' }} />
+                        <input type="text" placeholder="State column (e.g. State)" value={gsMapState} onChange={(e) => setGsMapState(e.target.value)} style={{ padding: '8px 10px', borderRadius: '6px', border: '1px solid var(--border-subtle)', fontSize: '0.78rem', outline: 'none' }} />
+                        <input type="text" placeholder="Trading Product column (optional)" value={gsMapProduct} onChange={(e) => setGsMapProduct(e.target.value)} style={{ padding: '8px 10px', borderRadius: '6px', border: '1px solid var(--border-subtle)', fontSize: '0.78rem', outline: 'none' }} />
+                        <input type="text" placeholder="Fund Amount column (optional)" value={gsMapFund} onChange={(e) => setGsMapFund(e.target.value)} style={{ padding: '8px 10px', borderRadius: '6px', border: '1px solid var(--border-subtle)', fontSize: '0.78rem', outline: 'none' }} />
+                        <input type="text" placeholder="Notes column (optional)" value={gsMapNotes} onChange={(e) => setGsMapNotes(e.target.value)} style={{ padding: '8px 10px', borderRadius: '6px', border: '1px solid var(--border-subtle)', fontSize: '0.78rem', outline: 'none', gridColumn: '1 / -1' }} />
                       </div>
                       <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
-                        <button type="button" onClick={handleSaveGsConfig} disabled={gsSaving} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '9px 16px', borderRadius: '8px', border: 'none', background: '#16a34a', color: '#fff', fontSize: '0.82rem', fontWeight: 600, cursor: gsSaving ? 'not-allowed' : 'pointer' }}>
+                        <button type="button" onClick={handleSaveGsConfig} disabled={gsSaving} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '9px 16px', borderRadius: '8px', border: 'none', background: '#16a34a', color: 'var(--bg-card)', fontSize: '0.82rem', fontWeight: 600, cursor: gsSaving ? 'not-allowed' : 'pointer' }}>
                           {gsSaving ? <Loader2 size={14} className="crm-spin" /> : <Save size={14} />} {gsEditingId ? 'Update Configuration' : 'Save Configuration'}
                         </button>
                         {gsEditingId && (
-                          <button type="button" onClick={handleCancelEditGs} style={{ padding: '9px 16px', borderRadius: '8px', border: '1px solid #e2e8f0', background: '#fff', fontSize: '0.82rem', fontWeight: 600, color: '#64748b', cursor: 'pointer' }}>
+                          <button type="button" onClick={handleCancelEditGs} style={{ padding: '9px 16px', borderRadius: '8px', border: '1px solid var(--border-subtle)', background: 'var(--bg-card)', fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-dark)', cursor: 'pointer' }}>
                             Cancel
                           </button>
                         )}
@@ -11935,43 +12237,43 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
 
                   {/* Existing configs */}
                   {gsConfigs.length === 0 ? (
-                    <div style={{ padding: '20px', textAlign: 'center', background: '#f8fafc', borderRadius: '10px', border: '1px dashed #e2e8f0' }}>
-                      <FileSpreadsheet size={32} style={{ color: '#94a3b8', opacity: 0.5, marginBottom: '8px' }} />
-                      <p style={{ fontSize: '0.82rem', color: '#94a3b8' }}>No Google Sheets connected yet. Add your first sheet above.</p>
+                    <div style={{ padding: '20px', textAlign: 'center', background: 'var(--bg-light)', borderRadius: '10px', border: '1px dashed var(--border-subtle)' }}>
+                      <FileSpreadsheet size={32} style={{ color: 'var(--text-dark)', opacity: 0.5, marginBottom: '8px' }} />
+                      <p style={{ fontSize: '0.82rem', color: 'var(--text-dark)' }}>No Google Sheets connected yet. Add your first sheet above.</p>
                     </div>
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                       {gsConfigs.map((cfg) => (
-                        <div key={cfg.id} style={{ padding: '14px', background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                        <div key={cfg.id} style={{ padding: '14px', background: 'var(--bg-light)', borderRadius: '10px', border: '1px solid var(--border-subtle)' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', flexWrap: 'wrap' }}>
                             <FileSpreadsheet size={16} style={{ color: '#16a34a' }} />
-                            <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e293b' }}>{cfg.sheet_name || 'Untitled Sheet'}</span>
+                            <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-main)' }}>{cfg.sheet_name || 'Untitled Sheet'}</span>
                             {cfg.source_tag && (
                               <span style={{ fontSize: '0.68rem', fontWeight: 600, padding: '2px 8px', borderRadius: '5px', background: 'rgba(22,163,74,0.1)', color: '#16a34a' }}>{cfg.source_tag}</span>
                             )}
-                            <span style={{ fontSize: '0.68rem', fontWeight: 600, padding: '2px 8px', borderRadius: '5px', marginLeft: 'auto', background: cfg.is_active ? 'rgba(22,163,74,0.1)' : 'rgba(107,114,128,0.1)', color: cfg.is_active ? '#16a34a' : '#64748b' }}>
+                            <span style={{ fontSize: '0.68rem', fontWeight: 600, padding: '2px 8px', borderRadius: '5px', marginLeft: 'auto', background: cfg.is_active ? 'rgba(22,163,74,0.1)' : 'rgba(107,114,128,0.1)', color: cfg.is_active ? '#16a34a' : 'var(--text-dark)' }}>
                               {cfg.is_active ? 'Active' : 'Paused'}
                             </span>
                           </div>
-                          <code style={{ display: 'block', fontSize: '0.72rem', color: '#475569', background: '#fff', padding: '6px 10px', borderRadius: '6px', border: '1px solid #e2e8f0', marginBottom: '8px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          <code style={{ display: 'block', fontSize: '0.72rem', color: 'var(--text-muted)', background: 'var(--bg-card)', padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--border-subtle)', marginBottom: '8px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             {cfg.sheet_url}
                           </code>
                           {cfg.last_synced_at && (
-                            <div style={{ fontSize: '0.72rem', color: '#94a3b8', marginBottom: '8px' }}>
+                            <div style={{ fontSize: '0.72rem', color: 'var(--text-dark)', marginBottom: '8px' }}>
                               Last synced: {new Date(cfg.last_synced_at).toLocaleString()} · {cfg.last_row_count} rows processed
                             </div>
                           )}
                           <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                            <button type="button" onClick={() => handleSyncGsConfig(cfg.id)} disabled={gsSyncing === cfg.id} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', borderRadius: '6px', border: '1px solid #e2e8f0', background: '#fff', cursor: gsSyncing === cfg.id ? 'not-allowed' : 'pointer', fontSize: '0.72rem', fontWeight: 600, color: '#16a34a' }}>
+                            <button type="button" onClick={() => handleSyncGsConfig(cfg.id)} disabled={gsSyncing === cfg.id} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', borderRadius: '6px', border: '1px solid var(--border-subtle)', background: 'var(--bg-card)', cursor: gsSyncing === cfg.id ? 'not-allowed' : 'pointer', fontSize: '0.72rem', fontWeight: 600, color: '#16a34a' }}>
                               {gsSyncing === cfg.id ? <Loader2 size={12} className="crm-spin" /> : <RefreshCw size={12} />} Sync Now
                             </button>
-                            <button type="button" onClick={() => handleEditGsConfig(cfg)} style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #e2e8f0', background: '#fff', cursor: 'pointer', fontSize: '0.72rem', fontWeight: 600, color: '#475569', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <button type="button" onClick={() => handleEditGsConfig(cfg)} style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid var(--border-subtle)', background: 'var(--bg-card)', cursor: 'pointer', fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
                               <Pencil size={12} /> Edit
                             </button>
-                            <button type="button" onClick={() => handleToggleGsConfig(cfg)} style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #e2e8f0', background: '#fff', cursor: 'pointer', fontSize: '0.72rem', fontWeight: 600, color: '#475569' }}>
+                            <button type="button" onClick={() => handleToggleGsConfig(cfg)} style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid var(--border-subtle)', background: 'var(--bg-card)', cursor: 'pointer', fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)' }}>
                               {cfg.is_active ? 'Pause' : 'Activate'}
                             </button>
-                            <button type="button" onClick={() => handleDeleteGsConfig(cfg.id)} style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid rgba(239,68,68,0.3)', background: '#fff', cursor: 'pointer', fontSize: '0.72rem', fontWeight: 600, color: '#dc2626', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <button type="button" onClick={() => handleDeleteGsConfig(cfg.id)} style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid rgba(239,68,68,0.3)', background: 'var(--bg-card)', cursor: 'pointer', fontSize: '0.72rem', fontWeight: 600, color: '#dc2626', display: 'flex', alignItems: 'center', gap: '4px' }}>
                               <Trash2 size={12} /> Delete
                             </button>
                           </div>
@@ -11983,20 +12285,20 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                   {/* Recent sync logs */}
                   {gsSyncLogs.length > 0 && (
                     <div style={{ marginTop: '20px' }}>
-                      <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e293b', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                         <History size={15} style={{ color: '#16a34a' }} /> Recent Sync Activity
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', maxHeight: '240px', overflowY: 'auto' }}>
                         {gsSyncLogs.map((log) => {
                           const cfgMatch = gsConfigs.find((c) => c.id === log.settings_id);
                           return (
-                            <div key={log.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 12px', background: '#f8fafc', borderRadius: '7px', border: '1px solid #e2e8f0' }}>
+                            <div key={log.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 12px', background: 'var(--bg-light)', borderRadius: '7px', border: '1px solid var(--border-subtle)' }}>
                               <div style={{ width: '24px', height: '24px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, background: log.status === 'success' ? 'rgba(22,163,74,0.1)' : log.status === 'duplicate' ? 'rgba(234,179,8,0.1)' : 'rgba(239,68,68,0.1)' }}>
                                 {log.status === 'success' ? <CheckCircle2 size={12} style={{ color: '#16a34a' }} /> : log.status === 'duplicate' ? <AlertTriangle size={12} style={{ color: '#ca8a04' }} /> : <XCircle size={12} style={{ color: '#dc2626' }} />}
                               </div>
                               <div style={{ flex: 1, minWidth: 0 }}>
-                                <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#1e293b' }}>{cfgMatch?.sheet_name || 'Sheet'} · Row {log.row_number}</span>
-                                <span style={{ fontSize: '0.66rem', color: '#94a3b8', marginLeft: '6px' }}>{new Date(log.created_at).toLocaleString()}</span>
+                                <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-main)' }}>{cfgMatch?.sheet_name || 'Sheet'} · Row {log.row_number}</span>
+                                <span style={{ fontSize: '0.66rem', color: 'var(--text-dark)', marginLeft: '6px' }}>{new Date(log.created_at).toLocaleString()}</span>
                               </div>
                               <span style={{ fontSize: '0.66rem', fontWeight: 700, padding: '2px 7px', borderRadius: '5px', flexShrink: 0, background: log.status === 'success' ? 'rgba(22,163,74,0.1)' : log.status === 'duplicate' ? 'rgba(234,179,8,0.1)' : 'rgba(239,68,68,0.1)', color: log.status === 'success' ? '#16a34a' : log.status === 'duplicate' ? '#ca8a04' : '#dc2626' }}>
                                 {log.status}
@@ -12011,18 +12313,18 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
               ) : activeTab === 'recycle_bin' ? (
                 <>
                   <div className="crm-settings-card-header">
-                    <h2 className="crm-settings-card-title"><Trash2 size={20} style={{ color: '#64748b' }} /> Recycle Bin</h2>
+                    <h2 className="crm-settings-card-title"><Trash2 size={20} style={{ color: 'var(--text-dark)' }} /> Recycle Bin</h2>
                     <p className="crm-settings-card-desc">Deleted leads are stored here for 30 days. Restore them or permanently delete them.</p>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '24px', background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0', flexDirection: 'column' }}>
-                    <Trash2 size={40} style={{ color: '#94a3b8', opacity: 0.5 }} />
-                    <p style={{ fontSize: '0.85rem', color: '#64748b', textAlign: 'center', maxWidth: '360px' }}>Click the button below to view, restore, or permanently delete your trashed leads.</p>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '24px', background: 'var(--bg-light)', borderRadius: '10px', border: '1px solid var(--border-subtle)', flexDirection: 'column' }}>
+                    <Trash2 size={40} style={{ color: 'var(--text-dark)', opacity: 0.5 }} />
+                    <p style={{ fontSize: '0.85rem', color: 'var(--text-dark)', textAlign: 'center', maxWidth: '360px' }}>Click the button below to view, restore, or permanently delete your trashed leads.</p>
                     <button
                       type="button"
                       onClick={() => onOpenRecycleBin?.()}
-                      style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px', border: '1px solid #e2e8f0', borderRadius: '8px', background: '#fff', color: '#64748b', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s' }}
+                      style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px', border: '1px solid var(--border-subtle)', borderRadius: '8px', background: 'var(--bg-card)', color: 'var(--text-dark)', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s' }}
                       onMouseEnter={(e) => { e.currentTarget.style.background = '#64748b'; e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = '#64748b'; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.color = '#64748b'; e.currentTarget.style.borderColor = '#e2e8f0'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--bg-card)'; e.currentTarget.style.color = 'var(--text-dark)'; e.currentTarget.style.borderColor = 'var(--border-subtle)'; }}
                     >
                       <Trash2 size={16} /> Open Recycle Bin
                     </button>
@@ -12050,7 +12352,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                 <button type="button" className="crm-add-lead-cancel" onClick={onBack} disabled={saving}>
                   Back to Dashboard
                 </button>
-                {activeTab !== 'team' && activeTab !== 'scheduled_emails' && activeTab !== 'danger' && activeTab !== 'appearance' && activeTab !== 'recycle_bin' && activeTab !== 'direct_link' && activeTab !== 'webhooks' && activeTab !== 'google_sheets' && activeTab !== 'lead_distribution' && activeTab !== 'pipeline_autoassign' && (
+                {activeTab !== 'team' && activeTab !== 'scheduled_emails' && activeTab !== 'danger' && activeTab !== 'appearance' && activeTab !== 'recycle_bin' && activeTab !== 'direct_link' && activeTab !== 'webhooks' && activeTab !== 'google_sheets' && activeTab !== 'lead_distribution' && activeTab !== 'pipeline_autoassign' && activeTab !== 'section_visibility' && activeTab !== 'pipeline_stages' && (
                   <button type="button" className="crm-add-lead-submit" onClick={handleSave} disabled={!canSave || saving || accountSaving || appearanceSaving}>
                     {(saving || accountSaving || appearanceSaving) ? <Loader2 size={18} className="crm-spin" /> : <Save size={18} />}
                     {(saving || accountSaving || appearanceSaving) ? 'Saving...' : 'Save Settings'}
@@ -12378,7 +12680,7 @@ function ChatProfilePanel({ convId, tableName, displayName, phoneNumber, profile
             <div>
               <h2>{lead?.full_name || displayName}</h2>
               <p className="crm-chat-profile-status-text">
-                {phoneNumber && <span style={{ fontWeight: 600, color: '#475569' }}>{phoneNumber}</span>}
+                {phoneNumber && <span style={{ fontWeight: 600, color: 'var(--text-muted)' }}>{phoneNumber}</span>}
                 {phoneNumber && ' · '}
                 {statusLabel.label}
               </p>
@@ -12430,15 +12732,15 @@ function ChatProfilePanel({ convId, tableName, displayName, phoneNumber, profile
                 <label className="crm-drawer-label" style={{ marginBottom: 0 }}>CONTACT</label>
                 {isEditing ? (
                   <div style={{ display: 'flex', gap: '6px' }}>
-                    <button onClick={cancelEdit} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 10px', border: '1px solid #e2e8f0', borderRadius: '6px', background: '#fff', fontSize: '0.75rem', fontWeight: 600, color: '#64748b', cursor: 'pointer' }}>
+                    <button onClick={cancelEdit} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 10px', border: '1px solid var(--border-subtle)', borderRadius: '6px', background: 'var(--bg-card)', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-dark)', cursor: 'pointer' }}>
                       <X size={13} /> Cancel
                     </button>
-                    <button onClick={handleSaveInfo} disabled={savingInfo} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 10px', border: 'none', borderRadius: '6px', background: '#2563eb', fontSize: '0.75rem', fontWeight: 600, color: '#fff', cursor: 'pointer' }}>
+                    <button onClick={handleSaveInfo} disabled={savingInfo} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 10px', border: 'none', borderRadius: '6px', background: '#2563eb', fontSize: '0.75rem', fontWeight: 600, color: 'var(--bg-card)', cursor: 'pointer' }}>
                       {savingInfo ? <Loader2 size={13} className="crm-spin" /> : <Save size={13} />} Save
                     </button>
                   </div>
                 ) : (
-                  <button onClick={() => setIsEditing(true)} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 10px', border: '1px solid #e2e8f0', borderRadius: '6px', background: '#f8fafc', fontSize: '0.75rem', fontWeight: 600, color: '#2563eb', cursor: 'pointer', transition: 'all 0.15s' }} onMouseEnter={(e) => { e.currentTarget.style.background = '#2563eb'; e.currentTarget.style.color = '#fff'; }} onMouseLeave={(e) => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.color = '#2563eb'; }}>
+                  <button onClick={() => setIsEditing(true)} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 10px', border: '1px solid var(--border-subtle)', borderRadius: '6px', background: 'var(--bg-light)', fontSize: '0.75rem', fontWeight: 600, color: '#2563eb', cursor: 'pointer', transition: 'all 0.15s' }} onMouseEnter={(e) => { e.currentTarget.style.background = '#2563eb'; e.currentTarget.style.color = '#fff'; }} onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--bg-light)'; e.currentTarget.style.color = '#2563eb'; }}>
                     <Edit3 size={13} /> Edit Info
                   </button>
                 )}
@@ -12496,7 +12798,7 @@ function ChatProfilePanel({ convId, tableName, displayName, phoneNumber, profile
                         updateLead(lead.id, { trading_product: val });
                       }}
                       aria-label="Trading product"
-                      style={{ flex: 1, border: 0, background: 'transparent', color: '#334155', font: 'inherit', fontWeight: 600, outline: 'none', cursor: 'pointer' }}
+                      style={{ flex: 1, border: 0, background: 'transparent', color: 'var(--text-muted)', font: 'inherit', fontWeight: 600, outline: 'none', cursor: 'pointer' }}
                     >
                       <option value="algo">Trading Algo</option>
                       <option value="tradingview_premium">TradingView Premium Indicator</option>
@@ -12515,9 +12817,9 @@ function ChatProfilePanel({ convId, tableName, displayName, phoneNumber, profile
                         onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
                         placeholder="0"
                         aria-label="Fund amount"
-                        style={{ width: '120px', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '4px 8px', font: 'inherit', fontWeight: 700, color: '#16a34a', outline: 'none' }}
+                        style={{ width: '120px', border: '1px solid var(--border-subtle)', borderRadius: '6px', padding: '4px 8px', font: 'inherit', fontWeight: 700, color: '#16a34a', outline: 'none' }}
                       />
-                      <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>USD</span>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-dark)' }}>USD</span>
                     </div>
                   </div>
                 </div>
@@ -12533,7 +12835,7 @@ function ChatProfilePanel({ convId, tableName, displayName, phoneNumber, profile
                   value={lead.assigned_to || ''}
                   onChange={(e) => updateLead(lead.id, { assigned_to: e.target.value || null })}
                   aria-label="Assigned to"
-                  style={{ flex: 1, border: 0, background: 'transparent', color: '#334155', font: 'inherit', fontWeight: 600, outline: 'none', cursor: 'pointer' }}
+                  style={{ flex: 1, border: 0, background: 'transparent', color: 'var(--text-muted)', font: 'inherit', fontWeight: 600, outline: 'none', cursor: 'pointer' }}
                 >
                   <option value="">Unassigned</option>
                   {teamMembers.map((m) => (
@@ -12710,11 +13012,11 @@ function ChatProfilePanel({ convId, tableName, displayName, phoneNumber, profile
             <div className="crm-drawer-section">
               <label className="crm-drawer-label"><History size={14} style={{ display: 'inline', marginRight: '4px' }} /> ACTIVITY TIMELINE</label>
               {activitiesLoading ? (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px', color: '#94a3b8', fontSize: '0.82rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px', color: 'var(--text-dark)', fontSize: '0.82rem' }}>
                   <Loader2 size={16} className="crm-spin" /> Loading activities...
                 </div>
               ) : activities.length === 0 ? (
-                <div style={{ padding: '16px', textAlign: 'center', color: '#94a3b8', fontSize: '0.82rem' }}>
+                <div style={{ padding: '16px', textAlign: 'center', color: 'var(--text-dark)', fontSize: '0.82rem' }}>
                   <History size={28} style={{ marginBottom: '6px', opacity: 0.3 }} />
                   <p>No activity recorded yet. Status changes, notes, tags, and follow-ups will appear here.</p>
                 </div>
@@ -12739,7 +13041,7 @@ function ChatProfilePanel({ convId, tableName, displayName, phoneNumber, profile
                       <div key={act.id} className="crm-activity-item">
                         {idx < activities.length - 1 && <div className="crm-activity-line" />}
                         <div className="crm-activity-dot">
-                          {iconMap[act.activity_type] || <History size={14} style={{ color: '#94a3b8' }} />}
+                          {iconMap[act.activity_type] || <History size={14} style={{ color: 'var(--text-dark)' }} />}
                         </div>
                         <div className="crm-activity-body">
                           <span className="crm-activity-desc">{act.description}</span>
@@ -12757,8 +13059,8 @@ function ChatProfilePanel({ convId, tableName, displayName, phoneNumber, profile
           </>
         ) : (
           <div style={{ padding: '40px 20px', textAlign: 'center' }}>
-            <Loader2 size={24} className="crm-spin" style={{ color: '#94a3b8' }} />
-            <p style={{ marginTop: '12px', fontSize: '0.85rem', color: '#94a3b8' }}>Setting up lead profile...</p>
+            <Loader2 size={24} className="crm-spin" style={{ color: 'var(--text-dark)' }} />
+            <p style={{ marginTop: '12px', fontSize: '0.85rem', color: 'var(--text-dark)' }}>Setting up lead profile...</p>
           </div>
         )}
       </div>
@@ -13322,10 +13624,10 @@ function ChatInbox({ session, onUnreadChange, refreshKey, onRefresh, onCall }: {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '300px', textAlign: 'center', padding: '24px' }}>
         <div style={{ width: '64px', height: '64px', borderRadius: '16px', background: 'linear-gradient(135deg, #0088cc, #00a3e0)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}>
-          <MessageCircle size={32} style={{ color: '#fff' }} />
+          <MessageCircle size={32} style={{ color: 'var(--bg-card)' }} />
         </div>
         <h2 style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: '8px' }}>Telegram Bot Not Configured</h2>
-        <p style={{ color: '#94a3b8', fontSize: '0.88rem', maxWidth: '400px', lineHeight: 1.6, marginBottom: '20px' }}>
+        <p style={{ color: 'var(--text-dark)', fontSize: '0.88rem', maxWidth: '400px', lineHeight: 1.6, marginBottom: '20px' }}>
           To use the client chat inbox, you need to configure your Telegram bot in Settings. Create a bot via @BotFather on Telegram, then add the bot token in Settings.
         </p>
       </div>
@@ -13348,7 +13650,7 @@ function ChatInbox({ session, onUnreadChange, refreshKey, onRefresh, onCall }: {
               className="crm-chat-refresh"
               onClick={() => { setSelectMode((v) => !v); setSelectedConvIds(new Set()); }}
               aria-label={selectMode ? 'Cancel selection' : 'Select conversations'}
-              style={selectMode ? { background: '#0088cc', color: '#fff', borderColor: '#0088cc' } : undefined}
+              style={selectMode ? { background: '#0088cc', color: 'var(--bg-card)', borderColor: '#0088cc' } : undefined}
             >
               {selectMode ? <X size={16} /> : <CheckSquare size={16} />}
             </button>
@@ -13387,7 +13689,7 @@ function ChatInbox({ session, onUnreadChange, refreshKey, onRefresh, onCall }: {
 
         <div className="crm-chat-list-body">
           {conversations.length === 0 ? (
-            <div style={{ padding: '40px 20px', textAlign: 'center', color: '#94a3b8' }}>
+            <div style={{ padding: '40px 20px', textAlign: 'center', color: 'var(--text-dark)' }}>
               <MessageCircle size={40} style={{ margin: '0 auto 12px', opacity: 0.3 }} />
               <p style={{ fontSize: '0.85rem' }}>No conversations yet. When clients message your Telegram bot, they'll appear here.</p>
             </div>
@@ -13406,7 +13708,7 @@ function ChatInbox({ session, onUnreadChange, refreshKey, onRefresh, onCall }: {
                   >
                     {selectedConvIds.has(conv.id)
                       ? <CheckSquare size={20} style={{ color: '#0088cc' }} />
-                      : <Square size={20} style={{ color: '#cbd5e1' }} />}
+                      : <Square size={20} style={{ color: 'var(--text-dark)' }} />}
                   </button>
                 )}
                 <button
@@ -13446,7 +13748,7 @@ function ChatInbox({ session, onUnreadChange, refreshKey, onRefresh, onCall }: {
                   <button
                     onClick={() => setShowConvDeleteConfirm(conv.id)}
                     disabled={deletingConv === conv.id}
-                    style={{ border: 'none', background: 'none', cursor: 'pointer', padding: '8px', color: '#94a3b8', flexShrink: 0, display: 'flex', alignItems: 'center' }}
+                    style={{ border: 'none', background: 'none', cursor: 'pointer', padding: '8px', color: 'var(--text-dark)', flexShrink: 0, display: 'flex', alignItems: 'center' }}
                     aria-label="Delete conversation"
                   >
                     {deletingConv === conv.id ? <Loader2 size={16} className="crm-spin" /> : <Trash2 size={16} />}
@@ -13501,7 +13803,7 @@ function ChatInbox({ session, onUnreadChange, refreshKey, onRefresh, onCall }: {
                   <Loader2 size={24} className="crm-spin" style={{ color: '#0088cc' }} />
                 </div>
               ) : messages.length === 0 ? (
-                <div style={{ textAlign: 'center', color: '#94a3b8', padding: '40px', fontSize: '0.85rem' }}>
+                <div style={{ textAlign: 'center', color: 'var(--text-dark)', padding: '40px', fontSize: '0.85rem' }}>
                   No messages yet. Start the conversation by sending a reply below.
                 </div>
               ) : (
@@ -14761,10 +15063,10 @@ function WhatsAppInbox({ session, onUnreadChange, refreshKey, onRefresh, onCall 
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '300px', textAlign: 'center', padding: '24px' }}>
         <div style={{ width: '64px', height: '64px', borderRadius: '16px', background: 'linear-gradient(135deg, #25D366, #128C7E)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}>
-          <PhoneIcon size={32} style={{ color: '#fff' }} />
+          <PhoneIcon size={32} style={{ color: 'var(--bg-card)' }} />
         </div>
         <h2 style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: '8px' }}>WhatsApp Not Configured</h2>
-        <p style={{ color: '#94a3b8', fontSize: '0.88rem', maxWidth: '400px', lineHeight: 1.6, marginBottom: '20px' }}>
+        <p style={{ color: 'var(--text-dark)', fontSize: '0.88rem', maxWidth: '400px', lineHeight: 1.6, marginBottom: '20px' }}>
           To use the WhatsApp chat inbox, you need to configure your WhatsApp Business API credentials in Settings. Add your Phone Number ID and Access Token from Meta Business Manager.
         </p>
       </div>
@@ -14796,7 +15098,7 @@ function WhatsAppInbox({ session, onUnreadChange, refreshKey, onRefresh, onCall 
               <select
                 value={filterNumberId}
                 onChange={(e) => setFilterNumberId(e.target.value)}
-                style={{ fontSize: '0.72rem', padding: '3px 8px', border: '1px solid #e2e8f0', borderRadius: '6px', background: '#fff', color: '#475569', fontWeight: 600, cursor: 'pointer' }}
+                style={{ fontSize: '0.72rem', padding: '3px 8px', border: '1px solid var(--border-subtle)', borderRadius: '6px', background: 'var(--bg-card)', color: 'var(--text-muted)', fontWeight: 600, cursor: 'pointer' }}
               >
                 <option value="all">All Numbers</option>
                 {waNumbers.map((n) => (
@@ -14826,7 +15128,7 @@ function WhatsAppInbox({ session, onUnreadChange, refreshKey, onRefresh, onCall 
           </div>
         </div>
         {selectMode && conversations.length > 0 && (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 16px', borderBottom: '1px solid #e2e8f0', background: '#f1f5f9' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 16px', borderBottom: '1px solid var(--border-subtle)', background: 'var(--bg-light)' }}>
             <button
               onClick={toggleSelectAllConvs}
               style={{ fontSize: '0.8rem', fontWeight: 600, color: '#25D366', border: 'none', background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
@@ -14834,7 +15136,7 @@ function WhatsAppInbox({ session, onUnreadChange, refreshKey, onRefresh, onCall 
               {selectedConvIds.size === conversations.length ? <CheckSquare size={15} /> : <Square size={15} />}
               {selectedConvIds.size === conversations.length ? 'Deselect all' : 'Select all'}
             </button>
-            <span style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 600 }}>
+            <span style={{ fontSize: '0.78rem', color: 'var(--text-dark)', fontWeight: 600 }}>
               {selectedConvIds.size} selected
             </span>
             {selectedConvIds.size > 0 && (
@@ -14853,13 +15155,13 @@ function WhatsAppInbox({ session, onUnreadChange, refreshKey, onRefresh, onCall 
           <input placeholder="Search conversations" aria-label="Search conversations" />
         </div>
         {allLabelsInUse.length > 0 && (
-          <div style={{ display: 'flex', gap: '4px', padding: '6px 12px', flexWrap: 'wrap', borderBottom: '1px solid #f1f5f9' }}>
+          <div style={{ display: 'flex', gap: '4px', padding: '6px 12px', flexWrap: 'wrap', borderBottom: '1px solid var(--border-subtle)' }}>
             <button
               onClick={() => setLabelFilter(null)}
               type="button"
               style={{
                 fontSize: '0.68rem', fontWeight: 600, padding: '3px 8px', borderRadius: '5px', border: 'none', cursor: 'pointer',
-                background: labelFilter === null ? '#0F172A' : '#f1f5f9', color: labelFilter === null ? '#fff' : '#64748b',
+                background: labelFilter === null ? '#0F172A' : 'var(--bg-light)', color: labelFilter === null ? '#fff' : 'var(--text-dark)',
                 transition: 'all 0.15s',
               }}
             >All</button>
@@ -14882,7 +15184,7 @@ function WhatsAppInbox({ session, onUnreadChange, refreshKey, onRefresh, onCall 
         )}
         <div className="crm-chat-list-body">
           {(filterNumberId === 'all' ? filteredConversations : filteredConversations.filter(c => c.wa_settings_id === filterNumberId)).length === 0 ? (
-            <div style={{ padding: '40px 20px', textAlign: 'center', color: '#94a3b8' }}>
+            <div style={{ padding: '40px 20px', textAlign: 'center', color: 'var(--text-dark)' }}>
               <PhoneIcon size={40} style={{ margin: '0 auto 12px', opacity: 0.3 }} />
               <p style={{ fontSize: '0.85rem' }}>
                 {labelFilter
@@ -14905,7 +15207,7 @@ function WhatsAppInbox({ session, onUnreadChange, refreshKey, onRefresh, onCall 
                   >
                     {selectedConvIds.has(conv.id)
                       ? <CheckSquare size={20} style={{ color: '#25D366' }} />
-                      : <Square size={20} style={{ color: '#cbd5e1' }} />}
+                      : <Square size={20} style={{ color: 'var(--text-dark)' }} />}
                   </button>
                 )}
                 <button
@@ -14931,7 +15233,7 @@ function WhatsAppInbox({ session, onUnreadChange, refreshKey, onRefresh, onCall 
                         <span className="crm-chat-conv-time">{formatTime(conv.last_message_at)}</span>
                       )}
                       {conv.wa_phone_number && (
-                        <span style={{ fontSize: '0.68rem', color: '#94a3b8', fontWeight: 400, display: 'block', marginTop: '-1px' }}>{conv.wa_phone_number}</span>
+                        <span style={{ fontSize: '0.68rem', color: 'var(--text-dark)', fontWeight: 400, display: 'block', marginTop: '-1px' }}>{conv.wa_phone_number}</span>
                       )}
                     </div>
                     {(conv.labels || []).length > 0 && (
@@ -14949,7 +15251,7 @@ function WhatsAppInbox({ session, onUnreadChange, refreshKey, onRefresh, onCall 
                         {isConvTyping(conv.id) ? 'typing...' : (conv.last_message_text || 'No messages')}
                       </span>
                       {conv.unread_count > 0 && !isConvTyping(conv.id) && (
-                        <span className="crm-chat-unread-badge" style={{ background: '#25D366', color: '#fff' }}>{conv.unread_count}</span>
+                        <span className="crm-chat-unread-badge" style={{ background: '#25D366', color: 'var(--bg-card)' }}>{conv.unread_count}</span>
                       )}
                     </div>
                   </div>
@@ -14958,7 +15260,7 @@ function WhatsAppInbox({ session, onUnreadChange, refreshKey, onRefresh, onCall 
                   <div style={{ position: 'relative', flexShrink: 0, display: 'flex', alignItems: 'center', gap: '2px' }}>
                     <button
                       onClick={() => setShowLabelPicker(showLabelPicker === conv.id ? null : conv.id)}
-                      style={{ border: 'none', background: 'none', cursor: 'pointer', padding: '8px', color: '#94a3b8', display: 'flex', alignItems: 'center' }}
+                      style={{ border: 'none', background: 'none', cursor: 'pointer', padding: '8px', color: 'var(--text-dark)', display: 'flex', alignItems: 'center' }}
                       aria-label="Manage labels"
                       type="button"
                     >
@@ -14967,16 +15269,16 @@ function WhatsAppInbox({ session, onUnreadChange, refreshKey, onRefresh, onCall 
                     <button
                       onClick={() => setShowConvDeleteConfirm(conv.id)}
                       disabled={deletingConv === conv.id}
-                      style={{ border: 'none', background: 'none', cursor: 'pointer', padding: '8px', color: '#94a3b8', display: 'flex', alignItems: 'center' }}
+                      style={{ border: 'none', background: 'none', cursor: 'pointer', padding: '8px', color: 'var(--text-dark)', display: 'flex', alignItems: 'center' }}
                       aria-label="Delete conversation"
                     >
                       {deletingConv === conv.id ? <Loader2 size={16} className="crm-spin" /> : <Trash2 size={16} />}
                     </button>
                     {showLabelPicker === conv.id && (
-                      <div style={{ position: 'absolute', top: '100%', right: '0', zIndex: 100, background: '#fff', border: '1px solid #e2e8f0', borderRadius: '10px', boxShadow: '0 8px 24px rgba(0,0,0,0.12)', padding: '10px', minWidth: '200px' }}>
-                        <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#0F172A', marginBottom: '8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <div style={{ position: 'absolute', top: '100%', right: '0', zIndex: 100, background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', borderRadius: '10px', boxShadow: '0 8px 24px rgba(0,0,0,0.12)', padding: '10px', minWidth: '200px' }}>
+                        <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                           <span>Labels</span>
-                          <button onClick={() => setShowLabelPicker(null)} type="button" style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#94a3b8', padding: 0 }}><X size={14} /></button>
+                          <button onClick={() => setShowLabelPicker(null)} type="button" style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--text-dark)', padding: 0 }}><X size={14} /></button>
                         </div>
                         {Object.keys(LABEL_COLORS).map((label) => {
                           const ls = LABEL_COLORS[label];
@@ -15030,7 +15332,7 @@ function WhatsAppInbox({ session, onUnreadChange, refreshKey, onRefresh, onCall 
                 <div className="crm-chat-header-copy">
                   <strong>{selectedConversation?.wa_name || 'Unknown'}</strong>
                   {selectedConversation?.wa_phone_number && (
-                    <span style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 400, display: 'block' }}>{selectedConversation.wa_phone_number}</span>
+                    <span style={{ fontSize: '0.72rem', color: 'var(--text-dark)', fontWeight: 400, display: 'block' }}>{selectedConversation.wa_phone_number}</span>
                   )}
                   <span className="crm-chat-status-text" style={isConvTyping(selectedConv) ? { color: '#25D366', fontStyle: 'italic' } : undefined}>
                     {isConvTyping(selectedConv) ? 'typing...' : getLastSeenStatus(selectedConversation?.last_message_at || null).label}
@@ -15065,7 +15367,7 @@ function WhatsAppInbox({ session, onUnreadChange, refreshKey, onRefresh, onCall 
                   width: '36px', height: '36px',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   cursor: chatCallState ? 'not-allowed' : 'pointer',
-                  background: chatCallState ? '#e2e8f0' : 'rgba(37,211,102,0.12)',
+                  background: chatCallState ? 'var(--border-subtle)' : 'rgba(37,211,102,0.12)',
                   color: chatCallState ? '#94a3b8' : '#16a34a',
                   transition: 'all 0.2s',
                 }}
@@ -15082,7 +15384,7 @@ function WhatsAppInbox({ session, onUnreadChange, refreshKey, onRefresh, onCall 
                   <Loader2 size={24} className="crm-spin" style={{ color: '#25D366' }} />
                 </div>
               ) : messages.length === 0 ? (
-                <div style={{ textAlign: 'center', color: '#94a3b8', padding: '40px', fontSize: '0.85rem' }}>
+                <div style={{ textAlign: 'center', color: 'var(--text-dark)', padding: '40px', fontSize: '0.85rem' }}>
                   No messages yet. Start the conversation by sending a reply below.
                 </div>
               ) : (
@@ -15218,34 +15520,34 @@ function WhatsAppInbox({ session, onUnreadChange, refreshKey, onRefresh, onCall 
               {showTemplatePicker && !selectedTemplate && (
                 <div style={{
                   marginBottom: '8px',
-                  background: '#fff',
-                  border: '1px solid #e2e8f0',
+                  background: 'var(--bg-card)',
+                  border: '1px solid var(--border-subtle)',
                   borderRadius: '10px',
                   maxHeight: '320px',
                   display: 'flex',
                   flexDirection: 'column',
                   overflow: 'hidden',
                 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', borderBottom: '1px solid #f1f5f9' }}>
-                    <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e293b', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', borderBottom: '1px solid var(--border-subtle)' }}>
+                    <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <LayoutTemplate size={15} /> Approved Templates
                     </span>
                     <button
                       onClick={() => setShowTemplatePicker(false)}
                       type="button"
                       aria-label="Close templates"
-                      style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#94a3b8', padding: '2px' }}
+                      style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--text-dark)', padding: '2px' }}
                     >
                       <XIcon size={16} />
                     </button>
                   </div>
                   {waTemplates.length === 0 ? (
-                    <div style={{ padding: '20px', textAlign: 'center', color: '#94a3b8', fontSize: '0.8rem' }}>
+                    <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-dark)', fontSize: '0.8rem' }}>
                       No approved templates yet. Create and get templates approved in the WhatsApp Templates page first.
                     </div>
                   ) : (
                     <>
-                      <div style={{ display: 'flex', gap: '6px', padding: '8px 12px', borderBottom: '1px solid #f1f5f9', flexWrap: 'wrap' }}>
+                      <div style={{ display: 'flex', gap: '6px', padding: '8px 12px', borderBottom: '1px solid var(--border-subtle)', flexWrap: 'wrap' }}>
                         {['all', 'MARKETING', 'UTILITY', 'AUTHENTICATION'].map((cat) => (
                           <button
                             key={cat}
@@ -15256,8 +15558,8 @@ function WhatsAppInbox({ session, onUnreadChange, refreshKey, onRefresh, onCall 
                               cursor: 'pointer',
                               background: templateFilter === cat
                                 ? (cat === 'MARKETING' ? '#C2410C' : cat === 'UTILITY' ? '#0891B2' : cat === 'AUTHENTICATION' ? '#DC2626' : '#25D366')
-                                : '#f1f5f9',
-                              color: templateFilter === cat ? '#fff' : '#64748b',
+                                : 'var(--bg-light)',
+                              color: templateFilter === cat ? '#fff' : 'var(--text-dark)',
                               transition: 'all 0.15s',
                             }}
                           >
@@ -15281,7 +15583,7 @@ function WhatsAppInbox({ session, onUnreadChange, refreshKey, onRefresh, onCall 
                                   background: 'none', cursor: 'pointer', padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: '3px',
                                   transition: 'background 0.15s',
                                 }}
-                                onMouseEnter={(e) => { e.currentTarget.style.background = '#f8fafc'; }}
+                                onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--bg-light)'; }}
                                 onMouseLeave={(e) => { e.currentTarget.style.background = 'none'; }}
                               >
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -15293,12 +15595,12 @@ function WhatsAppInbox({ session, onUnreadChange, refreshKey, onRefresh, onCall 
                                   }}>
                                     {tpl.category}
                                   </span>
-                                  <strong style={{ fontSize: '0.78rem', color: '#1e293b', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                  <strong style={{ fontSize: '0.78rem', color: 'var(--text-main)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                     {tpl.name}
                                   </strong>
-                                  <span style={{ fontSize: '0.62rem', color: '#94a3b8' }}>{tpl.language}</span>
+                                  <span style={{ fontSize: '0.62rem', color: 'var(--text-dark)' }}>{tpl.language}</span>
                                 </div>
-                                <span style={{ fontSize: '0.72rem', color: '#64748b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                <span style={{ fontSize: '0.72rem', color: 'var(--text-dark)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                   {bodyText}
                                 </span>
                               </button>
@@ -15314,8 +15616,8 @@ function WhatsAppInbox({ session, onUnreadChange, refreshKey, onRefresh, onCall 
               {selectedTemplate && (
                 <div style={{
                   marginBottom: '8px',
-                  background: '#fff',
-                  border: '1px solid #e2e8f0',
+                  background: 'var(--bg-card)',
+                  border: '1px solid var(--border-subtle)',
                   borderRadius: '10px',
                   padding: '12px',
                   display: 'flex',
@@ -15323,14 +15625,14 @@ function WhatsAppInbox({ session, onUnreadChange, refreshKey, onRefresh, onCall 
                   gap: '10px',
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e293b', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <LayoutTemplate size={15} /> {selectedTemplate.name}
                     </span>
                     <button
                       onClick={() => { setSelectedTemplate(null); setTemplateVariables([]); }}
                       type="button"
                       aria-label="Cancel template"
-                      style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#94a3b8', padding: '2px' }}
+                      style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--text-dark)', padding: '2px' }}
                     >
                       <XIcon size={16} />
                     </button>
@@ -15339,19 +15641,19 @@ function WhatsAppInbox({ session, onUnreadChange, refreshKey, onRefresh, onCall 
                     const { vars, body } = extractTemplateVariables(selectedTemplate);
                     if (vars.length === 0) {
                       return (
-                        <div style={{ fontSize: '0.76rem', color: '#64748b', lineHeight: 1.5, background: '#f8fafc', padding: '8px 10px', borderRadius: '6px' }}>
+                        <div style={{ fontSize: '0.76rem', color: 'var(--text-dark)', lineHeight: 1.5, background: 'var(--bg-light)', padding: '8px 10px', borderRadius: '6px' }}>
                           {body || 'No variables needed for this template.'}
                         </div>
                       );
                     }
                     return (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <div style={{ fontSize: '0.72rem', color: '#64748b', background: '#f8fafc', padding: '8px 10px', borderRadius: '6px', lineHeight: 1.4 }}>
+                        <div style={{ fontSize: '0.72rem', color: 'var(--text-dark)', background: 'var(--bg-light)', padding: '8px 10px', borderRadius: '6px', lineHeight: 1.4 }}>
                           {body}
                         </div>
                         {vars.map((v, i) => (
                           <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                            <label style={{ fontSize: '0.7rem', fontWeight: 600, color: '#475569' }}>
+                            <label style={{ fontSize: '0.7rem', fontWeight: 600, color: 'var(--text-muted)' }}>
                               Variable {v}
                             </label>
                             <input
@@ -15364,8 +15666,8 @@ function WhatsAppInbox({ session, onUnreadChange, refreshKey, onRefresh, onCall 
                               }}
                               placeholder={`Enter value for ${v}`}
                               style={{
-                                fontSize: '0.8rem', padding: '6px 10px', border: '1px solid #e2e8f0',
-                                borderRadius: '6px', outline: 'none', color: '#1e293b',
+                                fontSize: '0.8rem', padding: '6px 10px', border: '1px solid var(--border-subtle)',
+                                borderRadius: '6px', outline: 'none', color: 'var(--text-main)',
                               }}
                             />
                           </div>
@@ -15380,7 +15682,7 @@ function WhatsAppInbox({ session, onUnreadChange, refreshKey, onRefresh, onCall 
                     style={{
                       display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
                       padding: '8px 16px', borderRadius: '8px', border: 'none',
-                      background: '#25D366', color: '#fff', fontSize: '0.82rem', fontWeight: 600,
+                      background: '#25D366', color: 'var(--bg-card)', fontSize: '0.82rem', fontWeight: 600,
                       cursor: sendingTemplate ? 'not-allowed' : 'pointer', opacity: sendingTemplate ? 0.6 : 1,
                       transition: 'all 0.15s',
                     }}
@@ -15517,8 +15819,8 @@ function WhatsAppInbox({ session, onUnreadChange, refreshKey, onRefresh, onCall 
             }}>
               {chatCallState.status === 'failed' ? <XCircle size={32} style={{ color: '#ef4444' }} /> :
                chatCallState.status === 'ended' ? <PhoneOff size={32} style={{ color: '#ef4444' }} /> :
-               chatCallState.status === 'permission_requested' ? <MessageCircle size={32} style={{ color: '#fff' }} /> :
-               <PhoneIcon size={32} style={{ color: '#fff' }} />}
+               chatCallState.status === 'permission_requested' ? <MessageCircle size={32} style={{ color: 'var(--bg-card)' }} /> :
+               <PhoneIcon size={32} style={{ color: 'var(--bg-card)' }} />}
             </div>
             <h3 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '6px' }}>
               {chatCallState.status === 'checking_permission' && 'Checking permission...'}
@@ -15529,19 +15831,19 @@ function WhatsAppInbox({ session, onUnreadChange, refreshKey, onRefresh, onCall 
               {chatCallState.status === 'failed' && 'Call failed'}
               {chatCallState.status === 'ended' && 'Call ended'}
             </h3>
-            <p style={{ fontSize: '0.88rem', color: '#64748b', margin: '0 0 20px' }}>{chatCallState.phoneNumber}</p>
+            <p style={{ fontSize: '0.88rem', color: 'var(--text-dark)', margin: '0 0 20px' }}>{chatCallState.phoneNumber}</p>
             {chatCallState.status === 'permission_requested' && (
-              <p style={{ fontSize: '0.82rem', color: '#64748b', margin: '0 0 20px', lineHeight: 1.5 }}>
+              <p style={{ fontSize: '0.82rem', color: 'var(--text-dark)', margin: '0 0 20px', lineHeight: 1.5 }}>
                 A permission request was sent to this contact. They need to grant permission before you can call them. Try again after they accept.
               </p>
             )}
             {chatCallState.status === 'failed' && (
-              <p style={{ fontSize: '0.82rem', color: '#94a3b8', margin: '0 0 20px', lineHeight: 1.5 }}>
+              <p style={{ fontSize: '0.82rem', color: 'var(--text-dark)', margin: '0 0 20px', lineHeight: 1.5 }}>
                 The call could not be started. Make sure WhatsApp calling is enabled for your number.
               </p>
             )}
             {chatCallState.status === 'ended' && (
-              <p style={{ fontSize: '0.82rem', color: '#94a3b8', margin: '0 0 20px', lineHeight: 1.5 }}>
+              <p style={{ fontSize: '0.82rem', color: 'var(--text-dark)', margin: '0 0 20px', lineHeight: 1.5 }}>
                 The call has ended.
               </p>
             )}
@@ -15550,7 +15852,7 @@ function WhatsAppInbox({ session, onUnreadChange, refreshKey, onRefresh, onCall 
               style={{
                 padding: '10px 32px', borderRadius: '10px', border: 'none',
                 background: (chatCallState.status === 'failed' || chatCallState.status === 'ended') ? '#64748b' : '#ef4444',
-                color: '#fff', fontSize: '0.88rem', fontWeight: 600, cursor: 'pointer',
+                color: 'var(--bg-card)', fontSize: '0.88rem', fontWeight: 600, cursor: 'pointer',
                 display: 'flex', alignItems: 'center', gap: '8px', margin: '0 auto',
               }}
             >
@@ -15567,12 +15869,12 @@ function WhatsAppInbox({ session, onUnreadChange, refreshKey, onRefresh, onCall 
           <div className="wa-lead-sidebar-header">
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <UserCheck size={18} style={{ color: '#6366F1' }} />
-              <strong style={{ fontSize: '0.88rem', color: '#0F172A' }}>Lead Info</strong>
+              <strong style={{ fontSize: '0.88rem', color: 'var(--text-main)' }}>Lead Info</strong>
             </div>
             <button
               onClick={() => setShowLeadSidebar(false)}
               aria-label="Close lead info"
-              style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#94a3b8', padding: '4px', display: 'flex' }}
+              style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--text-dark)', padding: '4px', display: 'flex' }}
             >
               <X size={16} />
             </button>
@@ -15626,33 +15928,33 @@ function WhatsAppInbox({ session, onUnreadChange, refreshKey, onRefresh, onCall 
               {leadSidebar.notes && (
                 <div className="wa-lead-field" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '4px' }}>
                   <span className="wa-lead-field-label">Notes</span>
-                  <span className="wa-lead-field-value" style={{ fontSize: '0.78rem', lineHeight: 1.5, color: '#64748B' }}>{leadSidebar.notes}</span>
+                  <span className="wa-lead-field-value" style={{ fontSize: '0.78rem', lineHeight: 1.5, color: 'var(--text-dark)' }}>{leadSidebar.notes}</span>
                 </div>
               )}
               <button
                 onClick={() => setShowProfilePanel(true)}
                 style={{
-                  width: '100%', padding: '9px 14px', borderRadius: '8px', border: '1px solid #E2E8F0',
-                  background: '#F8FAFC', color: '#475569', fontSize: '0.8rem', fontWeight: 600,
+                  width: '100%', padding: '9px 14px', borderRadius: '8px', border: '1px solid var(--border-subtle)',
+                  background: 'var(--bg-light)', color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: 600,
                   cursor: 'pointer', marginTop: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
                   transition: 'all 0.15s ease',
                 }}
-                onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#CBD5E1'; e.currentTarget.style.color = '#334155'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#E2E8F0'; e.currentTarget.style.color = '#475569'; }}
+                onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--border-subtle)'; e.currentTarget.style.color = 'var(--text-muted)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--border-subtle)'; e.currentTarget.style.color = 'var(--text-muted)'; }}
               >
                 <MoreVertical size={14} /> Open Full Profile
               </button>
             </div>
           ) : (
-            <div style={{ padding: '32px 20px', textAlign: 'center', color: '#94a3b8', fontSize: '0.82rem' }}>
+            <div style={{ padding: '32px 20px', textAlign: 'center', color: 'var(--text-dark)', fontSize: '0.82rem' }}>
               <UserCheck size={32} style={{ margin: '0 auto 10px', opacity: 0.3 }} />
               <p>No linked lead found for this conversation.</p>
               <p style={{ fontSize: '0.74rem', marginTop: '6px' }}>Open the full profile to create one.</p>
               <button
                 onClick={() => setShowProfilePanel(true)}
                 style={{
-                  marginTop: '12px', padding: '8px 16px', borderRadius: '8px', border: '1px solid #E2E8F0',
-                  background: '#F8FAFC', color: '#475569', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer',
+                  marginTop: '12px', padding: '8px 16px', borderRadius: '8px', border: '1px solid var(--border-subtle)',
+                  background: 'var(--bg-light)', color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer',
                 }}
               >
                 Create / View Lead
@@ -15661,26 +15963,26 @@ function WhatsAppInbox({ session, onUnreadChange, refreshKey, onRefresh, onCall 
           )}
 
           {/* Internal Notes Section — always visible */}
-          <div style={{ borderTop: '1px solid #f1f5f9', padding: '14px 16px' }}>
+          <div style={{ borderTop: '1px solid var(--border-subtle)', padding: '14px 16px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '10px' }}>
               <StickyNote size={16} style={{ color: '#6366F1' }} />
-              <strong style={{ fontSize: '0.82rem', color: '#0F172A' }}>Internal Notes</strong>
-              <span style={{ fontSize: '0.68rem', color: '#94a3b8', fontWeight: 400 }}>(team only)</span>
+              <strong style={{ fontSize: '0.82rem', color: 'var(--text-main)' }}>Internal Notes</strong>
+              <span style={{ fontSize: '0.68rem', color: 'var(--text-dark)', fontWeight: 400 }}>(team only)</span>
             </div>
             {convNotes.length > 0 && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '10px', maxHeight: '240px', overflowY: 'auto' }}>
                 {convNotes.map((note) => (
-                  <div key={note.id} style={{ background: '#F8FAFC', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '8px 10px', position: 'relative' }}>
-                    <div style={{ fontSize: '0.78rem', color: '#334155', lineHeight: 1.5, whiteSpace: 'pre-wrap', wordBreak: 'break-word', paddingRight: '20px' }}>{note.body}</div>
+                  <div key={note.id} style={{ background: 'var(--bg-light)', border: '1px solid var(--border-subtle)', borderRadius: '8px', padding: '8px 10px', position: 'relative' }}>
+                    <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: 1.5, whiteSpace: 'pre-wrap', wordBreak: 'break-word', paddingRight: '20px' }}>{note.body}</div>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '6px' }}>
-                      <span style={{ fontSize: '0.66rem', color: '#94a3b8' }}>
+                      <span style={{ fontSize: '0.66rem', color: 'var(--text-dark)' }}>
                         {note.author_name ? `${note.author_name} - ` : ''}{formatTime(note.created_at)}
                       </span>
                       <button
                         onClick={() => handleDeleteNote(note.id)}
                         type="button"
                         aria-label="Delete note"
-                        style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#cbd5e1', padding: '2px', display: 'flex' }}
+                        style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--text-dark)', padding: '2px', display: 'flex' }}
                       >
                         <Trash2 size={12} />
                       </button>
@@ -15690,7 +15992,7 @@ function WhatsAppInbox({ session, onUnreadChange, refreshKey, onRefresh, onCall 
               </div>
             )}
             {convNotes.length === 0 && (
-              <p style={{ fontSize: '0.74rem', color: '#94a3b8', marginBottom: '8px' }}>No notes yet. Add context for your team below.</p>
+              <p style={{ fontSize: '0.74rem', color: 'var(--text-dark)', marginBottom: '8px' }}>No notes yet. Add context for your team below.</p>
             )}
             <div style={{ display: 'flex', gap: '6px' }}>
               <textarea
@@ -15698,13 +16000,13 @@ function WhatsAppInbox({ session, onUnreadChange, refreshKey, onRefresh, onCall 
                 onChange={(e) => setNewNote(e.target.value)}
                 placeholder="Add a private note..."
                 rows={2}
-                style={{ flex: 1, fontSize: '0.78rem', padding: '6px 10px', border: '1px solid #e2e8f0', borderRadius: '6px', resize: 'none', outline: 'none', color: '#1e293b', fontFamily: 'inherit' }}
+                style={{ flex: 1, fontSize: '0.78rem', padding: '6px 10px', border: '1px solid var(--border-subtle)', borderRadius: '6px', resize: 'none', outline: 'none', color: 'var(--text-main)', fontFamily: 'inherit' }}
               />
               <button
                 onClick={handleAddNote}
                 disabled={!newNote.trim() || savingNote}
                 type="button"
-                style={{ alignSelf: 'flex-end', padding: '6px 12px', borderRadius: '6px', border: 'none', background: newNote.trim() ? '#6366F1' : '#e2e8f0', color: '#fff', fontSize: '0.76rem', fontWeight: 600, cursor: newNote.trim() && !savingNote ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', gap: '4px', transition: 'all 0.15s' }}
+                style={{ alignSelf: 'flex-end', padding: '6px 12px', borderRadius: '6px', border: 'none', background: newNote.trim() ? '#6366F1' : 'var(--border-subtle)', color: 'var(--bg-card)', fontSize: '0.76rem', fontWeight: 600, cursor: newNote.trim() && !savingNote ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', gap: '4px', transition: 'all 0.15s' }}
               >
                 {savingNote ? <Loader2 size={14} className="crm-spin" /> : <Plus size={14} />} Add
               </button>
@@ -16117,16 +16419,16 @@ export function TemplatesPage({ session, onBack, embedded }: { session: Session;
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
         <div>
-          <h1 style={{ fontSize: '1.6rem', fontWeight: 800, color: '#0f172a', marginBottom: '4px' }}>Email Templates</h1>
-          <p style={{ fontSize: '0.88rem', color: '#94a3b8' }}>Create, manage, and use email templates — including pre-built Telegram channel joining templates</p>
+          <h1 style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: '4px' }}>Email Templates</h1>
+          <p style={{ fontSize: '0.88rem', color: 'var(--text-dark)' }}>Create, manage, and use email templates — including pre-built Telegram channel joining templates</p>
         </div>
         <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
           {!embedded && (
             <button
               onClick={onBack}
               style={{
-                padding: '9px 16px', border: '1px solid #e2e8f0', borderRadius: '8px',
-                background: '#fff', color: '#64748b', fontSize: '0.85rem', fontWeight: 600,
+                padding: '9px 16px', border: '1px solid var(--border-subtle)', borderRadius: '8px',
+                background: 'var(--bg-card)', color: 'var(--text-dark)', fontSize: '0.85rem', fontWeight: 600,
                 cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px',
               }}
             >
@@ -16139,7 +16441,7 @@ export function TemplatesPage({ session, onBack, embedded }: { session: Session;
               disabled={saving}
               style={{
                 padding: '9px 16px', border: 'none', borderRadius: '8px',
-                background: 'linear-gradient(135deg, #FEF08A, #EAB308)', color: '#fff',
+                background: 'linear-gradient(135deg, #FEF08A, #EAB308)', color: 'var(--bg-card)',
                 fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer',
                 display: 'flex', alignItems: 'center', gap: '6px',
               }}
@@ -16152,7 +16454,7 @@ export function TemplatesPage({ session, onBack, embedded }: { session: Session;
             onClick={openNewEditor}
             style={{
               padding: '9px 16px', border: 'none', borderRadius: '8px',
-              background: '#EAB308', color: '#fff', fontSize: '0.85rem', fontWeight: 600,
+              background: '#EAB308', color: 'var(--bg-card)', fontSize: '0.85rem', fontWeight: 600,
               cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px',
             }}
           >
@@ -16169,8 +16471,8 @@ export function TemplatesPage({ session, onBack, embedded }: { session: Session;
             onClick={() => setActiveCategory(cat.key)}
             style={{
               padding: '7px 14px', border: 'none', borderRadius: '20px',
-              background: activeCategory === cat.key ? cat.color : '#f1f5f9',
-              color: activeCategory === cat.key ? '#fff' : '#64748b',
+              background: activeCategory === cat.key ? cat.color : 'var(--bg-light)',
+              color: activeCategory === cat.key ? '#fff' : 'var(--text-dark)',
               fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer',
               display: 'flex', alignItems: 'center', gap: '6px',
               transition: 'all 0.2s',
@@ -16188,19 +16490,19 @@ export function TemplatesPage({ session, onBack, embedded }: { session: Session;
 
       {/* Search */}
       <div style={{ marginBottom: '20px', position: 'relative' }}>
-        <Search size={18} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+        <Search size={18} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dark)' }} />
         <input
           type="text"
           placeholder="Search templates by name, subject, or content..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           style={{
-            width: '100%', padding: '11px 16px 11px 44px', border: '1px solid #e2e8f0',
+            width: '100%', padding: '11px 16px 11px 44px', border: '1px solid var(--border-subtle)',
             borderRadius: '10px', fontSize: '0.88rem', outline: 'none',
             transition: 'border-color 0.2s', fontFamily: 'inherit',
           }}
           onFocus={(e) => { e.target.style.borderColor = '#EAB308'; }}
-          onBlur={(e) => { e.target.style.borderColor = '#e2e8f0'; }}
+          onBlur={(e) => { e.target.style.borderColor = 'var(--border-subtle)'; }}
         />
       </div>
 
@@ -16217,12 +16519,12 @@ export function TemplatesPage({ session, onBack, embedded }: { session: Session;
           <Loader2 size={32} className="crm-spin" style={{ color: '#EAB308' }} />
         </div>
       ) : filteredTemplates.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '60px 20px', background: '#fff', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
-          <FileTextIcon size={48} style={{ color: '#cbd5e1', marginBottom: '16px' }} />
-          <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#0f172a', marginBottom: '8px' }}>
+        <div style={{ textAlign: 'center', padding: '60px 20px', background: 'var(--bg-card)', borderRadius: '16px', border: '1px solid var(--border-subtle)' }}>
+          <FileTextIcon size={48} style={{ color: 'var(--text-dark)', marginBottom: '16px' }} />
+          <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '8px' }}>
             {templates.length === 0 ? 'No templates yet' : 'No templates match your search'}
           </h3>
-          <p style={{ color: '#94a3b8', fontSize: '0.88rem', marginBottom: '20px', maxWidth: '400px', margin: '0 auto 20px' }}>
+          <p style={{ color: 'var(--text-dark)', fontSize: '0.88rem', marginBottom: '20px', maxWidth: '400px', margin: '0 auto 20px' }}>
             {templates.length === 0
               ? 'Get started by importing our pre-built templates or create your own from scratch.'
               : 'Try adjusting your search or category filter.'}
@@ -16235,7 +16537,7 @@ export function TemplatesPage({ session, onBack, embedded }: { session: Session;
                   disabled={saving}
                   style={{
                     padding: '10px 20px', border: 'none', borderRadius: '10px',
-                    background: 'linear-gradient(135deg, #FEF08A, #EAB308)', color: '#fff',
+                    background: 'linear-gradient(135deg, #FEF08A, #EAB308)', color: 'var(--bg-card)',
                     fontSize: '0.88rem', fontWeight: 600, cursor: 'pointer',
                     display: 'flex', alignItems: 'center', gap: '8px',
                   }}
@@ -16248,7 +16550,7 @@ export function TemplatesPage({ session, onBack, embedded }: { session: Session;
                 onClick={openNewEditor}
                 style={{
                   padding: '10px 20px', border: 'none', borderRadius: '10px',
-                  background: '#EAB308', color: '#fff', fontSize: '0.88rem', fontWeight: 600,
+                  background: '#EAB308', color: 'var(--bg-card)', fontSize: '0.88rem', fontWeight: 600,
                   cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px',
                 }}
               >
@@ -16263,7 +16565,7 @@ export function TemplatesPage({ session, onBack, embedded }: { session: Session;
             <div
               key={template.id}
               style={{
-                background: '#fff', borderRadius: '14px', border: '1px solid #e2e8f0',
+                background: 'var(--bg-card)', borderRadius: '14px', border: '1px solid var(--border-subtle)',
                 overflow: 'hidden', transition: 'box-shadow 0.2s', position: 'relative',
                 opacity: template.is_active ? 1 : 0.6,
               }}
@@ -16278,7 +16580,7 @@ export function TemplatesPage({ session, onBack, embedded }: { session: Session;
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '10px' }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                      <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#0f172a', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-main)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {template.name}
                       </h3>
                       {template.is_prebuilt && (
@@ -16287,7 +16589,7 @@ export function TemplatesPage({ session, onBack, embedded }: { session: Session;
                         </span>
                       )}
                     </div>
-                    <p style={{ fontSize: '0.82rem', color: '#64748b', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <p style={{ fontSize: '0.82rem', color: 'var(--text-dark)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {template.subject}
                     </p>
                   </div>
@@ -16295,9 +16597,9 @@ export function TemplatesPage({ session, onBack, embedded }: { session: Session;
 
                 {/* Body preview */}
                 <div style={{
-                  fontSize: '0.8rem', color: '#94a3b8', lineHeight: 1.5,
-                  marginBottom: '14px', padding: '10px 12px', background: '#f8fafc',
-                  borderRadius: '8px', border: '1px solid #f1f5f9',
+                  fontSize: '0.8rem', color: 'var(--text-dark)', lineHeight: 1.5,
+                  marginBottom: '14px', padding: '10px 12px', background: 'var(--bg-light)',
+                  borderRadius: '8px', border: '1px solid var(--border-subtle)',
                   maxHeight: '80px', overflow: 'hidden',
                 }}>
                   {renderBodyPreview(template.body)}
@@ -16312,7 +16614,7 @@ export function TemplatesPage({ session, onBack, embedded }: { session: Session;
                   }}>
                     {TEMPLATE_CATEGORIES.find((c) => c.key === template.category)?.label || template.category}
                   </span>
-                  <span style={{ fontSize: '0.72rem', color: '#cbd5e1' }}>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--text-dark)' }}>
                     {formatDate(template.created_at)}
                   </span>
                 </div>
@@ -16322,8 +16624,8 @@ export function TemplatesPage({ session, onBack, embedded }: { session: Session;
                   <button
                     onClick={() => setShowPreview(template)}
                     style={{
-                      flex: 1, padding: '7px 10px', border: '1px solid #e2e8f0', borderRadius: '7px',
-                      background: '#fff', color: '#64748b', fontSize: '0.76rem', fontWeight: 600,
+                      flex: 1, padding: '7px 10px', border: '1px solid var(--border-subtle)', borderRadius: '7px',
+                      background: 'var(--bg-card)', color: 'var(--text-dark)', fontSize: '0.76rem', fontWeight: 600,
                       cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px',
                     }}
                   >
@@ -16332,8 +16634,8 @@ export function TemplatesPage({ session, onBack, embedded }: { session: Session;
                   <button
                     onClick={() => openEditEditor(template)}
                     style={{
-                      flex: 1, padding: '7px 10px', border: '1px solid #e2e8f0', borderRadius: '7px',
-                      background: '#fff', color: '#64748b', fontSize: '0.76rem', fontWeight: 600,
+                      flex: 1, padding: '7px 10px', border: '1px solid var(--border-subtle)', borderRadius: '7px',
+                      background: 'var(--bg-card)', color: 'var(--text-dark)', fontSize: '0.76rem', fontWeight: 600,
                       cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px',
                     }}
                   >
@@ -16342,8 +16644,8 @@ export function TemplatesPage({ session, onBack, embedded }: { session: Session;
                   <button
                     onClick={() => handleCopyBody(template)}
                     style={{
-                      padding: '7px 10px', border: '1px solid #e2e8f0', borderRadius: '7px',
-                      background: '#fff', color: '#64748b', fontSize: '0.76rem', fontWeight: 600,
+                      padding: '7px 10px', border: '1px solid var(--border-subtle)', borderRadius: '7px',
+                      background: 'var(--bg-card)', color: 'var(--text-dark)', fontSize: '0.76rem', fontWeight: 600,
                       cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px',
                     }}
                     title="Copy to clipboard"
@@ -16353,8 +16655,8 @@ export function TemplatesPage({ session, onBack, embedded }: { session: Session;
                   <button
                     onClick={() => handleDuplicate(template)}
                     style={{
-                      padding: '7px 10px', border: '1px solid #e2e8f0', borderRadius: '7px',
-                      background: '#fff', color: '#64748b', fontSize: '0.76rem', fontWeight: 600,
+                      padding: '7px 10px', border: '1px solid var(--border-subtle)', borderRadius: '7px',
+                      background: 'var(--bg-card)', color: 'var(--text-dark)', fontSize: '0.76rem', fontWeight: 600,
                       cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px',
                     }}
                     title="Duplicate"
@@ -16364,9 +16666,9 @@ export function TemplatesPage({ session, onBack, embedded }: { session: Session;
                   <button
                     onClick={() => handleToggleActive(template)}
                     style={{
-                      padding: '7px 10px', border: '1px solid #e2e8f0', borderRadius: '7px',
-                      background: template.is_active ? 'rgba(22,163,74,0.08)' : '#fff',
-                      color: template.is_active ? '#16a34a' : '#94a3b8',
+                      padding: '7px 10px', border: '1px solid var(--border-subtle)', borderRadius: '7px',
+                      background: template.is_active ? 'rgba(22,163,74,0.08)' : 'var(--bg-card)',
+                      color: template.is_active ? '#16a34a' : 'var(--text-dark)',
                       fontSize: '0.76rem', fontWeight: 600, cursor: 'pointer',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                     }}
@@ -16378,7 +16680,7 @@ export function TemplatesPage({ session, onBack, embedded }: { session: Session;
                     onClick={() => setShowDeleteConfirm(template)}
                     style={{
                       padding: '7px 10px', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '7px',
-                      background: '#fff', color: '#dc2626', fontSize: '0.76rem', fontWeight: 600,
+                      background: 'var(--bg-card)', color: '#dc2626', fontSize: '0.76rem', fontWeight: 600,
                       cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
                     }}
                     title="Delete"
@@ -16404,18 +16706,18 @@ export function TemplatesPage({ session, onBack, embedded }: { session: Session;
         >
           <div
             style={{
-              background: '#fff', borderRadius: '16px', maxWidth: '700px', width: '100%',
+              background: 'var(--bg-card)', borderRadius: '16px', maxWidth: '700px', width: '100%',
               maxHeight: '90vh', overflowY: 'auto', padding: '28px',
             }}
             onClick={(e) => e.stopPropagation()}
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
-              <h2 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0f172a' }}>
+              <h2 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-main)' }}>
                 {editingTemplate ? 'Edit Template' : 'New Email Template'}
               </h2>
               <button
                 onClick={() => { if (!saving) setShowEditor(false); }}
-                style={{ border: 'none', background: '#f1f5f9', borderRadius: '8px', padding: '8px', cursor: 'pointer', color: '#64748b' }}
+                style={{ border: 'none', background: 'var(--bg-light)', borderRadius: '8px', padding: '8px', cursor: 'pointer', color: 'var(--text-dark)' }}
               >
                 <X size={20} />
               </button>
@@ -16435,29 +16737,29 @@ export function TemplatesPage({ session, onBack, embedded }: { session: Session;
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <label style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#475569' }}>Template Name <em style={{ color: '#dc2626', fontStyle: 'normal' }}>*</em></span>
+                <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-muted)' }}>Template Name <em style={{ color: '#dc2626', fontStyle: 'normal' }}>*</em></span>
                 <input
                   type="text"
                   value={formName}
                   onChange={(e) => setFormName(e.target.value)}
                   placeholder="e.g. Welcome Email, Follow-up Reminder..."
                   style={{
-                    padding: '10px 14px', border: '1px solid #e2e8f0', borderRadius: '8px',
+                    padding: '10px 14px', border: '1px solid var(--border-subtle)', borderRadius: '8px',
                     fontSize: '0.88rem', outline: 'none', fontFamily: 'inherit',
                   }}
                   onFocus={(e) => { e.target.style.borderColor = '#EAB308'; }}
-                  onBlur={(e) => { e.target.style.borderColor = '#e2e8f0'; }}
+                  onBlur={(e) => { e.target.style.borderColor = 'var(--border-subtle)'; }}
                 />
               </label>
 
               <label style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#475569' }}>Category</span>
+                <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-muted)' }}>Category</span>
                 <select
                   value={formCategory}
                   onChange={(e) => setFormCategory(e.target.value as EmailTemplate['category'])}
                   style={{
-                    padding: '10px 14px', border: '1px solid #e2e8f0', borderRadius: '8px',
-                    fontSize: '0.88rem', outline: 'none', fontFamily: 'inherit', background: '#fff',
+                    padding: '10px 14px', border: '1px solid var(--border-subtle)', borderRadius: '8px',
+                    fontSize: '0.88rem', outline: 'none', fontFamily: 'inherit', background: 'var(--bg-card)',
                   }}
                 >
                   <option value="custom">Custom</option>
@@ -16469,26 +16771,26 @@ export function TemplatesPage({ session, onBack, embedded }: { session: Session;
               </label>
 
               <label style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#475569' }}>Subject Line <em style={{ color: '#dc2626', fontStyle: 'normal' }}>*</em></span>
+                <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-muted)' }}>Subject Line <em style={{ color: '#dc2626', fontStyle: 'normal' }}>*</em></span>
                 <input
                   type="text"
                   value={formSubject}
                   onChange={(e) => setFormSubject(e.target.value)}
                   placeholder="Email subject line..."
                   style={{
-                    padding: '10px 14px', border: '1px solid #e2e8f0', borderRadius: '8px',
+                    padding: '10px 14px', border: '1px solid var(--border-subtle)', borderRadius: '8px',
                     fontSize: '0.88rem', outline: 'none', fontFamily: 'inherit',
                   }}
                   onFocus={(e) => { e.target.style.borderColor = '#EAB308'; }}
-                  onBlur={(e) => { e.target.style.borderColor = '#e2e8f0'; }}
+                  onBlur={(e) => { e.target.style.borderColor = 'var(--border-subtle)'; }}
                 />
               </label>
 
               <label style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#475569' }}>
+                <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-muted)' }}>
                   Email Body <em style={{ color: '#dc2626', fontStyle: 'normal' }}>*</em>
                 </span>
-                <small style={{ fontSize: '0.74rem', color: '#94a3b8' }}>
+                <small style={{ fontSize: '0.74rem', color: 'var(--text-dark)' }}>
                   Use placeholders like {'{{name}}'}, {'{{telegram_link}}'}, {'{{product}}'} — they'll be replaced when sending.
                 </small>
                 <textarea
@@ -16497,12 +16799,12 @@ export function TemplatesPage({ session, onBack, embedded }: { session: Session;
                   rows={12}
                   placeholder="Write your email content here..."
                   style={{
-                    padding: '12px 14px', border: '1px solid #e2e8f0', borderRadius: '8px',
+                    padding: '12px 14px', border: '1px solid var(--border-subtle)', borderRadius: '8px',
                     fontSize: '0.85rem', outline: 'none', fontFamily: 'inherit',
                     resize: 'vertical', lineHeight: 1.6,
                   }}
                   onFocus={(e) => { e.target.style.borderColor = '#EAB308'; }}
-                  onBlur={(e) => { e.target.style.borderColor = '#e2e8f0'; }}
+                  onBlur={(e) => { e.target.style.borderColor = 'var(--border-subtle)'; }}
                 />
               </label>
             </div>
@@ -16512,8 +16814,8 @@ export function TemplatesPage({ session, onBack, embedded }: { session: Session;
                 onClick={() => { if (!saving) setShowEditor(false); }}
                 disabled={saving}
                 style={{
-                  padding: '10px 18px', border: '1px solid #e2e8f0', borderRadius: '8px',
-                  background: '#fff', color: '#64748b', fontSize: '0.85rem', fontWeight: 600,
+                  padding: '10px 18px', border: '1px solid var(--border-subtle)', borderRadius: '8px',
+                  background: 'var(--bg-card)', color: 'var(--text-dark)', fontSize: '0.85rem', fontWeight: 600,
                   cursor: 'pointer',
                 }}
               >
@@ -16524,7 +16826,7 @@ export function TemplatesPage({ session, onBack, embedded }: { session: Session;
                 disabled={saving}
                 style={{
                   padding: '10px 18px', border: 'none', borderRadius: '8px',
-                  background: '#EAB308', color: '#fff', fontSize: '0.85rem', fontWeight: 600,
+                  background: '#EAB308', color: 'var(--bg-card)', fontSize: '0.85rem', fontWeight: 600,
                   cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px',
                 }}
               >
@@ -16548,16 +16850,16 @@ export function TemplatesPage({ session, onBack, embedded }: { session: Session;
         >
           <div
             style={{
-              background: '#fff', borderRadius: '16px', maxWidth: '640px', width: '100%',
+              background: 'var(--bg-card)', borderRadius: '16px', maxWidth: '640px', width: '100%',
               maxHeight: '90vh', overflowY: 'auto', padding: '28px',
             }}
             onClick={(e) => e.stopPropagation()}
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
-              <h2 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0f172a' }}>Template Preview</h2>
+              <h2 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-main)' }}>Template Preview</h2>
               <button
                 onClick={() => setShowPreview(null)}
-                style={{ border: 'none', background: '#f1f5f9', borderRadius: '8px', padding: '8px', cursor: 'pointer', color: '#64748b' }}
+                style={{ border: 'none', background: 'var(--bg-light)', borderRadius: '8px', padding: '8px', cursor: 'pointer', color: 'var(--text-dark)' }}
               >
                 <X size={20} />
               </button>
@@ -16574,22 +16876,22 @@ export function TemplatesPage({ session, onBack, embedded }: { session: Session;
             </div>
 
             <div style={{ marginBottom: '16px' }}>
-              <strong style={{ fontSize: '0.78rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: '4px' }}>Template Name</strong>
-              <p style={{ fontSize: '1rem', fontWeight: 700, color: '#0f172a', margin: 0 }}>{showPreview.name}</p>
+              <strong style={{ fontSize: '0.78rem', color: 'var(--text-dark)', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: '4px' }}>Template Name</strong>
+              <p style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-main)', margin: 0 }}>{showPreview.name}</p>
             </div>
 
             <div style={{ marginBottom: '20px' }}>
-              <strong style={{ fontSize: '0.78rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: '4px' }}>Subject</strong>
-              <p style={{ fontSize: '0.95rem', fontWeight: 600, color: '#1e293b', margin: 0, padding: '10px 14px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #f1f5f9' }}>
+              <strong style={{ fontSize: '0.78rem', color: 'var(--text-dark)', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: '4px' }}>Subject</strong>
+              <p style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--text-main)', margin: 0, padding: '10px 14px', background: 'var(--bg-light)', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
                 {showPreview.subject}
               </p>
             </div>
 
             <div>
-              <strong style={{ fontSize: '0.78rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: '4px' }}>Body</strong>
+              <strong style={{ fontSize: '0.78rem', color: 'var(--text-dark)', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: '4px' }}>Body</strong>
               <div style={{
-                padding: '16px', background: '#f8fafc', borderRadius: '10px', border: '1px solid #f1f5f9',
-                fontSize: '0.88rem', lineHeight: 1.7, color: '#334155', whiteSpace: 'pre-wrap',
+                padding: '16px', background: 'var(--bg-light)', borderRadius: '10px', border: '1px solid var(--border-subtle)',
+                fontSize: '0.88rem', lineHeight: 1.7, color: 'var(--text-muted)', whiteSpace: 'pre-wrap',
               }}>
                 {showPreview.body}
               </div>
@@ -16599,8 +16901,8 @@ export function TemplatesPage({ session, onBack, embedded }: { session: Session;
               <button
                 onClick={() => handleCopyBody(showPreview)}
                 style={{
-                  padding: '10px 18px', border: '1px solid #e2e8f0', borderRadius: '8px',
-                  background: '#fff', color: '#64748b', fontSize: '0.85rem', fontWeight: 600,
+                  padding: '10px 18px', border: '1px solid var(--border-subtle)', borderRadius: '8px',
+                  background: 'var(--bg-card)', color: 'var(--text-dark)', fontSize: '0.85rem', fontWeight: 600,
                   cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px',
                 }}
               >
@@ -16611,7 +16913,7 @@ export function TemplatesPage({ session, onBack, embedded }: { session: Session;
                 onClick={() => { setShowPreview(null); openEditEditor(showPreview); }}
                 style={{
                   padding: '10px 18px', border: 'none', borderRadius: '8px',
-                  background: '#EAB308', color: '#fff', fontSize: '0.85rem', fontWeight: 600,
+                  background: '#EAB308', color: 'var(--bg-card)', fontSize: '0.85rem', fontWeight: 600,
                   cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px',
                 }}
               >
@@ -16633,15 +16935,15 @@ export function TemplatesPage({ session, onBack, embedded }: { session: Session;
         >
           <div
             style={{
-              background: '#fff', borderRadius: '16px', maxWidth: '420px', width: '100%', padding: '28px',
+              background: 'var(--bg-card)', borderRadius: '16px', maxWidth: '420px', width: '100%', padding: '28px',
             }}
             onClick={(e) => e.stopPropagation()}
           >
             <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'rgba(239,68,68,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
               <Trash2 size={24} style={{ color: '#dc2626' }} />
             </div>
-            <h3 style={{ textAlign: 'center', fontSize: '1.1rem', fontWeight: 700, color: '#0f172a', marginBottom: '8px' }}>Delete Template?</h3>
-            <p style={{ textAlign: 'center', fontSize: '0.88rem', color: '#94a3b8', marginBottom: '24px' }}>
+            <h3 style={{ textAlign: 'center', fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '8px' }}>Delete Template?</h3>
+            <p style={{ textAlign: 'center', fontSize: '0.88rem', color: 'var(--text-dark)', marginBottom: '24px' }}>
               Are you sure you want to delete "{showDeleteConfirm.name}"? This cannot be undone.
             </p>
             <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
@@ -16649,8 +16951,8 @@ export function TemplatesPage({ session, onBack, embedded }: { session: Session;
                 onClick={() => setShowDeleteConfirm(null)}
                 disabled={deleting}
                 style={{
-                  padding: '10px 20px', border: '1px solid #e2e8f0', borderRadius: '8px',
-                  background: '#fff', color: '#64748b', fontSize: '0.88rem', fontWeight: 600, cursor: 'pointer',
+                  padding: '10px 20px', border: '1px solid var(--border-subtle)', borderRadius: '8px',
+                  background: 'var(--bg-card)', color: 'var(--text-dark)', fontSize: '0.88rem', fontWeight: 600, cursor: 'pointer',
                 }}
               >
                 Cancel
@@ -16660,7 +16962,7 @@ export function TemplatesPage({ session, onBack, embedded }: { session: Session;
                 disabled={deleting}
                 style={{
                   padding: '10px 20px', border: 'none', borderRadius: '8px',
-                  background: '#dc2626', color: '#fff', fontSize: '0.88rem', fontWeight: 600,
+                  background: '#dc2626', color: 'var(--bg-card)', fontSize: '0.88rem', fontWeight: 600,
                   cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px',
                 }}
               >
@@ -17049,11 +17351,11 @@ function BulkEmailModal({ leads, session, onClose, onComplete }: {
           {/* Progress bar */}
           {sending && (
             <div style={{ marginBottom: '16px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '0.82rem', fontWeight: 600, color: '#475569' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-muted)' }}>
                 <span>Sending emails...</span>
                 <span>{sentCount + failedCount} / {leadsWithEmail.length}</span>
               </div>
-              <div style={{ height: '8px', background: '#e2e8f0', borderRadius: '4px', overflow: 'hidden' }}>
+              <div style={{ height: '8px', background: 'var(--border-subtle)', borderRadius: '4px', overflow: 'hidden' }}>
                 <div style={{
                   height: '100%', borderRadius: '4px',
                   background: 'linear-gradient(90deg, #2563eb, #3b82f6)',
@@ -17062,7 +17364,7 @@ function BulkEmailModal({ leads, session, onClose, onComplete }: {
                 }} />
               </div>
               {currentIdx >= 0 && !batchPause && (
-                <p style={{ fontSize: '0.78rem', color: '#94a3b8', marginTop: '6px' }}>
+                <p style={{ fontSize: '0.78rem', color: 'var(--text-dark)', marginTop: '6px' }}>
                   Sending to {leadsWithEmail[currentIdx]?.full_name || failedLeadObjs[currentIdx]?.full_name} &lt;{leadsWithEmail[currentIdx]?.email || failedLeadObjs[currentIdx]?.email}&gt;...
                 </p>
               )}
@@ -17087,10 +17389,10 @@ function BulkEmailModal({ leads, session, onClose, onComplete }: {
               <strong style={{ fontSize: '0.95rem', color: '#16a34a', display: 'block', marginBottom: '4px' }}>
                 Email Scheduled Successfully
               </strong>
-              <p style={{ fontSize: '0.82rem', color: '#64748b', marginBottom: '12px' }}>
+              <p style={{ fontSize: '0.82rem', color: 'var(--text-dark)', marginBottom: '12px' }}>
                 Your email will be sent to {leadsWithEmail.length} lead{leadsWithEmail.length !== 1 ? 's' : ''} on {new Date(`${scheduleDate}T${scheduleTime}`).toLocaleString('en-US', { dateStyle: 'full', timeStyle: 'short' })}.
               </p>
-              <button onClick={onComplete} style={{ padding: '8px 18px', border: 'none', borderRadius: '8px', background: '#4f46e5', color: '#fff', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer' }}>
+              <button onClick={onComplete} style={{ padding: '8px 18px', border: 'none', borderRadius: '8px', background: '#4f46e5', color: 'var(--bg-card)', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer' }}>
                 Done
               </button>
             </div>
@@ -17123,7 +17425,7 @@ function BulkEmailModal({ leads, session, onClose, onComplete }: {
                     onClick={() => handleSendBulk(failedLeadObjs)}
                     style={{
                       padding: '8px 18px', border: 'none', borderRadius: '8px',
-                      background: '#2563eb', color: '#fff', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer',
+                      background: '#2563eb', color: 'var(--bg-card)', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer',
                       display: 'flex', alignItems: 'center', gap: '6px',
                     }}
                   >
@@ -17134,7 +17436,7 @@ function BulkEmailModal({ leads, session, onClose, onComplete }: {
                   onClick={onComplete}
                   style={{
                       padding: '8px 18px', border: 'none', borderRadius: '8px',
-                      background: '#4f46e5', color: '#fff', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer',
+                      background: '#4f46e5', color: 'var(--bg-card)', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer',
                     }}
                 >
                   Done
@@ -17158,20 +17460,20 @@ function BulkEmailModal({ leads, session, onClose, onComplete }: {
                     type="button"
                     onClick={() => setShowTemplateDropdown((v) => !v)}
                     style={{
-                      width: '100%', padding: '10px 14px', border: '1px solid #e2e8f0', borderRadius: '8px',
-                      background: '#f8fafc', fontSize: '0.85rem', fontWeight: 600, color: '#475569',
+                      width: '100%', padding: '10px 14px', border: '1px solid var(--border-subtle)', borderRadius: '8px',
+                      background: 'var(--bg-light)', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)',
                       cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                     }}
                   >
                     <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <FileText size={16} style={{ color: '#2563eb' }} /> Use Email Template
                     </span>
-                    <ChevronDown size={16} style={{ color: '#94a3b8' }} />
+                    <ChevronDown size={16} style={{ color: 'var(--text-dark)' }} />
                   </button>
                   {showTemplateDropdown && (
                     <div style={{
                       position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50, marginTop: '4px',
-                      background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px', boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+                      background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', borderRadius: '8px', boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
                       maxHeight: '240px', overflowY: 'auto',
                     }}>
                       {emailTemplates.map((tpl) => (
@@ -17181,14 +17483,14 @@ function BulkEmailModal({ leads, session, onClose, onComplete }: {
                           onClick={() => applyTemplate(tpl)}
                           style={{
                             width: '100%', padding: '10px 14px', border: 'none', background: 'none', textAlign: 'left',
-                            cursor: 'pointer', fontSize: '0.82rem', color: '#334155', borderBottom: '1px solid #f1f5f9',
+                            cursor: 'pointer', fontSize: '0.82rem', color: 'var(--text-muted)', borderBottom: '1px solid var(--border-subtle)',
                             display: 'flex', flexDirection: 'column', gap: '2px',
                           }}
-                          onMouseEnter={(e) => { e.currentTarget.style.background = '#f8fafc'; }}
+                          onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--bg-light)'; }}
                           onMouseLeave={(e) => { e.currentTarget.style.background = 'none'; }}
                         >
                           <strong style={{ fontSize: '0.82rem' }}>{tpl.name}</strong>
-                          <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>{tpl.subject}</span>
+                          <span style={{ fontSize: '0.72rem', color: 'var(--text-dark)' }}>{tpl.subject}</span>
                         </button>
                       ))}
                     </div>
@@ -17197,18 +17499,18 @@ function BulkEmailModal({ leads, session, onClose, onComplete }: {
               )}
 
               {/* Recipient preview */}
-              <div style={{ marginBottom: '12px', padding: '10px 14px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #f1f5f9' }}>
-                <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>
+              <div style={{ marginBottom: '12px', padding: '10px 14px', background: 'var(--bg-light)', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
+                <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-dark)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>
                   Recipients ({leadsWithEmail.length})
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', maxHeight: '60px', overflowY: 'auto' }}>
                   {leadsWithEmail.slice(0, 10).map((l) => (
-                    <span key={l.id} style={{ fontSize: '0.74rem', padding: '3px 10px', background: '#e2e8f0', borderRadius: '12px', color: '#475569', fontWeight: 500 }}>
+                    <span key={l.id} style={{ fontSize: '0.74rem', padding: '3px 10px', background: 'var(--border-subtle)', borderRadius: '12px', color: 'var(--text-muted)', fontWeight: 500 }}>
                       {l.full_name}
                     </span>
                   ))}
                   {leadsWithEmail.length > 10 && (
-                    <span style={{ fontSize: '0.74rem', padding: '3px 10px', color: '#94a3b8', fontWeight: 600 }}>
+                    <span style={{ fontSize: '0.74rem', padding: '3px 10px', color: 'var(--text-dark)', fontWeight: 600 }}>
                       +{leadsWithEmail.length - 10} more
                     </span>
                   )}
@@ -17230,7 +17532,7 @@ function BulkEmailModal({ leads, session, onClose, onComplete }: {
               <div className="crm-email-field">
                 <label>
                   <span>Message <em style={{ color: '#dc2626', fontStyle: 'normal' }}>*</em></span>
-                  <small style={{ color: '#94a3b8', fontSize: '0.74rem', marginBottom: '4px', display: 'block' }}>
+                  <small style={{ color: 'var(--text-dark)', fontSize: '0.74rem', marginBottom: '4px', display: 'block' }}>
                     Use {'{{name}}'}, {'{{full_name}}'}, {'{{email}}'}, {'{{phone}}'}, {'{{state}}'}, {'{{product}}'} as placeholders — they'll be personalized per lead.
                   </small>
                   <textarea
@@ -17251,13 +17553,13 @@ function BulkEmailModal({ leads, session, onClose, onComplete }: {
                 onDragLeave={(e) => { e.preventDefault(); if (e.currentTarget === dragRef.current) setIsDragging(false); }}
                 onClick={() => fileInputRef.current?.click()}
                 style={{
-                  border: `2px dashed ${isDragging ? '#2563eb' : '#cbd5e1'}`,
+                  border: `2px dashed ${isDragging ? '#2563eb' : 'var(--text-dark)'}`,
                   borderRadius: '10px',
                   padding: '14px',
                   textAlign: 'center',
                   cursor: 'pointer',
                   transition: 'all 0.2s',
-                  background: isDragging ? 'rgba(37,99,235,0.05)' : '#f8fafc',
+                  background: isDragging ? 'rgba(37,99,235,0.05)' : 'var(--bg-light)',
                   marginBottom: '12px',
                 }}
               >
@@ -17269,11 +17571,11 @@ function BulkEmailModal({ leads, session, onClose, onComplete }: {
                   onChange={handleFileSelect}
                   style={{ display: 'none' }}
                 />
-                <Paperclip size={18} style={{ color: '#64748b', marginBottom: '4px' }} />
-                <p style={{ fontSize: '0.8rem', color: '#475569', fontWeight: 600, margin: 0 }}>
+                <Paperclip size={18} style={{ color: 'var(--text-dark)', marginBottom: '4px' }} />
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600, margin: 0 }}>
                   {isDragging ? 'Drop files here' : 'Attach files (optional)'}
                 </p>
-                <p style={{ fontSize: '0.7rem', color: '#94a3b8', margin: '4px 0 0 0' }}>
+                <p style={{ fontSize: '0.7rem', color: 'var(--text-dark)', margin: '4px 0 0 0' }}>
                   Max 25MB per file, 50MB total — sent with every email
                 </p>
               </div>
@@ -17282,17 +17584,17 @@ function BulkEmailModal({ leads, session, onClose, onComplete }: {
               {attachments.length > 0 && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '12px' }}>
                   {attachments.map((att, index) => (
-                    <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 12px', background: '#f1f5f9', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                    <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 12px', background: 'var(--bg-light)', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
                       {att.previewUrl ? (
                         <img src={att.previewUrl} alt={att.file.name} style={{ width: '36px', height: '36px', objectFit: 'cover', borderRadius: '6px', flexShrink: 0 }} />
                       ) : (
-                        <div style={{ width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#e2e8f0', borderRadius: '6px', flexShrink: 0, color: '#475569' }}>
+                        <div style={{ width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--border-subtle)', borderRadius: '6px', flexShrink: 0, color: 'var(--text-muted)' }}>
                           {getFileIcon(att.file)}
                         </div>
                       )}
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <strong style={{ fontSize: '0.8rem', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{att.file.name}</strong>
-                        <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>{formatFileSize(att.file.size)}</span>
+                        <span style={{ fontSize: '0.72rem', color: 'var(--text-dark)' }}>{formatFileSize(att.file.size)}</span>
                       </div>
                       <button onClick={() => removeAttachment(index)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#dc2626', padding: '4px' }} aria-label="Remove attachment">
                         <X size={16} />
@@ -17312,9 +17614,9 @@ function BulkEmailModal({ leads, session, onClose, onComplete }: {
                   type="button"
                   onClick={() => setScheduleMode('now')}
                   style={{
-                    flex: 1, padding: '10px 14px', border: `2px solid ${scheduleMode === 'now' ? '#2563eb' : '#e2e8f0'}`,
-                    borderRadius: '8px', background: scheduleMode === 'now' ? 'rgba(37,99,235,0.05)' : '#fff',
-                    fontSize: '0.82rem', fontWeight: 600, color: scheduleMode === 'now' ? '#2563eb' : '#64748b',
+                    flex: 1, padding: '10px 14px', border: `2px solid ${scheduleMode === 'now' ? '#2563eb' : 'var(--border-subtle)'}`,
+                    borderRadius: '8px', background: scheduleMode === 'now' ? 'rgba(37,99,235,0.05)' : 'var(--bg-card)',
+                    fontSize: '0.82rem', fontWeight: 600, color: scheduleMode === 'now' ? '#2563eb' : 'var(--text-dark)',
                     cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
                   }}
                 >
@@ -17324,9 +17626,9 @@ function BulkEmailModal({ leads, session, onClose, onComplete }: {
                   type="button"
                   onClick={() => setScheduleMode('later')}
                   style={{
-                    flex: 1, padding: '10px 14px', border: `2px solid ${scheduleMode === 'later' ? '#2563eb' : '#e2e8f0'}`,
-                    borderRadius: '8px', background: scheduleMode === 'later' ? 'rgba(37,99,235,0.05)' : '#fff',
-                    fontSize: '0.82rem', fontWeight: 600, color: scheduleMode === 'later' ? '#2563eb' : '#64748b',
+                    flex: 1, padding: '10px 14px', border: `2px solid ${scheduleMode === 'later' ? '#2563eb' : 'var(--border-subtle)'}`,
+                    borderRadius: '8px', background: scheduleMode === 'later' ? 'rgba(37,99,235,0.05)' : 'var(--bg-card)',
+                    fontSize: '0.82rem', fontWeight: 600, color: scheduleMode === 'later' ? '#2563eb' : 'var(--text-dark)',
                     cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
                   }}
                 >
@@ -17336,8 +17638,8 @@ function BulkEmailModal({ leads, session, onClose, onComplete }: {
 
               {/* Schedule Date/Time Picker */}
               {scheduleMode === 'later' && (
-                <div style={{ marginBottom: '12px', padding: '12px 14px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #f1f5f9' }}>
-                  <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>
+                <div style={{ marginBottom: '12px', padding: '12px 14px', background: 'var(--bg-light)', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
+                  <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-dark)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>
                     Schedule Date & Time
                   </div>
                   <div style={{ display: 'flex', gap: '10px' }}>
@@ -17346,16 +17648,16 @@ function BulkEmailModal({ leads, session, onClose, onComplete }: {
                       value={scheduleDate}
                       onChange={(e) => { setScheduleDate(e.target.value); setError(''); }}
                       min={new Date().toISOString().split('T')[0]}
-                      style={{ flex: 1, padding: '8px 12px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '0.82rem' }}
+                      style={{ flex: 1, padding: '8px 12px', border: '1px solid var(--border-subtle)', borderRadius: '8px', fontSize: '0.82rem' }}
                     />
                     <input
                       type="time"
                       value={scheduleTime}
                       onChange={(e) => { setScheduleTime(e.target.value); setError(''); }}
-                      style={{ flex: 1, padding: '8px 12px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '0.82rem' }}
+                      style={{ flex: 1, padding: '8px 12px', border: '1px solid var(--border-subtle)', borderRadius: '8px', fontSize: '0.82rem' }}
                     />
                   </div>
-                  <p style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: '6px' }}>
+                  <p style={{ fontSize: '0.72rem', color: 'var(--text-dark)', marginTop: '6px' }}>
                     Emails will be sent automatically at the scheduled time with rate-limiting to avoid SMTP limits.
                   </p>
                 </div>
@@ -17367,8 +17669,8 @@ function BulkEmailModal({ leads, session, onClose, onComplete }: {
                   onClick={() => onClose()}
                   disabled={sending || scheduling}
                   style={{
-                    padding: '10px 18px', border: '1px solid #e2e8f0', borderRadius: '8px',
-                    background: '#fff', color: '#64748b', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer',
+                    padding: '10px 18px', border: '1px solid var(--border-subtle)', borderRadius: '8px',
+                    background: 'var(--bg-card)', color: 'var(--text-dark)', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer',
                   }}
                 >
                   Cancel
@@ -17379,7 +17681,7 @@ function BulkEmailModal({ leads, session, onClose, onComplete }: {
                     disabled={!canSend}
                     style={{
                       padding: '10px 20px', border: 'none', borderRadius: '8px',
-                      background: canSend ? '#4f46e5' : '#cbd5e1', color: '#fff',
+                      background: canSend ? '#4f46e5' : 'var(--text-dark)', color: 'var(--bg-card)',
                       fontSize: '0.85rem', fontWeight: 600, cursor: canSend ? 'pointer' : 'not-allowed',
                       display: 'flex', alignItems: 'center', gap: '8px',
                     }}
@@ -17393,7 +17695,7 @@ function BulkEmailModal({ leads, session, onClose, onComplete }: {
                     disabled={!canSchedule}
                     style={{
                       padding: '10px 20px', border: 'none', borderRadius: '8px',
-                      background: canSchedule ? '#2563eb' : '#cbd5e1', color: '#fff',
+                      background: canSchedule ? '#2563eb' : 'var(--text-dark)', color: 'var(--bg-card)',
                       fontSize: '0.85rem', fontWeight: 600, cursor: canSchedule ? 'pointer' : 'not-allowed',
                       display: 'flex', alignItems: 'center', gap: '8px',
                     }}
@@ -17463,7 +17765,7 @@ function ScheduledEmailsPanel({ session }: { session: Session }) {
     pending: { label: 'Pending', color: '#d97706', bg: 'rgba(245,158,11,0.12)', icon: <Clock size={13} /> },
     sending: { label: 'Sending', color: '#2563eb', bg: 'rgba(37,99,235,0.12)', icon: <Loader2 size={13} className="crm-spin" /> },
     completed: { label: 'Completed', color: '#16a34a', bg: 'rgba(22,163,74,0.12)', icon: <CheckCircle2 size={13} /> },
-    cancelled: { label: 'Cancelled', color: '#64748b', bg: 'rgba(100,116,139,0.12)', icon: <XCircle size={13} /> },
+    cancelled: { label: 'Cancelled', color: 'var(--text-dark)', bg: 'rgba(100,116,139,0.12)', icon: <XCircle size={13} /> },
     partially_failed: { label: 'Partially Failed', color: '#dc2626', bg: 'rgba(239,68,68,0.12)', icon: <AlertTriangle size={13} /> },
   };
 
@@ -17479,7 +17781,7 @@ function ScheduledEmailsPanel({ session }: { session: Session }) {
       </div>
 
       {emails.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '48px', color: '#94a3b8' }}>
+        <div style={{ textAlign: 'center', padding: '48px', color: 'var(--text-dark)' }}>
           <CalendarClock size={40} style={{ marginBottom: '10px', opacity: 0.3 }} />
           <p style={{ fontSize: '0.88rem', fontWeight: 600, marginBottom: '4px' }}>No scheduled emails yet</p>
           <p style={{ fontSize: '0.8rem' }}>Select leads and use the Bulk Email feature to schedule an email for later.</p>
@@ -17495,7 +17797,7 @@ function ScheduledEmailsPanel({ session }: { session: Session }) {
             const canCancel = email.status === 'pending';
 
             return (
-              <div key={email.id} style={{ background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+              <div key={email.id} style={{ background: 'var(--bg-light)', borderRadius: '10px', border: '1px solid var(--border-subtle)', overflow: 'hidden' }}>
                 <div
                   style={{ padding: '14px 16px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px' }}
                   onClick={() => setExpandedId(isExpanded ? null : email.id)}
@@ -17510,7 +17812,7 @@ function ScheduledEmailsPanel({ session }: { session: Session }) {
                         {sc.icon} {sc.label}
                       </span>
                     </div>
-                    <div style={{ fontSize: '0.74rem', color: '#94a3b8', marginTop: '3px', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                    <div style={{ fontSize: '0.74rem', color: 'var(--text-dark)', marginTop: '3px', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                       <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Users size={11} /> {recipients.length} recipients</span>
                       <span>•</span>
                       <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><CalendarClock size={11} /> {scheduledDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} at {scheduledDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}</span>
@@ -17533,7 +17835,7 @@ function ScheduledEmailsPanel({ session }: { session: Session }) {
                       <button
                         type="button"
                         onClick={(e) => { e.stopPropagation(); handleDelete(email.id); }}
-                        style={{ padding: '6px', border: 'none', background: 'none', cursor: 'pointer', color: '#94a3b8' }}
+                        style={{ padding: '6px', border: 'none', background: 'none', cursor: 'pointer', color: 'var(--text-dark)' }}
                         aria-label="Delete"
                       >
                         <Trash2 size={14} />
@@ -17542,7 +17844,7 @@ function ScheduledEmailsPanel({ session }: { session: Session }) {
                     <button
                       type="button"
                       onClick={(e) => { e.stopPropagation(); setExpandedId(isExpanded ? null : email.id); }}
-                      style={{ padding: '4px', border: 'none', background: 'none', cursor: 'pointer', color: '#94a3b8', display: 'flex', alignItems: 'center' }}
+                      style={{ padding: '4px', border: 'none', background: 'none', cursor: 'pointer', color: 'var(--text-dark)', display: 'flex', alignItems: 'center' }}
                       aria-label="Expand"
                     >
                       <ChevronDown size={16} style={{ transform: isExpanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
@@ -17551,26 +17853,26 @@ function ScheduledEmailsPanel({ session }: { session: Session }) {
                 </div>
 
                 {isExpanded && (
-                  <div style={{ padding: '0 16px 16px', borderTop: '1px solid #e2e8f0' }}>
+                  <div style={{ padding: '0 16px 16px', borderTop: '1px solid var(--border-subtle)' }}>
                     <div style={{ paddingTop: '12px' }}>
-                      <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Message Preview</div>
-                      <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '12px', fontSize: '0.8rem', color: '#475569', lineHeight: 1.6 }}>
+                      <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-dark)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Message Preview</div>
+                      <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', borderRadius: '8px', padding: '12px', fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>
                         <strong style={{ display: 'block', marginBottom: '6px', fontSize: '0.82rem' }}>{email.subject}</strong>
-                        <p style={{ margin: 0, whiteSpace: 'pre-wrap', fontSize: '0.78rem', color: '#64748b' }}>{email.body.slice(0, 500)}{email.body.length > 500 ? '...' : ''}</p>
+                        <p style={{ margin: 0, whiteSpace: 'pre-wrap', fontSize: '0.78rem', color: 'var(--text-dark)' }}>{email.body.slice(0, 500)}{email.body.length > 500 ? '...' : ''}</p>
                       </div>
                     </div>
 
                     {recipients.length > 0 && (
                       <div style={{ marginTop: '12px' }}>
-                        <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Recipients ({recipients.length})</div>
+                        <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-dark)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Recipients ({recipients.length})</div>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', maxHeight: '80px', overflowY: 'auto' }}>
                           {recipients.slice(0, 20).map((r, i) => (
-                            <span key={i} style={{ fontSize: '0.72rem', padding: '2px 8px', background: '#e2e8f0', borderRadius: '10px', color: '#475569', fontWeight: 500 }}>
+                            <span key={i} style={{ fontSize: '0.72rem', padding: '2px 8px', background: 'var(--border-subtle)', borderRadius: '10px', color: 'var(--text-muted)', fontWeight: 500 }}>
                               {r.full_name || r.email}
                             </span>
                           ))}
                           {recipients.length > 20 && (
-                            <span style={{ fontSize: '0.72rem', padding: '2px 8px', color: '#94a3b8', fontWeight: 600 }}>
+                            <span style={{ fontSize: '0.72rem', padding: '2px 8px', color: 'var(--text-dark)', fontWeight: 600 }}>
                               +{recipients.length - 20} more
                             </span>
                           )}
@@ -17671,27 +17973,27 @@ function ReplyTemplatesPanel({ session }: { session: Session }) {
         <button
           type="button"
           onClick={() => { resetForm(); setShowEditor(true); }}
-          style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 18px', border: 'none', borderRadius: '8px', background: '#2563eb', color: '#fff', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer' }}
+          style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 18px', border: 'none', borderRadius: '8px', background: '#2563eb', color: 'var(--bg-card)', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer' }}
         >
           <Plus size={16} /> New Template
         </button>
       </div>
 
       {showEditor && (
-        <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px', marginBottom: '16px' }}>
+        <div style={{ background: 'var(--bg-light)', border: '1px solid var(--border-subtle)', borderRadius: '12px', padding: '16px', marginBottom: '16px' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <input
               type="text"
               placeholder="Template title (e.g., Welcome Message)"
               value={formTitle}
               onChange={(e) => setFormTitle(e.target.value)}
-              style={{ width: '100%', padding: '10px 14px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '0.85rem' }}
+              style={{ width: '100%', padding: '10px 14px', border: '1px solid var(--border-subtle)', borderRadius: '8px', fontSize: '0.85rem' }}
             />
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
               <select
                 value={formChannel}
                 onChange={(e) => setFormChannel(e.target.value as 'telegram' | 'whatsapp' | 'email' | 'all')}
-                style={{ padding: '8px 12px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '0.82rem', cursor: 'pointer' }}
+                style={{ padding: '8px 12px', border: '1px solid var(--border-subtle)', borderRadius: '8px', fontSize: '0.82rem', cursor: 'pointer' }}
               >
                 <option value="all">All Channels</option>
                 <option value="telegram">Telegram Only</option>
@@ -17703,7 +18005,7 @@ function ReplyTemplatesPanel({ session }: { session: Session }) {
                 placeholder="Category (optional)"
                 value={formCategory}
                 onChange={(e) => setFormCategory(e.target.value)}
-                style={{ flex: '1', minWidth: '150px', padding: '8px 12px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '0.82rem' }}
+                style={{ flex: '1', minWidth: '150px', padding: '8px 12px', border: '1px solid var(--border-subtle)', borderRadius: '8px', fontSize: '0.82rem' }}
               />
             </div>
             <textarea
@@ -17711,11 +18013,11 @@ function ReplyTemplatesPanel({ session }: { session: Session }) {
               value={formBody}
               onChange={(e) => setFormBody(e.target.value)}
               rows={5}
-              style={{ width: '100%', padding: '10px 14px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '0.82rem', fontFamily: 'inherit', resize: 'vertical' }}
+              style={{ width: '100%', padding: '10px 14px', border: '1px solid var(--border-subtle)', borderRadius: '8px', fontSize: '0.82rem', fontFamily: 'inherit', resize: 'vertical' }}
             />
             <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-              <button type="button" onClick={resetForm} style={{ padding: '8px 16px', border: '1px solid #e2e8f0', borderRadius: '8px', background: '#fff', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
-              <button type="button" onClick={handleSave} disabled={saving || !formTitle.trim() || !formBody.trim()} style={{ padding: '8px 16px', border: 'none', borderRadius: '8px', background: '#2563eb', color: '#fff', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <button type="button" onClick={resetForm} style={{ padding: '8px 16px', border: '1px solid var(--border-subtle)', borderRadius: '8px', background: 'var(--bg-card)', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
+              <button type="button" onClick={handleSave} disabled={saving || !formTitle.trim() || !formBody.trim()} style={{ padding: '8px 16px', border: 'none', borderRadius: '8px', background: '#2563eb', color: 'var(--bg-card)', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
                 {saving ? <Loader2 size={14} className="crm-spin" /> : <Save size={14} />} {editingId ? 'Update' : 'Create'}
               </button>
             </div>
@@ -17724,24 +18026,24 @@ function ReplyTemplatesPanel({ session }: { session: Session }) {
       )}
 
       {templates.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '40px', color: '#94a3b8' }}>
+        <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-dark)' }}>
           <ClipboardList size={36} style={{ marginBottom: '8px', opacity: 0.3 }} />
           <p style={{ fontSize: '0.85rem' }}>No reply templates yet. Create your first one to speed up chat replies.</p>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
           {templates.map((t) => (
-            <div key={t.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', padding: '12px 16px', background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+            <div key={t.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', padding: '12px 16px', background: 'var(--bg-light)', borderRadius: '10px', border: '1px solid var(--border-subtle)' }}>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
                   <strong style={{ fontSize: '0.85rem' }}>{t.title}</strong>
-                  <span style={{ fontSize: '0.66rem', fontWeight: 700, textTransform: 'uppercase', padding: '1px 6px', borderRadius: '4px', background: '#e2e8f0', color: '#64748b' }}>{t.channel}</span>
-                  {t.category && <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>{t.category}</span>}
+                  <span style={{ fontSize: '0.66rem', fontWeight: 700, textTransform: 'uppercase', padding: '1px 6px', borderRadius: '4px', background: 'var(--border-subtle)', color: 'var(--text-dark)' }}>{t.channel}</span>
+                  {t.category && <span style={{ fontSize: '0.72rem', color: 'var(--text-dark)' }}>{t.category}</span>}
                 </div>
-                <p style={{ fontSize: '0.78rem', color: '#64748b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.body}</p>
+                <p style={{ fontSize: '0.78rem', color: 'var(--text-dark)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.body}</p>
               </div>
               <div style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
-                <button type="button" onClick={() => startEdit(t)} style={{ padding: '6px', border: 'none', background: 'none', cursor: 'pointer', color: '#64748b' }} aria-label="Edit"><Edit3 size={16} /></button>
+                <button type="button" onClick={() => startEdit(t)} style={{ padding: '6px', border: 'none', background: 'none', cursor: 'pointer', color: 'var(--text-dark)' }} aria-label="Edit"><Edit3 size={16} /></button>
                 <button type="button" onClick={() => setShowDelete(t.id)} style={{ padding: '6px', border: 'none', background: 'none', cursor: 'pointer', color: '#ef4444' }} aria-label="Delete"><Trash2 size={16} /></button>
               </div>
             </div>
@@ -17882,24 +18184,24 @@ function DripCampaignsPanel({ session }: { session: Session }) {
         <button
           type="button"
           onClick={() => { resetForm(); setShowEditor(true); }}
-          style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 18px', border: 'none', borderRadius: '8px', background: '#2563eb', color: '#fff', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer' }}
+          style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 18px', border: 'none', borderRadius: '8px', background: '#2563eb', color: 'var(--bg-card)', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer' }}
         >
           <Plus size={16} /> New Campaign
         </button>
       </div>
 
       {showEditor && (
-        <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px', marginBottom: '16px' }}>
+        <div style={{ background: 'var(--bg-light)', border: '1px solid var(--border-subtle)', borderRadius: '12px', padding: '16px', marginBottom: '16px' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <input type="text" placeholder="Campaign name (e.g., New Lead Welcome Sequence)" value={formName} onChange={(e) => setFormName(e.target.value)} style={{ width: '100%', padding: '10px 14px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '0.85rem' }} />
-            <input type="text" placeholder="Description (optional)" value={formDesc} onChange={(e) => setFormDesc(e.target.value)} style={{ width: '100%', padding: '10px 14px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '0.82rem' }} />
+            <input type="text" placeholder="Campaign name (e.g., New Lead Welcome Sequence)" value={formName} onChange={(e) => setFormName(e.target.value)} style={{ width: '100%', padding: '10px 14px', border: '1px solid var(--border-subtle)', borderRadius: '8px', fontSize: '0.85rem' }} />
+            <input type="text" placeholder="Description (optional)" value={formDesc} onChange={(e) => setFormDesc(e.target.value)} style={{ width: '100%', padding: '10px 14px', border: '1px solid var(--border-subtle)', borderRadius: '8px', fontSize: '0.82rem' }} />
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-              <select value={formChannel} onChange={(e) => setFormChannel(e.target.value as 'email' | 'telegram' | 'whatsapp')} style={{ padding: '8px 12px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '0.82rem', cursor: 'pointer' }}>
+              <select value={formChannel} onChange={(e) => setFormChannel(e.target.value as 'email' | 'telegram' | 'whatsapp')} style={{ padding: '8px 12px', border: '1px solid var(--border-subtle)', borderRadius: '8px', fontSize: '0.82rem', cursor: 'pointer' }}>
                 <option value="email">Email Channel</option>
                 <option value="telegram">Telegram Channel</option>
                 <option value="whatsapp">WhatsApp Channel</option>
               </select>
-              <select value={formTrigger} onChange={(e) => setFormTrigger(e.target.value)} style={{ padding: '8px 12px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '0.82rem', cursor: 'pointer' }}>
+              <select value={formTrigger} onChange={(e) => setFormTrigger(e.target.value)} style={{ padding: '8px 12px', border: '1px solid var(--border-subtle)', borderRadius: '8px', fontSize: '0.82rem', cursor: 'pointer' }}>
                 <option value="new">Trigger: New Leads</option>
                 <option value="interested">Trigger: Interested</option>
                 <option value="called_responded">Trigger: Called - Responded</option>
@@ -17908,33 +18210,33 @@ function DripCampaignsPanel({ session }: { session: Session }) {
               </select>
             </div>
             <div>
-              <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#64748b', marginBottom: '8px' }}>CAMPAIGN STEPS</div>
+              <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-dark)', marginBottom: '8px' }}>CAMPAIGN STEPS</div>
               {steps.map((s, idx) => (
-                <div key={idx} style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '12px', marginBottom: '8px' }}>
+                <div key={idx} style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', borderRadius: '8px', padding: '12px', marginBottom: '8px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                    <span style={{ width: '24px', height: '24px', borderRadius: '50%', background: '#2563eb', color: '#fff', fontSize: '0.72rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{idx + 1}</span>
+                    <span style={{ width: '24px', height: '24px', borderRadius: '50%', background: '#2563eb', color: 'var(--bg-card)', fontSize: '0.72rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{idx + 1}</span>
                     <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.78rem', fontWeight: 600 }}>
                       Send after
-                      <input type="number" min={1} value={s.delay_hours} onChange={(e) => setSteps(steps.map((st, i) => i === idx ? { ...st, delay_hours: parseInt(e.target.value) || 24 } : st))} style={{ width: '60px', padding: '4px 8px', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '0.78rem' }} />
+                      <input type="number" min={1} value={s.delay_hours} onChange={(e) => setSteps(steps.map((st, i) => i === idx ? { ...st, delay_hours: parseInt(e.target.value) || 24 } : st))} style={{ width: '60px', padding: '4px 8px', border: '1px solid var(--border-subtle)', borderRadius: '6px', fontSize: '0.78rem' }} />
                       hours
                     </label>
                     {formChannel === 'email' && (
-                      <input type="text" placeholder="Email subject" value={s.subject} onChange={(e) => setSteps(steps.map((st, i) => i === idx ? { ...st, subject: e.target.value } : st))} style={{ flex: '1', padding: '4px 8px', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '0.78rem' }} />
+                      <input type="text" placeholder="Email subject" value={s.subject} onChange={(e) => setSteps(steps.map((st, i) => i === idx ? { ...st, subject: e.target.value } : st))} style={{ flex: '1', padding: '4px 8px', border: '1px solid var(--border-subtle)', borderRadius: '6px', fontSize: '0.78rem' }} />
                     )}
                     {steps.length > 1 && (
                       <button type="button" onClick={() => removeStep(idx)} style={{ padding: '4px', border: 'none', background: 'none', cursor: 'pointer', color: '#ef4444' }} aria-label="Remove step"><X size={16} /></button>
                     )}
                   </div>
-                  <textarea placeholder="Message body... Use {{full_name}}, {{email}}, {{mobile_number}} for personalization." value={s.body} onChange={(e) => setSteps(steps.map((st, i) => i === idx ? { ...st, body: e.target.value } : st))} rows={3} style={{ width: '100%', padding: '8px 12px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '0.78rem', fontFamily: 'inherit', resize: 'vertical' }} />
+                  <textarea placeholder="Message body... Use {{full_name}}, {{email}}, {{mobile_number}} for personalization." value={s.body} onChange={(e) => setSteps(steps.map((st, i) => i === idx ? { ...st, body: e.target.value } : st))} rows={3} style={{ width: '100%', padding: '8px 12px', border: '1px solid var(--border-subtle)', borderRadius: '8px', fontSize: '0.78rem', fontFamily: 'inherit', resize: 'vertical' }} />
                 </div>
               ))}
-              <button type="button" onClick={addStep} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', border: '1px dashed #cbd5e1', borderRadius: '8px', background: 'transparent', color: '#64748b', fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer' }}>
+              <button type="button" onClick={addStep} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', border: '1px dashed var(--border-subtle)', borderRadius: '8px', background: 'transparent', color: 'var(--text-dark)', fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer' }}>
                 <Plus size={14} /> Add Step
               </button>
             </div>
             <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-              <button type="button" onClick={resetForm} style={{ padding: '8px 16px', border: '1px solid #e2e8f0', borderRadius: '8px', background: '#fff', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
-              <button type="button" onClick={handleSave} disabled={saving || !formName.trim() || steps.some((s) => !s.body.trim())} style={{ padding: '8px 16px', border: 'none', borderRadius: '8px', background: '#2563eb', color: '#fff', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <button type="button" onClick={resetForm} style={{ padding: '8px 16px', border: '1px solid var(--border-subtle)', borderRadius: '8px', background: 'var(--bg-card)', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
+              <button type="button" onClick={handleSave} disabled={saving || !formName.trim() || steps.some((s) => !s.body.trim())} style={{ padding: '8px 16px', border: 'none', borderRadius: '8px', background: '#2563eb', color: 'var(--bg-card)', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
                 {saving ? <Loader2 size={14} className="crm-spin" /> : <Save size={14} />} {editingId ? 'Update' : 'Create'}
               </button>
             </div>
@@ -17943,14 +18245,14 @@ function DripCampaignsPanel({ session }: { session: Session }) {
       )}
 
       {campaigns.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '40px', color: '#94a3b8' }}>
+        <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-dark)' }}>
           <Droplets size={36} style={{ marginBottom: '8px', opacity: 0.3 }} />
           <p style={{ fontSize: '0.85rem' }}>No drip campaigns yet. Create your first automated sequence to nurture leads on autopilot.</p>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {campaigns.map((c) => (
-            <div key={c.id} style={{ background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0', padding: '16px' }}>
+            <div key={c.id} style={{ background: 'var(--bg-light)', borderRadius: '10px', border: '1px solid var(--border-subtle)', padding: '16px' }}>
               <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px', marginBottom: '8px' }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -17958,16 +18260,16 @@ function DripCampaignsPanel({ session }: { session: Session }) {
                     <span className={`crm-drip-badge ${c.is_active ? 'crm-drip-badge-active' : 'crm-drip-badge-inactive'}`}>
                       {c.is_active ? 'Active' : 'Paused'}
                     </span>
-                    <span style={{ fontSize: '0.66rem', fontWeight: 700, textTransform: 'uppercase', padding: '1px 6px', borderRadius: '4px', background: '#e2e8f0', color: '#64748b' }}>{c.channel}</span>
+                    <span style={{ fontSize: '0.66rem', fontWeight: 700, textTransform: 'uppercase', padding: '1px 6px', borderRadius: '4px', background: 'var(--border-subtle)', color: 'var(--text-dark)' }}>{c.channel}</span>
                   </div>
-                  {c.description && <p style={{ fontSize: '0.78rem', color: '#64748b', marginTop: '2px' }}>{c.description}</p>}
-                  <p style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: '4px' }}>
+                  {c.description && <p style={{ fontSize: '0.78rem', color: 'var(--text-dark)', marginTop: '2px' }}>{c.description}</p>}
+                  <p style={{ fontSize: '0.72rem', color: 'var(--text-dark)', marginTop: '4px' }}>
                     {c.steps?.length || 0} step{(c.steps?.length || 0) !== 1 ? 's' : ''} &middot; {c.enrollmentCount || 0} enrolled &middot; Trigger: {c.trigger_status || 'manual'}
                   </p>
                 </div>
                 <div style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
-                  <button type="button" onClick={() => toggleActive(c)} style={{ padding: '6px', border: 'none', background: 'none', cursor: 'pointer', color: '#64748b' }} aria-label="Toggle active">{c.is_active ? <BellRing size={16} /> : <Bell size={16} />}</button>
-                  <button type="button" onClick={() => startEdit(c)} style={{ padding: '6px', border: 'none', background: 'none', cursor: 'pointer', color: '#64748b' }} aria-label="Edit"><Edit3 size={16} /></button>
+                  <button type="button" onClick={() => toggleActive(c)} style={{ padding: '6px', border: 'none', background: 'none', cursor: 'pointer', color: 'var(--text-dark)' }} aria-label="Toggle active">{c.is_active ? <BellRing size={16} /> : <Bell size={16} />}</button>
+                  <button type="button" onClick={() => startEdit(c)} style={{ padding: '6px', border: 'none', background: 'none', cursor: 'pointer', color: 'var(--text-dark)' }} aria-label="Edit"><Edit3 size={16} /></button>
                   <button type="button" onClick={() => setShowDelete(c.id)} style={{ padding: '6px', border: 'none', background: 'none', cursor: 'pointer', color: '#ef4444' }} aria-label="Delete"><Trash2 size={16} /></button>
                 </div>
               </div>
@@ -18104,7 +18406,7 @@ function DeleteAccountPanel({ session, onSignOut }: { session: Session; onSignOu
 
         {step === 'confirm' && (
           <div>
-            <p style={{ fontSize: '0.85rem', fontWeight: 600, color: '#1f2937', marginBottom: '8px' }}>
+            <p style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '8px' }}>
               To confirm, type <strong style={{ color: '#dc2626', letterSpacing: '0.03em' }}>{expectedPhrase}</strong> below:
             </p>
             <input
@@ -18114,7 +18416,7 @@ function DeleteAccountPanel({ session, onSignOut }: { session: Session; onSignOu
               placeholder={expectedPhrase}
               style={{
                 width: '100%', maxWidth: '340px',
-                padding: '12px 16px', border: '1.5px solid #e2e8f0', borderRadius: '10px',
+                padding: '12px 16px', border: '1.5px solid var(--border-subtle)', borderRadius: '10px',
                 fontSize: '0.85rem', fontFamily: 'monospace', fontWeight: 600,
                 outline: 'none', marginBottom: '16px',
               }}
@@ -18127,8 +18429,8 @@ function DeleteAccountPanel({ session, onSignOut }: { session: Session; onSignOu
                 style={{
                   display: 'flex', alignItems: 'center', gap: '8px',
                   padding: '12px 24px', borderRadius: '10px', border: 'none',
-                  background: confirmText === expectedPhrase ? '#dc2626' : '#e2e8f0',
-                  color: confirmText === expectedPhrase ? '#fff' : '#94a3b8',
+                  background: confirmText === expectedPhrase ? '#dc2626' : 'var(--border-subtle)',
+                  color: confirmText === expectedPhrase ? '#fff' : 'var(--text-dark)',
                   fontSize: '0.85rem', fontWeight: 700, cursor: confirmText === expectedPhrase ? 'pointer' : 'not-allowed',
                   transition: 'all 0.15s',
                 }}
@@ -18140,8 +18442,8 @@ function DeleteAccountPanel({ session, onSignOut }: { session: Session; onSignOu
                 onClick={() => { setStep('idle'); setConfirmText(''); }}
                 style={{
                   padding: '12px 24px', borderRadius: '10px',
-                  border: '1px solid #e2e8f0', background: '#fff',
-                  color: '#475569', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer',
+                  border: '1px solid var(--border-subtle)', background: 'var(--bg-card)',
+                  color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer',
                   transition: 'all 0.15s',
                 }}
               >
@@ -18154,7 +18456,7 @@ function DeleteAccountPanel({ session, onSignOut }: { session: Session; onSignOu
         {step === 'deleting' && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '16px 0' }}>
             <Loader2 size={22} className="crm-spin" style={{ color: '#dc2626' }} />
-            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#475569' }}>
+            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>
               Deleting your account and all data...
             </span>
           </div>
@@ -18189,8 +18491,8 @@ function DeleteAccountPanel({ session, onSignOut }: { session: Session; onSignOu
               onClick={() => { setStep('idle'); setConfirmText(''); setErrorMsg(''); }}
               style={{
                 padding: '10px 20px', borderRadius: '10px',
-                border: '1px solid #e2e8f0', background: '#fff',
-                color: '#475569', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer',
+                border: '1px solid var(--border-subtle)', background: 'var(--bg-card)',
+                color: 'var(--text-muted)', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer',
               }}
             >
               Back

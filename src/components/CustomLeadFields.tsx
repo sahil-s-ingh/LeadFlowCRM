@@ -172,7 +172,7 @@ export default function CustomLeadFields({ session, onBack }: CustomLeadFieldsPr
             Refresh
           </button>
           {!showForm && (
-            <button className="ea-refresh-btn" style={{ background: '#2563eb', color: '#fff', borderColor: '#2563eb' }} onClick={() => { resetForm(); setShowForm(true); }}>
+            <button className="ea-refresh-btn" style={{ background: '#2563eb', color: 'var(--bg-card)', borderColor: '#2563eb' }} onClick={() => { resetForm(); setShowForm(true); }}>
               <Plus size={16} /> New Field
             </button>
           )}
@@ -200,7 +200,7 @@ export default function CustomLeadFields({ session, onBack }: CustomLeadFieldsPr
           </div>
           <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div>
-              <label style={{ fontSize: '0.82rem', fontWeight: 600, color: '#374151', display: 'block', marginBottom: '6px' }}>
+              <label style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-main)', display: 'block', marginBottom: '6px' }}>
                 Field Name <span style={{ color: '#dc2626' }}>*</span>
               </label>
               <input
@@ -212,12 +212,12 @@ export default function CustomLeadFields({ session, onBack }: CustomLeadFieldsPr
                 style={{ width: '100%', paddingLeft: '12px' }}
                 disabled={!!editingId}
               />
-              <small style={{ color: '#9ca3af', fontSize: '0.75rem' }}>
+              <small style={{ color: 'var(--text-dark)', fontSize: '0.75rem' }}>
                 {editingId ? 'Field name cannot be changed after creation.' : 'This is the label shown when editing a lead.'}
               </small>
             </div>
             <div>
-              <label style={{ fontSize: '0.82rem', fontWeight: 600, color: '#374151', display: 'block', marginBottom: '6px' }}>
+              <label style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-main)', display: 'block', marginBottom: '6px' }}>
                 Field Type <span style={{ color: '#dc2626' }}>*</span>
               </label>
               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
@@ -245,7 +245,7 @@ export default function CustomLeadFields({ session, onBack }: CustomLeadFieldsPr
             </div>
             {fieldType === 'select' && (
               <div>
-                <label style={{ fontSize: '0.82rem', fontWeight: 600, color: '#374151', display: 'block', marginBottom: '6px' }}>
+                <label style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-main)', display: 'block', marginBottom: '6px' }}>
                   Dropdown Options <span style={{ color: '#dc2626' }}>*</span>
                 </label>
                 <input
@@ -256,7 +256,7 @@ export default function CustomLeadFields({ session, onBack }: CustomLeadFieldsPr
                   className="ea-search-input"
                   style={{ width: '100%', paddingLeft: '12px' }}
                 />
-                <small style={{ color: '#9ca3af', fontSize: '0.75rem' }}>Separate options with commas</small>
+                <small style={{ color: 'var(--text-dark)', fontSize: '0.75rem' }}>Separate options with commas</small>
               </div>
             )}
             <div style={{ display: 'flex', gap: '10px' }}>
@@ -266,7 +266,7 @@ export default function CustomLeadFields({ session, onBack }: CustomLeadFieldsPr
                 style={{
                   display: 'flex', alignItems: 'center', gap: '6px',
                   padding: '10px 20px', borderRadius: '8px',
-                  background: '#2563eb', color: '#fff',
+                  background: '#2563eb', color: 'var(--bg-card)',
                   border: 'none', cursor: saving ? 'not-allowed' : 'pointer',
                   fontWeight: 700, fontSize: '0.85rem',
                 }}
@@ -278,8 +278,8 @@ export default function CustomLeadFields({ session, onBack }: CustomLeadFieldsPr
                 onClick={resetForm}
                 style={{
                   padding: '10px 20px', borderRadius: '8px',
-                  background: 'transparent', color: '#6b7280',
-                  border: '1px solid rgba(0,0,0,0.1)', cursor: 'pointer',
+                  background: 'transparent', color: 'var(--text-dark)',
+                  border: '1px solid var(--border-subtle)', cursor: 'pointer',
                   fontWeight: 600, fontSize: '0.85rem',
                 }}
               >
@@ -306,8 +306,8 @@ export default function CustomLeadFields({ session, onBack }: CustomLeadFieldsPr
         ) : fields.length === 0 ? (
           <div className="ea-chart-empty" style={{ padding: '60px' }}>
             <List size={40} style={{ opacity: 0.25, marginBottom: 10 }} />
-            <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#374151', marginBottom: '4px' }}>No custom fields yet</h3>
-            <p style={{ color: '#9ca3af', fontSize: '0.85rem' }}>Click "New Field" to add fields like Loan Type, Business Name, or Annual Revenue.</p>
+            <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '4px' }}>No custom fields yet</h3>
+            <p style={{ color: 'var(--text-dark)', fontSize: '0.85rem' }}>Click "New Field" to add fields like Loan Type, Business Name, or Annual Revenue.</p>
           </div>
         ) : (
           <div style={{ padding: '8px' }}>
@@ -317,19 +317,19 @@ export default function CustomLeadFields({ session, onBack }: CustomLeadFieldsPr
                 <div key={field.id} style={{
                   display: 'flex', alignItems: 'center', gap: '12px',
                   padding: '14px 16px', borderRadius: '10px',
-                  borderBottom: '1px solid rgba(0,0,0,0.04)',
+                  borderBottom: '1px solid var(--border-subtle)',
                   transition: 'background 0.15s ease',
                 }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(0,0,0,0.02)')}
+                onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(148, 163, 184, 0.05)')}
                 onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
                 >
-                  <GripVertical size={16} style={{ color: '#d1d5db', flexShrink: 0 }} />
+                  <GripVertical size={16} style={{ color: 'var(--text-dark)', flexShrink: 0 }} />
                   <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: 'rgba(37,99,235,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                     <Icon size={16} style={{ color: '#2563eb' }} />
                   </div>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#1f2937' }}>{field.field_name}</div>
-                    <div style={{ fontSize: '0.75rem', color: '#9ca3af' }}>
+                    <div style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text-main)' }}>{field.field_name}</div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-dark)' }}>
                       {FIELD_TYPE_LABELS[field.field_type]}
                       {field.field_type === 'select' && field.options.length > 0 && ` · ${field.options.length} options`}
                       {' · '}{field.field_key}
@@ -339,8 +339,8 @@ export default function CustomLeadFields({ session, onBack }: CustomLeadFieldsPr
                     onClick={() => handleEdit(field)}
                     style={{
                       padding: '6px 10px', borderRadius: '6px',
-                      border: '1px solid rgba(0,0,0,0.1)', background: 'transparent',
-                      cursor: 'pointer', color: '#6b7280',
+                      border: '1px solid var(--border-subtle)', background: 'transparent',
+                      cursor: 'pointer', color: 'var(--text-dark)',
                     }}
                   >
                     <Pencil size={14} />
@@ -362,7 +362,7 @@ export default function CustomLeadFields({ session, onBack }: CustomLeadFieldsPr
         )}
       </div>
 
-      <div style={{ marginTop: '16px', padding: '14px 16px', background: 'rgba(37,99,235,0.04)', borderRadius: '10px', border: '1px solid rgba(37,99,235,0.08)', fontSize: '0.82rem', color: '#6b7280', lineHeight: 1.5 }}>
+      <div style={{ marginTop: '16px', padding: '14px 16px', background: 'rgba(37,99,235,0.04)', borderRadius: '10px', border: '1px solid rgba(37,99,235,0.08)', fontSize: '0.82rem', color: 'var(--text-dark)', lineHeight: 1.5 }}>
         <strong style={{ color: '#2563eb' }}>How it works:</strong> Custom fields appear in the lead edit modal. When you open a lead, you'll see these fields below the standard information. Values are saved per lead and can be used to organize and filter your pipeline.
       </div>
     </div>

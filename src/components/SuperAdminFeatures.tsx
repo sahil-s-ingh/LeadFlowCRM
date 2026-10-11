@@ -112,18 +112,18 @@ export default function SuperAdminFeatures({ onBack }: { onBack: () => void }) {
   const categoryLabel = (cat: string) => cat.charAt(0).toUpperCase() + cat.slice(1);
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f8fafc' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg-light)' }}>
       <div style={{ background: 'linear-gradient(135deg, #0f172a, #0f766e)', padding: '18px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <button type="button" onClick={onBack} style={{ padding: '6px 10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.1)', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.8rem', fontWeight: 600 }}>
+          <button type="button" onClick={onBack} style={{ padding: '6px 10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.1)', color: 'var(--bg-card)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.8rem', fontWeight: 600 }}>
             <ArrowLeft size={15} /> Back
           </button>
           <div>
-            <h1 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: '#fff' }}>Feature Toggles</h1>
+            <h1 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: 'var(--bg-card)' }}>Feature Toggles</h1>
             <p style={{ margin: 0, fontSize: '0.76rem', color: 'rgba(255,255,255,0.7)' }}>Enable or disable platform features</p>
           </div>
         </div>
-        <button type="button" onClick={startCreate} disabled={showForm} style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', background: '#fff', color: '#0f766e', fontSize: '0.82rem', fontWeight: 700, cursor: showForm ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+        <button type="button" onClick={startCreate} disabled={showForm} style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', background: 'var(--bg-card)', color: '#0f766e', fontSize: '0.82rem', fontWeight: 700, cursor: showForm ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
           <Plus size={16} /> New Toggle
         </button>
       </div>
@@ -133,10 +133,10 @@ export default function SuperAdminFeatures({ onBack }: { onBack: () => void }) {
         {success && <Banner type="success" message={success} onClose={() => setSuccess('')} />}
 
         {showForm && (
-          <div style={{ background: '#fff', borderRadius: '16px', border: '1px solid #e2e8f0', padding: '24px', marginBottom: '24px' }}>
+          <div style={{ background: 'var(--bg-card)', borderRadius: '16px', border: '1px solid var(--border-subtle)', padding: '24px', marginBottom: '24px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px' }}>
-              <h2 style={{ margin: 0, fontSize: '1rem', fontWeight: 700, color: '#0f172a' }}>{editingId ? 'Edit Toggle' : 'Create Toggle'}</h2>
-              <button type="button" onClick={cancelForm} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={20} /></button>
+              <h2 style={{ margin: 0, fontSize: '1rem', fontWeight: 700, color: 'var(--text-main)' }}>{editingId ? 'Edit Toggle' : 'Create Toggle'}</h2>
+              <button type="button" onClick={cancelForm} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-dark)' }}><X size={20} /></button>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '14px' }}>
               <Field label="Label">
@@ -158,18 +158,18 @@ export default function SuperAdminFeatures({ onBack }: { onBack: () => void }) {
               <input type="text" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Short description of what this feature does" style={inputStyle} />
             </Field>
             <div style={{ display: 'flex', gap: '14px', marginTop: '16px' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', color: '#475569', cursor: 'pointer' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', color: 'var(--text-muted)', cursor: 'pointer' }}>
                 <input type="checkbox" checked={form.is_enabled} onChange={(e) => setForm({ ...form, is_enabled: e.target.checked })} /> Enabled
               </label>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', color: '#475569', cursor: 'pointer' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', color: 'var(--text-muted)', cursor: 'pointer' }}>
                 <input type="checkbox" checked={form.is_public} onChange={(e) => setForm({ ...form, is_public: e.target.checked })} /> Visible publicly
               </label>
             </div>
             <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
-              <button type="button" onClick={save} disabled={saving} style={{ padding: '9px 18px', borderRadius: '8px', border: 'none', background: '#0f766e', color: '#fff', fontSize: '0.85rem', fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <button type="button" onClick={save} disabled={saving} style={{ padding: '9px 18px', borderRadius: '8px', border: 'none', background: '#0f766e', color: 'var(--bg-card)', fontSize: '0.85rem', fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
                 {saving ? <Loader2 size={16} className="crm-spin" /> : <Save size={16} />} {editingId ? 'Update' : 'Create'}
               </button>
-              <button type="button" onClick={cancelForm} style={{ padding: '9px 18px', borderRadius: '8px', border: '1px solid #e2e8f0', background: '#fff', color: '#64748b', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
+              <button type="button" onClick={cancelForm} style={{ padding: '9px 18px', borderRadius: '8px', border: '1px solid var(--border-subtle)', background: 'var(--bg-card)', color: 'var(--text-dark)', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
             </div>
           </div>
         )}
@@ -187,31 +187,31 @@ export default function SuperAdminFeatures({ onBack }: { onBack: () => void }) {
             <Loader2 size={28} className="crm-spin" style={{ color: '#0f766e' }} />
           </div>
         ) : Object.keys(grouped).length === 0 ? (
-          <div style={{ background: '#fff', borderRadius: '16px', border: '1px solid #e2e8f0', padding: '48px', textAlign: 'center' }}>
-            <p style={{ color: '#94a3b8', fontSize: '0.88rem' }}>No feature toggles yet.</p>
+          <div style={{ background: 'var(--bg-card)', borderRadius: '16px', border: '1px solid var(--border-subtle)', padding: '48px', textAlign: 'center' }}>
+            <p style={{ color: 'var(--text-dark)', fontSize: '0.88rem' }}>No feature toggles yet.</p>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             {Object.entries(grouped).sort(([a], [b]) => a.localeCompare(b)).map(([cat, items]) => (
               <div key={cat}>
-                <h3 style={{ fontSize: '0.82rem', fontWeight: 700, color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0 0 10px' }}>{categoryLabel(cat)} <span style={{ color: '#94a3b8', fontWeight: 500 }}>({items.length})</span></h3>
+                <h3 style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-main)', textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0 0 10px' }}>{categoryLabel(cat)} <span style={{ color: 'var(--text-dark)', fontWeight: 500 }}>({items.length})</span></h3>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '10px' }}>
                   {items.map((t) => (
-                    <div key={t.id} style={{ background: '#fff', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <div key={t.id} style={{ background: 'var(--bg-card)', borderRadius: '12px', border: '1px solid var(--border-subtle)', padding: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                         <div style={{ flex: 1 }}>
-                          <strong style={{ fontSize: '0.85rem', color: '#0f172a' }}>{t.label}</strong>
-                          {t.description && <p style={{ margin: '2px 0 0', fontSize: '0.76rem', color: '#94a3b8' }}>{t.description}</p>}
+                          <strong style={{ fontSize: '0.85rem', color: 'var(--text-main)' }}>{t.label}</strong>
+                          {t.description && <p style={{ margin: '2px 0 0', fontSize: '0.76rem', color: 'var(--text-dark)' }}>{t.description}</p>}
                         </div>
-                        <button type="button" onClick={() => quickToggle(t)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: t.is_enabled ? '#16a34a' : '#cbd5e1' }} title={t.is_enabled ? 'Enabled — click to disable' : 'Disabled — click to enable'}>
+                        <button type="button" onClick={() => quickToggle(t)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: t.is_enabled ? '#16a34a' : 'var(--text-dark)' }} title={t.is_enabled ? 'Enabled — click to disable' : 'Disabled — click to enable'}>
                           {t.is_enabled ? <ToggleRight size={32} /> : <ToggleLeft size={32} />}
                         </button>
                       </div>
                       <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                        <span style={{ fontSize: '0.68rem', fontWeight: 600, padding: '2px 8px', borderRadius: '6px', background: t.is_enabled ? 'rgba(22,163,74,0.1)' : 'rgba(148,163,184,0.1)', color: t.is_enabled ? '#16a34a' : '#94a3b8' }}>
+                        <span style={{ fontSize: '0.68rem', fontWeight: 600, padding: '2px 8px', borderRadius: '6px', background: t.is_enabled ? 'rgba(22,163,74,0.1)' : 'rgba(148,163,184,0.1)', color: t.is_enabled ? '#16a34a' : 'var(--text-dark)' }}>
                           {t.is_enabled ? 'ON' : 'OFF'}
                         </span>
-                        <span style={{ fontSize: '0.68rem', color: '#94a3b8' }}>/{t.key}</span>
+                        <span style={{ fontSize: '0.68rem', color: 'var(--text-dark)' }}>/{t.key}</span>
                         <div style={{ marginLeft: 'auto', display: 'flex', gap: '6px' }}>
                           <button type="button" onClick={() => startEdit(t)} style={iconBtn}><Edit3 size={13} /></button>
                           <button type="button" onClick={() => del(t.id)} style={{ ...iconBtn, color: '#dc2626', borderColor: 'rgba(239,68,68,0.2)' }}><Trash2 size={13} /></button>
@@ -229,21 +229,21 @@ export default function SuperAdminFeatures({ onBack }: { onBack: () => void }) {
   );
 }
 
-const inputStyle: React.CSSProperties = { width: '100%', padding: '9px 12px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '0.85rem', outline: 'none' };
-const iconBtn: React.CSSProperties = { display: 'inline-flex', alignItems: 'center', padding: '5px 8px', borderRadius: '6px', border: '1px solid #e2e8f0', background: '#fff', color: '#475569', cursor: 'pointer' };
+const inputStyle: React.CSSProperties = { width: '100%', padding: '9px 12px', border: '1px solid var(--border-subtle)', borderRadius: '8px', fontSize: '0.85rem', outline: 'none' };
+const iconBtn: React.CSSProperties = { display: 'inline-flex', alignItems: 'center', padding: '5px 8px', borderRadius: '6px', border: '1px solid var(--border-subtle)', background: 'var(--bg-card)', color: 'var(--text-muted)', cursor: 'pointer' };
 
 function filterBtn(active: boolean): React.CSSProperties {
   return {
     padding: '5px 12px', borderRadius: '8px', border: '1px solid',
-    borderColor: active ? '#0f766e' : '#e2e8f0',
-    background: active ? 'rgba(15,118,110,0.08)' : '#fff',
-    color: active ? '#0f766e' : '#64748b',
+    borderColor: active ? '#0f766e' : 'var(--border-subtle)',
+    background: active ? 'rgba(15,118,110,0.08)' : 'var(--bg-card)',
+    color: active ? '#0f766e' : 'var(--text-dark)',
     fontSize: '0.76rem', fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s',
   };
 }
 
 function Field({ label, children, style }: { label: string; children: React.ReactNode; style?: React.CSSProperties }) {
-  return (<label style={{ display: 'flex', flexDirection: 'column', gap: '4px', ...style }}><span style={{ fontSize: '0.76rem', fontWeight: 600, color: '#64748b' }}>{label}</span>{children}</label>);
+  return (<label style={{ display: 'flex', flexDirection: 'column', gap: '4px', ...style }}><span style={{ fontSize: '0.76rem', fontWeight: 600, color: 'var(--text-dark)' }}>{label}</span>{children}</label>);
 }
 
 function Banner({ type, message, onClose }: { type: 'error' | 'success'; message: string; onClose: () => void }) {

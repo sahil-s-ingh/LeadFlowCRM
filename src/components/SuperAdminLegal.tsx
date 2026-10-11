@@ -107,18 +107,18 @@ export default function SuperAdminLegal({ onBack }: { onBack: () => void }) {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f8fafc' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg-light)' }}>
       <div style={{ background: 'linear-gradient(135deg, #0f172a, #0f766e)', padding: '18px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <button type="button" onClick={onBack} style={{ padding: '6px 10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.1)', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.8rem', fontWeight: 600 }}>
+          <button type="button" onClick={onBack} style={{ padding: '6px 10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.1)', color: 'var(--bg-card)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.8rem', fontWeight: 600 }}>
             <ArrowLeft size={15} /> Back
           </button>
           <div>
-            <h1 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: '#fff' }}>Legal Pages</h1>
+            <h1 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: 'var(--bg-card)' }}>Legal Pages</h1>
             <p style={{ margin: 0, fontSize: '0.76rem', color: 'rgba(255,255,255,0.7)' }}>Edit your Terms, Privacy, and other legal content</p>
           </div>
         </div>
-        <button type="button" onClick={createPage} disabled={saving} style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', background: '#fff', color: '#0f766e', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+        <button type="button" onClick={createPage} disabled={saving} style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', background: 'var(--bg-card)', color: '#0f766e', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
           <Plus size={16} /> New Page
         </button>
       </div>
@@ -142,51 +142,51 @@ export default function SuperAdminLegal({ onBack }: { onBack: () => void }) {
                   onClick={() => selectPage(p)}
                   style={{
                     display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 12px', borderRadius: '10px',
-                    border: '1px solid', borderColor: selected?.id === p.id ? '#0f766e' : '#e2e8f0',
-                    background: selected?.id === p.id ? 'rgba(15,118,110,0.06)' : '#fff',
+                    border: '1px solid', borderColor: selected?.id === p.id ? '#0f766e' : 'var(--border-subtle)',
+                    background: selected?.id === p.id ? 'rgba(15,118,110,0.06)' : 'var(--bg-card)',
                     cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s',
                   }}
                 >
-                  <FileText size={15} style={{ color: selected?.id === p.id ? '#0f766e' : '#94a3b8', flexShrink: 0 }} />
+                  <FileText size={15} style={{ color: selected?.id === p.id ? '#0f766e' : 'var(--text-dark)', flexShrink: 0 }} />
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: '0.82rem', fontWeight: 600, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.title}</div>
-                    <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>/{p.slug}</div>
+                    <div style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-main)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.title}</div>
+                    <div style={{ fontSize: '0.68rem', color: 'var(--text-dark)' }}>/{p.slug}</div>
                   </div>
-                  {!p.is_published && <span style={{ fontSize: '0.62rem', fontWeight: 700, padding: '2px 6px', borderRadius: '4px', background: 'rgba(148,163,184,0.15)', color: '#94a3b8' }}>DRAFT</span>}
+                  {!p.is_published && <span style={{ fontSize: '0.62rem', fontWeight: 700, padding: '2px 6px', borderRadius: '4px', background: 'rgba(148,163,184,0.15)', color: 'var(--text-dark)' }}>DRAFT</span>}
                 </button>
               ))}
             </div>
 
             {/* Editor */}
             {selected ? (
-              <div style={{ background: '#fff', borderRadius: '16px', border: '1px solid #e2e8f0', padding: '24px' }}>
+              <div style={{ background: 'var(--bg-card)', borderRadius: '16px', border: '1px solid var(--border-subtle)', padding: '24px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px' }}>
-                  <h2 style={{ margin: 0, fontSize: '1rem', fontWeight: 700, color: '#0f172a' }}>Edit "{selected.title}"</h2>
+                  <h2 style={{ margin: 0, fontSize: '1rem', fontWeight: 700, color: 'var(--text-main)' }}>Edit "{selected.title}"</h2>
                   <div style={{ display: 'flex', gap: '8px' }}>
-                    <button type="button" onClick={() => setShowPreview(!showPreview)} style={{ padding: '6px 12px', borderRadius: '7px', border: '1px solid #e2e8f0', background: '#fff', color: '#475569', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                    <button type="button" onClick={() => setShowPreview(!showPreview)} style={{ padding: '6px 12px', borderRadius: '7px', border: '1px solid var(--border-subtle)', background: 'var(--bg-card)', color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}>
                       <Eye size={14} /> {showPreview ? 'Edit' : 'Preview'}
                     </button>
-                    <button type="button" onClick={() => delPage(selected)} style={{ padding: '6px 12px', borderRadius: '7px', border: '1px solid rgba(239,68,68,0.2)', background: '#fff', color: '#dc2626', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                    <button type="button" onClick={() => delPage(selected)} style={{ padding: '6px 12px', borderRadius: '7px', border: '1px solid rgba(239,68,68,0.2)', background: 'var(--bg-card)', color: '#dc2626', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}>
                       <Trash2 size={14} /> Delete
                     </button>
                   </div>
                 </div>
 
                 {showPreview ? (
-                  <div style={{ padding: '20px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0', minHeight: '400px', fontSize: '0.88rem', lineHeight: 1.65, color: '#334155' }} className="legal-content-render" dangerouslySetInnerHTML={{ __html: editContent }} />
+                  <div style={{ padding: '20px', background: 'var(--bg-light)', borderRadius: '12px', border: '1px solid var(--border-subtle)', minHeight: '400px', fontSize: '0.88rem', lineHeight: 1.65, color: 'var(--text-muted)' }} className="legal-content-render" dangerouslySetInnerHTML={{ __html: editContent }} />
                 ) : (
                   <>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                       <label style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                        <span style={{ fontSize: '0.76rem', fontWeight: 600, color: '#64748b' }}>Page Title</span>
+                        <span style={{ fontSize: '0.76rem', fontWeight: 600, color: 'var(--text-dark)' }}>Page Title</span>
                         <input type="text" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} style={inputStyle} />
                       </label>
                       <label style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                        <span style={{ fontSize: '0.76rem', fontWeight: 600, color: '#64748b' }}>Subtitle (shown below title)</span>
+                        <span style={{ fontSize: '0.76rem', fontWeight: 600, color: 'var(--text-dark)' }}>Subtitle (shown below title)</span>
                         <input type="text" value={editSubtitle} onChange={(e) => setEditSubtitle(e.target.value)} placeholder="Last updated: October 8, 2026" style={inputStyle} />
                       </label>
                       <label style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                        <span style={{ fontSize: '0.76rem', fontWeight: 600, color: '#64748b' }}>Content (HTML)</span>
+                        <span style={{ fontSize: '0.76rem', fontWeight: 600, color: 'var(--text-dark)' }}>Content (HTML)</span>
                         <textarea
                           value={editContent}
                           onChange={(e) => setEditContent(e.target.value)}
@@ -195,25 +195,25 @@ export default function SuperAdminLegal({ onBack }: { onBack: () => void }) {
                           placeholder="<h2>Section Title</h2><p>Your content here.</p>"
                         />
                       </label>
-                      <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', color: '#475569', cursor: 'pointer' }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', color: 'var(--text-muted)', cursor: 'pointer' }}>
                         <input type="checkbox" checked={editPublished} onChange={(e) => setEditPublished(e.target.checked)} /> Published (visible on your site)
                       </label>
                     </div>
                     <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
-                      <button type="button" onClick={save} disabled={saving} style={{ padding: '9px 18px', borderRadius: '8px', border: 'none', background: '#0f766e', color: '#fff', fontSize: '0.85rem', fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <button type="button" onClick={save} disabled={saving} style={{ padding: '9px 18px', borderRadius: '8px', border: 'none', background: '#0f766e', color: 'var(--bg-card)', fontSize: '0.85rem', fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
                         {saving ? <Loader2 size={16} className="crm-spin" /> : <Save size={16} />} Save & Publish
                       </button>
                     </div>
                   </>
                 )}
-                <p style={{ marginTop: '16px', fontSize: '0.72rem', color: '#94a3b8' }}>
+                <p style={{ marginTop: '16px', fontSize: '0.72rem', color: 'var(--text-dark)' }}>
                   This page is visible at <a href={`#legal/${selected.slug}`} onClick={(e) => { e.preventDefault(); window.open(`#legal/${selected.slug}`, '_blank'); }} style={{ color: '#0f766e', fontWeight: 600 }}>#legal/{selected.slug}</a> on your site.
                 </p>
               </div>
             ) : (
-              <div style={{ background: '#fff', borderRadius: '16px', border: '1px solid #e2e8f0', padding: '48px', textAlign: 'center' }}>
-                <FileText size={36} style={{ color: '#cbd5e1', marginBottom: '10px' }} />
-                <p style={{ fontSize: '0.88rem', color: '#94a3b8' }}>Select a page from the left to edit, or create a new one.</p>
+              <div style={{ background: 'var(--bg-card)', borderRadius: '16px', border: '1px solid var(--border-subtle)', padding: '48px', textAlign: 'center' }}>
+                <FileText size={36} style={{ color: 'var(--text-dark)', marginBottom: '10px' }} />
+                <p style={{ fontSize: '0.88rem', color: 'var(--text-dark)' }}>Select a page from the left to edit, or create a new one.</p>
               </div>
             )}
           </div>
@@ -223,7 +223,7 @@ export default function SuperAdminLegal({ onBack }: { onBack: () => void }) {
   );
 }
 
-const inputStyle: React.CSSProperties = { width: '100%', padding: '9px 12px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '0.85rem', outline: 'none' };
+const inputStyle: React.CSSProperties = { width: '100%', padding: '9px 12px', border: '1px solid var(--border-subtle)', borderRadius: '8px', fontSize: '0.85rem', outline: 'none' };
 
 function Banner({ type, message, onClose }: { type: 'error' | 'success'; message: string; onClose: () => void }) {
   const isErr = type === 'error';

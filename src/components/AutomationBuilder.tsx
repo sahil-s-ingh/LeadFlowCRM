@@ -77,7 +77,7 @@ const ACTION_PALETTE: { type: ActionType; label: string; icon: typeof Zap; color
   { type: 'add_tag', label: 'Add Tag', icon: Tag, color: '#8B5CF6', desc: 'Add a tag to the lead', group: 'Lead' },
   { type: 'change_status', label: 'Change Status', icon: RefreshCw, color: '#F59E0B', desc: 'Move lead to a pipeline stage', group: 'Lead' },
   { type: 'schedule_followup', label: 'Schedule Follow-Up', icon: CalendarClock, color: '#06B6D4', desc: 'Create a follow-up reminder', group: 'Lead' },
-  { type: 'delay', label: 'Wait / Delay', icon: Clock, color: '#64748B', desc: 'Pause before next action', group: 'Control' },
+  { type: 'delay', label: 'Wait / Delay', icon: Clock, color: 'var(--text-dark)', desc: 'Pause before next action', group: 'Control' },
   { type: 'condition', label: 'Condition (If/Else)', icon: GitBranch, color: '#0EA5E9', desc: 'Branch based on lead data, with optional ELSE path', group: 'Control' },
   { type: 'fire_webhook', label: 'Fire Webhook', icon: Webhook, color: '#EF4444', desc: 'Send data to an external URL', group: 'Integrations' },
 ];

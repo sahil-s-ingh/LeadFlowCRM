@@ -12,7 +12,7 @@ function InfoHeader({ title, subtitle }: { title: string; subtitle?: string }) {
         background: 'rgba(255, 255, 255, 0.94)',
         backdropFilter: 'blur(16px)',
         WebkitBackdropFilter: 'blur(16px)',
-        borderBottom: '1px solid rgba(0, 0, 0, 0.08)',
+        borderBottom: '1px solid var(--border-subtle)',
         zIndex: 100,
         display: 'flex',
         alignItems: 'center',
@@ -20,13 +20,13 @@ function InfoHeader({ title, subtitle }: { title: string; subtitle?: string }) {
       }}
     >
       <div style={{ width: '100%', maxWidth: 800, margin: '0 auto', padding: '0 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <a href="#" onClick={(e) => { e.preventDefault(); window.location.hash = ''; }} style={{ display: 'flex', alignItems: 'center', gap: 10, fontFamily: 'Outfit, sans-serif', fontWeight: 900, fontSize: '1.05rem', letterSpacing: '-0.3px', color: '#0F172A', textDecoration: 'none' }}>
+        <a href="#" onClick={(e) => { e.preventDefault(); window.location.hash = ''; }} style={{ display: 'flex', alignItems: 'center', gap: 10, fontFamily: 'Outfit, sans-serif', fontWeight: 900, fontSize: '1.05rem', letterSpacing: '-0.3px', color: 'var(--text-main)', textDecoration: 'none' }}>
           <div style={{ width: 34, height: 34, borderRadius: 8, background: 'linear-gradient(135deg, #FEF08A, #EAB308)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: '2px solid #EAB308', boxShadow: '0 2px 6px rgba(234,179,8,0.25)' }}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#422006" strokeWidth="2.5"><path d="M3 17l6-6 4 4 8-8" /><path d="M21 7v4h-4" /></svg>
           </div>
           <span>LeadFlow CRM</span>
         </a>
-        <a href="#" onClick={(e) => { e.preventDefault(); window.location.hash = ''; }} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 8, background: 'linear-gradient(180deg, #FACC15, #EAB308)', color: '#000', fontFamily: 'Outfit, sans-serif', fontWeight: 800, fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.3px', textDecoration: 'none', border: '1px solid #CA8A04', boxShadow: '0 3px 10px rgba(202,138,4,0.2)' }}>
+        <a href="#" onClick={(e) => { e.preventDefault(); window.location.hash = ''; }} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 8, background: 'linear-gradient(180deg, #FACC15, #EAB308)', color: 'var(--text-main)', fontFamily: 'Outfit, sans-serif', fontWeight: 800, fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.3px', textDecoration: 'none', border: '1px solid #CA8A04', boxShadow: '0 3px 10px rgba(202,138,4,0.2)' }}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M19 12H5" /><path d="M12 19l-7-7 7-7" /></svg>
           Back to Home
         </a>
@@ -47,25 +47,25 @@ function InfoFooter() {
     { label: 'Sitemap', hash: 'sitemap' },
   ];
   return (
-    <footer style={{ background: '#09120F', color: '#94A3B8', borderTop: '1px solid rgba(255,255,255,0.08)', padding: '32px 16px 40px', fontSize: '0.78rem', lineHeight: 1.55, marginTop: 60 }}>
+    <footer style={{ background: '#09120F', color: 'var(--text-dark)', borderTop: '1px solid rgba(255,255,255,0.08)', padding: '32px 16px 40px', fontSize: '0.78rem', lineHeight: 1.55, marginTop: 60 }}>
       <div style={{ maxWidth: 800, margin: '0 auto' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
           <div style={{ width: 36, height: 36, borderRadius: 10, background: 'linear-gradient(135deg, #FEF08A, #EAB308)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#422006" strokeWidth="2.5"><path d="M3 17l6-6 4 4 8-8" /><path d="M21 7v4h-4" /></svg>
           </div>
           <div>
-            <div style={{ fontFamily: 'Outfit, sans-serif', fontWeight: 900, fontSize: '0.92rem', color: '#F1F5F9' }}>LeadFlow CRM</div>
-            <div style={{ fontSize: '0.68rem', color: '#64748B' }}>All-in-One Sales & Lead Management Platform</div>
+            <div style={{ fontFamily: 'Outfit, sans-serif', fontWeight: 900, fontSize: '0.92rem', color: 'var(--bg-light)' }}>LeadFlow CRM</div>
+            <div style={{ fontSize: '0.68rem', color: 'var(--text-dark)' }}>All-in-One Sales & Lead Management Platform</div>
           </div>
         </div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 20 }}>
           {links.map((l) => (
-            <a key={l.hash} href={`#${l.hash}`} onClick={(e) => { e.preventDefault(); window.location.hash = l.hash; }} style={{ display: 'inline-flex', padding: '5px 11px', borderRadius: 9999, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)', color: '#94A3B8', fontSize: '0.72rem', fontWeight: 600, textDecoration: 'none', transition: 'all 0.2s' }}>
+            <a key={l.hash} href={`#${l.hash}`} onClick={(e) => { e.preventDefault(); window.location.hash = l.hash; }} style={{ display: 'inline-flex', padding: '5px 11px', borderRadius: 9999, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)', color: 'var(--text-dark)', fontSize: '0.72rem', fontWeight: 600, textDecoration: 'none', transition: 'all 0.2s' }}>
               {l.label}
             </a>
           ))}
         </div>
-        <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 16, textAlign: 'center', color: '#64748B', fontSize: '0.73rem' }}>
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 16, textAlign: 'center', color: 'var(--text-dark)', fontSize: '0.73rem' }}>
           &copy; 2026 LeadFlow CRM. All Rights Reserved.
         </div>
       </div>
@@ -75,7 +75,7 @@ function InfoFooter() {
 
 function InfoLayout({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div style={{ minHeight: '100vh', background: '#F8FAFC', fontFamily: 'Plus Jakarta Sans, sans-serif', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg-light)', fontFamily: 'Plus Jakarta Sans, sans-serif', display: 'flex', flexDirection: 'column' }}>
       <InfoHeader title={title} />
       <main style={{ flex: 1, maxWidth: 800, width: '100%', margin: '0 auto', padding: '32px 16px' }}>
         {children}
@@ -89,29 +89,29 @@ function PageTitle({ pill, title, desc }: { pill: string; title: string; desc?: 
   return (
     <div style={{ marginBottom: 28 }}>
       <span style={{ display: 'inline-block', padding: '3px 10px', background: 'rgba(234,179,8,0.15)', border: '1px solid rgba(234,179,8,0.4)', color: '#854D0E', borderRadius: 9999, fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: 8 }}>{pill}</span>
-      <h1 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1.75rem', fontWeight: 900, marginBottom: 8, lineHeight: 1.35, letterSpacing: '-0.2px', color: '#0F172A' }}>{title}</h1>
-      {desc && <p style={{ fontSize: '0.9rem', color: '#475569', lineHeight: 1.55 }}>{desc}</p>}
+      <h1 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1.75rem', fontWeight: 900, marginBottom: 8, lineHeight: 1.35, letterSpacing: '-0.2px', color: 'var(--text-main)' }}>{title}</h1>
+      {desc && <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', lineHeight: 1.55 }}>{desc}</p>}
     </div>
   );
 }
 
 function Card({ children }: { children: React.ReactNode }) {
-  return <div style={{ background: '#FFFFFF', borderRadius: 14, border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 3px 12px rgba(0,0,0,0.02)', padding: '20px 18px', marginBottom: 16 }}>{children}</div>;
+  return <div style={{ background: 'var(--bg-card)', borderRadius: 14, border: '1px solid var(--border-subtle)', boxShadow: '0 3px 12px rgba(0,0,0,0.02)', padding: '20px 18px', marginBottom: 16 }}>{children}</div>;
 }
 
 function H2({ children }: { children: React.ReactNode }) {
-  return <h2 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1.1rem', fontWeight: 800, color: '#0F172A', marginBottom: 10 }}>{children}</h2>;
+  return <h2 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: 10 }}>{children}</h2>;
 }
 
 function P({ children }: { children: React.ReactNode }) {
-  return <p style={{ fontSize: '0.86rem', color: '#475569', lineHeight: 1.65, marginBottom: 12 }}>{children}</p>;
+  return <p style={{ fontSize: '0.86rem', color: 'var(--text-muted)', lineHeight: 1.65, marginBottom: 12 }}>{children}</p>;
 }
 
 function UL({ items }: { items: React.ReactNode[] }) {
   return (
     <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 12px 0', display: 'flex', flexDirection: 'column', gap: 8 }}>
       {items.map((item, i) => (
-        <li key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: '0.86rem', color: '#475569', lineHeight: 1.55 }}>
+        <li key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: '0.86rem', color: 'var(--text-muted)', lineHeight: 1.55 }}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2.5" style={{ flexShrink: 0, marginTop: 3 }}><polyline points="20 6 9 17 4 12" /></svg>
           <span>{item}</span>
         </li>
@@ -151,7 +151,7 @@ export function AboutPage() {
         <H2>Our Values</H2>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12, marginTop: 8 }} className="about-values-grid">
           {values.map((v) => (
-            <div key={v.title} style={{ padding: '14px', background: '#F8FAFC', borderRadius: 10, border: '1px solid rgba(0,0,0,0.05)' }}>
+            <div key={v.title} style={{ padding: '14px', background: 'var(--bg-light)', borderRadius: 10, border: '1px solid rgba(0,0,0,0.05)' }}>
               <div style={{ width: 34, height: 34, borderRadius: 8, background: 'rgba(234,179,8,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 8 }}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#CA8A04" strokeWidth="2">
                   {v.icon === 'target' && <><circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="6" /><circle cx="12" cy="12" r="2" /></>}
@@ -160,8 +160,8 @@ export function AboutPage() {
                   {v.icon === 'users' && <><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /></>}
                 </svg>
               </div>
-              <h4 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '0.88rem', fontWeight: 800, color: '#0F172A', marginBottom: 4 }}>{v.title}</h4>
-              <p style={{ fontSize: '0.78rem', color: '#475569', lineHeight: 1.5 }}>{v.desc}</p>
+              <h4 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '0.88rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: 4 }}>{v.title}</h4>
+              <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>{v.desc}</p>
             </div>
           ))}
         </div>
@@ -170,9 +170,9 @@ export function AboutPage() {
         <H2>By the Numbers</H2>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }} className="about-stats-grid">
           {stats.map((s) => (
-            <div key={s.label} style={{ textAlign: 'center', padding: '14px 8px', background: '#F8FAFC', borderRadius: 10, border: '1px solid rgba(0,0,0,0.05)' }}>
+            <div key={s.label} style={{ textAlign: 'center', padding: '14px 8px', background: 'var(--bg-light)', borderRadius: 10, border: '1px solid rgba(0,0,0,0.05)' }}>
               <div style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1.4rem', fontWeight: 900, color: '#CA8A04' }}>{s.val}</div>
-              <div style={{ fontSize: '0.68rem', color: '#475569', fontWeight: 600, marginTop: 2 }}>{s.label}</div>
+              <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontWeight: 600, marginTop: 2 }}>{s.label}</div>
             </div>
           ))}
         </div>
@@ -185,7 +185,7 @@ export function AboutPage() {
             <a href="#signup" onClick={(e) => { e.preventDefault(); window.location.hash = 'signup'; }} className="gold-cta" style={{ maxWidth: 'fit-content', padding: '10px 20px', fontSize: '0.82rem' }}>
               <span>START FREE TRIAL</span>
             </a>
-            <a href="#careers" onClick={(e) => { e.preventDefault(); window.location.hash = 'careers'; }} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '10px 20px', borderRadius: 14, border: '1px solid rgba(0,0,0,0.15)', background: '#FFFFFF', color: '#0F172A', fontFamily: 'Outfit, sans-serif', fontWeight: 800, fontSize: '0.82rem', textTransform: 'uppercase', textDecoration: 'none' }}>
+            <a href="#careers" onClick={(e) => { e.preventDefault(); window.location.hash = 'careers'; }} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '10px 20px', borderRadius: 14, border: '1px solid rgba(0,0,0,0.15)', background: 'var(--bg-card)', color: 'var(--text-main)', fontFamily: 'Outfit, sans-serif', fontWeight: 800, fontSize: '0.82rem', textTransform: 'uppercase', textDecoration: 'none' }}>
               View Careers
             </a>
           </div>
@@ -357,32 +357,32 @@ export function CareersPage() {
         <H2>Why Work at LeadFlow?</H2>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10, marginTop: 8 }} className="careers-perks-grid">
           {perks.map((perk) => (
-            <div key={perk} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', background: '#F8FAFC', borderRadius: 10, border: '1px solid rgba(0,0,0,0.05)' }}>
+            <div key={perk} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', background: 'var(--bg-light)', borderRadius: 10, border: '1px solid rgba(0,0,0,0.05)' }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2.5"><polyline points="20 6 9 17 4 12" /></svg>
-              <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#0F172A' }}>{perk}</span>
+              <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-main)' }}>{perk}</span>
             </div>
           ))}
         </div>
       </Card>
       <div style={{ marginBottom: 16 }}>
-        <h2 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1.2rem', fontWeight: 800, color: '#0F172A', marginBottom: 14 }}>Open Positions ({jobs.length})</h2>
+        <h2 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: 14 }}>Open Positions ({jobs.length})</h2>
         {jobs.map((job) => (
           <Card key={job.role}>
             <button onClick={() => setExpanded(expanded === job.role ? null : job.role)} style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit' }}>
               <div>
-                <div style={{ fontFamily: 'Outfit, sans-serif', fontSize: '0.96rem', fontWeight: 800, color: '#0F172A', marginBottom: 3 }}>{job.role}</div>
+                <div style={{ fontFamily: 'Outfit, sans-serif', fontSize: '0.96rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: 3 }}>{job.role}</div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                   <span style={{ fontSize: '0.66rem', fontWeight: 700, color: '#CA8A04', background: 'rgba(234,179,8,0.1)', padding: '2px 7px', borderRadius: 9999 }}>{job.team}</span>
                   <span style={{ fontSize: '0.66rem', fontWeight: 700, color: '#0EA5E9', background: 'rgba(14,165,233,0.1)', padding: '2px 7px', borderRadius: 9999 }}>{job.location}</span>
                   <span style={{ fontSize: '0.66rem', fontWeight: 700, color: '#16A34A', background: 'rgba(22,163,74,0.1)', padding: '2px 7px', borderRadius: 9999 }}>{job.type}</span>
                 </div>
               </div>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ color: '#94A3B8', transform: expanded === job.role ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s ease', flexShrink: 0 }}><polyline points="6 9 12 15 18 9" /></svg>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ color: 'var(--text-dark)', transform: expanded === job.role ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s ease', flexShrink: 0 }}><polyline points="6 9 12 15 18 9" /></svg>
             </button>
             {expanded === job.role && (
-              <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid rgba(0,0,0,0.06)', animation: 'setup-fade-in 0.2s ease' }}>
+              <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--border-subtle)', animation: 'setup-fade-in 0.2s ease' }}>
                 <P>{job.desc}</P>
-                <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#0F172A', marginBottom: 8 }}>Requirements:</div>
+                <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: 8 }}>Requirements:</div>
                 <UL items={job.reqs} />
                 <a href="mailto:careers@leadflowcrm.com" className="gold-cta" style={{ maxWidth: 'fit-content', padding: '9px 18px', fontSize: '0.78rem', marginTop: 4 }}>
                   <span>APPLY NOW</span>
@@ -397,7 +397,7 @@ export function CareersPage() {
         <div style={{ textAlign: 'center' }}>
           <H2>Don't see the right role?</H2>
           <P>Send us your resume and tell us how you'd contribute. We're always looking for exceptional people.</P>
-          <a href="mailto:careers@leadflowcrm.com" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '10px 20px', borderRadius: 14, border: '1px solid rgba(0,0,0,0.15)', background: '#FFFFFF', color: '#0F172A', fontFamily: 'Outfit, sans-serif', fontWeight: 800, fontSize: '0.82rem', textTransform: 'uppercase', textDecoration: 'none' }}>
+          <a href="mailto:careers@leadflowcrm.com" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '10px 20px', borderRadius: 14, border: '1px solid rgba(0,0,0,0.15)', background: 'var(--bg-card)', color: 'var(--text-main)', fontFamily: 'Outfit, sans-serif', fontWeight: 800, fontSize: '0.82rem', textTransform: 'uppercase', textDecoration: 'none' }}>
             Email Careers Team
           </a>
         </div>
@@ -447,8 +447,8 @@ export function SecurityPage() {
                 {m.icon === 'backup' && <><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></>}
               </svg>
             </div>
-            <h4 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '0.88rem', fontWeight: 800, color: '#0F172A', marginBottom: 5 }}>{m.title}</h4>
-            <p style={{ fontSize: '0.78rem', color: '#475569', lineHeight: 1.5 }}>{m.desc}</p>
+            <h4 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '0.88rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: 5 }}>{m.title}</h4>
+            <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>{m.desc}</p>
           </Card>
         ))}
       </div>
@@ -469,12 +469,12 @@ export function BrandAssetsPage() {
   const colors = [
     { name: 'Primary Gold', hex: '#EAB308', bg: '#EAB308', text: '#000' },
     { name: 'Light Gold', hex: '#FEF08A', bg: '#FEF08A', text: '#422006' },
-    { name: 'Dark Gold', hex: '#CA8A04', bg: '#CA8A04', text: '#FFF' },
-    { name: 'Deep Gold', hex: '#854D0E', bg: '#854D0E', text: '#FFF' },
-    { name: 'Dark Navy', hex: '#0F172A', bg: '#0F172A', text: '#FFF' },
-    { name: 'Slate', hex: '#475569', bg: '#475569', text: '#FFF' },
-    { name: 'Emerald', hex: '#16A34A', bg: '#16A34A', text: '#FFF' },
-    { name: 'Light BG', hex: '#F8FAFC', bg: '#F8FAFC', text: '#0F172A' },
+    { name: 'Dark Gold', hex: '#CA8A04', bg: '#CA8A04', text: 'var(--bg-card)' },
+    { name: 'Deep Gold', hex: '#854D0E', bg: '#854D0E', text: 'var(--bg-card)' },
+    { name: 'Dark Navy', hex: '#0F172A', bg: '#0F172A', text: 'var(--bg-card)' },
+    { name: 'Slate', hex: '#475569', bg: '#475569', text: 'var(--bg-card)' },
+    { name: 'Emerald', hex: '#16A34A', bg: '#16A34A', text: 'var(--bg-card)' },
+    { name: 'Light BG', hex: 'var(--bg-light)', bg: 'var(--bg-light)', text: '#0F172A' },
   ];
   const guidelines = [
     'Always use the official logo with clear space around it (minimum 1x the icon height)',
@@ -490,12 +490,12 @@ export function BrandAssetsPage() {
       <Card>
         <H2>Logo</H2>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginTop: 8 }}>
-          <div style={{ background: '#FFFFFF', borderRadius: 12, border: '1px solid rgba(0,0,0,0.08)', padding: '20px', display: 'flex', alignItems: 'center', gap: 14 }}>
+          <div style={{ background: 'var(--bg-card)', borderRadius: 12, border: '1px solid var(--border-subtle)', padding: '20px', display: 'flex', alignItems: 'center', gap: 14 }}>
             <div style={{ width: 48, height: 48, borderRadius: 12, background: 'linear-gradient(135deg, #FEF08A, #EAB308)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#422006" strokeWidth="2.5"><path d="M3 17l6-6 4 4 8-8" /><path d="M21 7v4h-4" /></svg>
             </div>
             <div>
-              <div style={{ fontFamily: 'Outfit, sans-serif', fontWeight: 900, fontSize: '1.1rem', color: '#0F172A' }}>LeadFlow CRM</div>
+              <div style={{ fontFamily: 'Outfit, sans-serif', fontWeight: 900, fontSize: '1.1rem', color: 'var(--text-main)' }}>LeadFlow CRM</div>
               <div style={{ fontSize: '0.68rem', color: '#CA8A04', fontWeight: 800, letterSpacing: '0.4px' }}>SALES & LEAD MANAGEMENT</div>
             </div>
           </div>
@@ -504,7 +504,7 @@ export function BrandAssetsPage() {
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#422006" strokeWidth="2.5"><path d="M3 17l6-6 4 4 8-8" /><path d="M21 7v4h-4" /></svg>
             </div>
             <div>
-              <div style={{ fontFamily: 'Outfit, sans-serif', fontWeight: 900, fontSize: '1.1rem', color: '#F1F5F9' }}>LeadFlow CRM</div>
+              <div style={{ fontFamily: 'Outfit, sans-serif', fontWeight: 900, fontSize: '1.1rem', color: 'var(--bg-light)' }}>LeadFlow CRM</div>
               <div style={{ fontSize: '0.68rem', color: '#FACC15', fontWeight: 800, letterSpacing: '0.4px' }}>SALES & LEAD MANAGEMENT</div>
             </div>
           </div>
@@ -514,9 +514,9 @@ export function BrandAssetsPage() {
         <H2>Color Palette</H2>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginTop: 8 }} className="brand-colors-grid">
           {colors.map((c) => (
-            <div key={c.name} style={{ borderRadius: 10, overflow: 'hidden', border: '1px solid rgba(0,0,0,0.06)' }}>
+            <div key={c.name} style={{ borderRadius: 10, overflow: 'hidden', border: '1px solid var(--border-subtle)' }}>
               <div style={{ background: c.bg, padding: '20px 10px', textAlign: 'center', color: c.text, fontSize: '0.72rem', fontWeight: 800, fontFamily: 'Outfit, sans-serif' }}>{c.hex}</div>
-              <div style={{ background: '#FFFFFF', padding: '7px 8px', fontSize: '0.66rem', fontWeight: 600, color: '#475569', textAlign: 'center' }}>{c.name}</div>
+              <div style={{ background: 'var(--bg-card)', padding: '7px 8px', fontSize: '0.66rem', fontWeight: 600, color: 'var(--text-muted)', textAlign: 'center' }}>{c.name}</div>
             </div>
           ))}
         </div>
@@ -574,37 +574,37 @@ export function ReportAbusePage() {
         <Card>
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div>
-              <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#0F172A', marginBottom: 6 }}>Type of Violation *</label>
+              <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: 6 }}>Type of Violation *</label>
               <select
                 value={form.type}
                 onChange={(e) => setForm({ ...form, type: e.target.value })}
                 required
-                style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(0,0,0,0.12)', fontSize: '0.84rem', fontFamily: 'inherit', background: '#F8FAFC', color: '#0F172A' }}
+                style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(0,0,0,0.12)', fontSize: '0.84rem', fontFamily: 'inherit', background: 'var(--bg-light)', color: 'var(--text-main)' }}
               >
                 <option value="">Select a violation type...</option>
                 {types.map((t) => <option key={t} value={t}>{t}</option>)}
               </select>
             </div>
             <div>
-              <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#0F172A', marginBottom: 6 }}>Your Email *</label>
+              <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: 6 }}>Your Email *</label>
               <input
                 type="email"
                 required
                 placeholder="your@email.com"
                 value={form.email}
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
-                style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(0,0,0,0.12)', fontSize: '0.84rem', fontFamily: 'inherit', background: '#F8FAFC' }}
+                style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(0,0,0,0.12)', fontSize: '0.84rem', fontFamily: 'inherit', background: 'var(--bg-light)' }}
               />
             </div>
             <div>
-              <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#0F172A', marginBottom: 6 }}>Describe the Issue *</label>
+              <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: 6 }}>Describe the Issue *</label>
               <textarea
                 required
                 placeholder="Provide as much detail as possible: account details, URLs, screenshots, dates, and what happened..."
                 value={form.description}
                 onChange={(e) => setForm({ ...form, description: e.target.value })}
                 rows={5}
-                style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(0,0,0,0.12)', fontSize: '0.84rem', fontFamily: 'inherit', background: '#F8FAFC', resize: 'vertical' }}
+                style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(0,0,0,0.12)', fontSize: '0.84rem', fontFamily: 'inherit', background: 'var(--bg-light)', resize: 'vertical' }}
               />
             </div>
             <button type="submit" className="gold-cta" style={{ maxWidth: 'fit-content', padding: '11px 22px', fontSize: '0.82rem' }}>
@@ -685,7 +685,7 @@ export function SitemapPage() {
             <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
               {s.links.map((l) => (
                 <li key={l.label}>
-                  <a href={`#${l.hash}`} onClick={(e) => { e.preventDefault(); window.location.hash = l.hash; }} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.84rem', color: '#475569', textDecoration: 'none', transition: 'color 0.2s', fontWeight: 600 }}>
+                  <a href={`#${l.hash}`} onClick={(e) => { e.preventDefault(); window.location.hash = l.hash; }} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.84rem', color: 'var(--text-muted)', textDecoration: 'none', transition: 'color 0.2s', fontWeight: 600 }}>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#CA8A04" strokeWidth="2" style={{ flexShrink: 0 }}><path d="M5 12h14" /><path d="M12 5l7 7-7 7" /></svg>
                     {l.label}
                   </a>

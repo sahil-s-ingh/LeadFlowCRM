@@ -33,7 +33,7 @@ export default function SuperAdminLogin() {
       <div style={{
         width: '100%',
         maxWidth: '440px',
-        background: '#fff',
+        background: 'var(--bg-card)',
         borderRadius: '20px',
         boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)',
         overflow: 'hidden',
@@ -43,7 +43,7 @@ export default function SuperAdminLogin() {
           background: 'linear-gradient(135deg, #0f172a, #0f766e)',
           padding: '32px 28px',
           textAlign: 'center',
-          color: '#fff',
+          color: 'var(--bg-card)',
         }}>
           <div style={{
             width: '56px',
@@ -67,9 +67,9 @@ export default function SuperAdminLogin() {
         {/* Form */}
         <form onSubmit={handleSubmit} style={{ padding: '28px' }}>
           <div style={{ marginBottom: '16px' }}>
-            <label htmlFor="sa-email" style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>Email</label>
+            <label htmlFor="sa-email" style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '6px' }}>Email</label>
             <div style={{ position: 'relative' }}>
-              <Mail size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+              <Mail size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dark)' }} />
               <input
                 id="sa-email"
                 type="email"
@@ -79,20 +79,20 @@ export default function SuperAdminLogin() {
                 placeholder="admin@leadcentre.com"
                 autoComplete="email"
                 style={{
-                  width: '100%', padding: '12px 12px 12px 40px', border: '2px solid #e2e8f0',
+                  width: '100%', padding: '12px 12px 12px 40px', border: '2px solid var(--border-subtle)',
                   borderRadius: '10px', fontSize: '0.88rem', outline: 'none',
                   transition: 'border-color 0.2s', boxSizing: 'border-box',
                 }}
                 onFocus={(e) => { e.target.style.borderColor = '#0f766e'; }}
-                onBlur={(e) => { e.target.style.borderColor = '#e2e8f0'; }}
+                onBlur={(e) => { e.target.style.borderColor = 'var(--border-subtle)'; }}
               />
             </div>
           </div>
 
           <div style={{ marginBottom: '16px' }}>
-            <label htmlFor="sa-password" style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>Password</label>
+            <label htmlFor="sa-password" style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '6px' }}>Password</label>
             <div style={{ position: 'relative' }}>
-              <Lock size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+              <Lock size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dark)' }} />
               <input
                 id="sa-password"
                 type={showPassword ? 'text' : 'password'}
@@ -103,19 +103,19 @@ export default function SuperAdminLogin() {
                 placeholder="Enter your password"
                 autoComplete="current-password"
                 style={{
-                  width: '100%', padding: '12px 40px 12px 40px', border: '2px solid #e2e8f0',
+                  width: '100%', padding: '12px 40px 12px 40px', border: '2px solid var(--border-subtle)',
                   borderRadius: '10px', fontSize: '0.88rem', outline: 'none',
                   transition: 'border-color 0.2s', boxSizing: 'border-box',
                 }}
                 onFocus={(e) => { e.target.style.borderColor = '#0f766e'; }}
-                onBlur={(e) => { e.target.style.borderColor = '#e2e8f0'; }}
+                onBlur={(e) => { e.target.style.borderColor = 'var(--border-subtle)'; }}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
                 style={{
                   position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)',
-                  border: 'none', background: 'none', cursor: 'pointer', color: '#94a3b8', padding: '4px',
+                  border: 'none', background: 'none', cursor: 'pointer', color: 'var(--text-dark)', padding: '4px',
                 }}
                 aria-label="Toggle password visibility"
               >
@@ -126,7 +126,7 @@ export default function SuperAdminLogin() {
 
           {error && (
             <div style={{
-              padding: '12px 14px', background: '#fef2f2', border: '1px solid #fecaca',
+              padding: '12px 14px', background: 'var(--bg-card)', border: '1px solid #fecaca',
               borderRadius: '10px', fontSize: '0.82rem', color: '#dc2626', marginBottom: '16px',
             }}>
               {error}
@@ -138,7 +138,7 @@ export default function SuperAdminLogin() {
             disabled={loading}
             style={{
               width: '100%', padding: '13px', border: 'none', borderRadius: '10px',
-              background: loading ? '#94a3b8' : '#0f766e', color: '#fff',
+              background: loading ? '#94a3b8' : '#0f766e', color: 'var(--bg-card)',
               fontSize: '0.9rem', fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
               transition: 'background 0.2s',
@@ -156,7 +156,7 @@ export default function SuperAdminLogin() {
         </form>
 
         <div style={{ textAlign: 'center', paddingBottom: '20px' }}>
-          <a href="#/" style={{ fontSize: '0.8rem', color: '#64748b', textDecoration: 'none' }}>
+          <a href="#/" style={{ fontSize: '0.8rem', color: 'var(--text-dark)', textDecoration: 'none' }}>
             <TrendingUp size={12} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'middle' }} />
             Back to LeadCentre
           </a>

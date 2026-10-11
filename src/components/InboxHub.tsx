@@ -150,7 +150,7 @@ export default function InboxHub({
         {availableTabs.length === 0 && (
           <div style={{ padding: '80px 20px', textAlign: 'center' }}>
             <InboxIcon size={40} style={{ opacity: 0.25, marginBottom: 12 }} />
-            <p style={{ color: '#94a3b8', fontSize: '0.9rem' }}>No inboxes available.</p>
+            <p style={{ color: 'var(--text-dark)', fontSize: '0.9rem' }}>No inboxes available.</p>
           </div>
         )}
       </div>

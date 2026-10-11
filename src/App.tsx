@@ -92,7 +92,7 @@ function ImpersonationBanner({ adminEmail, onExit }: { adminEmail: string; onExi
       alignItems: 'center',
       justifyContent: 'center',
       gap: '12px',
-      color: '#fff',
+      color: 'var(--bg-card)',
       fontSize: '0.82rem',
       fontWeight: 600,
     }}>
@@ -106,7 +106,7 @@ function ImpersonationBanner({ adminEmail, onExit }: { adminEmail: string; onExi
         style={{
           display: 'inline-flex', alignItems: 'center', gap: '5px',
           padding: '5px 14px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.3)',
-          background: 'rgba(255,255,255,0.15)', color: '#fff',
+          background: 'rgba(255,255,255,0.15)', color: 'var(--bg-card)',
           fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap',
         }}
       >
@@ -219,7 +219,7 @@ function App() {
             <div style={{ width: '56px', height: '56px', borderRadius: '14px', background: 'rgba(239,68,68,0.15)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px' }}>
               <span style={{ fontSize: '1.5rem' }}>&#9888;</span>
             </div>
-            <h1 style={{ color: '#fff', fontSize: '1.3rem', fontWeight: 700, marginBottom: '10px' }}>Not Authorized</h1>
+            <h1 style={{ color: 'var(--bg-card)', fontSize: '1.3rem', fontWeight: 700, marginBottom: '10px' }}>Not Authorized</h1>
             <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.88rem', marginBottom: '20px' }}>
               You are signed in but not authorized as a super admin. Contact the platform owner to be granted access.
             </p>
@@ -228,7 +228,7 @@ function App() {
               onClick={async () => { await supabase.auth.signOut(); }}
               style={{
                 padding: '10px 20px', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '8px',
-                background: 'rgba(255,255,255,0.1)', color: '#fff', fontSize: '0.85rem',
+                background: 'rgba(255,255,255,0.1)', color: 'var(--bg-card)', fontSize: '0.85rem',
                 fontWeight: 600, cursor: 'pointer',
               }}
             >
@@ -251,7 +251,7 @@ function App() {
   if (hash === 'admin' || hash === '/admin') {
     if (!authChecked) {
       return (
-        <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F8FAFC' }}>
+        <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-light)' }}>
           <div style={{ color: '#475569', fontSize: '0.9rem' }}>Loading...</div>
         </div>
       );
@@ -275,7 +275,7 @@ function App() {
   if (hash === 'signup' || hash === '/signup') {
     if (!authChecked) {
       return (
-        <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F8FAFC' }}>
+        <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-light)' }}>
           <div style={{ color: '#475569', fontSize: '0.9rem' }}>Loading...</div>
         </div>
       );

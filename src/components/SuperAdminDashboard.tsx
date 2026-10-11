@@ -166,10 +166,10 @@ export default function SuperAdminDashboard({ session, onSignOut }: { session: S
 
   if (loading && view === 'dashboard') {
     return (
-      <div style={{ minHeight: '100vh', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ minHeight: '100vh', background: 'var(--bg-light)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div style={{ textAlign: 'center' }}>
           <Loader2 size={32} className="crm-spin" style={{ color: '#0f766e' }} />
-          <p style={{ marginTop: '12px', color: '#64748b', fontSize: '0.88rem' }}>Loading super admin dashboard...</p>
+          <p style={{ marginTop: '12px', color: 'var(--text-dark)', fontSize: '0.88rem' }}>Loading super admin dashboard...</p>
         </div>
       </div>
     );
@@ -204,7 +204,7 @@ export default function SuperAdminDashboard({ session, onSignOut }: { session: S
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f8fafc' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg-light)' }}>
       {/* Header */}
       <div style={{
         background: 'linear-gradient(135deg, #0f172a, #0f766e)',
@@ -222,10 +222,10 @@ export default function SuperAdminDashboard({ session, onSignOut }: { session: S
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             backdropFilter: 'blur(10px)',
           }}>
-            <Shield size={24} style={{ color: '#fff' }} />
+            <Shield size={24} style={{ color: 'var(--bg-card)' }} />
           </div>
           <div>
-            <h1 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, color: '#fff', letterSpacing: '-0.02em' }}>Super Admin Dashboard</h1>
+            <h1 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, color: 'var(--bg-card)', letterSpacing: '-0.02em' }}>Super Admin Dashboard</h1>
             <p style={{ margin: 0, fontSize: '0.78rem', color: 'rgba(255,255,255,0.7)' }}>LeadCentre CRM Platform Overview</p>
           </div>
         </div>
@@ -238,7 +238,7 @@ export default function SuperAdminDashboard({ session, onSignOut }: { session: S
               disabled={loading}
               style={{
                 padding: '8px 14px', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '8px',
-                background: 'rgba(255,255,255,0.1)', color: '#fff', fontSize: '0.8rem',
+                background: 'rgba(255,255,255,0.1)', color: 'var(--bg-card)', fontSize: '0.8rem',
                 fontWeight: 600, cursor: loading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '6px',
               }}
             >
@@ -293,7 +293,7 @@ export default function SuperAdminDashboard({ session, onSignOut }: { session: S
               onClick={() => setView('profile')}
               style={{
                 padding: '8px 14px', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '8px',
-                background: 'rgba(255,255,255,0.1)', color: '#fff', fontSize: '0.8rem',
+                background: 'rgba(255,255,255,0.1)', color: 'var(--bg-card)', fontSize: '0.8rem',
                 fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px',
               }}
             >
@@ -305,7 +305,7 @@ export default function SuperAdminDashboard({ session, onSignOut }: { session: S
             onClick={onSignOut}
             style={{
               padding: '8px 14px', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '8px',
-              background: 'rgba(255,255,255,0.1)', color: '#fff', fontSize: '0.8rem',
+              background: 'rgba(255,255,255,0.1)', color: 'var(--bg-card)', fontSize: '0.8rem',
               fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px',
             }}
           >
@@ -317,7 +317,7 @@ export default function SuperAdminDashboard({ session, onSignOut }: { session: S
       <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '28px 24px' }}>
         {error && (
           <div style={{
-            padding: '14px 16px', background: '#fef2f2', border: '1px solid #fecaca',
+            padding: '14px 16px', background: 'var(--bg-card)', border: '1px solid #fecaca',
             borderRadius: '12px', fontSize: '0.85rem', color: '#dc2626', marginBottom: '20px',
             display: 'flex', alignItems: 'center', gap: '10px',
           }}>
@@ -384,14 +384,14 @@ export default function SuperAdminDashboard({ session, onSignOut }: { session: S
 
         {/* Accounts Table */}
         <div style={{
-          background: '#fff',
+          background: 'var(--bg-card)',
           borderRadius: '16px',
-          border: '1px solid #e2e8f0',
+          border: '1px solid var(--border-subtle)',
           overflow: 'hidden',
         }}>
           <div style={{
             padding: '20px 24px',
-            borderBottom: '1px solid #e2e8f0',
+            borderBottom: '1px solid var(--border-subtle)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
@@ -399,8 +399,8 @@ export default function SuperAdminDashboard({ session, onSignOut }: { session: S
             gap: '12px',
           }}>
             <div>
-              <h2 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: '#0f172a' }}>All Accounts</h2>
-              <p style={{ margin: '4px 0 0', fontSize: '0.8rem', color: '#94a3b8' }}>
+              <h2 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-main)' }}>All Accounts</h2>
+              <p style={{ margin: '4px 0 0', fontSize: '0.8rem', color: 'var(--text-dark)' }}>
                 {accounts.length} account{accounts.length !== 1 ? 's' : ''} on the platform
               </p>
             </div>
@@ -415,9 +415,9 @@ export default function SuperAdminDashboard({ session, onSignOut }: { session: S
                     onClick={() => setStatusFilter(f)}
                     style={{
                       padding: '7px 12px', borderRadius: '8px', border: '1px solid',
-                      borderColor: statusFilter === f ? '#0f766e' : '#e2e8f0',
-                      background: statusFilter === f ? 'rgba(15,118,110,0.08)' : '#fff',
-                      color: statusFilter === f ? '#0f766e' : '#64748b',
+                      borderColor: statusFilter === f ? '#0f766e' : 'var(--border-subtle)',
+                      background: statusFilter === f ? 'rgba(15,118,110,0.08)' : 'var(--bg-card)',
+                      color: statusFilter === f ? '#0f766e' : 'var(--text-dark)',
                       fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer',
                       textTransform: 'capitalize', transition: 'all 0.15s',
                     }}
@@ -429,18 +429,18 @@ export default function SuperAdminDashboard({ session, onSignOut }: { session: S
 
               {/* Search */}
               <div style={{ position: 'relative' }}>
-                <Search size={16} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                <Search size={16} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dark)' }} />
                 <input
                   type="text"
                   placeholder="Search by email..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   style={{
-                    padding: '9px 12px 9px 34px', border: '1px solid #e2e8f0', borderRadius: '8px',
+                    padding: '9px 12px 9px 34px', border: '1px solid var(--border-subtle)', borderRadius: '8px',
                     fontSize: '0.85rem', outline: 'none', width: '240px',
                   }}
                   onFocus={(e) => { e.target.style.borderColor = '#0f766e'; }}
-                  onBlur={(e) => { e.target.style.borderColor = '#e2e8f0'; }}
+                  onBlur={(e) => { e.target.style.borderColor = 'var(--border-subtle)'; }}
                 />
               </div>
             </div>
@@ -448,8 +448,8 @@ export default function SuperAdminDashboard({ session, onSignOut }: { session: S
 
           {filteredAccounts.length === 0 ? (
             <div style={{ padding: '48px 24px', textAlign: 'center' }}>
-              <Users size={36} style={{ color: '#cbd5e1', marginBottom: '10px' }} />
-              <p style={{ fontSize: '0.88rem', color: '#94a3b8' }}>
+              <Users size={36} style={{ color: 'var(--text-dark)', marginBottom: '10px' }} />
+              <p style={{ fontSize: '0.88rem', color: 'var(--text-dark)' }}>
                 {search || statusFilter !== 'all' ? 'No accounts match your filters.' : 'No accounts found yet.'}
               </p>
             </div>
@@ -457,7 +457,7 @@ export default function SuperAdminDashboard({ session, onSignOut }: { session: S
             <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
-                  <tr style={{ background: '#f8fafc' }}>
+                  <tr style={{ background: 'var(--bg-light)' }}>
                     <th style={thStyle}>#</th>
                     <th style={thStyle}><Mail size={12} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'middle' }} />Email</th>
                     <th style={thStyle}>Status</th>
@@ -474,8 +474,8 @@ export default function SuperAdminDashboard({ session, onSignOut }: { session: S
                     const active = isActive(account.last_sign_in_at);
                     const isSelf = account.owner_id === session.user.id;
                     return (
-                      <tr key={account.owner_id} style={{ borderBottom: '1px solid #f1f5f9', transition: 'background 0.15s', cursor: 'pointer' }}
-                        onMouseEnter={(e) => { e.currentTarget.style.background = '#f8fafc'; }}
+                      <tr key={account.owner_id} style={{ borderBottom: '1px solid var(--border-subtle)', transition: 'background 0.15s', cursor: 'pointer' }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--bg-light)'; }}
                         onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
                         onClick={() => setDrawerUserId(account.owner_id)}
                       >
@@ -485,8 +485,8 @@ export default function SuperAdminDashboard({ session, onSignOut }: { session: S
                           </span>
                         </td>
                         <td style={tdStyle}>
-                          <div style={{ fontWeight: 600, color: '#1e293b', fontSize: '0.85rem' }}>{account.email}</div>
-                          <div style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: '2px' }}>
+                          <div style={{ fontWeight: 600, color: 'var(--text-main)', fontSize: '0.85rem' }}>{account.email}</div>
+                          <div style={{ fontSize: '0.72rem', color: 'var(--text-dark)', marginTop: '2px' }}>
                             {account.owner_id.slice(0, 8)}...
                           </div>
                         </td>
@@ -496,19 +496,19 @@ export default function SuperAdminDashboard({ session, onSignOut }: { session: S
                             padding: '3px 10px', borderRadius: '9999px',
                             fontSize: '0.72rem', fontWeight: 700,
                             background: active ? 'rgba(22,163,74,0.1)' : 'rgba(148,163,184,0.1)',
-                            color: active ? '#16a34a' : '#94a3b8',
+                            color: active ? '#16a34a' : 'var(--text-dark)',
                           }}>
                             <span style={{
                               width: '6px', height: '6px', borderRadius: '50%',
-                              background: active ? '#16a34a' : '#cbd5e1',
+                              background: active ? '#16a34a' : 'var(--text-dark)',
                             }} />
                             {active ? 'Active' : 'Inactive'}
                           </span>
                         </td>
-                        <td style={{ ...tdStyle, fontSize: '0.8rem', color: '#64748b' }}>
+                        <td style={{ ...tdStyle, fontSize: '0.8rem', color: 'var(--text-dark)' }}>
                           {formatDate(account.created_at)}
                         </td>
-                        <td style={{ ...tdStyle, fontSize: '0.8rem', color: '#64748b' }}>
+                        <td style={{ ...tdStyle, fontSize: '0.8rem', color: 'var(--text-dark)' }}>
                           {formatRelative(account.last_sign_in_at)}
                         </td>
                         <td style={tdStyle}>
@@ -534,8 +534,8 @@ export default function SuperAdminDashboard({ session, onSignOut }: { session: S
                             title="View account details"
                             style={{
                               display: 'inline-flex', alignItems: 'center', gap: '5px',
-                              padding: '6px 10px', borderRadius: '7px', border: '1px solid #e2e8f0',
-                              background: '#fff', color: '#475569',
+                              padding: '6px 10px', borderRadius: '7px', border: '1px solid var(--border-subtle)',
+                              background: 'var(--bg-card)', color: 'var(--text-muted)',
                               fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer',
                               transition: 'all 0.15s', whiteSpace: 'nowrap',
                             }}
@@ -550,8 +550,8 @@ export default function SuperAdminDashboard({ session, onSignOut }: { session: S
                             style={{
                               display: 'inline-flex', alignItems: 'center', gap: '5px',
                               padding: '6px 12px', borderRadius: '7px', border: 'none',
-                              background: isSelf ? '#f1f5f9' : '#0f766e',
-                              color: isSelf ? '#94a3b8' : '#fff',
+                              background: isSelf ? 'var(--bg-light)' : '#0f766e',
+                              color: isSelf ? '#94a3b8' : 'var(--bg-card)',
                               fontSize: '0.75rem', fontWeight: 700, cursor: (isSelf || impersonatingId === account.owner_id) ? 'not-allowed' : 'pointer',
                               transition: 'all 0.15s', whiteSpace: 'nowrap',
                             }}
@@ -574,7 +574,7 @@ export default function SuperAdminDashboard({ session, onSignOut }: { session: S
           )}
         </div>
 
-        <p style={{ textAlign: 'center', marginTop: '24px', fontSize: '0.78rem', color: '#94a3b8' }}>
+        <p style={{ textAlign: 'center', marginTop: '24px', fontSize: '0.78rem', color: 'var(--text-dark)' }}>
           Super Admin Portal &middot; LeadCentre CRM Platform
         </p>
       </div>
@@ -601,7 +601,7 @@ const thStyle: React.CSSProperties = {
   fontWeight: 700,
   textTransform: 'uppercase',
   letterSpacing: '0.05em',
-  color: '#64748b',
+  color: 'var(--text-dark)',
   whiteSpace: 'nowrap',
 };
 
@@ -610,7 +610,7 @@ const headerBtnStyle: React.CSSProperties = {
   border: '1px solid rgba(255,255,255,0.2)',
   borderRadius: '8px',
   background: 'rgba(255,255,255,0.1)',
-  color: '#fff',
+  color: 'var(--bg-card)',
   fontSize: '0.8rem',
   fontWeight: 600,
   cursor: 'pointer',
@@ -622,7 +622,7 @@ const headerBtnStyle: React.CSSProperties = {
 const tdStyle: React.CSSProperties = {
   padding: '14px 16px',
   fontSize: '0.85rem',
-  color: '#334155',
+  color: 'var(--text-muted)',
 };
 
 function StatCard({ icon, label, value, subtext, color, bg }: {
@@ -635,9 +635,9 @@ function StatCard({ icon, label, value, subtext, color, bg }: {
 }) {
   return (
     <div style={{
-      background: '#fff',
+      background: 'var(--bg-card)',
       borderRadius: '14px',
-      border: '1px solid #e2e8f0',
+      border: '1px solid var(--border-subtle)',
       padding: '20px',
       transition: 'transform 0.2s, box-shadow 0.2s',
       cursor: 'default',
@@ -653,14 +653,14 @@ function StatCard({ icon, label, value, subtext, color, bg }: {
         }}>
           {icon}
         </div>
-        <span style={{ fontSize: '0.78rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+        <span style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-dark)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
           {label}
         </span>
       </div>
-      <div style={{ fontSize: '1.9rem', fontWeight: 800, color: '#0f172a', lineHeight: 1, marginBottom: '6px' }}>
+      <div style={{ fontSize: '1.9rem', fontWeight: 800, color: 'var(--text-main)', lineHeight: 1, marginBottom: '6px' }}>
         {value.toLocaleString()}
       </div>
-      <div style={{ fontSize: '0.76rem', color: '#94a3b8' }}>{subtext}</div>
+      <div style={{ fontSize: '0.76rem', color: 'var(--text-dark)' }}>{subtext}</div>
     </div>
   );
 }

@@ -73,7 +73,7 @@ type TimeRange = 'today' | '7d' | '30d' | 'all';
 const ROLE_COLORS: Record<string, { bg: string; text: string; border: string }> = {
   admin: { bg: 'rgba(220,38,38,0.1)', text: '#dc2626', border: 'rgba(220,38,38,0.3)' },
   manager: { bg: 'rgba(37,99,235,0.1)', text: '#2563eb', border: 'rgba(37,99,235,0.3)' },
-  agent: { bg: 'rgba(100,116,139,0.1)', text: '#64748b', border: 'rgba(100,116,139,0.3)' },
+  agent: { bg: 'rgba(100,116,139,0.1)', text: 'var(--text-dark)', border: 'rgba(100,116,139,0.3)' },
 };
 
 const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
@@ -87,7 +87,7 @@ const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
 
 const ACTIVITY_ICONS: Record<string, React.ReactNode> = {
   status_change: <GitMerge size={14} style={{ color: '#2563eb' }} />,
-  note: <StickyNote size={14} style={{ color: '#64748b' }} />,
+  note: <StickyNote size={14} style={{ color: 'var(--text-dark)' }} />,
   email_sent: <Mail size={14} style={{ color: '#2563eb' }} />,
   telegram_message: <MessageCircle size={14} style={{ color: '#0088cc' }} />,
   whatsapp_message: <MessageCircle size={14} style={{ color: '#25D366' }} />,
@@ -97,7 +97,7 @@ const ACTIVITY_ICONS: Record<string, React.ReactNode> = {
   tag_added: <Tag size={14} style={{ color: '#7c3aed' }} />,
   tag_removed: <Tag size={14} style={{ color: '#dc2626' }} />,
   call: <PhoneCall size={14} style={{ color: '#0d9488' }} />,
-  assignment: <Users size={14} style={{ color: '#64748b' }} />,
+  assignment: <Users size={14} style={{ color: 'var(--text-dark)' }} />,
 };
 
 const TIME_RANGES: { key: TimeRange; label: string }[] = [
@@ -281,7 +281,7 @@ export default function TeamDashboardPanel({ session }: { session: Session }) {
 
   const MEDAL_COLORS = [
     { bg: 'linear-gradient(135deg, #fbbf24, #f59e0b)', text: '#92400e', label: '1st' },
-    { bg: 'linear-gradient(135deg, #cbd5e1, #94a3b8)', text: '#475569', label: '2nd' },
+    { bg: 'linear-gradient(135deg, #cbd5e1, #94a3b8)', text: 'var(--text-muted)', label: '2nd' },
     { bg: 'linear-gradient(135deg, #d97706, #b45309)', text: '#78350f', label: '3rd' },
   ];
 
@@ -295,7 +295,7 @@ export default function TeamDashboardPanel({ session }: { session: Session }) {
           </div>
           <div className="td-header-controls" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
             {/* Time range filter */}
-            <div className="td-time-range" style={{ display: 'flex', gap: '4px', padding: '4px', background: '#f1f5f9', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+            <div className="td-time-range" style={{ display: 'flex', gap: '4px', padding: '4px', background: 'var(--bg-light)', borderRadius: '10px', border: '1px solid var(--border-subtle)' }}>
               {TIME_RANGES.map((r) => (
                 <button
                   key={r.key}
@@ -306,7 +306,7 @@ export default function TeamDashboardPanel({ session }: { session: Session }) {
                     border: 'none',
                     borderRadius: '7px',
                     background: timeRange === r.key ? '#fff' : 'transparent',
-                    color: timeRange === r.key ? '#0f766e' : '#64748b',
+                    color: timeRange === r.key ? '#0f766e' : 'var(--text-dark)',
                     fontSize: '0.75rem',
                     fontWeight: 700,
                     cursor: 'pointer',
@@ -326,7 +326,7 @@ export default function TeamDashboardPanel({ session }: { session: Session }) {
               type="button"
               onClick={loadData}
               disabled={refreshing}
-              style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', border: '1px solid #e2e8f0', borderRadius: '8px', background: '#fff', color: '#475569', fontSize: '0.78rem', fontWeight: 600, cursor: refreshing ? 'not-allowed' : 'pointer', opacity: refreshing ? 0.6 : 1, flexShrink: 0 }}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', border: '1px solid var(--border-subtle)', borderRadius: '8px', background: 'var(--bg-card)', color: 'var(--text-muted)', fontSize: '0.78rem', fontWeight: 600, cursor: refreshing ? 'not-allowed' : 'pointer', opacity: refreshing ? 0.6 : 1, flexShrink: 0 }}
             >
               {refreshing ? <Loader2 size={14} className="crm-spin" /> : <TrendingUp size={14} />}
               {refreshing ? 'Refreshing...' : 'Refresh'}
@@ -359,16 +359,16 @@ export default function TeamDashboardPanel({ session }: { session: Session }) {
           { label: 'Assigned Leads', value: totalLeads, icon: <UserCheck size={18} />, color: '#7c3aed', bg: 'rgba(124,58,237,0.08)' },
           { label: 'Conversions', value: totalConverted, icon: <CheckCircle2 size={18} />, color: '#16a34a', bg: 'rgba(22,163,74,0.08)' },
           { label: 'Total Funds', value: `$${totalFunds.toLocaleString()}`, icon: <TrendingUp size={18} />, color: '#0d9488', bg: 'rgba(13,148,136,0.08)' },
-          { label: 'Pending Follow-ups', value: totalFollowups, icon: <Bell size={18} />, color: totalOverdue > 0 ? '#dc2626' : '#64748b', bg: totalOverdue > 0 ? 'rgba(239,68,68,0.08)' : 'rgba(100,116,139,0.08)' },
+          { label: 'Pending Follow-ups', value: totalFollowups, icon: <Bell size={18} />, color: totalOverdue > 0 ? '#dc2626' : 'var(--text-dark)', bg: totalOverdue > 0 ? 'rgba(239,68,68,0.08)' : 'rgba(100,116,139,0.08)' },
         ].map((card) => (
-          <div key={card.label} style={{ padding: '16px', background: card.bg, borderRadius: '12px', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          <div key={card.label} style={{ padding: '16px', background: card.bg, borderRadius: '12px', border: '1px solid var(--border-subtle)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', color: card.color, border: '1px solid #e2e8f0' }}>
+              <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'var(--bg-card)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: card.color, border: '1px solid var(--border-subtle)' }}>
                 {card.icon}
               </div>
-              <span style={{ fontSize: '1.5rem', fontWeight: 800, color: '#1e293b', lineHeight: 1 }}>{card.value}</span>
+              <span style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-main)', lineHeight: 1 }}>{card.value}</span>
             </div>
-            <span style={{ fontSize: '0.72rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.03em' }}>{card.label}</span>
+            <span style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-dark)', textTransform: 'uppercase', letterSpacing: '0.03em' }}>{card.label}</span>
           </div>
         ))}
       </div>
@@ -376,9 +376,9 @@ export default function TeamDashboardPanel({ session }: { session: Session }) {
       {/* Performance Leaderboard */}
       {leaderboard.length > 0 && (
         <div style={{ marginBottom: '24px' }}>
-          <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
             <Trophy size={16} style={{ color: '#f59e0b' }} /> Performance Leaderboard
-            <span style={{ fontSize: '0.7rem', fontWeight: 500, color: '#94a3b8' }}>
+            <span style={{ fontSize: '0.7rem', fontWeight: 500, color: 'var(--text-dark)' }}>
               · {TIME_RANGES.find((r) => r.key === timeRange)?.label}
             </span>
           </div>
@@ -390,15 +390,15 @@ export default function TeamDashboardPanel({ session }: { session: Session }) {
               return (
                 <div key={stat.member.id} className="td-leaderboard-row" style={{
                   display: 'flex', alignItems: 'center', gap: '12px',
-                  padding: '12px 16px', background: medal ? `${medal.bg}10` : '#f8fafc',
-                  borderRadius: '10px', border: medal ? `1px solid ${medal.text}20` : '1px solid #e2e8f0',
+                  padding: '12px 16px', background: medal ? `${medal.bg}10` : 'var(--bg-light)',
+                  borderRadius: '10px', border: medal ? `1px solid ${medal.text}20` : '1px solid var(--border-subtle)',
                 }}>
                   {/* Rank */}
                   <div style={{
                     width: '32px', height: '32px', borderRadius: '50%',
-                    background: medal ? medal.bg : '#e2e8f0',
+                    background: medal ? medal.bg : 'var(--border-subtle)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    color: medal ? medal.text : '#94a3b8', fontWeight: 800, fontSize: '0.78rem',
+                    color: medal ? medal.text : 'var(--text-dark)', fontWeight: 800, fontSize: '0.78rem',
                     flexShrink: 0,
                   }}>
                     {medal ? <Medal size={16} /> : idx + 1}
@@ -408,31 +408,31 @@ export default function TeamDashboardPanel({ session }: { session: Session }) {
                     width: '36px', height: '36px', borderRadius: '50%',
                     background: `linear-gradient(135deg, ${roleColor.text}, ${roleColor.text}dd)`,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    color: '#fff', fontWeight: 700, fontSize: '0.85rem', flexShrink: 0,
+                    color: 'var(--bg-card)', fontWeight: 700, fontSize: '0.85rem', flexShrink: 0,
                   }}>
                     {initials}
                   </div>
                   {/* Name */}
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <strong style={{ fontSize: '0.82rem', color: '#1e293b' }}>{stat.member.full_name || stat.member.email}</strong>
+                      <strong style={{ fontSize: '0.82rem', color: 'var(--text-main)' }}>{stat.member.full_name || stat.member.email}</strong>
                       {medal && <span style={{ fontSize: '0.62rem', fontWeight: 700, padding: '1px 6px', borderRadius: '4px', background: medal.bg, color: medal.text }}>{medal.label}</span>}
                     </div>
-                    <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>{stat.periodConversions} conversion{stat.periodConversions !== 1 ? 's' : ''} · {stat.conversionRate.toFixed(1)}% rate</span>
+                    <span style={{ fontSize: '0.72rem', color: 'var(--text-dark)' }}>{stat.periodConversions} conversion{stat.periodConversions !== 1 ? 's' : ''} · {stat.conversionRate.toFixed(1)}% rate</span>
                   </div>
                   {/* Stats */}
                   <div className="td-leaderboard-stats" style={{ display: 'flex', gap: '16px', flexShrink: 0 }}>
                     <div style={{ textAlign: 'center' }}>
                       <div style={{ fontSize: '0.95rem', fontWeight: 800, color: '#16a34a', lineHeight: 1 }}>{stat.periodConversions}</div>
-                      <div style={{ fontSize: '0.58rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 600 }}>Won</div>
+                      <div style={{ fontSize: '0.58rem', color: 'var(--text-dark)', textTransform: 'uppercase', fontWeight: 600 }}>Won</div>
                     </div>
                     <div style={{ textAlign: 'center' }}>
                       <div style={{ fontSize: '0.95rem', fontWeight: 800, color: '#2563eb', lineHeight: 1 }}>{stat.periodActivities}</div>
-                      <div style={{ fontSize: '0.58rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 600 }}>Actions</div>
+                      <div style={{ fontSize: '0.58rem', color: 'var(--text-dark)', textTransform: 'uppercase', fontWeight: 600 }}>Actions</div>
                     </div>
                     <div style={{ textAlign: 'center' }}>
                       <div style={{ fontSize: '0.95rem', fontWeight: 800, color: '#0d9488', lineHeight: 1 }}>${stat.convertedFunds.toLocaleString()}</div>
-                      <div style={{ fontSize: '0.58rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 600 }}>Funds</div>
+                      <div style={{ fontSize: '0.58rem', color: 'var(--text-dark)', textTransform: 'uppercase', fontWeight: 600 }}>Funds</div>
                     </div>
                   </div>
                 </div>
@@ -444,8 +444,8 @@ export default function TeamDashboardPanel({ session }: { session: Session }) {
 
       {/* Member cards */}
       {memberStats.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '40px', color: '#94a3b8', fontSize: '0.9rem' }}>
-          <Users size={32} style={{ margin: '0 auto 12px', color: '#cbd5e1' }} />
+        <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-dark)', fontSize: '0.9rem' }}>
+          <Users size={32} style={{ margin: '0 auto 12px', color: 'var(--text-dark)' }} />
           No team members yet. Invite people from the Team tab to see their activity here.
         </div>
       ) : (
@@ -461,7 +461,7 @@ export default function TeamDashboardPanel({ session }: { session: Session }) {
               <div
                 key={stat.member.id}
                 style={{
-                  border: hasOverdue ? '1px solid rgba(239,68,68,0.3)' : '1px solid #e2e8f0',
+                  border: hasOverdue ? '1px solid rgba(239,68,68,0.3)' : '1px solid var(--border-subtle)',
                   borderRadius: '12px',
                   overflow: 'hidden',
                   transition: 'box-shadow 0.2s',
@@ -489,9 +489,9 @@ export default function TeamDashboardPanel({ session }: { session: Session }) {
                   <div style={{ position: 'relative', flexShrink: 0 }}>
                     <div style={{
                       width: '42px', height: '42px', borderRadius: '50%',
-                      background: stat.member.status === 'active' ? `linear-gradient(135deg, ${roleColor.text}, ${roleColor.text}dd)` : '#e2e8f0',
+                      background: stat.member.status === 'active' ? `linear-gradient(135deg, ${roleColor.text}, ${roleColor.text}dd)` : 'var(--border-subtle)',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      color: '#fff', fontWeight: 700, fontSize: '1rem',
+                      color: 'var(--bg-card)', fontWeight: 700, fontSize: '1rem',
                     }}>
                       {initials}
                     </div>
@@ -507,7 +507,7 @@ export default function TeamDashboardPanel({ session }: { session: Session }) {
                   {/* Name & email */}
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div className="td-member-badges" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                      <strong style={{ fontSize: '0.9rem', color: '#1e293b' }}>
+                      <strong style={{ fontSize: '0.9rem', color: 'var(--text-main)' }}>
                         {stat.member.full_name || stat.member.email}
                       </strong>
                       {online ? (
@@ -516,7 +516,7 @@ export default function TeamDashboardPanel({ session }: { session: Session }) {
                           Online
                         </span>
                       ) : stat.member.status === 'active' && stat.member.last_seen_at ? (
-                        <span style={{ fontSize: '0.62rem', fontWeight: 600, padding: '2px 8px', borderRadius: '4px', background: 'rgba(100,116,139,0.08)', color: '#94a3b8' }}>
+                        <span style={{ fontSize: '0.62rem', fontWeight: 600, padding: '2px 8px', borderRadius: '4px', background: 'rgba(100,116,139,0.08)', color: 'var(--text-dark)' }}>
                           Last seen {formatRelative(stat.member.last_seen_at)}
                         </span>
                       ) : null}
@@ -534,50 +534,50 @@ export default function TeamDashboardPanel({ session }: { session: Session }) {
                         </span>
                       )}
                     </div>
-                    <span style={{ fontSize: '0.76rem', color: '#94a3b8' }}>{stat.member.email}</span>
+                    <span style={{ fontSize: '0.76rem', color: 'var(--text-dark)' }}>{stat.member.email}</span>
                   </div>
 
                   {/* Quick stats */}
                   <div className="td-member-quick-stats" style={{ display: 'flex', gap: '16px', alignItems: 'center', flexShrink: 0 }}>
                     <div style={{ textAlign: 'center' }}>
-                      <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#1e293b', lineHeight: 1 }}>{stat.totalLeads}</div>
-                      <div style={{ fontSize: '0.62rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 600 }}>Leads</div>
+                      <div style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-main)', lineHeight: 1 }}>{stat.totalLeads}</div>
+                      <div style={{ fontSize: '0.62rem', color: 'var(--text-dark)', textTransform: 'uppercase', fontWeight: 600 }}>Leads</div>
                     </div>
                     <div style={{ textAlign: 'center' }}>
                       <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#16a34a', lineHeight: 1 }}>{stat.convertedLeads}</div>
-                      <div style={{ fontSize: '0.62rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 600 }}>Won</div>
+                      <div style={{ fontSize: '0.62rem', color: 'var(--text-dark)', textTransform: 'uppercase', fontWeight: 600 }}>Won</div>
                     </div>
                     <div style={{ textAlign: 'center' }}>
-                      <div style={{ fontSize: '1.1rem', fontWeight: 800, color: hasOverdue ? '#dc2626' : stat.pendingFollowups > 0 ? '#eab308' : '#94a3b8', lineHeight: 1 }}>{stat.pendingFollowups}</div>
-                      <div style={{ fontSize: '0.62rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 600 }}>Follow-ups</div>
+                      <div style={{ fontSize: '1.1rem', fontWeight: 800, color: hasOverdue ? '#dc2626' : stat.pendingFollowups > 0 ? '#eab308' : 'var(--text-dark)', lineHeight: 1 }}>{stat.pendingFollowups}</div>
+                      <div style={{ fontSize: '0.62rem', color: 'var(--text-dark)', textTransform: 'uppercase', fontWeight: 600 }}>Follow-ups</div>
                     </div>
                   </div>
 
                   {/* Last activity */}
                   <div className="td-member-last-activity" style={{ flexShrink: 0, textAlign: 'right', minWidth: '80px' }}>
-                    <div style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 600 }}>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--text-dark)', fontWeight: 600 }}>
                       {stat.lastActivityAt ? formatRelative(stat.lastActivityAt) : 'No activity'}
                     </div>
-                    <div style={{ fontSize: '0.62rem', color: '#94a3b8' }}>last action</div>
+                    <div style={{ fontSize: '0.62rem', color: 'var(--text-dark)' }}>last action</div>
                   </div>
 
-                  {isExpanded ? <ChevronUp size={18} style={{ color: '#94a3b8', flexShrink: 0 }} /> : <ChevronDown size={18} style={{ color: '#94a3b8', flexShrink: 0 }} />}
+                  {isExpanded ? <ChevronUp size={18} style={{ color: 'var(--text-dark)', flexShrink: 0 }} /> : <ChevronDown size={18} style={{ color: 'var(--text-dark)', flexShrink: 0 }} />}
                 </button>
 
                 {/* Expanded detail */}
                 {isExpanded && (
-                  <div style={{ borderTop: '1px solid #e2e8f0', padding: '16px', background: '#f8fafc' }}>
+                  <div style={{ borderTop: '1px solid var(--border-subtle)', padding: '16px', background: 'var(--bg-light)' }}>
                     {/* Presence info */}
                     <div className="td-expanded-presence" style={{ marginBottom: '16px', display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-                      <div style={{ padding: '8px 12px', background: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <Radio size={12} style={{ color: online ? '#22c55e' : '#94a3b8' }} />
-                        <span style={{ fontSize: '0.72rem', fontWeight: 600, color: online ? '#16a34a' : '#64748b' }}>
+                      <div style={{ padding: '8px 12px', background: 'var(--bg-card)', borderRadius: '8px', border: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <Radio size={12} style={{ color: online ? '#22c55e' : 'var(--text-dark)' }} />
+                        <span style={{ fontSize: '0.72rem', fontWeight: 600, color: online ? '#16a34a' : 'var(--text-dark)' }}>
                           {online ? 'Online now' : 'Offline'}
                         </span>
                       </div>
-                      <div style={{ padding: '8px 12px', background: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <LogIn size={12} style={{ color: '#94a3b8' }} />
-                        <span style={{ fontSize: '0.72rem', fontWeight: 600, color: '#64748b' }}>
+                      <div style={{ padding: '8px 12px', background: 'var(--bg-card)', borderRadius: '8px', border: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <LogIn size={12} style={{ color: 'var(--text-dark)' }} />
+                        <span style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-dark)' }}>
                           Last login: {formatLastLogin(stat.member.last_login_at)}
                         </span>
                       </div>
@@ -595,7 +595,7 @@ export default function TeamDashboardPanel({ session }: { session: Session }) {
 
                     {/* Lead status breakdown */}
                     <div style={{ marginBottom: '16px' }}>
-                      <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#475569', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                         <UserCheck size={14} /> Lead Breakdown
                       </div>
                       <div className="td-expanded-breakdown" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
@@ -606,11 +606,11 @@ export default function TeamDashboardPanel({ session }: { session: Session }) {
                           { label: 'Converted', count: stat.convertedLeads, status: 'converted' },
                           { label: 'Not Interested', count: stat.notInterestedLeads, status: 'not_interested' },
                         ].map((s) => {
-                          const sc = STATUS_COLORS[s.status] || { bg: 'rgba(100,116,139,0.1)', text: '#64748b' };
+                          const sc = STATUS_COLORS[s.status] || { bg: 'rgba(100,116,139,0.1)', text: 'var(--text-dark)' };
                           return (
-                            <div key={s.label} style={{ padding: '8px 12px', background: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <div key={s.label} style={{ padding: '8px 12px', background: 'var(--bg-card)', borderRadius: '8px', border: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                               <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: sc.text }} />
-                              <span style={{ fontSize: '0.78rem', fontWeight: 600, color: '#475569' }}>{s.label}</span>
+                              <span style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-muted)' }}>{s.label}</span>
                               <span style={{ fontSize: '0.78rem', fontWeight: 800, color: sc.text }}>{s.count}</span>
                             </div>
                           );
@@ -625,23 +625,23 @@ export default function TeamDashboardPanel({ session }: { session: Session }) {
 
                     {/* Recent activity feed */}
                     <div>
-                      <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#475569', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                         <Activity size={14} /> Recent Activity
                       </div>
                       {stat.recentActivities.length === 0 ? (
-                        <div style={{ fontSize: '0.78rem', color: '#94a3b8', padding: '8px 0' }}>
+                        <div style={{ fontSize: '0.78rem', color: 'var(--text-dark)', padding: '8px 0' }}>
                           No recent activity from this member.
                         </div>
                       ) : (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '280px', overflowY: 'auto' }}>
                           {stat.recentActivities.map((act) => (
-                            <div key={act.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', padding: '8px 12px', background: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                              <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                {ACTIVITY_ICONS[act.activity_type] || <FileText size={14} style={{ color: '#94a3b8' }} />}
+                            <div key={act.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', padding: '8px 12px', background: 'var(--bg-card)', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
+                              <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'var(--bg-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                {ACTIVITY_ICONS[act.activity_type] || <FileText size={14} style={{ color: 'var(--text-dark)' }} />}
                               </div>
                               <div style={{ flex: 1, minWidth: 0 }}>
-                                <div style={{ fontSize: '0.78rem', color: '#334155', fontWeight: 500 }}>{act.description}</div>
-                                <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>{formatRelative(act.created_at)}</div>
+                                <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 500 }}>{act.description}</div>
+                                <div style={{ fontSize: '0.68rem', color: 'var(--text-dark)' }}>{formatRelative(act.created_at)}</div>
                               </div>
                             </div>
                           ))}

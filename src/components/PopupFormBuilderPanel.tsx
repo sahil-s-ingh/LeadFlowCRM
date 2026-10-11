@@ -196,7 +196,7 @@ export default function PopupFormBuilderPanel({
             <button
               type="button"
               onClick={onCancelEdit}
-              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 14px', border: '1px solid #e2e8f0', borderRadius: '8px', background: '#fff', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600, color: '#475569' }}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 14px', border: '1px solid var(--border-subtle)', borderRadius: '8px', background: 'var(--bg-card)', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-muted)' }}
             >
               <ArrowUp size={14} /> Back to forms list
             </button>
@@ -204,8 +204,8 @@ export default function PopupFormBuilderPanel({
         )}
 
         {/* Basic Settings */}
-        <div style={{ background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0', padding: '16px', marginBottom: '16px' }}>
-          <h3 style={{ fontSize: '0.82rem', fontWeight: 700, color: '#475569', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Form Details</h3>
+        <div style={{ background: 'var(--bg-light)', borderRadius: '10px', border: '1px solid var(--border-subtle)', padding: '16px', marginBottom: '16px' }}>
+          <h3 style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Form Details</h3>
           <div className="crm-add-lead-grid">
             <label className="crm-add-lead-field" style={{ gridColumn: '1 / -1' }}>
               <span>Form Name (internal) <em>*</em></span>
@@ -221,7 +221,7 @@ export default function PopupFormBuilderPanel({
             </label>
             <label className="crm-add-lead-field" style={{ gridColumn: '1 / -1' }}>
               <span>Description / Help Text (optional)</span>
-              <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Additional text shown under the subtitle" rows={2} style={{ width: '100%', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '8px 12px', fontSize: '0.85rem', fontFamily: 'inherit' }} />
+              <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Additional text shown under the subtitle" rows={2} style={{ width: '100%', border: '1px solid var(--border-subtle)', borderRadius: '8px', padding: '8px 12px', fontSize: '0.85rem', fontFamily: 'inherit' }} />
             </label>
             <label className="crm-add-lead-field" style={{ gridColumn: '1 / -1' }}>
               <span>Image / Logo URL (optional)</span>
@@ -231,8 +231,8 @@ export default function PopupFormBuilderPanel({
         </div>
 
         {/* Trigger Settings */}
-        <div style={{ background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0', padding: '16px', marginBottom: '16px' }}>
-          <h3 style={{ fontSize: '0.82rem', fontWeight: 700, color: '#475569', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>When to Show</h3>
+        <div style={{ background: 'var(--bg-light)', borderRadius: '10px', border: '1px solid var(--border-subtle)', padding: '16px', marginBottom: '16px' }}>
+          <h3 style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>When to Show</h3>
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '12px' }}>
             {TRIGGER_OPTIONS.map((opt) => (
               <button
@@ -240,13 +240,13 @@ export default function PopupFormBuilderPanel({
                 type="button"
                 onClick={() => setTriggerType(opt.value)}
                 style={{
-                  padding: '10px 14px', borderRadius: '8px', border: triggerType === opt.value ? '2px solid #7c3aed' : '1px solid #e2e8f0',
-                  background: triggerType === opt.value ? 'rgba(124,58,237,0.06)' : '#fff', cursor: 'pointer',
+                  padding: '10px 14px', borderRadius: '8px', border: triggerType === opt.value ? '2px solid #7c3aed' : '1px solid var(--border-subtle)',
+                  background: triggerType === opt.value ? 'rgba(124,58,237,0.06)' : 'var(--bg-card)', cursor: 'pointer',
                   display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '2px', flex: '1', minWidth: '120px', transition: 'all 0.15s',
                 }}
               >
-                <strong style={{ fontSize: '0.82rem', color: triggerType === opt.value ? '#7c3aed' : '#1e293b' }}>{opt.label}</strong>
-                <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>{opt.desc}</span>
+                <strong style={{ fontSize: '0.82rem', color: triggerType === opt.value ? '#7c3aed' : 'var(--text-main)' }}>{opt.label}</strong>
+                <span style={{ fontSize: '0.7rem', color: 'var(--text-dark)' }}>{opt.desc}</span>
               </button>
             ))}
           </div>
@@ -263,10 +263,10 @@ export default function PopupFormBuilderPanel({
         </div>
 
         {/* Field Builder */}
-        <div style={{ background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0', padding: '16px', marginBottom: '16px' }}>
+        <div style={{ background: 'var(--bg-light)', borderRadius: '10px', border: '1px solid var(--border-subtle)', padding: '16px', marginBottom: '16px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-            <h3 style={{ fontSize: '0.82rem', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Form Fields</h3>
-            <button type="button" onClick={() => setShowPreview(!showPreview)} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 12px', border: '1px solid #e2e8f0', borderRadius: '6px', background: '#fff', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 600, color: '#475569' }}>
+            <h3 style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Form Fields</h3>
+            <button type="button" onClick={() => setShowPreview(!showPreview)} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 12px', border: '1px solid var(--border-subtle)', borderRadius: '6px', background: 'var(--bg-card)', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-muted)' }}>
               <Eye size={14} /> {showPreview ? 'Hide Preview' : 'Preview'}
             </button>
           </div>
@@ -274,7 +274,7 @@ export default function PopupFormBuilderPanel({
           {/* Add field buttons */}
           <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '16px' }}>
             {FIELD_TYPES.map((ft) => (
-              <button key={ft.type} type="button" onClick={() => addField(ft.type)} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 12px', border: '1px solid #e2e8f0', borderRadius: '8px', background: '#fff', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 600, color: '#475569', transition: 'all 0.15s' }} onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#7c3aed'; e.currentTarget.style.color = '#7c3aed'; }} onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.color = '#475569'; }}>
+              <button key={ft.type} type="button" onClick={() => addField(ft.type)} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 12px', border: '1px solid var(--border-subtle)', borderRadius: '8px', background: 'var(--bg-card)', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-muted)', transition: 'all 0.15s' }} onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#7c3aed'; e.currentTarget.style.color = '#7c3aed'; }} onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--border-subtle)'; e.currentTarget.style.color = 'var(--text-muted)'; }}>
                 {ft.icon} {ft.label}
               </button>
             ))}
@@ -282,24 +282,24 @@ export default function PopupFormBuilderPanel({
 
           {/* Field list */}
           {fields.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '32px', color: '#94a3b8', fontSize: '0.85rem', border: '2px dashed #e2e8f0', borderRadius: '10px' }}>
+            <div style={{ textAlign: 'center', padding: '32px', color: 'var(--text-dark)', fontSize: '0.85rem', border: '2px dashed var(--border-subtle)', borderRadius: '10px' }}>
               No fields yet. Click a field type above to add one.
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {fields.map((field, index) => (
-                <div key={field.id} style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '14px' }}>
+                <div key={field.id} style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', borderRadius: '10px', padding: '14px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ color: '#cbd5e1', fontSize: '0.75rem' }}>{index + 1}.</span>
-                      <span style={{ fontSize: '0.78rem', fontWeight: 600, color: '#64748b', textTransform: 'capitalize' }}>{field.type}</span>
+                      <span style={{ color: 'var(--text-dark)', fontSize: '0.75rem' }}>{index + 1}.</span>
+                      <span style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-dark)', textTransform: 'capitalize' }}>{field.type}</span>
                       {field.width === 'half' && (
                         <span style={{ fontSize: '0.68rem', padding: '2px 6px', borderRadius: '4px', background: 'rgba(124,58,237,0.1)', color: '#7c3aed', fontWeight: 600 }}>half</span>
                       )}
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <button type="button" onClick={() => moveField(index, 'up')} disabled={index === 0} style={{ border: 'none', background: 'none', cursor: index === 0 ? 'not-allowed' : 'pointer', color: index === 0 ? '#cbd5e1' : '#64748b', padding: '4px' }}><ArrowUp size={15} /></button>
-                      <button type="button" onClick={() => moveField(index, 'down')} disabled={index === fields.length - 1} style={{ border: 'none', background: 'none', cursor: index === fields.length - 1 ? 'not-allowed' : 'pointer', color: index === fields.length - 1 ? '#cbd5e1' : '#64748b', padding: '4px' }}><ArrowDown size={15} /></button>
+                      <button type="button" onClick={() => moveField(index, 'up')} disabled={index === 0} style={{ border: 'none', background: 'none', cursor: index === 0 ? 'not-allowed' : 'pointer', color: index === 0 ? 'var(--border-subtle)' : 'var(--text-dark)', padding: '4px' }}><ArrowUp size={15} /></button>
+                      <button type="button" onClick={() => moveField(index, 'down')} disabled={index === fields.length - 1} style={{ border: 'none', background: 'none', cursor: index === fields.length - 1 ? 'not-allowed' : 'pointer', color: index === fields.length - 1 ? 'var(--border-subtle)' : 'var(--text-dark)', padding: '4px' }}><ArrowDown size={15} /></button>
                       <button type="button" onClick={() => duplicateField(index)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#6366f1', padding: '4px' }} title="Duplicate field"><Copy size={14} /></button>
                       <button type="button" onClick={() => removeField(field.id)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#ef4444', padding: '4px' }}><Trash2 size={15} /></button>
                     </div>
@@ -338,7 +338,7 @@ export default function PopupFormBuilderPanel({
                   {(field.type === 'select' || field.type === 'radio') && (
                     <label className="crm-add-lead-field" style={{ marginTop: '8px' }}>
                       <span>Options (one per line)</span>
-                      <textarea value={field.options.join('\n')} onChange={(e) => updateField(field.id, { options: e.target.value.split('\n').filter(Boolean) })} rows={3} style={{ width: '100%', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '8px 12px', fontSize: '0.85rem', fontFamily: 'inherit' }} />
+                      <textarea value={field.options.join('\n')} onChange={(e) => updateField(field.id, { options: e.target.value.split('\n').filter(Boolean) })} rows={3} style={{ width: '100%', border: '1px solid var(--border-subtle)', borderRadius: '8px', padding: '8px 12px', fontSize: '0.85rem', fontFamily: 'inherit' }} />
                     </label>
                   )}
                 </div>
@@ -348,8 +348,8 @@ export default function PopupFormBuilderPanel({
         </div>
 
         {/* Button & Appearance */}
-        <div style={{ background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0', padding: '16px', marginBottom: '16px' }}>
-          <h3 style={{ fontSize: '0.82rem', fontWeight: 700, color: '#475569', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Button & Appearance</h3>
+        <div style={{ background: 'var(--bg-light)', borderRadius: '10px', border: '1px solid var(--border-subtle)', padding: '16px', marginBottom: '16px' }}>
+          <h3 style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Button & Appearance</h3>
           <div className="crm-add-lead-grid">
             <label className="crm-add-lead-field">
               <span>Button Text</span>
@@ -358,22 +358,22 @@ export default function PopupFormBuilderPanel({
             <label className="crm-add-lead-field">
               <span>Button Background Color</span>
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <input type="color" value={buttonBgColor} onChange={(e) => setButtonBgColor(e.target.value)} style={{ width: '44px', height: '38px', border: '1px solid #e2e8f0', borderRadius: '6px', cursor: 'pointer' }} />
-                <input type="text" value={buttonBgColor} onChange={(e) => setButtonBgColor(e.target.value)} style={{ flex: 1, border: '1px solid #e2e8f0', borderRadius: '8px', padding: '8px 12px', fontSize: '0.85rem' }} />
+                <input type="color" value={buttonBgColor} onChange={(e) => setButtonBgColor(e.target.value)} style={{ width: '44px', height: '38px', border: '1px solid var(--border-subtle)', borderRadius: '6px', cursor: 'pointer' }} />
+                <input type="text" value={buttonBgColor} onChange={(e) => setButtonBgColor(e.target.value)} style={{ flex: 1, border: '1px solid var(--border-subtle)', borderRadius: '8px', padding: '8px 12px', fontSize: '0.85rem' }} />
               </div>
             </label>
             <label className="crm-add-lead-field">
               <span>Button Text Color</span>
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <input type="color" value={buttonTextColor} onChange={(e) => setButtonTextColor(e.target.value)} style={{ width: '44px', height: '38px', border: '1px solid #e2e8f0', borderRadius: '6px', cursor: 'pointer' }} />
-                <input type="text" value={buttonTextColor} onChange={(e) => setButtonTextColor(e.target.value)} style={{ flex: 1, border: '1px solid #e2e8f0', borderRadius: '8px', padding: '8px 12px', fontSize: '0.85rem' }} />
+                <input type="color" value={buttonTextColor} onChange={(e) => setButtonTextColor(e.target.value)} style={{ width: '44px', height: '38px', border: '1px solid var(--border-subtle)', borderRadius: '6px', cursor: 'pointer' }} />
+                <input type="text" value={buttonTextColor} onChange={(e) => setButtonTextColor(e.target.value)} style={{ flex: 1, border: '1px solid var(--border-subtle)', borderRadius: '8px', padding: '8px 12px', fontSize: '0.85rem' }} />
               </div>
             </label>
             <label className="crm-add-lead-field">
               <span>Overlay Color</span>
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <input type="color" value={overlayColor} onChange={(e) => setOverlayColor(e.target.value)} style={{ width: '44px', height: '38px', border: '1px solid #e2e8f0', borderRadius: '6px', cursor: 'pointer' }} />
-                <input type="text" value={overlayColor} onChange={(e) => setOverlayColor(e.target.value)} style={{ flex: 1, border: '1px solid #e2e8f0', borderRadius: '8px', padding: '8px 12px', fontSize: '0.85rem' }} />
+                <input type="color" value={overlayColor} onChange={(e) => setOverlayColor(e.target.value)} style={{ width: '44px', height: '38px', border: '1px solid var(--border-subtle)', borderRadius: '6px', cursor: 'pointer' }} />
+                <input type="text" value={overlayColor} onChange={(e) => setOverlayColor(e.target.value)} style={{ flex: 1, border: '1px solid var(--border-subtle)', borderRadius: '8px', padding: '8px 12px', fontSize: '0.85rem' }} />
               </div>
             </label>
             <label className="crm-add-lead-field">
@@ -394,8 +394,8 @@ export default function PopupFormBuilderPanel({
         </div>
 
         {/* Success & Auto-close */}
-        <div style={{ background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0', padding: '16px', marginBottom: '16px' }}>
-          <h3 style={{ fontSize: '0.82rem', fontWeight: 700, color: '#475569', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>After Submission</h3>
+        <div style={{ background: 'var(--bg-light)', borderRadius: '10px', border: '1px solid var(--border-subtle)', padding: '16px', marginBottom: '16px' }}>
+          <h3 style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>After Submission</h3>
           <div className="crm-add-lead-grid">
             <label className="crm-add-lead-field" style={{ gridColumn: '1 / -1' }}>
               <span>Custom Success Message (optional)</span>
@@ -411,35 +411,35 @@ export default function PopupFormBuilderPanel({
         {/* Live Preview */}
         {showPreview && fields.length > 0 && (
           <div style={{ position: 'fixed', inset: 0, background: overlayRgba(), zIndex: 9999, display: 'flex', alignItems: popupPosition === 'center' ? 'center' : 'flex-end', justifyContent: popupPosition === 'bottom_left' ? 'flex-start' : popupPosition === 'bottom_right' ? 'flex-end' : 'center', padding: '20px' }} onClick={() => setShowPreview(false)}>
-            <div style={{ background: '#fff', borderRadius: '16px', maxWidth: '440px', width: '100%', maxHeight: '85vh', overflowY: 'auto', padding: '28px', position: 'relative' }} onClick={(e) => e.stopPropagation()}>
-              <button type="button" onClick={() => setShowPreview(false)} style={{ position: 'absolute', top: '12px', right: '12px', border: 'none', background: 'none', cursor: 'pointer', fontSize: '1.5rem', color: '#94a3b8' }}>×</button>
+            <div style={{ background: 'var(--bg-card)', borderRadius: '16px', maxWidth: '440px', width: '100%', maxHeight: '85vh', overflowY: 'auto', padding: '28px', position: 'relative' }} onClick={(e) => e.stopPropagation()}>
+              <button type="button" onClick={() => setShowPreview(false)} style={{ position: 'absolute', top: '12px', right: '12px', border: 'none', background: 'none', cursor: 'pointer', fontSize: '1.5rem', color: 'var(--text-dark)' }}>×</button>
               {imageUrl && (
                 <div style={{ marginBottom: '16px', textAlign: 'center' }}>
                   <img src={imageUrl} alt="" style={{ maxHeight: '80px', maxWidth: '100%', borderRadius: '8px' }} />
                 </div>
               )}
-              <h2 style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: '6px', color: '#0f172a' }}>{title}</h2>
-              <p style={{ color: '#64748b', fontSize: '0.88rem', marginBottom: '8px' }}>{subtitle}</p>
+              <h2 style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: '6px', color: 'var(--text-main)' }}>{title}</h2>
+              <p style={{ color: 'var(--text-dark)', fontSize: '0.88rem', marginBottom: '8px' }}>{subtitle}</p>
               {description && (
-                <p style={{ color: '#94a3b8', fontSize: '0.8rem', marginBottom: '20px', lineHeight: 1.5 }}>{description}</p>
+                <p style={{ color: 'var(--text-dark)', fontSize: '0.8rem', marginBottom: '20px', lineHeight: 1.5 }}>{description}</p>
               )}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 {fields.map((field) => (
                   <div key={field.id}>
-                    <label style={{ fontSize: '0.82rem', fontWeight: 600, color: '#334155', marginBottom: '4px', display: 'block' }}>
+                    <label style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '4px', display: 'block' }}>
                       {field.label || 'Untitled'} {field.required && <span style={{ color: '#ef4444' }}>*</span>}
                     </label>
                     {field.type === 'textarea' ? (
-                      <textarea placeholder={field.placeholder} rows={3} style={{ width: '100%', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '10px 12px', fontSize: '0.88rem' }} readOnly defaultValue={field.default_value} />
+                      <textarea placeholder={field.placeholder} rows={3} style={{ width: '100%', border: '1px solid var(--border-subtle)', borderRadius: '8px', padding: '10px 12px', fontSize: '0.88rem' }} readOnly defaultValue={field.default_value} />
                     ) : field.type === 'select' ? (
-                      <select style={{ width: '100%', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '10px 12px', fontSize: '0.88rem' }} disabled defaultValue={field.default_value}>
+                      <select style={{ width: '100%', border: '1px solid var(--border-subtle)', borderRadius: '8px', padding: '10px 12px', fontSize: '0.88rem' }} disabled defaultValue={field.default_value}>
                         <option value="">Select...</option>
                         {field.options.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
                       </select>
                     ) : field.type === 'radio' ? (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                         {field.options.map((opt) => (
-                          <label key={opt} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: '#475569', cursor: 'pointer' }}>
+                          <label key={opt} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: 'var(--text-muted)', cursor: 'pointer' }}>
                             <input type="radio" name={field.id} readOnly style={{ accentColor: buttonBgColor }} />
                             {opt}
                           </label>
@@ -448,7 +448,7 @@ export default function PopupFormBuilderPanel({
                     ) : field.type === 'checkbox' ? (
                       <input type="checkbox" readOnly />
                     ) : (
-                      <input type={field.type === 'number' ? 'number' : field.type} placeholder={field.placeholder} style={{ width: '100%', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '10px 12px', fontSize: '0.88rem' }} readOnly defaultValue={field.default_value} />
+                      <input type={field.type === 'number' ? 'number' : field.type} placeholder={field.placeholder} style={{ width: '100%', border: '1px solid var(--border-subtle)', borderRadius: '8px', padding: '10px 12px', fontSize: '0.88rem' }} readOnly defaultValue={field.default_value} />
                     )}
                   </div>
                 ))}
@@ -505,18 +505,18 @@ export default function PopupFormBuilderPanel({
       </button>
 
       {forms.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '48px', color: '#94a3b8', border: '2px dashed #e2e8f0', borderRadius: '12px' }}>
-          <MousePointerClick size={40} style={{ margin: '0 auto 12px', color: '#cbd5e1' }} />
+        <div style={{ textAlign: 'center', padding: '48px', color: 'var(--text-dark)', border: '2px dashed var(--border-subtle)', borderRadius: '12px' }}>
+          <MousePointerClick size={40} style={{ margin: '0 auto 12px', color: 'var(--text-dark)' }} />
           <p style={{ fontSize: '0.9rem', fontWeight: 600 }}>No popup forms yet</p>
           <p style={{ fontSize: '0.82rem', marginTop: '4px' }}>Click "Create New Form" to build your first one.</p>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {forms.map((form) => (
-            <div key={form.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', border: '1px solid #e2e8f0', borderRadius: '10px', background: form.is_active ? 'rgba(22,163,74,0.04)' : '#fff' }}>
+            <div key={form.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', border: '1px solid var(--border-subtle)', borderRadius: '10px', background: form.is_active ? 'rgba(22,163,74,0.04)' : 'var(--bg-card)' }}>
               <div style={{ flex: 1 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <strong style={{ fontSize: '0.9rem', color: '#1e293b' }}>{form.name}</strong>
+                  <strong style={{ fontSize: '0.9rem', color: 'var(--text-main)' }}>{form.name}</strong>
                   {form.is_active && (
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '3px 10px', borderRadius: '20px', background: 'rgba(22,163,74,0.1)', color: '#16a34a', fontSize: '0.72rem', fontWeight: 700 }}>
                       <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#16a34a' }} /> LIVE
@@ -526,16 +526,16 @@ export default function PopupFormBuilderPanel({
                     <span style={{ fontSize: '0.68rem', padding: '2px 8px', borderRadius: '4px', background: 'rgba(99,102,241,0.1)', color: '#6366f1', fontWeight: 600 }}>once per visitor</span>
                   )}
                 </div>
-                <p style={{ fontSize: '0.78rem', color: '#94a3b8', marginTop: '4px' }}>
+                <p style={{ fontSize: '0.78rem', color: 'var(--text-dark)', marginTop: '4px' }}>
                   {form.fields.length} field{form.fields.length !== 1 ? 's' : ''} · Trigger: {TRIGGER_OPTIONS.find((t) => t.value === form.trigger_type)?.label || form.trigger_type} · {form.button_text}
                 </p>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <button type="button" onClick={() => onToggleActive(form)} style={{ padding: '6px 12px', border: '1px solid #e2e8f0', borderRadius: '6px', background: form.is_active ? '#fff' : 'rgba(22,163,74,0.06)', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600, color: form.is_active ? '#64748b' : '#16a34a' }}>
+                <button type="button" onClick={() => onToggleActive(form)} style={{ padding: '6px 12px', border: '1px solid var(--border-subtle)', borderRadius: '6px', background: form.is_active ? '#fff' : 'rgba(22,163,74,0.06)', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600, color: form.is_active ? '#64748b' : '#16a34a' }}>
                   {form.is_active ? 'Deactivate' : 'Activate'}
                 </button>
-                <button type="button" onClick={() => onEdit(form)} style={{ padding: '6px', border: '1px solid #e2e8f0', borderRadius: '6px', background: '#fff', cursor: 'pointer', color: '#475569' }}><Pencil size={15} /></button>
-                <button type="button" onClick={() => onDelete(form.id)} style={{ padding: '6px', border: '1px solid #e2e8f0', borderRadius: '6px', background: '#fff', cursor: 'pointer', color: '#ef4444' }}><Trash2 size={15} /></button>
+                <button type="button" onClick={() => onEdit(form)} style={{ padding: '6px', border: '1px solid var(--border-subtle)', borderRadius: '6px', background: 'var(--bg-card)', cursor: 'pointer', color: 'var(--text-muted)' }}><Pencil size={15} /></button>
+                <button type="button" onClick={() => onDelete(form.id)} style={{ padding: '6px', border: '1px solid var(--border-subtle)', borderRadius: '6px', background: 'var(--bg-card)', cursor: 'pointer', color: '#ef4444' }}><Trash2 size={15} /></button>
               </div>
             </div>
           ))}

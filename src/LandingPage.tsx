@@ -408,7 +408,7 @@ function Hero() {
           {/* Seat Progress */}
           <div
             style={{
-              background: '#FFFFFF',
+              background: 'var(--bg-card)',
               border: '1.5px solid rgba(234, 179, 8, 0.4)',
               borderRadius: 14,
               padding: '10px 14px',
@@ -425,7 +425,7 @@ function Hero() {
                 </svg>
                 Free CRM Trial Spots
               </span>
-              <span style={{ color: '#0F172A', display: 'flex', alignItems: 'center', gap: 4 }}>
+              <span style={{ color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: 4 }}>
                 481/500 Claimed
               </span>
             </div>
@@ -459,7 +459,7 @@ function Hero() {
               </svg>
               <span>START FREE TRIAL &amp; GET CRM ACCESS</span>
             </a>
-            <span style={{ fontSize: '0.75rem', color: '#64748B', display: 'flex', alignItems: 'center', gap: 5 }}>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-dark)', display: 'flex', alignItems: 'center', gap: 5 }}>
               Instant Access &bull; No Credit Card Required
             </span>
           </div>
@@ -477,13 +477,13 @@ function Hero() {
                   display: 'flex',
                   alignItems: 'center',
                   gap: 5,
-                  background: '#FFFFFF',
+                  background: 'var(--bg-card)',
                   border: '1px solid rgba(0, 0, 0, 0.08)',
                   padding: '5px 11px',
                   borderRadius: '9999px',
                   fontSize: '0.78rem',
                   fontWeight: 700,
-                  color: '#0F172A',
+                  color: 'var(--text-main)',
                   boxShadow: '0 2px 4px rgba(0, 0, 0, 0.02)',
                 }}
               >
@@ -603,7 +603,7 @@ function StatsBar() {
       ref={ref}
       style={{
         padding: '20px 0',
-        background: '#FFFFFF',
+        background: 'var(--bg-card)',
         borderTop: '1px solid rgba(0, 0, 0, 0.06)',
         borderBottom: '1px solid rgba(0, 0, 0, 0.06)',
         marginBottom: 50,
@@ -614,7 +614,7 @@ function StatsBar() {
         {stats.map((s) => (
           <div key={s.label} style={{ padding: 4 }}>
             <div style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1.55rem', fontWeight: 900, color: '#CA8A04', marginBottom: 2, lineHeight: 1.1 }}>{s.num}</div>
-            <div style={{ fontSize: '0.78rem', color: '#475569', fontWeight: 600 }}>{s.label}</div>
+            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 600 }}>{s.label}</div>
           </div>
         ))}
       </div>
@@ -643,10 +643,10 @@ function SectionHeader({ pill, title, desc }: { pill: string; title: React.React
       >
         {pill}
       </span>
-      <h2 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1.75rem', fontWeight: 900, marginBottom: 10, lineHeight: 1.35, letterSpacing: '-0.2px', color: '#0F172A' }}>
+      <h2 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1.75rem', fontWeight: 900, marginBottom: 10, lineHeight: 1.35, letterSpacing: '-0.2px', color: 'var(--text-main)' }}>
         {title}
       </h2>
-      {desc && <p style={{ fontSize: '0.9rem', color: '#475569', lineHeight: 1.55 }}>{desc}</p>}
+      {desc && <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', lineHeight: 1.55 }}>{desc}</p>}
     </div>
   );
 }
@@ -659,7 +659,7 @@ function About() {
         <SectionHeader pill="MEET THE TEAM" title="WHO BUILT LEADFLOW CRM?" />
         <div
           style={{
-            background: '#FFFDF5',
+            background: 'var(--bg-card-alt)',
             border: '1.5px solid #EAB308',
             borderRadius: 20,
             padding: '24px 18px',
@@ -711,17 +711,17 @@ function About() {
 
             {/* Content */}
             <div style={{ flex: 1 }} className="about-content">
-              <h3 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1.3rem', fontWeight: 800, marginBottom: 3, color: '#0F172A' }}>LeadFlow CRM Team</h3>
+              <h3 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1.3rem', fontWeight: 800, marginBottom: 3, color: 'var(--text-main)' }}>LeadFlow CRM Team</h3>
               <span style={{ fontSize: '0.82rem', color: '#CA8A04', fontWeight: 800, marginBottom: 12, display: 'block' }}>
                 Built by Sales Experts for Sales Teams
               </span>
-              <p style={{ fontSize: '0.86rem', color: '#0F172A', lineHeight: 1.55, marginBottom: 14 }}>
+              <p style={{ fontSize: '0.86rem', color: 'var(--text-main)', lineHeight: 1.55, marginBottom: 14 }}>
                 We built LeadFlow CRM after <strong>5+ years of managing sales teams</strong> and seeing the same problems everywhere — leads falling through cracks, no follow-up tracking, scattered WhatsApp chats, and no clear sales pipeline. So we put all our experience into one <strong>all-in-one CRM platform</strong> that handles lead management, automated follow-ups, WhatsApp &amp; Email broadcasts, team collaboration, and sales analytics — all from a single dashboard.
               </p>
               {/* Compliance Box */}
               <div
                 style={{
-                  background: '#FFFFFF',
+                  background: 'var(--bg-card)',
                   border: '1px solid rgba(0, 0, 0, 0.08)',
                   borderLeft: '4px solid #16A34A',
                   padding: '12px 14px',
@@ -735,8 +735,8 @@ function About() {
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ color: '#16A34A', flexShrink: 0, marginTop: 2 }}>
                   <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                 </svg>
-                <p style={{ fontSize: '0.78rem', color: '#475569', lineHeight: 1.45 }}>
-                  <strong style={{ color: '#0F172A' }}>Secure &amp; Reliable:</strong> Your data is encrypted and securely stored. We never share or sell your lead data. LeadFlow CRM is built with enterprise-grade security and regular backups to keep your business safe.
+                <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: 1.45 }}>
+                  <strong style={{ color: 'var(--text-main)' }}>Secure &amp; Reliable:</strong> Your data is encrypted and securely stored. We never share or sell your lead data. LeadFlow CRM is built with enterprise-grade security and regular backups to keep your business safe.
                 </p>
               </div>
             </div>
@@ -791,7 +791,7 @@ function GiftStack() {
 
         <div
           style={{
-            background: '#FFFDF5',
+            background: 'var(--bg-card-alt)',
             border: '1.5px solid #EAB308',
             borderRadius: 20,
             padding: '34px 16px 24px 16px',
@@ -832,14 +832,14 @@ function GiftStack() {
                   </svg>
                 </div>
                 <div style={{ flex: 1 }} className="offer-details">
-                  <h4 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '0.98rem', lineHeight: 1.38, color: '#0F172A', marginBottom: 6, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 6, fontWeight: 800 }}>
+                  <h4 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '0.98rem', lineHeight: 1.38, color: 'var(--text-main)', marginBottom: 6, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 6, fontWeight: 800 }}>
                     <span>
                       {gift.title}
                       {gift.subtitle && <span style={{ fontSize: '0.82em', fontWeight: 700, color: '#CA8A04', display: 'inline-block' }}> {gift.subtitle}</span>}
                     </span>
                     <span className="offer-val">{gift.price}</span>
                   </h4>
-                  <p style={{ fontSize: '0.82rem', color: '#475569', lineHeight: 1.45 }}>{gift.desc}</p>
+                  <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: 1.45 }}>{gift.desc}</p>
                 </div>
               </div>
             ))}
@@ -848,7 +848,7 @@ function GiftStack() {
           {/* Summary Box */}
           <div
             style={{
-              background: '#FFFFFF',
+              background: 'var(--bg-card)',
               border: '1.5px dashed #EAB308',
               borderRadius: 14,
               padding: 16,
@@ -857,7 +857,7 @@ function GiftStack() {
               boxShadow: '0 4px 15px rgba(234, 179, 8, 0.1)',
             }}
           >
-            <div style={{ fontSize: '0.85rem', color: '#475569', marginBottom: 2 }}>
+            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: 2 }}>
               Total Value: <span style={{ textDecoration: 'line-through', color: '#EF4444', fontWeight: 700 }}>{'₹'}61,997</span>
             </div>
             <div className="offer-free-price">YOUR PRICE: 14 DAYS FREE</div>
@@ -938,7 +938,7 @@ function Curriculum() {
             <div
               key={i}
               style={{
-                background: '#FFFFFF',
+                background: 'var(--bg-card)',
                 border: '1px solid rgba(234, 179, 8, 0.35)',
                 borderRadius: 14,
                 padding: '16px 14px',
@@ -970,8 +970,8 @@ function Curriculum() {
                 </svg>
               </div>
               <div style={{ flex: 1 }} className="card-body">
-                <h4 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '0.98rem', marginBottom: 3, fontWeight: 800, color: '#0F172A' }}>{item.title}</h4>
-                <p style={{ fontSize: '0.8rem', color: '#475569', lineHeight: 1.45 }}>{item.desc}</p>
+                <h4 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '0.98rem', marginBottom: 3, fontWeight: 800, color: 'var(--text-main)' }}>{item.title}</h4>
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: 1.45 }}>{item.desc}</p>
               </div>
             </div>
           ))}
@@ -1044,10 +1044,10 @@ function Testimonials() {
 
         {/* Overall rating badge */}
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20 }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10, padding: '10px 18px', background: '#FFFFFF', border: '1px solid rgba(234,179,8,0.3)', borderRadius: 9999, boxShadow: '0 3px 12px rgba(234,179,8,0.06)' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10, padding: '10px 18px', background: 'var(--bg-card)', border: '1px solid rgba(234,179,8,0.3)', borderRadius: 9999, boxShadow: '0 3px 12px rgba(234,179,8,0.06)' }}>
             <div style={{ display: 'flex', gap: 2, color: '#EAB308', fontSize: '0.9rem' }}>&#9733;&#9733;&#9733;&#9733;&#9733;</div>
-            <span style={{ fontFamily: 'Outfit, sans-serif', fontSize: '0.88rem', fontWeight: 900, color: '#0F172A' }}>4.8/5</span>
-            <span style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: 600 }}>from 500+ verified reviews</span>
+            <span style={{ fontFamily: 'Outfit, sans-serif', fontSize: '0.88rem', fontWeight: 900, color: 'var(--text-main)' }}>4.8/5</span>
+            <span style={{ fontSize: '0.72rem', color: 'var(--text-dark)', fontWeight: 600 }}>from 500+ verified reviews</span>
           </div>
         </div>
 
@@ -1056,7 +1056,7 @@ function Testimonials() {
             <div
               key={i}
               style={{
-                background: '#FFFFFF',
+                background: 'var(--bg-card)',
                 border: '1px solid rgba(0, 0, 0, 0.08)',
                 borderRadius: 14,
                 padding: 18,
@@ -1079,7 +1079,7 @@ function Testimonials() {
                   Verified
                 </span>
               </div>
-              <p style={{ fontSize: '0.84rem', color: '#0F172A', lineHeight: 1.5, fontStyle: 'italic' }}>"{r.text}"</p>
+              <p style={{ fontSize: '0.84rem', color: 'var(--text-main)', lineHeight: 1.5, fontStyle: 'italic' }}>"{r.text}"</p>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 'auto', paddingTop: 6, borderTop: '1px solid rgba(0, 0, 0, 0.06)' }} className="testimonial-user">
                 <div
                   style={{
@@ -1099,8 +1099,8 @@ function Testimonials() {
                   {r.initials}
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#0F172A' }}>{r.name}</span>
-                  <span style={{ fontSize: '0.7rem', color: '#475569' }}>{r.location}</span>
+                  <span style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--text-main)' }}>{r.name}</span>
+                  <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{r.location}</span>
                 </div>
               </div>
             </div>
@@ -1211,7 +1211,7 @@ function Pricing() {
           <div
             style={{
               display: 'inline-flex',
-              background: '#FFFFFF',
+              background: 'var(--bg-card)',
               border: '1.5px solid rgba(234, 179, 8, 0.4)',
               borderRadius: 9999,
               padding: 4,
@@ -1278,7 +1278,7 @@ function Pricing() {
               key={plan.name}
               className={`pricing-card ${plan.is_featured ? 'popular' : ''}`}
               style={{
-                background: plan.is_featured ? '#FFFDF5' : '#FFFFFF',
+                background: plan.is_featured ? '#FFFDF5' : 'var(--bg-card)',
                 border: plan.is_featured ? '2px solid #EAB308' : '1px solid rgba(0, 0, 0, 0.08)',
                 borderRadius: 18,
                 padding: '24px 18px',
@@ -1335,20 +1335,20 @@ function Pricing() {
                   </svg>
                 </div>
                 <div>
-                  <h4 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1.1rem', fontWeight: 900, color: '#0F172A', marginBottom: 1 }}>{plan.name}</h4>
-                  <p style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: 500 }}>{plan.tagline}</p>
+                  <h4 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1.1rem', fontWeight: 900, color: 'var(--text-main)', marginBottom: 1 }}>{plan.name}</h4>
+                  <p style={{ fontSize: '0.72rem', color: 'var(--text-dark)', fontWeight: 500 }}>{plan.tagline}</p>
                 </div>
               </div>
 
               {/* Price */}
               <div style={{ textAlign: 'center', padding: '6px 0 2px 0' }}>
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'center', gap: 2 }}>
-                  <span style={{ fontFamily: 'Outfit, sans-serif', fontSize: '0.9rem', fontWeight: 800, color: '#64748B', marginTop: 6 }}>{currencySymbol(plan.currency)}</span>
+                  <span style={{ fontFamily: 'Outfit, sans-serif', fontSize: '0.9rem', fontWeight: 800, color: 'var(--text-dark)', marginTop: 6 }}>{currencySymbol(plan.currency)}</span>
                   <span style={{ fontFamily: 'Outfit, sans-serif', fontSize: '2.4rem', fontWeight: 900, color: plan.is_featured ? '#CA8A04' : '#0F172A', lineHeight: 1 }}>
                     {(billing === 'monthly' ? plan.monthly_price : plan.annual_price).toLocaleString('en-IN')}
                   </span>
                 </div>
-                <div style={{ fontSize: '0.72rem', color: '#94A3B8', fontWeight: 600, marginTop: 2 }}>
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-dark)', fontWeight: 600, marginTop: 2 }}>
                   per month {billing === 'yearly' && '\u00b7 billed annually'}
                 </div>
               </div>
@@ -1369,7 +1369,7 @@ function Pricing() {
                     gap: 7,
                     padding: '10px 18px',
                     borderRadius: 10,
-                    background: '#F8FAFC',
+                    background: 'var(--bg-light)',
                     border: '1.5px solid rgba(234, 179, 8, 0.4)',
                     color: '#422006',
                     fontFamily: 'Outfit, sans-serif',
@@ -1418,7 +1418,7 @@ function Pricing() {
         </div>
 
         {/* Bottom note */}
-        <p style={{ textAlign: 'center', fontSize: '0.76rem', color: '#94A3B8', marginTop: 18, fontWeight: 500 }}>
+        <p style={{ textAlign: 'center', fontSize: '0.76rem', color: 'var(--text-dark)', marginTop: 18, fontWeight: 500 }}>
           All plans include a 14-day free trial &bull; No credit card required &bull; Cancel anytime
         </p>
       </div>
@@ -1483,7 +1483,7 @@ function FAQ() {
                 padding: '7px 16px',
                 borderRadius: 9999,
                 border: activeCat === c.id ? '1.5px solid #EAB308' : '1px solid rgba(0,0,0,0.1)',
-                background: activeCat === c.id ? 'linear-gradient(135deg, #FEF08A, #EAB308)' : '#FFFFFF',
+                background: activeCat === c.id ? 'linear-gradient(135deg, #FEF08A, #EAB308)' : 'var(--bg-card)',
                 color: activeCat === c.id ? '#422006' : '#475569',
                 fontFamily: 'Outfit, sans-serif',
                 fontWeight: 800,
@@ -1503,7 +1503,7 @@ function FAQ() {
               key={i}
               className={`faq-item ${openIdx === i ? 'active' : ''}`}
               style={{
-                background: '#FFFFFF',
+                background: 'var(--bg-card)',
                 border: '1px solid rgba(0, 0, 0, 0.08)',
                 borderRadius: 14,
                 overflow: 'hidden',
@@ -1517,7 +1517,7 @@ function FAQ() {
                   padding: '14px 16px',
                   fontSize: '0.9rem',
                   fontWeight: 800,
-                  color: '#0F172A',
+                  color: 'var(--text-main)',
                   cursor: 'pointer',
                   display: 'flex',
                   justifyContent: 'space-between',
@@ -1599,7 +1599,7 @@ function ProductCarousel() {
             <div style={{ width: 12, height: 12, borderRadius: '50%', background: '#EF4444' }} />
             <div style={{ width: 12, height: 12, borderRadius: '50%', background: '#F59E0B' }} />
             <div style={{ width: 12, height: 12, borderRadius: '50%', background: '#22C55E' }} />
-            <div style={{ flex: 1, textAlign: 'center', fontSize: '0.72rem', color: '#94A3B8', fontWeight: 600 }}>app.leadflowcrm.com</div>
+            <div style={{ flex: 1, textAlign: 'center', fontSize: '0.72rem', color: 'var(--text-dark)', fontWeight: 600 }}>app.leadflowcrm.com</div>
           </div>
 
           {/* Slide content */}
@@ -1618,8 +1618,8 @@ function ProductCarousel() {
                       <span style={{ width: 7, height: 7, borderRadius: '50%', background: slide.accent }} />
                       <span style={{ fontSize: '0.7rem', fontWeight: 800, color: slide.accent, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Feature {i + 1} of {slides.length}</span>
                     </div>
-                    <h3 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1.4rem', fontWeight: 900, color: '#F1F5F9', marginBottom: 8, lineHeight: 1.3 }}>{slide.title}</h3>
-                    <p style={{ fontSize: '0.85rem', color: '#94A3B8', lineHeight: 1.55, maxWidth: 400 }}>{slide.desc}</p>
+                    <h3 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1.4rem', fontWeight: 900, color: 'var(--bg-light)', marginBottom: 8, lineHeight: 1.3 }}>{slide.title}</h3>
+                    <p style={{ fontSize: '0.85rem', color: 'var(--text-dark)', lineHeight: 1.55, maxWidth: 400 }}>{slide.desc}</p>
                   </div>
                   <ProductMockup type={slide.mockup} accent={slide.accent} />
                 </div>
@@ -1667,7 +1667,7 @@ function ProductMockup({ type, accent }: { type: 'pipeline' | 'broadcast' | 'ana
             <div key={s.name} style={{ background: '#0F172A', borderRadius: 8, padding: 10, border: `1px solid ${s.color}30` }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                 <span style={{ fontSize: '0.68rem', fontWeight: 800, color: s.color }}>{s.name}</span>
-                <span style={{ fontSize: '0.62rem', color: '#64748B', background: '#1E293B', padding: '1px 6px', borderRadius: 9999 }}>{s.count}</span>
+                <span style={{ fontSize: '0.62rem', color: 'var(--text-dark)', background: '#1E293B', padding: '1px 6px', borderRadius: 9999 }}>{s.count}</span>
               </div>
               {Array.from({ length: Math.min(s.count, 3) }).map((_, idx) => (
                 <div key={idx} style={{ background: '#1E293B', borderRadius: 6, padding: '7px 8px', marginBottom: 5, border: '1px solid rgba(255,255,255,0.04)' }}>
@@ -1689,7 +1689,7 @@ function ProductMockup({ type, accent }: { type: 'pipeline' | 'broadcast' | 'ana
           <span style={{ padding: '5px 12px', borderRadius: 8, background: '#0EA5E920', border: '1px solid #0EA5E940', fontSize: '0.72rem', fontWeight: 700, color: '#0EA5E9' }}>Email</span>
         </div>
         <div style={{ background: '#0F172A', borderRadius: 8, padding: 12, marginBottom: 8, border: '1px solid rgba(255,255,255,0.04)' }}>
-          <div style={{ fontSize: '0.72rem', color: '#94A3B8', marginBottom: 6 }}>To: 2,847 leads</div>
+          <div style={{ fontSize: '0.72rem', color: 'var(--text-dark)', marginBottom: 6 }}>To: 2,847 leads</div>
           <div style={{ height: 5, width: '90%', background: '#334155', borderRadius: 3, marginBottom: 4 }} />
           <div style={{ height: 5, width: '75%', background: '#334155', borderRadius: 3, marginBottom: 8 }} />
           <div style={{ display: 'flex', gap: 12, fontSize: '0.68rem' }}>
@@ -1710,11 +1710,11 @@ function ProductMockup({ type, accent }: { type: 'pipeline' | 'broadcast' | 'ana
       <div style={{ background: '#1E293B', borderRadius: 12, padding: 16, border: '1px solid rgba(255,255,255,0.06)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
           <div>
-            <div style={{ fontSize: '0.68rem', color: '#64748B' }}>Revenue This Month</div>
-            <div style={{ fontSize: '1.3rem', fontWeight: 900, color: '#F1F5F9' }}>{'₹'}4.2L</div>
+            <div style={{ fontSize: '0.68rem', color: 'var(--text-dark)' }}>Revenue This Month</div>
+            <div style={{ fontSize: '1.3rem', fontWeight: 900, color: 'var(--bg-light)' }}>{'₹'}4.2L</div>
           </div>
           <div style={{ textAlign: 'right' }}>
-            <div style={{ fontSize: '0.68rem', color: '#64748B' }}>Conversion</div>
+            <div style={{ fontSize: '0.68rem', color: 'var(--text-dark)' }}>Conversion</div>
             <div style={{ fontSize: '1.3rem', fontWeight: 900, color: '#22C55E' }}>34%</div>
           </div>
         </div>
@@ -1723,7 +1723,7 @@ function ProductMockup({ type, accent }: { type: 'pipeline' | 'broadcast' | 'ana
             <div key={i} style={{ flex: 1, height: `${h}%`, background: `linear-gradient(180deg, ${accent}, ${accent}60)`, borderRadius: '4px 4px 0 0', opacity: i === 5 ? 1 : 0.6 }} />
           ))}
         </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.62rem', color: '#64748B' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.62rem', color: 'var(--text-dark)' }}>
           {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((d) => <span key={d}>{d}</span>)}
         </div>
       </div>
@@ -1746,8 +1746,8 @@ function ProductMockup({ type, accent }: { type: 'pipeline' | 'broadcast' | 'ana
               </svg>
             </div>
             <div>
-              <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#94A3B8' }}>{step.trigger}</div>
-              <div style={{ fontSize: '0.76rem', fontWeight: 600, color: '#F1F5F9' }}>{'\u2192'} {step.action}</div>
+              <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-dark)' }}>{step.trigger}</div>
+              <div style={{ fontSize: '0.76rem', fontWeight: 600, color: 'var(--bg-light)' }}>{'\u2192'} {step.action}</div>
             </div>
           </div>
         ))}
@@ -1773,7 +1773,7 @@ function HowItWorks() {
               {i < steps.length - 1 && (
                 <div style={{ position: 'absolute', left: 27, top: 56, bottom: 0, width: 2, background: 'linear-gradient(180deg, rgba(234, 179, 8, 0.3), rgba(234, 179, 8, 0.05))' }} />
               )}
-              <div style={{ width: 56, height: 56, borderRadius: '50%', background: '#FFFFFF', border: `2px solid ${step.color}40`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: `0 4px 14px ${step.color}20` }}>
+              <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'var(--bg-card)', border: `2px solid ${step.color}40`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: `0 4px 14px ${step.color}20` }}>
                 <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={step.color} strokeWidth="2">
                   {step.icon === 'signup' && <><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="8.5" cy="7" r="4" /><line x1="20" y1="8" x2="20" y2="14" /><line x1="23" y1="11" x2="17" y2="11" /></>}
                   {step.icon === 'automate' && <><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" /></>}
@@ -1784,8 +1784,8 @@ function HowItWorks() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                   <span style={{ fontFamily: 'Outfit, sans-serif', fontSize: '0.7rem', fontWeight: 900, color: step.color, background: `${step.color}15`, padding: '2px 8px', borderRadius: 9999 }}>STEP {step.num}</span>
                 </div>
-                <h4 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1.1rem', fontWeight: 900, color: '#0F172A', marginBottom: 5 }}>{step.title}</h4>
-                <p style={{ fontSize: '0.84rem', color: '#475569', lineHeight: 1.5 }}>{step.desc}</p>
+                <h4 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1.1rem', fontWeight: 900, color: 'var(--text-main)', marginBottom: 5 }}>{step.title}</h4>
+                <p style={{ fontSize: '0.84rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>{step.desc}</p>
               </div>
             </div>
           ))}
@@ -1821,25 +1821,25 @@ function ComparisonTable() {
     <section id="comparison" style={{ paddingBottom: 55 }}>
       <div style={{ maxWidth: 960, margin: '0 auto', padding: '0 16px' }}>
         <SectionHeader pill="WHY LEADFLOW" title={<>LEADFLOW CRM vs <span className="text-gold-gradient">THE REST</span></>} desc="See why thousands of teams switch from spreadsheets and generic CRMs to LeadFlow." />
-        <div style={{ background: '#FFFFFF', borderRadius: 16, overflow: 'hidden', border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 4px 20px rgba(0,0,0,0.04)' }} className="comparison-table-wrap">
+        <div style={{ background: 'var(--bg-card)', borderRadius: 16, overflow: 'hidden', border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 4px 20px rgba(0,0,0,0.04)' }} className="comparison-table-wrap">
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
             <thead>
-              <tr style={{ background: '#F8FAFC' }}>
-                <th style={{ textAlign: 'left', padding: '14px 16px', fontWeight: 800, color: '#0F172A', fontSize: '0.78rem' }}>Feature</th>
+              <tr style={{ background: 'var(--bg-light)' }}>
+                <th style={{ textAlign: 'left', padding: '14px 16px', fontWeight: 800, color: 'var(--text-main)', fontSize: '0.78rem' }}>Feature</th>
                 <th style={{ padding: '14px 12px', textAlign: 'center', fontWeight: 900, fontSize: '0.82rem' }}>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 2, alignItems: 'center' }}>
                     <span style={{ color: '#CA8A04' }}>LeadFlow CRM</span>
                     <span style={{ fontSize: '0.6rem', fontWeight: 800, color: '#22C55E', background: 'rgba(34, 197, 94, 0.1)', padding: '1px 8px', borderRadius: 9999 }}>RECOMMENDED</span>
                   </div>
                 </th>
-                <th style={{ padding: '14px 12px', textAlign: 'center', fontWeight: 800, color: '#64748B', fontSize: '0.78rem' }} className="hide-mobile">Generic CRMs</th>
-                <th style={{ padding: '14px 12px', textAlign: 'center', fontWeight: 800, color: '#64748B', fontSize: '0.78rem' }} className="hide-mobile">Spreadsheets</th>
+                <th style={{ padding: '14px 12px', textAlign: 'center', fontWeight: 800, color: 'var(--text-dark)', fontSize: '0.78rem' }} className="hide-mobile">Generic CRMs</th>
+                <th style={{ padding: '14px 12px', textAlign: 'center', fontWeight: 800, color: 'var(--text-dark)', fontSize: '0.78rem' }} className="hide-mobile">Spreadsheets</th>
               </tr>
             </thead>
             <tbody>
               {features.map((f, i) => (
                 <tr key={i} style={{ borderTop: '1px solid rgba(0,0,0,0.05)' }}>
-                  <td style={{ padding: '11px 16px', fontWeight: 600, color: '#0F172A', fontSize: '0.8rem' }}>{f.label}</td>
+                  <td style={{ padding: '11px 16px', fontWeight: 600, color: 'var(--text-main)', fontSize: '0.8rem' }}>{f.label}</td>
                   <td style={{ padding: '11px 12px', textAlign: 'center', background: 'rgba(234, 179, 8, 0.04)' }}>
                     {f.leadflow ? (
                       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="3" style={{ display: 'inline-block' }}><polyline points="20 6 9 17 4 12" /></svg>
@@ -1863,16 +1863,16 @@ function ComparisonTable() {
                   </td>
                 </tr>
               ))}
-              <tr style={{ background: '#FFFDF5', borderTop: '2px solid rgba(234, 179, 8, 0.3)' }}>
-                <td style={{ padding: '12px 16px', fontWeight: 900, color: '#0F172A', fontSize: '0.82rem' }}>Price Starting At</td>
+              <tr style={{ background: 'var(--bg-card-alt)', borderTop: '2px solid rgba(234, 179, 8, 0.3)' }}>
+                <td style={{ padding: '12px 16px', fontWeight: 900, color: 'var(--text-main)', fontSize: '0.82rem' }}>Price Starting At</td>
                 <td style={{ padding: '12px 12px', textAlign: 'center', fontWeight: 900, color: '#CA8A04', fontSize: '0.88rem' }}>{'₹'}799/mo</td>
-                <td style={{ padding: '12px 12px', textAlign: 'center', fontWeight: 700, color: '#64748B', fontSize: '0.82rem' }} className="hide-mobile">{'₹'}2,000+/mo</td>
-                <td style={{ padding: '12px 12px', textAlign: 'center', fontWeight: 700, color: '#64748B', fontSize: '0.82rem' }} className="hide-mobile">Free*</td>
+                <td style={{ padding: '12px 12px', textAlign: 'center', fontWeight: 700, color: 'var(--text-dark)', fontSize: '0.82rem' }} className="hide-mobile">{'₹'}2,000+/mo</td>
+                <td style={{ padding: '12px 12px', textAlign: 'center', fontWeight: 700, color: 'var(--text-dark)', fontSize: '0.82rem' }} className="hide-mobile">Free*</td>
               </tr>
             </tbody>
           </table>
         </div>
-        <p style={{ textAlign: 'center', fontSize: '0.72rem', color: '#94A3B8', marginTop: 10 }}>*Spreadsheets cost you in lost deals and hours of manual work. LeadFlow pays for itself.</p>
+        <p style={{ textAlign: 'center', fontSize: '0.72rem', color: 'var(--text-dark)', marginTop: 10 }}>*Spreadsheets cost you in lost deals and hours of manual work. LeadFlow pays for itself.</p>
       </div>
     </section>
   );
@@ -1893,7 +1893,7 @@ function IntegrationsStrip() {
   return (
     <section style={{ paddingBottom: 40 }}>
       <div style={{ maxWidth: 960, margin: '0 auto', padding: '0 16px' }}>
-        <p style={{ textAlign: 'center', fontSize: '0.78rem', fontWeight: 800, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: 18 }}>
+        <p style={{ textAlign: 'center', fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-dark)', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: 18 }}>
           Works With Your Favorite Tools
         </p>
         <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 10 }} className="integrations-strip">
@@ -1904,7 +1904,7 @@ function IntegrationsStrip() {
                 display: 'flex',
                 alignItems: 'center',
                 gap: 8,
-                background: '#FFFFFF',
+                background: 'var(--bg-card)',
                 border: '1px solid rgba(0, 0, 0, 0.06)',
                 borderRadius: 10,
                 padding: '8px 14px',
@@ -1926,7 +1926,7 @@ function IntegrationsStrip() {
                   {int.icon === 'csv' && <><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="8" y1="13" x2="16" y2="13" /><line x1="8" y1="17" x2="16" y2="17" /></>}
                 </svg>
               </div>
-              <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#0F172A' }}>{int.name}</span>
+              <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-main)' }}>{int.name}</span>
             </div>
           ))}
         </div>
@@ -1952,7 +1952,7 @@ function VideoTestimonials() {
             <div
               key={i}
               style={{
-                background: '#FFFFFF',
+                background: 'var(--bg-card)',
                 border: '1px solid rgba(0, 0, 0, 0.08)',
                 borderRadius: 16,
                 overflow: 'hidden',
@@ -1995,8 +1995,8 @@ function VideoTestimonials() {
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="#FFFFFF"><polygon points="5 3 19 12 5 21 5 3" /></svg>
                 </div>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: '0.82rem', fontWeight: 800, color: '#0F172A' }}>{t.name}</div>
-                  <div style={{ fontSize: '0.72rem', color: '#64748B' }}>{t.company} &bull; {t.location}</div>
+                  <div style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--text-main)' }}>{t.name}</div>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-dark)' }}>{t.company} &bull; {t.location}</div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '4px 10px', borderRadius: 8, background: `${t.color}15`, border: `1px solid ${t.color}30`, flexShrink: 0 }}>
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={t.color} strokeWidth="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12" /></svg>
@@ -2006,7 +2006,7 @@ function VideoTestimonials() {
               {/* Quote */}
               <div style={{ padding: '16px 18px' }}>
                 <div style={{ color: '#EAB308', fontSize: '0.8rem', marginBottom: 8, display: 'flex', gap: 2 }}>&#9733;&#9733;&#9733;&#9733;&#9733;</div>
-                <p style={{ fontSize: '0.85rem', color: '#0F172A', lineHeight: 1.55, fontStyle: 'italic' }}>&ldquo;{t.quote}&rdquo;</p>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-main)', lineHeight: 1.55, fontStyle: 'italic' }}>&ldquo;{t.quote}&rdquo;</p>
               </div>
             </div>
           ))}
@@ -2036,12 +2036,12 @@ function RoiCalculator() {
     <section id="roi" style={{ paddingBottom: 55 }}>
       <div style={{ maxWidth: 960, margin: '0 auto', padding: '0 16px' }}>
         <SectionHeader pill="ROI CALCULATOR" title={<>HOW MUCH ARE YOU <span className="text-gold-gradient">LEAVING ON THE TABLE?</span></>} desc="Enter your numbers to see the revenue you could recover with LeadFlow CRM." />
-        <div style={{ background: '#FFFFFF', borderRadius: 18, border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 6px 24px rgba(0,0,0,0.04)', overflow: 'hidden' }} className="roi-calculator-wrap">
+        <div style={{ background: 'var(--bg-card)', borderRadius: 18, border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 6px 24px rgba(0,0,0,0.04)', overflow: 'hidden' }} className="roi-calculator-wrap">
           <div style={{ display: 'flex', flexDirection: 'column' }} className="roi-grid">
             {/* Inputs */}
-            <div style={{ padding: '24px 20px', background: '#F8FAFC', borderRight: '1px solid rgba(0,0,0,0.06)' }} className="roi-inputs">
+            <div style={{ padding: '24px 20px', background: 'var(--bg-light)', borderRight: '1px solid rgba(0,0,0,0.06)' }} className="roi-inputs">
               <div style={{ marginBottom: 20 }}>
-                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 800, color: '#0F172A', marginBottom: 6 }}>Monthly Leads</label>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: 6 }}>Monthly Leads</label>
                 <input
                   type="range"
                   min={50}
@@ -2051,14 +2051,14 @@ function RoiCalculator() {
                   onChange={(e) => setLeadsPerMonth(Number(e.target.value))}
                   style={{ width: '100%', accentColor: '#EAB308' }}
                 />
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#64748B', marginTop: 4 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-dark)', marginTop: 4 }}>
                   <span>50</span>
                   <span style={{ fontWeight: 800, color: '#CA8A04' }}>{leadsPerMonth.toLocaleString('en-IN')} leads/mo</span>
                   <span>5,000</span>
                 </div>
               </div>
               <div style={{ marginBottom: 20 }}>
-                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 800, color: '#0F172A', marginBottom: 6 }}>Current Close Rate (%)</label>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: 6 }}>Current Close Rate (%)</label>
                 <input
                   type="range"
                   min={5}
@@ -2068,14 +2068,14 @@ function RoiCalculator() {
                   onChange={(e) => setCloseRate(Number(e.target.value))}
                   style={{ width: '100%', accentColor: '#EAB308' }}
                 />
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#64748B', marginTop: 4 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-dark)', marginTop: 4 }}>
                   <span>5%</span>
                   <span style={{ fontWeight: 800, color: '#CA8A04' }}>{closeRate}%</span>
                   <span>50%</span>
                 </div>
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 800, color: '#0F172A', marginBottom: 6 }}>Average Deal Size ({'₹'})</label>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: 6 }}>Average Deal Size ({'₹'})</label>
                 <input
                   type="range"
                   min={1000}
@@ -2085,7 +2085,7 @@ function RoiCalculator() {
                   onChange={(e) => setDealSize(Number(e.target.value))}
                   style={{ width: '100%', accentColor: '#EAB308' }}
                 />
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#64748B', marginTop: 4 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-dark)', marginTop: 4 }}>
                   <span>{'₹'}1K</span>
                   <span style={{ fontWeight: 800, color: '#CA8A04' }}>{'₹'}{dealSize.toLocaleString('en-IN')}</span>
                   <span>{'₹'}1L</span>
@@ -2095,10 +2095,10 @@ function RoiCalculator() {
             {/* Results */}
             <div style={{ padding: '24px 20px' }} className="roi-results">
               <div style={{ marginBottom: 16 }}>
-                <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748B', marginBottom: 4 }}>Current Monthly Revenue</div>
-                <div style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1.6rem', fontWeight: 900, color: '#475569' }}>{formatINR(currentRevenue)}</div>
+                <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-dark)', marginBottom: 4 }}>Current Monthly Revenue</div>
+                <div style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1.6rem', fontWeight: 900, color: 'var(--text-muted)' }}>{formatINR(currentRevenue)}</div>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.72rem', color: '#64748B', marginBottom: 16 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.72rem', color: 'var(--text-dark)', marginBottom: 16 }}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2.5"><path d="M7 17l4-4 3 3 5-6" /><path d="M15 7h6v6" /></svg>
                 With LeadFlow CRM ({improvedCloseRate}% close rate)
               </div>
@@ -2118,7 +2118,7 @@ function RoiCalculator() {
             </div>
           </div>
         </div>
-        <p style={{ textAlign: 'center', fontSize: '0.72rem', color: '#94A3B8', marginTop: 10 }}>Estimates based on avg 12% close-rate improvement after implementing LeadFlow CRM.</p>
+        <p style={{ textAlign: 'center', fontSize: '0.72rem', color: 'var(--text-dark)', marginTop: 10 }}>Estimates based on avg 12% close-rate improvement after implementing LeadFlow CRM.</p>
       </div>
     </section>
   );
@@ -2166,9 +2166,9 @@ function LiveActivityFeed() {
     <section style={{ paddingBottom: 40 }}>
       <div style={{ maxWidth: 960, margin: '0 auto', padding: '0 16px' }}>
         <SectionHeader pill="LIVE FEED" title={<>REAL <span className="text-gold-gradient">SIGNUPS</span></>} desc="See who is joining LeadFlow CRM right now." />
-        <div style={{ background: '#FFFFFF', borderRadius: 14, border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 4px 16px rgba(0,0,0,0.03)', overflow: 'hidden', maxHeight: 340, overflowY: 'auto' }}>
+        <div style={{ background: 'var(--bg-card)', borderRadius: 14, border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 4px 16px rgba(0,0,0,0.03)', overflow: 'hidden', maxHeight: 340, overflowY: 'auto' }}>
           {loading ? (
-            <div style={{ padding: 24, textAlign: 'center', color: '#94A3B8', fontSize: '0.82rem' }}>Loading recent activity...</div>
+            <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-dark)', fontSize: '0.82rem' }}>Loading recent activity...</div>
           ) : (
             activities.map((a, i) => (
               <div
@@ -2185,9 +2185,9 @@ function LiveActivityFeed() {
                   {a.name.split(' ').map((n) => n[0]).join('').slice(0, 2)}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#0F172A' }}>{a.name}</span>
-                  <span style={{ fontSize: '0.78rem', color: '#475569' }}> from {a.city} {a.action}</span>
-                  <div style={{ fontSize: '0.68rem', color: '#94A3B8' }}>{a.time}</div>
+                  <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-main)' }}>{a.name}</span>
+                  <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}> from {a.city} {a.action}</span>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-dark)' }}>{a.time}</div>
                 </div>
                 <span className="live-dot" style={{ flexShrink: 0 }} />
               </div>
@@ -2218,7 +2218,7 @@ function IndustryUseCases() {
             <div
               key={ind.name}
               style={{
-                background: '#FFFFFF',
+                background: 'var(--bg-card)',
                 border: '1px solid rgba(0,0,0,0.08)',
                 borderRadius: 14,
                 padding: '18px 16px',
@@ -2241,8 +2241,8 @@ function IndustryUseCases() {
                 </svg>
               </div>
               <div>
-                <h4 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1rem', fontWeight: 900, color: '#0F172A', marginBottom: 4 }}>{ind.name}</h4>
-                <p style={{ fontSize: '0.82rem', color: '#475569', lineHeight: 1.5 }}>{ind.desc}</p>
+                <h4 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1rem', fontWeight: 900, color: 'var(--text-main)', marginBottom: 4 }}>{ind.name}</h4>
+                <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>{ind.desc}</p>
               </div>
             </div>
           ))}
@@ -2327,11 +2327,11 @@ function TrustGuarantee() {
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>
               <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#15803D', textTransform: 'uppercase', letterSpacing: '0.5px' }}>100% Risk-Free</span>
             </div>
-            <h3 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1.3rem', fontWeight: 900, color: '#0F172A' }}>Your Business Is In Safe Hands</h3>
+            <h3 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1.3rem', fontWeight: 900, color: 'var(--text-main)' }}>Your Business Is In Safe Hands</h3>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 14 }} className="trust-grid">
             {badges.map((b) => (
-              <div key={b.title} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', background: '#FFFFFF', borderRadius: 12, padding: '12px 14px', border: '1px solid rgba(0,0,0,0.06)' }}>
+              <div key={b.title} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', background: 'var(--bg-card)', borderRadius: 12, padding: '12px 14px', border: '1px solid rgba(0,0,0,0.06)' }}>
                 <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(234, 179, 8, 0.1)', border: '1px solid rgba(234, 179, 8, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#CA8A04" strokeWidth="2">
                     {b.icon === 'shield' && <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />}
@@ -2341,8 +2341,8 @@ function TrustGuarantee() {
                   </svg>
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.82rem', fontWeight: 800, color: '#0F172A', marginBottom: 2 }}>{b.title}</div>
-                  <div style={{ fontSize: '0.75rem', color: '#475569', lineHeight: 1.4 }}>{b.desc}</div>
+                  <div style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: 2 }}>{b.title}</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: 1.4 }}>{b.desc}</div>
                 </div>
               </div>
             ))}
@@ -2390,7 +2390,7 @@ function ExitIntentPopup() {
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
-          background: '#FFFFFF',
+          background: 'var(--bg-card)',
           borderRadius: 20,
           maxWidth: 440,
           width: '100%',
@@ -2405,16 +2405,16 @@ function ExitIntentPopup() {
         <button
           onClick={() => setShow(false)}
           aria-label="Close"
-          style={{ position: 'absolute', top: 12, right: 14, background: 'rgba(0,0,0,0.05)', border: 'none', width: 30, height: 30, borderRadius: '50%', cursor: 'pointer', fontSize: 18, color: '#64748B', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          style={{ position: 'absolute', top: 12, right: 14, background: 'rgba(0,0,0,0.05)', border: 'none', width: 30, height: 30, borderRadius: '50%', cursor: 'pointer', fontSize: 18, color: 'var(--text-dark)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
         >
           &times;
         </button>
         <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'linear-gradient(135deg, #FEF08A, #EAB308)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px auto', boxShadow: '0 6px 20px rgba(234, 179, 8, 0.35)' }}>
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#422006" strokeWidth="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" /></svg>
         </div>
-        <h3 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1.4rem', fontWeight: 900, color: '#0F172A', marginBottom: 8 }}>Wait! Get 30 Days Free</h3>
-        <p style={{ fontSize: '0.88rem', color: '#475569', lineHeight: 1.5, marginBottom: 16 }}>
-          Don&apos;t leave yet! Use code <strong style={{ color: '#CA8A04', fontFamily: 'monospace', fontSize: '0.92rem' }}>DOUBLE30</strong> to get <strong style={{ color: '#0F172A' }}>30 days free</strong> instead of 14. Limited to the next 50 signups.
+        <h3 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1.4rem', fontWeight: 900, color: 'var(--text-main)', marginBottom: 8 }}>Wait! Get 30 Days Free</h3>
+        <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)', lineHeight: 1.5, marginBottom: 16 }}>
+          Don&apos;t leave yet! Use code <strong style={{ color: '#CA8A04', fontFamily: 'monospace', fontSize: '0.92rem' }}>DOUBLE30</strong> to get <strong style={{ color: 'var(--text-main)' }}>30 days free</strong> instead of 14. Limited to the next 50 signups.
         </p>
         <div style={{ background: '#FEF2F2', borderRadius: 10, padding: '8px 14px', marginBottom: 16, border: '1px solid #FECACA' }}>
           <span style={{ fontSize: '0.78rem', fontWeight: 800, color: '#DC2626' }}>Only 17 bonus spots remaining!</span>
@@ -2428,7 +2428,7 @@ function ExitIntentPopup() {
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14" /><path d="M12 5l7 7-7 7" /></svg>
           <span>CLAIM 30 DAYS FREE</span>
         </a>
-        <p style={{ fontSize: '0.72rem', color: '#94A3B8', marginTop: 10 }}>No credit card required &bull; Cancel anytime</p>
+        <p style={{ fontSize: '0.72rem', color: 'var(--text-dark)', marginTop: 10 }}>No credit card required &bull; Cancel anytime</p>
       </div>
     </div>
   );
@@ -2472,7 +2472,7 @@ function HelpWidget() {
             bottom: 84,
             right: 20,
             width: 300,
-            background: '#FFFFFF',
+            background: 'var(--bg-card)',
             borderRadius: 16,
             boxShadow: '0 20px 50px rgba(0,0,0,0.15)',
             border: '1px solid rgba(0,0,0,0.08)',
@@ -2487,20 +2487,20 @@ function HelpWidget() {
           </div>
           <div style={{ padding: '16px 18px' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <a href="#signup" onClick={(e) => { e.preventDefault(); setOpen(false); window.location.hash = 'signup'; }} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 10, background: '#F8FAFC', border: '1px solid rgba(0,0,0,0.06)', textDecoration: 'none', cursor: 'pointer' }}>
+              <a href="#signup" onClick={(e) => { e.preventDefault(); setOpen(false); window.location.hash = 'signup'; }} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 10, background: 'var(--bg-light)', border: '1px solid rgba(0,0,0,0.06)', textDecoration: 'none', cursor: 'pointer' }}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2"><polyline points="20 6 9 17 4 12" /></svg>
-                <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#0F172A' }}>Start free trial</span>
+                <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-main)' }}>Start free trial</span>
               </a>
-              <a href="#pricing" onClick={(e) => { e.preventDefault(); setOpen(false); document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' }); }} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 10, background: '#F8FAFC', border: '1px solid rgba(0,0,0,0.06)', textDecoration: 'none', cursor: 'pointer' }}>
+              <a href="#pricing" onClick={(e) => { e.preventDefault(); setOpen(false); document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' }); }} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 10, background: 'var(--bg-light)', border: '1px solid rgba(0,0,0,0.06)', textDecoration: 'none', cursor: 'pointer' }}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#CA8A04" strokeWidth="2"><line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg>
-                <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#0F172A' }}>View pricing plans</span>
+                <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-main)' }}>View pricing plans</span>
               </a>
-              <a href="#faq" onClick={(e) => { e.preventDefault(); setOpen(false); document.getElementById('faq')?.scrollIntoView({ behavior: 'smooth' }); }} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 10, background: '#F8FAFC', border: '1px solid rgba(0,0,0,0.06)', textDecoration: 'none', cursor: 'pointer' }}>
+              <a href="#faq" onClick={(e) => { e.preventDefault(); setOpen(false); document.getElementById('faq')?.scrollIntoView({ behavior: 'smooth' }); }} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 10, background: 'var(--bg-light)', border: '1px solid rgba(0,0,0,0.06)', textDecoration: 'none', cursor: 'pointer' }}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0EA5E9" strokeWidth="2"><circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>
-                <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#0F172A' }}>Read FAQs</span>
+                <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-main)' }}>Read FAQs</span>
               </a>
             </div>
-            <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid rgba(0,0,0,0.06)', fontSize: '0.72rem', color: '#94A3B8', textAlign: 'center' }}>
+            <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid rgba(0,0,0,0.06)', fontSize: '0.72rem', color: 'var(--text-dark)', textAlign: 'center' }}>
               Need more help? Email us at hello@leadflowcrm.com
             </div>
           </div>
@@ -2530,7 +2530,7 @@ function GeographicCoverage() {
     <section style={{ paddingBottom: 50 }}>
       <div style={{ maxWidth: 960, margin: '0 auto', padding: '0 16px' }}>
         <SectionHeader pill="PAN-INDIA PRESENCE" title={<>TRUSTED ACROSS <span className="text-gold-gradient">120+ CITIES</span></>} desc="Businesses from every corner of India use LeadFlow CRM to grow their sales." />
-        <div style={{ background: '#FFFFFF', borderRadius: 18, border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 6px 24px rgba(0,0,0,0.04)', padding: '24px 18px' }}>
+        <div style={{ background: 'var(--bg-card)', borderRadius: 18, border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 6px 24px rgba(0,0,0,0.04)', padding: '24px 18px' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }} className="geo-grid">
             {/* Map */}
             <div style={{ position: 'relative', height: 340, background: 'linear-gradient(135deg, #F8FAFC, #F1F5F9)', borderRadius: 14, border: '1px solid rgba(0,0,0,0.06)', overflow: 'hidden' }} className="geo-map">
@@ -2543,24 +2543,24 @@ function GeographicCoverage() {
                 <div key={c.name} style={{ position: 'absolute', left: `${c.x}%`, top: `${c.y}%`, transform: 'translate(-50%, -50%)' }}>
                   <div style={{ position: 'relative' }}>
                     <div style={{ width: c.size, height: c.size, borderRadius: '50%', background: 'linear-gradient(135deg, #FEF08A, #EAB308)', border: '2px solid #CA8A04', boxShadow: '0 2px 8px rgba(234, 179, 8, 0.4)', animation: 'pulse-dot 2s infinite' }} />
-                    <span style={{ position: 'absolute', left: '50%', top: c.size + 4, transform: 'translateX(-50%)', fontSize: '0.62rem', fontWeight: 800, color: '#0F172A', whiteSpace: 'nowrap', textShadow: '0 1px 2px rgba(255,255,255,0.8)' }}>{c.name}</span>
+                    <span style={{ position: 'absolute', left: '50%', top: c.size + 4, transform: 'translateX(-50%)', fontSize: '0.62rem', fontWeight: 800, color: 'var(--text-main)', whiteSpace: 'nowrap', textShadow: '0 1px 2px rgba(255,255,255,0.8)' }}>{c.name}</span>
                   </div>
                 </div>
               ))}
             </div>
             {/* Stats */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
-              <div style={{ textAlign: 'center', padding: '14px 8px', background: '#F8FAFC', borderRadius: 12, border: '1px solid rgba(0,0,0,0.06)' }}>
+              <div style={{ textAlign: 'center', padding: '14px 8px', background: 'var(--bg-light)', borderRadius: 12, border: '1px solid rgba(0,0,0,0.06)' }}>
                 <div style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1.5rem', fontWeight: 900, color: '#CA8A04' }}>120+</div>
-                <div style={{ fontSize: '0.72rem', color: '#475569', fontWeight: 600 }}>Cities</div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 600 }}>Cities</div>
               </div>
-              <div style={{ textAlign: 'center', padding: '14px 8px', background: '#F8FAFC', borderRadius: 12, border: '1px solid rgba(0,0,0,0.06)' }}>
+              <div style={{ textAlign: 'center', padding: '14px 8px', background: 'var(--bg-light)', borderRadius: 12, border: '1px solid rgba(0,0,0,0.06)' }}>
                 <div style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1.5rem', fontWeight: 900, color: '#CA8A04' }}>28</div>
-                <div style={{ fontSize: '0.72rem', color: '#475569', fontWeight: 600 }}>States</div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 600 }}>States</div>
               </div>
-              <div style={{ textAlign: 'center', padding: '14px 8px', background: '#F8FAFC', borderRadius: 12, border: '1px solid rgba(0,0,0,0.06)' }}>
+              <div style={{ textAlign: 'center', padding: '14px 8px', background: 'var(--bg-light)', borderRadius: 12, border: '1px solid rgba(0,0,0,0.06)' }}>
                 <div style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1.5rem', fontWeight: 900, color: '#CA8A04' }}>5K+</div>
-                <div style={{ fontSize: '0.72rem', color: '#475569', fontWeight: 600 }}>Businesses</div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 600 }}>Businesses</div>
               </div>
             </div>
           </div>
@@ -2585,12 +2585,12 @@ function LogoCloud() {
   return (
     <section style={{ paddingBottom: 40 }}>
       <div style={{ maxWidth: 960, margin: '0 auto', padding: '0 16px' }}>
-        <p style={{ textAlign: 'center', fontSize: '0.76rem', fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '1.2px', marginBottom: 18 }}>
+        <p style={{ textAlign: 'center', fontSize: '0.76rem', fontWeight: 800, color: 'var(--text-dark)', textTransform: 'uppercase', letterSpacing: '1.2px', marginBottom: 18 }}>
           Trusted by 5,000+ businesses across India
         </p>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }} className="logo-cloud-grid">
           {logos.map((logo) => (
-            <div key={logo.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '12px 10px', background: '#FFFFFF', borderRadius: 10, border: '1px solid rgba(0,0,0,0.06)', transition: 'all 0.2s ease' }} className="logo-cloud-item">
+            <div key={logo.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '12px 10px', background: 'var(--bg-card)', borderRadius: 10, border: '1px solid rgba(0,0,0,0.06)', transition: 'all 0.2s ease' }} className="logo-cloud-item">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#CA8A04" strokeWidth="2" style={{ flexShrink: 0, opacity: 0.7 }}>
                 {logo.icon === 'home' && <><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></>}
                 {logo.icon === 'shield' && <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />}
@@ -2601,7 +2601,7 @@ function LogoCloud() {
                 {logo.icon === 'building' && <><rect x="4" y="2" width="16" height="20" rx="2" /><path d="M9 22v-4h6v4" /><path d="M8 6h.01M16 6h.01M12 6h.01M8 10h.01M16 10h.01M12 10h.01M8 14h.01M16 14h.01M12 14h.01" /></>}
                 {logo.icon === 'umbrella' && <><path d="M12 2L4 9a8 8 0 0 1 16 0l-8-7z" /><path d="M12 2v20" /><path d="M8 14a4 4 0 0 0 8 0" /></>}
               </svg>
-              <span style={{ fontFamily: 'Outfit, sans-serif', fontSize: '0.76rem', fontWeight: 800, color: '#475569', whiteSpace: 'nowrap' }}>{logo.name}</span>
+              <span style={{ fontFamily: 'Outfit, sans-serif', fontSize: '0.76rem', fontWeight: 800, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{logo.name}</span>
             </div>
           ))}
         </div>
@@ -2632,7 +2632,7 @@ function OnboardingChecklist() {
     <section style={{ paddingBottom: 55 }}>
       <div style={{ maxWidth: 960, margin: '0 auto', padding: '0 16px' }}>
         <SectionHeader pill="QUICK SETUP" title={<>LIVE IN <span className="text-gold-gradient">5 MINUTES</span></>} desc="No technical knowledge required. Here's your setup checklist." />
-        <div style={{ background: '#FFFFFF', borderRadius: 18, border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 6px 24px rgba(0,0,0,0.04)', padding: '20px 18px' }}>
+        <div style={{ background: 'var(--bg-card)', borderRadius: 18, border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 6px 24px rgba(0,0,0,0.04)', padding: '20px 18px' }}>
           {steps.map((step, i) => {
             const isChecked = checked.has(step.num);
             return (
@@ -2642,7 +2642,7 @@ function OnboardingChecklist() {
                   style={{
                     width: 32, height: 32, borderRadius: '50%',
                     border: isChecked ? '2px solid #16A34A' : '2px solid #E2E8F0',
-                    background: isChecked ? '#22C55E' : '#FFFFFF',
+                    background: isChecked ? '#22C55E' : 'var(--bg-card)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     cursor: 'pointer', flexShrink: 0, transition: 'all 0.2s ease',
                   }}
@@ -2650,24 +2650,24 @@ function OnboardingChecklist() {
                   {isChecked ? (
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="3"><polyline points="20 6 9 17 4 12" /></svg>
                   ) : (
-                    <span style={{ fontSize: '0.78rem', fontWeight: 800, color: '#94A3B8' }}>{step.num}</span>
+                    <span style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-dark)' }}>{step.num}</span>
                   )}
                 </div>
                 <div style={{ flex: 1, opacity: isChecked ? 0.6 : 1 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
-                    <h4 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '0.92rem', fontWeight: 800, color: '#0F172A', textDecoration: isChecked ? 'line-through' : 'none' }}>{step.title}</h4>
+                    <h4 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '0.92rem', fontWeight: 800, color: 'var(--text-main)', textDecoration: isChecked ? 'line-through' : 'none' }}>{step.title}</h4>
                     <span style={{ fontSize: '0.64rem', fontWeight: 700, color: '#CA8A04', background: 'rgba(234,179,8,0.1)', padding: '2px 7px', borderRadius: 9999, flexShrink: 0 }}>{step.time}</span>
                   </div>
-                  <p style={{ fontSize: '0.78rem', color: '#475569', lineHeight: 1.5 }}>{step.desc}</p>
+                  <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>{step.desc}</p>
                 </div>
               </div>
             );
           })}
           <div style={{ marginTop: 18, paddingTop: 14, borderTop: '1px solid rgba(0,0,0,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
-            <span style={{ fontSize: '0.78rem', color: '#475569', fontWeight: 700 }}>
+            <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 700 }}>
               {checked.size} of {steps.length} steps complete
             </span>
-            <div style={{ flex: 1, maxWidth: 200, height: 8, borderRadius: 9999, background: '#F1F5F9', overflow: 'hidden', margin: '0 12px' }}>
+            <div style={{ flex: 1, maxWidth: 200, height: 8, borderRadius: 9999, background: 'var(--bg-light)', overflow: 'hidden', margin: '0 12px' }}>
               <div style={{ height: '100%', width: `${(checked.size / steps.length) * 100}%`, background: 'linear-gradient(90deg, #22C55E, #16A34A)', borderRadius: 9999, transition: 'width 0.4s ease' }} />
             </div>
             <a href="#signup" onClick={(e) => { e.preventDefault(); window.location.hash = 'signup'; }} className="gold-cta" style={{ padding: '8px 18px', fontSize: '0.78rem' }}>
@@ -2706,16 +2706,16 @@ function SuccessMetrics() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16, alignItems: 'center', textAlign: 'center' }} className="success-metric-layout">
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
               <span style={{ fontFamily: 'Outfit, sans-serif', fontSize: '3rem', fontWeight: 900, color: '#CA8A04', lineHeight: 1, animation: 'setup-fade-in 0.4s ease' }} key={s.metric}>{s.metric}</span>
-              <span style={{ fontSize: '0.88rem', fontWeight: 700, color: '#475569' }}>{s.label}</span>
+              <span style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text-muted)' }}>{s.label}</span>
             </div>
-            <p style={{ fontSize: '0.88rem', color: '#0F172A', lineHeight: 1.55, maxWidth: 500, fontStyle: 'italic' }}>"{s.desc}"</p>
+            <p style={{ fontSize: '0.88rem', color: 'var(--text-main)', lineHeight: 1.55, maxWidth: 500, fontStyle: 'italic' }}>"{s.desc}"</p>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'linear-gradient(135deg, #FEF08A, #EAB308)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '0.82rem', color: '#422006' }}>
                 {s.person.split(' ').map((w) => w[0]).join('')}
               </div>
               <div style={{ textAlign: 'left' }}>
-                <div style={{ fontSize: '0.82rem', fontWeight: 800, color: '#0F172A' }}>{s.person}</div>
-                <div style={{ fontSize: '0.72rem', color: '#475569' }}>{s.role}, {s.company}</div>
+                <div style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--text-main)' }}>{s.person}</div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{s.role}, {s.company}</div>
               </div>
               <span style={{ fontSize: '0.66rem', color: '#15803D', background: 'rgba(22,163,74,0.1)', padding: '2px 8px', borderRadius: 9999, fontWeight: 700, marginLeft: 4 }}>&#10003; Verified</span>
             </div>
@@ -2776,8 +2776,8 @@ function CountdownTimer() {
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
               Limited Time Offer
             </span>
-            <h3 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1.2rem', fontWeight: 900, color: '#F1F5F9', marginBottom: 4 }}>Extended Trial Ends Soon</h3>
-            <p style={{ fontSize: '0.78rem', color: '#94A3B8' }}>Get 30 days free instead of 14. Offer expires in:</p>
+            <h3 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1.2rem', fontWeight: 900, color: 'var(--bg-light)', marginBottom: 4 }}>Extended Trial Ends Soon</h3>
+            <p style={{ fontSize: '0.78rem', color: 'var(--text-dark)' }}>Get 30 days free instead of 14. Offer expires in:</p>
           </div>
           <div style={{ display: 'flex', gap: 10 }}>
             {[
@@ -2787,7 +2787,7 @@ function CountdownTimer() {
             ].map((unit) => (
               <div key={unit.l} style={{ textAlign: 'center', background: 'rgba(234,179,8,0.1)', border: '1px solid rgba(234,179,8,0.25)', borderRadius: 10, padding: '8px 12px', minWidth: 56 }}>
                 <div style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1.6rem', fontWeight: 900, color: '#FACC15', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>{pad(unit.v)}</div>
-                <div style={{ fontSize: '0.62rem', color: '#94A3B8', fontWeight: 700, textTransform: 'uppercase', marginTop: 3 }}>{unit.l}</div>
+                <div style={{ fontSize: '0.62rem', color: 'var(--text-dark)', fontWeight: 700, textTransform: 'uppercase', marginTop: 3 }}>{unit.l}</div>
               </div>
             ))}
           </div>
@@ -2850,7 +2850,7 @@ function FeatureDeepDive() {
                 padding: '8px 16px', borderRadius: 10, cursor: 'pointer',
                 fontFamily: 'Outfit, sans-serif', fontWeight: 800, fontSize: '0.78rem',
                 border: active === i ? '1.5px solid #EAB308' : '1px solid rgba(0,0,0,0.1)',
-                background: active === i ? 'linear-gradient(135deg, #FEF08A, #EAB308)' : '#FFFFFF',
+                background: active === i ? 'linear-gradient(135deg, #FEF08A, #EAB308)' : 'var(--bg-card)',
                 color: active === i ? '#422006' : '#475569',
                 transition: 'all 0.2s ease',
                 display: 'flex', alignItems: 'center', gap: 6,
@@ -2867,30 +2867,30 @@ function FeatureDeepDive() {
           ))}
         </div>
         {/* Content */}
-        <div key={active} style={{ background: '#FFFFFF', borderRadius: 16, border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 6px 24px rgba(0,0,0,0.04)', padding: '24px 20px', display: 'flex', flexDirection: 'column', gap: 18, animation: 'setup-fade-in 0.3s ease' }} className="deep-dive-layout">
+        <div key={active} style={{ background: 'var(--bg-card)', borderRadius: 16, border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 6px 24px rgba(0,0,0,0.04)', padding: '24px 20px', display: 'flex', flexDirection: 'column', gap: 18, animation: 'setup-fade-in 0.3s ease' }} className="deep-dive-layout">
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }} className="deep-dive-text">
-            <h3 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1.3rem', fontWeight: 900, color: '#0F172A' }}>{f.headline}</h3>
-            <p style={{ fontSize: '0.86rem', color: '#475569', lineHeight: 1.55 }}>{f.desc}</p>
+            <h3 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1.3rem', fontWeight: 900, color: 'var(--text-main)' }}>{f.headline}</h3>
+            <p style={{ fontSize: '0.86rem', color: 'var(--text-muted)', lineHeight: 1.55 }}>{f.desc}</p>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
               {f.points.map((p) => (
-                <div key={p} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: '#F8FAFC', borderRadius: 10, border: '1px solid rgba(0,0,0,0.05)' }}>
+                <div key={p} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: 'var(--bg-light)', borderRadius: 10, border: '1px solid rgba(0,0,0,0.05)' }}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2.5"><polyline points="20 6 9 17 4 12" /></svg>
-                  <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#0F172A' }}>{p}</span>
+                  <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-main)' }}>{p}</span>
                 </div>
               ))}
             </div>
           </div>
           {/* Mockup preview */}
-          <div style={{ background: '#F1F5F9', borderRadius: 12, padding: '16px 14px', border: '1px solid rgba(0,0,0,0.06)' }} className="deep-dive-mockup">
+          <div style={{ background: 'var(--bg-light)', borderRadius: 12, padding: '16px 14px', border: '1px solid rgba(0,0,0,0.06)' }} className="deep-dive-mockup">
             {f.icon === 'kanban' && (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8 }}>
                 {['New', 'In Progress', 'Won'].map((stage, si) => (
-                  <div key={stage} style={{ background: '#FFFFFF', borderRadius: 8, padding: 8, border: '1px solid rgba(0,0,0,0.06)' }}>
-                    <div style={{ fontSize: '0.64rem', fontWeight: 800, color: '#475569', marginBottom: 6, textTransform: 'uppercase' }}>{stage}</div>
+                  <div key={stage} style={{ background: 'var(--bg-card)', borderRadius: 8, padding: 8, border: '1px solid rgba(0,0,0,0.06)' }}>
+                    <div style={{ fontSize: '0.64rem', fontWeight: 800, color: 'var(--text-muted)', marginBottom: 6, textTransform: 'uppercase' }}>{stage}</div>
                     {Array.from({ length: 2 + si }).map((_, ci) => (
-                      <div key={ci} style={{ background: '#F8FAFC', borderRadius: 6, padding: '6px 8px', marginBottom: 4, border: '1px solid rgba(0,0,0,0.04)' }}>
-                        <div style={{ height: 6, width: '70%', background: '#E2E8F0', borderRadius: 3, marginBottom: 3 }} />
-                        <div style={{ height: 4, width: '50%', background: '#E2E8F0', borderRadius: 3 }} />
+                      <div key={ci} style={{ background: 'var(--bg-light)', borderRadius: 6, padding: '6px 8px', marginBottom: 4, border: '1px solid rgba(0,0,0,0.04)' }}>
+                        <div style={{ height: 6, width: '70%', background: 'var(--border-subtle)', borderRadius: 3, marginBottom: 3 }} />
+                        <div style={{ height: 4, width: '50%', background: 'var(--border-subtle)', borderRadius: 3 }} />
                       </div>
                     ))}
                   </div>
@@ -2900,11 +2900,11 @@ function FeatureDeepDive() {
             {f.icon === 'whatsapp' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {[1, 2, 3].map((i) => (
-                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#FFFFFF', borderRadius: 8, padding: '8px 10px', border: '1px solid rgba(0,0,0,0.06)' }}>
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--bg-card)', borderRadius: 8, padding: '8px 10px', border: '1px solid rgba(0,0,0,0.06)' }}>
                     <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#DCFCE8', flexShrink: 0 }} />
                     <div style={{ flex: 1 }}>
-                      <div style={{ height: 6, width: '60%', background: '#E2E8F0', borderRadius: 3, marginBottom: 3 }} />
-                      <div style={{ height: 4, width: '40%', background: '#E2E8F0', borderRadius: 3 }} />
+                      <div style={{ height: 6, width: '60%', background: 'var(--border-subtle)', borderRadius: 3, marginBottom: 3 }} />
+                      <div style={{ height: 4, width: '40%', background: 'var(--border-subtle)', borderRadius: 3 }} />
                     </div>
                     <div style={{ fontSize: '0.58rem', color: i === 1 ? '#22C55E' : '#94A3B8', fontWeight: 700, flexShrink: 0 }}>{i === 1 ? 'Read' : i === 2 ? 'Delivered' : 'Sent'}</div>
                   </div>
@@ -2914,9 +2914,9 @@ function FeatureDeepDive() {
             {f.icon === 'automation' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {['Trigger: New Lead', 'Condition: Score > 70', 'Action: Assign to top agent', 'Action: Send WhatsApp'].map((step, i) => (
-                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#FFFFFF', borderRadius: 8, padding: '7px 10px', border: '1px solid rgba(0,0,0,0.06)' }}>
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--bg-card)', borderRadius: 8, padding: '7px 10px', border: '1px solid rgba(0,0,0,0.06)' }}>
                     <div style={{ width: 20, height: 20, borderRadius: 6, background: `linear-gradient(135deg, #FEF08A, #EAB308)`, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.58rem', fontWeight: 900, color: '#422006' }}>{i + 1}</div>
-                    <span style={{ fontSize: '0.66rem', fontWeight: 700, color: '#475569' }}>{step}</span>
+                    <span style={{ fontSize: '0.66rem', fontWeight: 700, color: 'var(--text-muted)' }}>{step}</span>
                   </div>
                 ))}
               </div>
@@ -2929,10 +2929,10 @@ function FeatureDeepDive() {
                   { label: 'New Leads', val: '847', color: '#0EA5E9' },
                   { label: 'Win Rate', val: '62%', color: '#A855F7' },
                 ].map((stat) => (
-                  <div key={stat.label} style={{ background: '#FFFFFF', borderRadius: 8, padding: '10px 12px', border: '1px solid rgba(0,0,0,0.06)' }}>
-                    <div style={{ fontSize: '0.58rem', color: '#94A3B8', fontWeight: 700, marginBottom: 4 }}>{stat.label}</div>
+                  <div key={stat.label} style={{ background: 'var(--bg-card)', borderRadius: 8, padding: '10px 12px', border: '1px solid rgba(0,0,0,0.06)' }}>
+                    <div style={{ fontSize: '0.58rem', color: 'var(--text-dark)', fontWeight: 700, marginBottom: 4 }}>{stat.label}</div>
                     <div style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1.1rem', fontWeight: 900, color: stat.color }}>{stat.val}</div>
-                    <div style={{ marginTop: 6, height: 4, borderRadius: 2, background: '#F1F5F9', overflow: 'hidden' }}>
+                    <div style={{ marginTop: 6, height: 4, borderRadius: 2, background: 'var(--bg-light)', overflow: 'hidden' }}>
                       <div style={{ height: '100%', width: '60%', background: stat.color, borderRadius: 2 }} />
                     </div>
                   </div>
@@ -2954,7 +2954,7 @@ function MobilePreview() {
         <SectionHeader pill="WORKS EVERYWHERE" title={<>YOUR CRM ON <span className="text-gold-gradient">EVERY DEVICE</span></>} desc="Manage leads from your desk or on the go. LeadFlow works seamlessly across desktop, tablet, and mobile." />
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20, alignItems: 'center' }} className="mobile-preview-layout">
           {/* Desktop mockup */}
-          <div style={{ width: '100%', maxWidth: 560, background: '#FFFFFF', borderRadius: 12, border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 10px 30px rgba(0,0,0,0.06)', padding: 12, overflow: 'hidden' }} className="desktop-mockup">
+          <div style={{ width: '100%', maxWidth: 560, background: 'var(--bg-card)', borderRadius: 12, border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 10px 30px rgba(0,0,0,0.06)', padding: 12, overflow: 'hidden' }} className="desktop-mockup">
             <div style={{ display: 'flex', gap: 4, marginBottom: 8 }}>
               <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#EF4444' }} />
               <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#F59E0B' }} />
@@ -2970,12 +2970,12 @@ function MobilePreview() {
               </div>
               <div style={{ flex: 1, display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 6 }}>
                 {['New', 'Follow-up', 'Won'].map((stage, si) => (
-                  <div key={stage} style={{ background: '#F8FAFC', borderRadius: 6, padding: 6, border: '1px solid rgba(0,0,0,0.04)' }}>
-                    <div style={{ fontSize: '0.52rem', fontWeight: 800, color: '#475569', marginBottom: 4 }}>{stage}</div>
+                  <div key={stage} style={{ background: 'var(--bg-light)', borderRadius: 6, padding: 6, border: '1px solid rgba(0,0,0,0.04)' }}>
+                    <div style={{ fontSize: '0.52rem', fontWeight: 800, color: 'var(--text-muted)', marginBottom: 4 }}>{stage}</div>
                     {Array.from({ length: 2 + si }).map((_, ci) => (
-                      <div key={ci} style={{ background: '#FFFFFF', borderRadius: 4, padding: 5, marginBottom: 3, border: '1px solid rgba(0,0,0,0.04)' }}>
-                        <div style={{ height: 4, width: '70%', background: '#E2E8F0', borderRadius: 2, marginBottom: 2 }} />
-                        <div style={{ height: 3, width: '45%', background: '#E2E8F0', borderRadius: 2 }} />
+                      <div key={ci} style={{ background: 'var(--bg-card)', borderRadius: 4, padding: 5, marginBottom: 3, border: '1px solid rgba(0,0,0,0.04)' }}>
+                        <div style={{ height: 4, width: '70%', background: 'var(--border-subtle)', borderRadius: 2, marginBottom: 2 }} />
+                        <div style={{ height: 3, width: '45%', background: 'var(--border-subtle)', borderRadius: 2 }} />
                       </div>
                     ))}
                   </div>
@@ -2985,7 +2985,7 @@ function MobilePreview() {
           </div>
           {/* Phone mockup */}
           <div style={{ width: 200, background: '#0F172A', borderRadius: 24, padding: 5, boxShadow: '0 15px 40px rgba(0,0,0,0.2)' }} className="phone-mockup">
-            <div style={{ background: '#FFFFFF', borderRadius: 20, padding: 10, minHeight: 280 }}>
+            <div style={{ background: 'var(--bg-card)', borderRadius: 20, padding: 10, minHeight: 280 }}>
               <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
                 <div style={{ width: 40, height: 4, background: '#0F172A', borderRadius: 2 }} />
               </div>
@@ -2993,14 +2993,14 @@ function MobilePreview() {
                 <div style={{ width: 28, height: 28, borderRadius: 8, background: 'linear-gradient(135deg, #FEF08A, #EAB308)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#422006" strokeWidth="2.5"><path d="M3 17l6-6 4 4 8-8" /><path d="M21 7v4h-4" /></svg>
                 </div>
-                <span style={{ fontFamily: 'Outfit, sans-serif', fontSize: '0.68rem', fontWeight: 900, color: '#0F172A' }}>LeadFlow</span>
+                <span style={{ fontFamily: 'Outfit, sans-serif', fontSize: '0.68rem', fontWeight: 900, color: 'var(--text-main)' }}>LeadFlow</span>
               </div>
               {['Rajesh K.', 'Ananya P.', 'Vikram S.', 'Priya N.'].map((name, i) => (
                 <div key={name} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 6px', borderBottom: i < 3 ? '1px solid rgba(0,0,0,0.04)' : 'none' }}>
                   <div style={{ width: 24, height: 24, borderRadius: '50%', background: `linear-gradient(135deg, ${['#FEF08A,#EAB308', '#DCFCE8,#22C55E', '#DBEAFE,#3B82F6', '#FCE7F3,#EC4899'][i]})`, flexShrink: 0 }} />
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: '0.58rem', fontWeight: 700, color: '#0F172A' }}>{name}</div>
-                    <div style={{ fontSize: '0.5rem', color: '#94A3B8' }}>{['New Lead', 'Follow-up', 'Hot Lead', 'Closed'][i]}</div>
+                    <div style={{ fontSize: '0.58rem', fontWeight: 700, color: 'var(--text-main)' }}>{name}</div>
+                    <div style={{ fontSize: '0.5rem', color: 'var(--text-dark)' }}>{['New Lead', 'Follow-up', 'Hot Lead', 'Closed'][i]}</div>
                   </div>
                   <div style={{ width: 6, height: 6, borderRadius: '50%', background: ['#22C55E', '#F59E0B', '#EF4444', '#22C55E'][i] }} />
                 </div>
@@ -3026,7 +3026,7 @@ function ResourcesPreview() {
         <SectionHeader pill="FREE RESOURCES" title={<>SALES TIPS & <span className="text-gold-gradient">GUIDES</span></>} desc="Learn from our sales experts. Free articles to help your team close more deals." />
         <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 14 }} className="resources-grid">
           {articles.map((a) => (
-            <div key={a.title} style={{ background: '#FFFFFF', borderRadius: 14, border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 3px 12px rgba(0,0,0,0.02)', overflow: 'hidden', display: 'flex', flexDirection: 'column', cursor: 'pointer', transition: 'all 0.2s ease' }} className="resource-card">
+            <div key={a.title} style={{ background: 'var(--bg-card)', borderRadius: 14, border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 3px 12px rgba(0,0,0,0.02)', overflow: 'hidden', display: 'flex', flexDirection: 'column', cursor: 'pointer', transition: 'all 0.2s ease' }} className="resource-card">
               <div style={{ height: 80, background: `linear-gradient(135deg, ${a.color}15, ${a.color}30)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke={a.color} strokeWidth="1.5">
                   <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
@@ -3036,9 +3036,9 @@ function ResourcesPreview() {
               <div style={{ padding: '14px 16px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                   <span style={{ fontSize: '0.62rem', fontWeight: 800, color: a.color, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{a.category}</span>
-                  <span style={{ fontSize: '0.62rem', color: '#94A3B8' }}>&bull; {a.readTime}</span>
+                  <span style={{ fontSize: '0.62rem', color: 'var(--text-dark)' }}>&bull; {a.readTime}</span>
                 </div>
-                <h4 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '0.9rem', fontWeight: 800, color: '#0F172A', lineHeight: 1.4, marginBottom: 10 }}>{a.title}</h4>
+                <h4 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '0.9rem', fontWeight: 800, color: 'var(--text-main)', lineHeight: 1.4, marginBottom: 10 }}>{a.title}</h4>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: '0.74rem', fontWeight: 700, color: '#CA8A04' }}>
                   <span>Read article</span>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14" /><path d="M12 5l7 7-7 7" /></svg>
@@ -3069,27 +3069,27 @@ function CompetitorComparison() {
   const renderCell = (val: boolean | string) => {
     if (val === true) return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="3"><polyline points="20 6 9 17 4 12" /></svg>;
     if (val === false) return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>;
-    return <span style={{ fontSize: '0.74rem', fontWeight: 700, color: '#475569' }}>{val}</span>;
+    return <span style={{ fontSize: '0.74rem', fontWeight: 700, color: 'var(--text-muted)' }}>{val}</span>;
   };
   return (
     <section style={{ paddingBottom: 55 }}>
       <div style={{ maxWidth: 960, margin: '0 auto', padding: '0 16px' }}>
         <SectionHeader pill="HOW WE COMPARE" title={<>LEADFLOW vs <span className="text-gold-gradient">THE COMPETITION</span></>} desc="See why thousands of businesses choose LeadFlow over expensive, complex CRMs." />
         <div style={{ overflowX: 'auto', borderRadius: 16, border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 6px 24px rgba(0,0,0,0.04)' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 600, background: '#FFFFFF' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 600, background: 'var(--bg-card)' }}>
             <thead>
               <tr>
-                <th style={{ padding: '14px 12px', textAlign: 'left', fontSize: '0.76rem', fontWeight: 800, color: '#475569', borderBottom: '2px solid rgba(234,179,8,0.3)', background: '#F8FAFC' }}>Feature</th>
+                <th style={{ padding: '14px 12px', textAlign: 'left', fontSize: '0.76rem', fontWeight: 800, color: 'var(--text-muted)', borderBottom: '2px solid rgba(234,179,8,0.3)', background: 'var(--bg-light)' }}>Feature</th>
                 <th style={{ padding: '14px 10px', textAlign: 'center', fontSize: '0.78rem', fontWeight: 900, color: '#422006', borderBottom: '2px solid #EAB308', background: 'linear-gradient(135deg, #FEF08A, #FEF9C3)' }}>LeadFlow</th>
-                <th style={{ padding: '14px 10px', textAlign: 'center', fontSize: '0.74rem', fontWeight: 700, color: '#475569', borderBottom: '2px solid rgba(0,0,0,0.06)', background: '#F8FAFC' }}>Salesforce</th>
-                <th style={{ padding: '14px 10px', textAlign: 'center', fontSize: '0.74rem', fontWeight: 700, color: '#475569', borderBottom: '2px solid rgba(0,0,0,0.06)', background: '#F8FAFC' }}>Zoho</th>
-                <th style={{ padding: '14px 10px', textAlign: 'center', fontSize: '0.74rem', fontWeight: 700, color: '#475569', borderBottom: '2px solid rgba(0,0,0,0.06)', background: '#F8FAFC' }}>HubSpot</th>
+                <th style={{ padding: '14px 10px', textAlign: 'center', fontSize: '0.74rem', fontWeight: 700, color: 'var(--text-muted)', borderBottom: '2px solid rgba(0,0,0,0.06)', background: 'var(--bg-light)' }}>Salesforce</th>
+                <th style={{ padding: '14px 10px', textAlign: 'center', fontSize: '0.74rem', fontWeight: 700, color: 'var(--text-muted)', borderBottom: '2px solid rgba(0,0,0,0.06)', background: 'var(--bg-light)' }}>Zoho</th>
+                <th style={{ padding: '14px 10px', textAlign: 'center', fontSize: '0.74rem', fontWeight: 700, color: 'var(--text-muted)', borderBottom: '2px solid rgba(0,0,0,0.06)', background: 'var(--bg-light)' }}>HubSpot</th>
               </tr>
             </thead>
             <tbody>
               {features.map((row, i) => (
                 <tr key={row.label} style={{ background: i % 2 === 0 ? '#FFFFFF' : '#FAFAFA' }}>
-                  <td style={{ padding: '11px 12px', fontSize: '0.78rem', fontWeight: 700, color: '#0F172A', borderBottom: '1px solid rgba(0,0,0,0.04)' }}>{row.label}</td>
+                  <td style={{ padding: '11px 12px', fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-main)', borderBottom: '1px solid rgba(0,0,0,0.04)' }}>{row.label}</td>
                   <td style={{ padding: '11px 10px', textAlign: 'center', borderBottom: '1px solid rgba(234,179,8,0.1)', background: 'rgba(254,249,195,0.3)' }}>{renderCell(row.leadflow)}</td>
                   <td style={{ padding: '11px 10px', textAlign: 'center', borderBottom: '1px solid rgba(0,0,0,0.04)' }}>{renderCell(row.salesforce)}</td>
                   <td style={{ padding: '11px 10px', textAlign: 'center', borderBottom: '1px solid rgba(0,0,0,0.04)' }}>{renderCell(row.zoho)}</td>
@@ -3099,7 +3099,7 @@ function CompetitorComparison() {
             </tbody>
           </table>
         </div>
-        <p style={{ fontSize: '0.68rem', color: '#94A3B8', textAlign: 'center', marginTop: 8 }}>Pricing and features based on publicly available information as of Oct 2026. *HubSpot free tier has limited features.</p>
+        <p style={{ fontSize: '0.68rem', color: 'var(--text-dark)', textAlign: 'center', marginTop: 8 }}>Pricing and features based on publicly available information as of Oct 2026. *HubSpot free tier has limited features.</p>
       </div>
     </section>
   );
@@ -3118,12 +3118,12 @@ function NewsletterCapture() {
   return (
     <section style={{ paddingBottom: 50 }}>
       <div style={{ maxWidth: 960, margin: '0 auto', padding: '0 16px' }}>
-        <div style={{ background: '#FFFFFF', borderRadius: 16, border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 6px 20px rgba(0,0,0,0.03)', padding: '22px 18px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }} className="newsletter-card">
+        <div style={{ background: 'var(--bg-card)', borderRadius: 16, border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 6px 20px rgba(0,0,0,0.03)', padding: '22px 18px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }} className="newsletter-card">
           <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(234,179,8,0.1)', border: '1px solid rgba(234,179,8,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 12 }}>
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#CA8A04" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" /></svg>
           </div>
-          <h3 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1.15rem', fontWeight: 900, color: '#0F172A', marginBottom: 6 }}>Get Sales Tips in Your Inbox</h3>
-          <p style={{ fontSize: '0.82rem', color: '#475569', lineHeight: 1.5, marginBottom: 16, maxWidth: 400 }}>Join 8,000+ sales professionals receiving weekly tips on lead conversion, WhatsApp marketing, and CRM automation. No spam, unsubscribe anytime.</p>
+          <h3 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1.15rem', fontWeight: 900, color: 'var(--text-main)', marginBottom: 6 }}>Get Sales Tips in Your Inbox</h3>
+          <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: 1.5, marginBottom: 16, maxWidth: 400 }}>Join 8,000+ sales professionals receiving weekly tips on lead conversion, WhatsApp marketing, and CRM automation. No spam, unsubscribe anytime.</p>
           {status === 'success' ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 18px', background: '#F0FDF4', border: '1px solid rgba(22,163,74,0.3)', borderRadius: 10 }}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2.5"><polyline points="20 6 9 17 4 12" /></svg>
@@ -3136,7 +3136,7 @@ function NewsletterCapture() {
                 placeholder="Enter your email address"
                 value={email}
                 onChange={(e) => { setEmail(e.target.value); setStatus('idle'); }}
-                style={{ padding: '11px 14px', borderRadius: 10, border: status === 'error' ? '1.5px solid #EF4444' : '1px solid rgba(0,0,0,0.12)', fontSize: '0.84rem', fontFamily: 'inherit', outline: 'none', background: '#F8FAFC', width: '100%' }}
+                style={{ padding: '11px 14px', borderRadius: 10, border: status === 'error' ? '1.5px solid #EF4444' : '1px solid rgba(0,0,0,0.12)', fontSize: '0.84rem', fontFamily: 'inherit', outline: 'none', background: 'var(--bg-light)', width: '100%' }}
               />
               {status === 'error' && <span style={{ fontSize: '0.72rem', color: '#EF4444', fontWeight: 600 }}>Please enter a valid email address.</span>}
               <button type="submit" disabled={status === 'loading'} className="gold-cta" style={{ width: '100%', maxWidth: '100%', padding: '11px 20px', fontSize: '0.82rem', opacity: status === 'loading' ? 0.7 : 1 }}>
@@ -3186,10 +3186,10 @@ function TimeSavingsCalculator() {
     <section style={{ paddingBottom: 55 }}>
       <div style={{ maxWidth: 960, margin: '0 auto', padding: '0 16px' }}>
         <SectionHeader pill="TIME SAVINGS" title={<>HOW MANY HOURS WILL <span className="text-gold-gradient">LEADFLOW SAVE YOU?</span></>} desc="Slide to see how much time your team saves every week with LeadFlow automation." />
-        <div style={{ background: '#FFFFFF', borderRadius: 18, border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 6px 24px rgba(0,0,0,0.04)', padding: '24px 20px' }}>
+        <div style={{ background: 'var(--bg-card)', borderRadius: 18, border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 6px 24px rgba(0,0,0,0.04)', padding: '24px 20px' }}>
           <div style={{ marginBottom: 20 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-              <label style={{ fontSize: '0.84rem', fontWeight: 800, color: '#0F172A' }}>Leads managed daily</label>
+              <label style={{ fontSize: '0.84rem', fontWeight: 800, color: 'var(--text-main)' }}>Leads managed daily</label>
               <span style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1.3rem', fontWeight: 900, color: '#CA8A04' }}>{leads}</span>
             </div>
             <input
@@ -3203,8 +3203,8 @@ function TimeSavingsCalculator() {
               className="time-slider"
             />
             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
-              <span style={{ fontSize: '0.66rem', color: '#94A3B8' }}>5</span>
-              <span style={{ fontSize: '0.66rem', color: '#94A3B8' }}>500</span>
+              <span style={{ fontSize: '0.66rem', color: 'var(--text-dark)' }}>5</span>
+              <span style={{ fontSize: '0.66rem', color: 'var(--text-dark)' }}>500</span>
             </div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }} className="time-savings-grid">
@@ -3222,7 +3222,7 @@ function TimeSavingsCalculator() {
             </div>
           </div>
           <div style={{ marginTop: 16, padding: '14px 16px', background: '#0F172A', borderRadius: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
-            <span style={{ fontSize: '0.82rem', color: '#94A3B8', fontWeight: 600 }}>You save <strong style={{ color: '#FACC15', fontSize: '0.92rem' }}>{savedPerWeek.toFixed(0)} hrs/week</strong> and <strong style={{ color: '#FACC15', fontSize: '0.92rem' }}>{savedPerMonth.toFixed(0)} hrs/month</strong></span>
+            <span style={{ fontSize: '0.82rem', color: 'var(--text-dark)', fontWeight: 600 }}>You save <strong style={{ color: '#FACC15', fontSize: '0.92rem' }}>{savedPerWeek.toFixed(0)} hrs/week</strong> and <strong style={{ color: '#FACC15', fontSize: '0.92rem' }}>{savedPerMonth.toFixed(0)} hrs/month</strong></span>
             <a href="#signup" onClick={(e) => { e.preventDefault(); window.location.hash = 'signup'; }} className="gold-cta" style={{ padding: '8px 16px', fontSize: '0.74rem', maxWidth: 'fit-content' }}>
               <span>START SAVING</span>
             </a>
@@ -3246,7 +3246,7 @@ function AwardsStrip() {
       <div style={{ maxWidth: 960, margin: '0 auto', padding: '0 16px' }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }} className="awards-grid">
           {awards.map((a) => (
-            <div key={a.label} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', background: '#FFFFFF', borderRadius: 12, border: '1px solid rgba(0,0,0,0.06)', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }} className="award-item">
+            <div key={a.label} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', background: 'var(--bg-card)', borderRadius: 12, border: '1px solid rgba(0,0,0,0.06)', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }} className="award-item">
               <div style={{ width: 36, height: 36, borderRadius: 10, background: 'linear-gradient(135deg, #FEF08A, #EAB308)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#422006" strokeWidth="2">
                   {a.icon === 'trophy' && <><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" /><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" /><path d="M4 22h16" /><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" /><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" /><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" /></>}
@@ -3255,8 +3255,8 @@ function AwardsStrip() {
                 </svg>
               </div>
               <div>
-                <div style={{ fontSize: '0.78rem', fontWeight: 800, color: '#0F172A', lineHeight: 1.2 }}>{a.label}</div>
-                <div style={{ fontSize: '0.66rem', color: '#94A3B8', marginTop: 1 }}>{a.sub}</div>
+                <div style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-main)', lineHeight: 1.2 }}>{a.label}</div>
+                <div style={{ fontSize: '0.66rem', color: 'var(--text-dark)', marginTop: 1 }}>{a.sub}</div>
               </div>
             </div>
           ))}
@@ -3318,7 +3318,7 @@ function FinalCTA() {
                   borderRadius: '9999px',
                   fontSize: '0.78rem',
                   fontWeight: 700,
-                  color: '#475569',
+                  color: 'var(--text-muted)',
                 }}
               >
                 {b}
@@ -3356,8 +3356,8 @@ function Footer() {
               </svg>
             </div>
             <div>
-              <div style={{ fontFamily: 'Outfit, sans-serif', fontWeight: 900, fontSize: '0.92rem', color: '#F1F5F9', letterSpacing: '0.3px' }}>LeadFlow CRM</div>
-              <div style={{ fontSize: '0.68rem', color: '#64748B', marginTop: 1 }}>All-in-One Sales &amp; Lead Management Platform</div>
+              <div style={{ fontFamily: 'Outfit, sans-serif', fontWeight: 900, fontSize: '0.92rem', color: 'var(--bg-light)', letterSpacing: '0.3px' }}>LeadFlow CRM</div>
+              <div style={{ fontSize: '0.68rem', color: 'var(--text-dark)', marginTop: 1 }}>All-in-One Sales &amp; Lead Management Platform</div>
             </div>
           </div>
           <a
@@ -3389,14 +3389,14 @@ function Footer() {
           <div className="footer-col">
             <h4 className="footer-heading" style={{ fontFamily: 'Outfit, sans-serif', fontWeight: 800, fontSize: '0.78rem', color: '#E2E8F0', marginBottom: 12, letterSpacing: '0.4px', textTransform: 'uppercase' }}>Quick Links</h4>
             <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <li><a href="#features" style={{ color: '#94A3B8', textDecoration: 'none', fontSize: '0.76rem', transition: 'color 0.2s' }}>Features</a></li>
-              <li><a href="#testimonials" style={{ color: '#94A3B8', textDecoration: 'none', fontSize: '0.76rem', transition: 'color 0.2s' }}>Testimonials</a></li>
-              <li><a href="#about" onClick={(e) => { e.preventDefault(); window.location.hash = 'about'; }} style={{ color: '#94A3B8', textDecoration: 'none', fontSize: '0.76rem', transition: 'color 0.2s', cursor: 'pointer' }}>About Us</a></li>
-              <li><a href="#careers" onClick={(e) => { e.preventDefault(); window.location.hash = 'careers'; }} style={{ color: '#94A3B8', textDecoration: 'none', fontSize: '0.76rem', transition: 'color 0.2s', cursor: 'pointer' }}>Careers</a></li>
-              <li><a href="#security" onClick={(e) => { e.preventDefault(); window.location.hash = 'security'; }} style={{ color: '#94A3B8', textDecoration: 'none', fontSize: '0.76rem', transition: 'color 0.2s', cursor: 'pointer' }}>Security</a></li>
-              <li><a href="#brand-assets" onClick={(e) => { e.preventDefault(); window.location.hash = 'brand-assets'; }} style={{ color: '#94A3B8', textDecoration: 'none', fontSize: '0.76rem', transition: 'color 0.2s', cursor: 'pointer' }}>Brand Assets</a></li>
-              <li><a href="#report-abuse" onClick={(e) => { e.preventDefault(); window.location.hash = 'report-abuse'; }} style={{ color: '#94A3B8', textDecoration: 'none', fontSize: '0.76rem', transition: 'color 0.2s', cursor: 'pointer' }}>Report Abuse</a></li>
-              <li><a href="#sitemap" onClick={(e) => { e.preventDefault(); window.location.hash = 'sitemap'; }} style={{ color: '#94A3B8', textDecoration: 'none', fontSize: '0.76rem', transition: 'color 0.2s', cursor: 'pointer' }}>Sitemap</a></li>
+              <li><a href="#features" style={{ color: 'var(--text-dark)', textDecoration: 'none', fontSize: '0.76rem', transition: 'color 0.2s' }}>Features</a></li>
+              <li><a href="#testimonials" style={{ color: 'var(--text-dark)', textDecoration: 'none', fontSize: '0.76rem', transition: 'color 0.2s' }}>Testimonials</a></li>
+              <li><a href="#about" onClick={(e) => { e.preventDefault(); window.location.hash = 'about'; }} style={{ color: 'var(--text-dark)', textDecoration: 'none', fontSize: '0.76rem', transition: 'color 0.2s', cursor: 'pointer' }}>About Us</a></li>
+              <li><a href="#careers" onClick={(e) => { e.preventDefault(); window.location.hash = 'careers'; }} style={{ color: 'var(--text-dark)', textDecoration: 'none', fontSize: '0.76rem', transition: 'color 0.2s', cursor: 'pointer' }}>Careers</a></li>
+              <li><a href="#security" onClick={(e) => { e.preventDefault(); window.location.hash = 'security'; }} style={{ color: 'var(--text-dark)', textDecoration: 'none', fontSize: '0.76rem', transition: 'color 0.2s', cursor: 'pointer' }}>Security</a></li>
+              <li><a href="#brand-assets" onClick={(e) => { e.preventDefault(); window.location.hash = 'brand-assets'; }} style={{ color: 'var(--text-dark)', textDecoration: 'none', fontSize: '0.76rem', transition: 'color 0.2s', cursor: 'pointer' }}>Brand Assets</a></li>
+              <li><a href="#report-abuse" onClick={(e) => { e.preventDefault(); window.location.hash = 'report-abuse'; }} style={{ color: 'var(--text-dark)', textDecoration: 'none', fontSize: '0.76rem', transition: 'color 0.2s', cursor: 'pointer' }}>Report Abuse</a></li>
+              <li><a href="#sitemap" onClick={(e) => { e.preventDefault(); window.location.hash = 'sitemap'; }} style={{ color: 'var(--text-dark)', textDecoration: 'none', fontSize: '0.76rem', transition: 'color 0.2s', cursor: 'pointer' }}>Sitemap</a></li>
             </ul>
           </div>
 
@@ -3443,10 +3443,10 @@ function Footer() {
         </div>
 
         {/* Copyright bar */}
-        <div className="copyright-row" style={{ display: 'flex', flexDirection: 'column', gap: 6, textAlign: 'center', borderTop: '1px solid rgba(255,255,255,0.06)', marginTop: 24, padding: '18px 0 20px 0', color: '#64748B', fontSize: '0.73rem' }}>
+        <div className="copyright-row" style={{ display: 'flex', flexDirection: 'column', gap: 6, textAlign: 'center', borderTop: '1px solid rgba(255,255,255,0.06)', marginTop: 24, padding: '18px 0 20px 0', color: 'var(--text-dark)', fontSize: '0.73rem' }}>
           <div>&copy; 2026 LeadFlow CRM. All Rights Reserved.</div>
           <div>
-            <a href="#signup" onClick={(event) => { event.preventDefault(); window.location.hash = 'signup'; }} style={{ color: '#94A3B8', textDecoration: 'none', transition: 'color 0.2s ease', cursor: 'pointer' }}>
+            <a href="#signup" onClick={(event) => { event.preventDefault(); window.location.hash = 'signup'; }} style={{ color: 'var(--text-dark)', textDecoration: 'none', transition: 'color 0.2s ease', cursor: 'pointer' }}>
               Powered by <span style={{ color: '#FACC15', fontWeight: 700 }}>LeadFlow CRM Platform</span>
             </a>
           </div>
@@ -3481,7 +3481,7 @@ function MobileStickyCTA() {
       className="mobile-sticky-cta"
     >
       <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-        <span style={{ fontFamily: 'Outfit, sans-serif', fontWeight: 900, fontSize: '0.84rem', color: '#FFFFFF', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+        <span style={{ fontFamily: 'Outfit, sans-serif', fontWeight: 900, fontSize: '0.84rem', color: 'var(--bg-card)', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
           LEADFLOW CRM
         </span>
         <span style={{ fontSize: '0.7rem', color: '#FACC15', fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
@@ -3547,9 +3547,9 @@ function SocialToast() {
       >
         {initials}
       </div>
-      <div style={{ fontSize: '0.73rem', color: '#0F172A', lineHeight: 1.3 }}>
+      <div style={{ fontSize: '0.73rem', color: 'var(--text-main)', lineHeight: 1.3 }}>
         <span dangerouslySetInnerHTML={{ __html: `<strong style="color: #CA8A04;">${toastData.name}</strong> from ${toastData.city} ${toastData.action}` }} />
-        <span style={{ fontSize: '0.65rem', color: '#64748B', display: 'block', marginTop: 1 }}>{toastData.time}</span>
+        <span style={{ fontSize: '0.65rem', color: 'var(--text-dark)', display: 'block', marginTop: 1 }}>{toastData.time}</span>
       </div>
     </div>
   );
@@ -3654,7 +3654,7 @@ function SetupModal() {
             <h3>Submission received!</h3>
             <p>Thank you! Your free trial request has been received. Check your email for CRM access details and setup instructions.</p>
             <a href={telegramLink} target="_blank" rel="noopener noreferrer" className="setup-primary-button" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Check Your Email for Access</a>
-            <button type="button" className="setup-footnote" style={{ background: 'none', border: 'none', cursor: 'pointer', marginTop: 12, color: '#94a3b8' }} onClick={() => setOpen(false)}>Close</button>
+            <button type="button" className="setup-footnote" style={{ background: 'none', border: 'none', cursor: 'pointer', marginTop: 12, color: 'var(--text-dark)' }} onClick={() => setOpen(false)}>Close</button>
           </div>
         ) : (
           <form onSubmit={handleSubmit}>
@@ -3679,14 +3679,14 @@ function SetupModal() {
                   <span />
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 2 }}>
                     <strong>Starter CRM</strong>
-                    <small style={{ fontSize: '0.72rem', fontWeight: 500, color: '#94a3b8' }}>Up to 5 team members</small>
+                    <small style={{ fontSize: '0.72rem', fontWeight: 500, color: 'var(--text-dark)' }}>Up to 5 team members</small>
                   </div>
                 </button>
                 <button type="button" className={`broker-option ${form.crmProduct === 'pro' ? 'selected' : ''}`} onClick={() => update('crmProduct', 'pro')}>
                   <span />
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 2 }}>
                     <strong>Pro CRM</strong>
-                    <small style={{ fontSize: '0.72rem', fontWeight: 500, color: '#94a3b8' }}>Unlimited team &amp; automations</small>
+                    <small style={{ fontSize: '0.72rem', fontWeight: 500, color: 'var(--text-dark)' }}>Unlimited team &amp; automations</small>
                   </div>
                 </button>
               </div>
@@ -3699,14 +3699,14 @@ function SetupModal() {
                     <span />
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 2 }}>
                       <strong>1-3 Members</strong>
-                      <small style={{ fontSize: '0.72rem', fontWeight: 500, color: '#94a3b8' }}>Small sales team</small>
+                      <small style={{ fontSize: '0.72rem', fontWeight: 500, color: 'var(--text-dark)' }}>Small sales team</small>
                     </div>
                   </button>
                   <button type="button" className={`broker-option ${form.teamSize === '4-5' ? 'selected' : ''}`} onClick={() => update('teamSize', '4-5')}>
                     <span />
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 2 }}>
                       <strong>4-5 Members</strong>
-                      <small style={{ fontSize: '0.72rem', fontWeight: 500, color: '#94a3b8' }}>Growing team</small>
+                      <small style={{ fontSize: '0.72rem', fontWeight: 500, color: 'var(--text-dark)' }}>Growing team</small>
                     </div>
                   </button>
                 </div>

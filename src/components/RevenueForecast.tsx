@@ -18,6 +18,7 @@ interface LeadRow {
   id: string;
   status: LeadStatus;
   fund_amount: number | null;
+  purchase_value: number | null;
   created_at: string;
 }
 
@@ -48,7 +49,7 @@ export default function RevenueForecast({ session, onBack }: RevenueForecastProp
     setLoading(true);
     try {
       const [leadsRes, settingsRes] = await Promise.all([
-        supabase.from('submissions').select('id, status, fund_amount, created_at').is('deleted_at', null).limit(5000),
+        supabase.from('submissions').select('id, status, fund_amount, purchase_value, created_at').is('deleted_at', null).limit(5000),
         supabase.from('appearance_settings').select('setup_cost').maybeSingle(),
       ]);
       setLeads((leadsRes.data || []) as LeadRow[]);
@@ -74,11 +75,12 @@ export default function RevenueForecast({ session, onBack }: RevenueForecastProp
     leads.forEach((lead) => {
       const status = lead.status;
       const fund = lead.fund_amount ? parseFloat(String(lead.fund_amount)) : 0;
+      const purchase = lead.purchase_value ? parseFloat(String(lead.purchase_value)) : 0;
       stageCounts[status] = (stageCounts[status] || 0) + 1;
       stageFunds[status] = (stageFunds[status] || 0) + fund;
       totalFunds += fund;
       if (status === 'converted') {
-        convertedFunds += fund;
+        convertedFunds += purchase > 0 ? purchase : fund;
         convertedCount++;
       }
       if (status === 'not_interested') {
@@ -87,12 +89,15 @@ export default function RevenueForecast({ session, onBack }: RevenueForecastProp
     });
 
     // Compute stage-to-stage conversion rates from historical data
+    // Denominator = leads currently in this stage + leads that advanced past it
+    // (including lost leads, since they also failed to convert)
     const stageRates: Record<string, number> = {};
     for (let i = 0; i < STAGE_ORDER.length - 1; i++) {
       const current = STAGE_ORDER[i];
       const remaining = STAGE_ORDER.slice(i + 1).filter((s) => s !== 'not_interested');
       const advanced = remaining.reduce((sum, s) => sum + (stageCounts[s] || 0), 0);
-      const total = (stageCounts[current] || 0) + advanced;
+      const lost = lostCount;
+      const total = (stageCounts[current] || 0) + advanced + lost;
       stageRates[current] = total > 0 ? advanced / total : 0;
     }
 
@@ -122,11 +127,12 @@ export default function RevenueForecast({ session, onBack }: RevenueForecastProp
     const setupRevenue = convertedCount * setupCost;
     const totalPipelineValue = totalFunds + setupRevenue;
 
-    // Monthly projection based on average conversion velocity
-    // Calculate how many leads converted per day (from created_at to now)
+    // Monthly projection: count conversions in the last 30 days and extrapolate
     const now = Date.now();
+    const thirtyDaysAgo = now - 30 * 86400000;
     const convertedLeads = leads.filter((l) => l.status === 'converted');
-    let avgConversionDays = 30; // default
+    const recentConversions = convertedLeads.filter((l) => new Date(l.created_at).getTime() >= thirtyDaysAgo);
+    let avgConversionDays = 30;
     if (convertedLeads.length > 0) {
       const totalDays = convertedLeads.reduce((sum, l) => {
         const days = Math.max(1, (now - new Date(l.created_at).getTime()) / 86400000);
@@ -135,7 +141,14 @@ export default function RevenueForecast({ session, onBack }: RevenueForecastProp
       avgConversionDays = totalDays / convertedLeads.length;
     }
 
-    const monthlyProjection = expectedRevenue / Math.max(1, avgConversionDays / 30);
+    // Monthly projection = recent conversion revenue (last 30d) + expected revenue from active pipeline weighted by monthly conversion rate
+    const recentConversionRevenue = recentConversions.reduce((sum, l) => {
+      const purchase = l.purchase_value ? parseFloat(String(l.purchase_value)) : 0;
+      const fund = l.fund_amount ? parseFloat(String(l.fund_amount)) : 0;
+      return sum + (purchase > 0 ? purchase : fund);
+    }, 0);
+    const monthlyConversionRate = avgConversionDays > 0 ? 30 / avgConversionDays : 1;
+    const monthlyProjection = recentConversionRevenue + (expectedRevenue - realizedRevenue) * Math.min(monthlyConversionRate, 1);
 
     return {
       stageCounts,
@@ -249,19 +262,19 @@ export default function RevenueForecast({ session, onBack }: RevenueForecastProp
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: STAGE_COLORS[stage], display: 'inline-block' }} />
-                      <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#1f2937' }}>{STAGE_LABELS[stage]}</span>
-                      <span style={{ fontSize: '0.72rem', color: '#9ca3af' }}>({count} leads)</span>
+                      <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-main)' }}>{STAGE_LABELS[stage]}</span>
+                      <span style={{ fontSize: '0.72rem', color: 'var(--text-dark)' }}>({count} leads)</span>
                     </div>
                     <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                      <span style={{ fontSize: '0.78rem', color: '#6b7280' }}>{Math.round(prob * 100)}% likely</span>
+                      <span style={{ fontSize: '0.78rem', color: 'var(--text-dark)' }}>{Math.round(prob * 100)}% likely</span>
                       <span style={{ fontSize: '0.85rem', fontWeight: 700, color: STAGE_COLORS[stage] }}>{formatCurrency(funds)}</span>
                     </div>
                   </div>
-                  <div style={{ height: '10px', background: 'rgba(0,0,0,0.05)', borderRadius: '6px', overflow: 'hidden' }}>
+                  <div style={{ height: '10px', background: 'rgba(148, 163, 184, 0.1)', borderRadius: '6px', overflow: 'hidden' }}>
                     <div style={{ height: '100%', width: `${widthPct}%`, background: STAGE_COLORS[stage], borderRadius: '6px', transition: 'width 0.5s ease' }} />
                   </div>
-                  <div style={{ marginTop: '4px', fontSize: '0.72rem', color: '#9ca3af' }}>
-                    Expected: <strong style={{ color: '#4b5563' }}>{formatCurrency(expected)}</strong>
+                  <div style={{ marginTop: '4px', fontSize: '0.72rem', color: 'var(--text-dark)' }}>
+                    Expected: <strong style={{ color: 'var(--rf-text-expected, #4b5563)' }}>{formatCurrency(expected)}</strong>
                   </div>
                 </div>
               );
@@ -284,14 +297,14 @@ export default function RevenueForecast({ session, onBack }: RevenueForecastProp
               return (
                 <div key={stage} style={{ marginBottom: '16px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
-                    <span style={{ fontSize: '0.82rem', color: '#4b5563' }}>
+                    <span style={{ fontSize: '0.82rem', color: 'var(--rf-text-secondary, #4b5563)' }}>
                       {STAGE_LABELS[stage]} → {STAGE_LABELS[nextStage]}
                     </span>
                     <span style={{ fontSize: '0.82rem', fontWeight: 700, color: rate > 0.4 ? '#16a34a' : rate > 0.2 ? '#f59e0b' : '#dc2626' }}>
                       {Math.round(rate * 100)}%
                     </span>
                   </div>
-                  <div style={{ height: '8px', background: 'rgba(0,0,0,0.05)', borderRadius: '4px', overflow: 'hidden' }}>
+                  <div style={{ height: '8px', background: 'rgba(148, 163, 184, 0.1)', borderRadius: '4px', overflow: 'hidden' }}>
                     <div style={{
                       height: '100%',
                       width: `${rate * 100}%`,
@@ -306,9 +319,9 @@ export default function RevenueForecast({ session, onBack }: RevenueForecastProp
             <div style={{ marginTop: '20px', padding: '14px', background: 'rgba(37,99,235,0.05)', borderRadius: '10px', border: '1px solid rgba(37,99,235,0.1)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
                 <Activity size={15} style={{ color: '#2563eb' }} />
-                <strong style={{ fontSize: '0.82rem', color: '#1f2937' }}>Forecast Insights</strong>
+                <strong style={{ fontSize: '0.82rem', color: 'var(--text-main)' }}>Forecast Insights</strong>
               </div>
-              <p style={{ fontSize: '0.78rem', color: '#6b7280', lineHeight: 1.5 }}>
+              <p style={{ fontSize: '0.78rem', color: 'var(--text-dark)', lineHeight: 1.5 }}>
                 Average time to conversion: <strong>{Math.round(forecast.avgConversionDays)} days</strong>.
                 At current rates, you're projected to earn <strong>{formatCurrency(forecast.monthlyProjection)}</strong> per month.
                 Your biggest bottleneck is{' '}
@@ -337,22 +350,22 @@ export default function RevenueForecast({ session, onBack }: RevenueForecastProp
           <div style={{ padding: '16px', background: 'rgba(22,163,74,0.05)', borderRadius: '12px', border: '1px solid rgba(22,163,74,0.1)' }}>
             <CheckCircle2 size={20} style={{ color: '#16a34a', marginBottom: '8px' }} />
             <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#16a34a' }}>{formatCurrency(forecast.realizedRevenue)}</div>
-            <div style={{ fontSize: '0.78rem', color: '#6b7280' }}>Realized from {forecast.convertedCount} converted leads</div>
+            <div style={{ fontSize: '0.78rem', color: 'var(--text-dark)' }}>Realized from {forecast.convertedCount} converted leads</div>
           </div>
           <div style={{ padding: '16px', background: 'rgba(37,99,235,0.05)', borderRadius: '12px', border: '1px solid rgba(37,99,235,0.1)' }}>
             <Clock size={20} style={{ color: '#2563eb', marginBottom: '8px' }} />
             <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#2563eb' }}>{formatCurrency(forecast.expectedRevenue - forecast.realizedRevenue)}</div>
-            <div style={{ fontSize: '0.78rem', color: '#6b7280' }}>Expected from active pipeline</div>
+            <div style={{ fontSize: '0.78rem', color: 'var(--text-dark)' }}>Expected from active pipeline</div>
           </div>
           <div style={{ padding: '16px', background: 'rgba(124,58,237,0.05)', borderRadius: '12px', border: '1px solid rgba(124,58,237,0.1)' }}>
             <Zap size={20} style={{ color: '#7c3aed', marginBottom: '8px' }} />
             <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#7c3aed' }}>{formatCurrency(forecast.setupRevenue)}</div>
-            <div style={{ fontSize: '0.78rem', color: '#6b7280' }}>Setup cost revenue ({formatCurrency(setupCost)}/lead)</div>
+            <div style={{ fontSize: '0.78rem', color: 'var(--text-dark)' }}>Setup cost revenue ({formatCurrency(setupCost)}/lead)</div>
           </div>
           <div style={{ padding: '16px', background: 'rgba(220,38,38,0.05)', borderRadius: '12px', border: '1px solid rgba(220,38,38,0.1)' }}>
             <AlertTriangle size={20} style={{ color: '#dc2626', marginBottom: '8px' }} />
             <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#dc2626' }}>{forecast.lostCount}</div>
-            <div style={{ fontSize: '0.78rem', color: '#6b7280' }}>Lost leads (not interested)</div>
+            <div style={{ fontSize: '0.78rem', color: 'var(--text-dark)' }}>Lost leads (not interested)</div>
           </div>
         </div>
       </div>

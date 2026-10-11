@@ -214,7 +214,7 @@ export default function TelegramBroadcast({ session, onBack }: { session: Sessio
   const recipientStatusConfig: Record<string, { bg: string; color: string }> = {
     sent: { bg: 'rgba(22,163,74,0.12)', color: '#16a34a' },
     failed: { bg: 'rgba(239,68,68,0.12)', color: '#dc2626' },
-    pending: { bg: 'rgba(100,116,139,0.12)', color: '#64748b' },
+    pending: { bg: 'rgba(100,116,139,0.12)', color: 'var(--text-dark)' },
   };
 
   return (
@@ -275,7 +275,7 @@ export default function TelegramBroadcast({ session, onBack }: { session: Sessio
 
           <div className="wb-detail-stats">
             {[
-              { label: 'Total', value: selectedCampaign.total_recipients, icon: <Users size={16} />, color: '#475569' },
+              { label: 'Total', value: selectedCampaign.total_recipients, icon: <Users size={16} />, color: 'var(--text-muted)' },
               { label: 'Sent', value: selectedCampaign.sent_count, icon: <Send size={16} />, color: '#2563eb' },
               { label: 'Failed', value: selectedCampaign.failed_count, icon: <XCircle size={16} />, color: '#dc2626' },
             ].map((stat) => (

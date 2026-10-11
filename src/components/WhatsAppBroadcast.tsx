@@ -289,7 +289,7 @@ export default function WhatsAppBroadcast({ session, onBack }: { session: Sessio
     sent: { bg: 'rgba(37,99,235,0.12)', color: '#2563eb' },
     delivered: { bg: 'rgba(22,163,74,0.12)', color: '#16a34a' },
     failed: { bg: 'rgba(239,68,68,0.12)', color: '#dc2626' },
-    pending: { bg: 'rgba(100,116,139,0.12)', color: '#64748b' },
+    pending: { bg: 'rgba(100,116,139,0.12)', color: 'var(--text-dark)' },
   };
 
   return (
@@ -349,7 +349,7 @@ export default function WhatsAppBroadcast({ session, onBack }: { session: Sessio
 
           <div className="wb-detail-stats">
             {[
-              { label: 'Total', value: selectedBroadcast.total_recipients, icon: <Users size={16} />, color: '#475569' },
+              { label: 'Total', value: selectedBroadcast.total_recipients, icon: <Users size={16} />, color: 'var(--text-muted)' },
               { label: 'Sent', value: selectedBroadcast.sent_count, icon: <Send size={16} />, color: '#2563eb' },
               { label: 'Delivered', value: selectedBroadcast.delivered_count, icon: <CheckCircle2 size={16} />, color: '#16a34a' },
               { label: 'Failed', value: selectedBroadcast.failed_count, icon: <XCircle size={16} />, color: '#dc2626' },

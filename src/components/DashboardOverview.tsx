@@ -5,7 +5,9 @@ import {
   PhoneMissed, PhoneCall, XCircle, BarChart3, Filter,
   ArrowRight, Calendar, Sparkles, Zap, Target, CheckSquare, Flame,
   Radio, FileText, Upload, Webhook, UserPlus, Globe,
+  Timer, Banknote, UserX, AlertTriangle,
 } from 'lucide-react';
+import { SourceLogo, SOURCE_META as BRAND_SOURCE_META, SOURCE_ORDER } from '@/components/BrandLogos';
 import SalesInsightsSection from '@/components/SalesInsightsSection';
 import type { Session } from '@supabase/supabase-js';
 
@@ -27,6 +29,7 @@ interface DashboardOverviewProps {
     lead_score?: number;
     lead_source?: string | null;
     last_contacted_at?: string | null;
+    purchase_value?: number | null;
   }[];
   followUps?: { id: string; title: string; reminder_at: string; status: string; lead_id: string | null }[];
   onGoToLeads: () => void;
@@ -91,7 +94,10 @@ export default function DashboardOverview({
     const interested = leads.filter((l) => l.status === 'interested').length;
     const converted = leads.filter((l) => l.status === 'converted').length;
     const totalFunds = leads.reduce((sum, l) => sum + (l.fund_amount || 0), 0);
-    return { total, todayCount, interested, converted, totalFunds };
+    const totalRevenue = leads
+      .filter((l) => l.status === 'converted')
+      .reduce((sum, l) => sum + (l.purchase_value || 0), 0);
+    return { total, todayCount, interested, converted, totalFunds, totalRevenue };
   }, [leads]);
 
   const pipelineCounts = useMemo(() => {
@@ -118,14 +124,13 @@ export default function DashboardOverview({
   }, [followUps]);
 
   const sourceBreakdown = useMemo(() => {
-    const SOURCE_META: Record<string, { label: string; color: string; icon: typeof Globe }> = {
-      'Landing Page': { label: 'Landing Page', color: '#3B82F6', icon: Globe },
-      'Meta Ads': { label: 'Meta Ads', color: '#8B5CF6', icon: Radio },
-      'Direct Link': { label: 'Direct Link', color: '#06B6D4', icon: ArrowUpRight },
-      'Popup Form': { label: 'Popup Form', color: '#F59E0B', icon: FileText },
-      'Bulk Upload': { label: 'Bulk Upload', color: '#64748B', icon: Upload },
-      'Manual Entry': { label: 'Manual Entry', color: '#EC4899', icon: UserPlus },
-      'Webhook': { label: 'Webhook', color: '#EF4444', icon: Webhook },
+    const FALLBACK_ICONS: Record<string, { icon: typeof Globe; color: string }> = {
+      'Landing Page': { icon: Globe, color: '#3B82F6' },
+      'Direct Link': { icon: ArrowUpRight, color: '#06B6D4' },
+      'Popup Form': { icon: FileText, color: '#F59E0B' },
+      'Bulk Upload': { icon: Upload, color: 'var(--text-dark)' },
+      'Manual Entry': { icon: UserPlus, color: '#EC4899' },
+      'Webhook': { icon: Webhook, color: '#EF4444' },
     };
     const counts: Record<string, { count: number; converted: number }> = {};
     for (const lead of leads) {
@@ -134,18 +139,30 @@ export default function DashboardOverview({
       counts[src].count++;
       if (lead.status === 'converted') counts[src].converted++;
     }
-    return Object.entries(counts)
-      .map(([key, data]) => ({
-        key,
-        label: SOURCE_META[key]?.label || key,
-        color: SOURCE_META[key]?.color || '#64748B',
-        icon: SOURCE_META[key]?.icon || Globe,
-        count: data.count,
-        converted: data.converted,
-        convRate: data.count > 0 ? Math.round((data.converted / data.count) * 100) : 0,
-        pct: leads.length > 0 ? Math.round((data.count / leads.length) * 100) : 0,
-      }))
-      .sort((a, b) => b.count - a.count);
+    const entries = Object.entries(counts);
+    entries.sort((a, b) => {
+      const ai = SOURCE_ORDER.indexOf(a[0]);
+      const bi = SOURCE_ORDER.indexOf(b[0]);
+      if (ai !== -1 && bi !== -1) return ai - bi;
+      if (ai !== -1) return -1;
+      if (bi !== -1) return 1;
+      return b[1].count - a[1].count;
+    });
+    return entries
+      .map(([key, data]) => {
+        const brand = BRAND_SOURCE_META[key];
+        const fb = FALLBACK_ICONS[key];
+        return {
+          key,
+          label: brand?.label || key,
+          color: brand?.color || fb?.color || '#64748B',
+          icon: fb?.icon || Globe,
+          count: data.count,
+          converted: data.converted,
+          convRate: data.count > 0 ? Math.round((data.converted / data.count) * 100) : 0,
+          pct: leads.length > 0 ? Math.round((data.count / leads.length) * 100) : 0,
+        };
+      });
   }, [leads]);
 
   const todayTasks = useMemo(() => {
@@ -176,6 +193,43 @@ export default function DashboardOverview({
   const conversionRate = stats.total > 0
     ? Math.round((stats.converted / stats.total) * 100)
     : 0;
+
+  const avgResponseTime = useMemo(() => {
+    const contacted = leads.filter((l) => l.last_contacted_at && l.created_at);
+    if (contacted.length === 0) return null;
+    const totalHours = contacted.reduce((sum, l) => {
+      const diff = new Date(l.last_contacted_at!).getTime() - new Date(l.created_at).getTime();
+      return sum + Math.max(0, diff / (1000 * 60 * 60));
+    }, 0);
+    return totalHours / contacted.length;
+  }, [leads]);
+
+  const formatResponseTime = (hours: number) => {
+    if (hours < 1) return `${Math.round(hours * 60)}m`;
+    if (hours < 24) return `${hours.toFixed(1)}h`;
+    return `${(hours / 24).toFixed(1)}d`;
+  };
+
+  const staleLeadsList = useMemo(() => {
+    return leads
+      .filter((l) => {
+        if (l.status === 'converted' || l.status === 'not_interested') return false;
+        const lastContact = l.last_contacted_at ? new Date(l.last_contacted_at) : new Date(l.created_at);
+        const daysSince = Math.floor((Date.now() - lastContact.getTime()) / (1000 * 60 * 60 * 24));
+        return daysSince >= 5;
+      })
+      .sort((a, b) => {
+        const aLast = a.last_contacted_at ? new Date(a.last_contacted_at) : new Date(a.created_at);
+        const bLast = b.last_contacted_at ? new Date(b.last_contacted_at) : new Date(b.created_at);
+        return aLast.getTime() - bLast.getTime();
+      });
+  }, [leads]);
+
+  const unassignedLeads = useMemo(() => {
+    return leads.filter((l) =>
+      !l.assigned_to && (l.status === 'interested' || l.status === 'converted')
+    );
+  }, [leads]);
 
   const getGreeting = () => {
     const h = new Date().getHours();
@@ -222,6 +276,8 @@ export default function DashboardOverview({
     { key: 'converted', value: stats.converted, label: 'Converted', icon: CheckCircle2, color: '#EAB308', glow: 'rgba(234,179,8,0.3)', depth: 50, clickable: true, onClick: onGoToLeads },
     { key: 'today', value: stats.todayCount, label: 'New Today', icon: Clock, color: '#06B6D4', glow: 'rgba(6,182,212,0.3)', depth: 25, clickable: false, onClick: () => {} },
     { key: 'funds', value: formatFund(stats.totalFunds), label: 'Total Funds', icon: DollarSign, color: '#8B5CF6', glow: 'rgba(139,92,246,0.3)', depth: 35, clickable: false, onClick: () => {} },
+    { key: 'revenue', value: formatFund(stats.totalRevenue), label: 'Revenue (Converted)', icon: Banknote, color: '#10B981', glow: 'rgba(16,185,129,0.3)', depth: 35, clickable: false, onClick: () => {} },
+    { key: 'response', value: avgResponseTime !== null ? formatResponseTime(avgResponseTime) : '—', label: 'Avg Response Time', icon: Timer, color: '#F59E0B', glow: 'rgba(245,158,11,0.3)', depth: 25, clickable: false, onClick: () => {} },
   ];
 
   return (
@@ -296,6 +352,115 @@ export default function DashboardOverview({
           );
         })}
       </div>
+
+      {/* Stale Lead Recovery Banner */}
+      {staleLeadsList.length > 0 && (
+        <div
+          className="dash3d-card-scene"
+          style={{ marginBottom: 22 }}
+          onMouseMove={handleTilt}
+          onMouseLeave={handleTiltReset}
+        >
+          <div
+            className="dash3d-card"
+            style={{
+              background: 'linear-gradient(135deg, rgba(249,115,22,0.06), rgba(234,179,8,0.04))',
+              border: '1px solid rgba(249,115,22,0.25)',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+              <div
+                style={{
+                  width: '52px', height: '52px', borderRadius: '14px',
+                  background: 'rgba(249,115,22,0.12)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  flexShrink: 0,
+                }}
+              >
+                <AlertTriangle size={26} style={{ color: '#F97316' }} />
+              </div>
+              <div style={{ flex: 1, minWidth: '200px' }}>
+                <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  {staleLeadsList.length} Stale Lead{staleLeadsList.length !== 1 ? 's' : ''} Need Attention
+                  <span style={{ fontSize: '0.72rem', fontWeight: 600, color: '#F97316', background: 'rgba(249,115,22,0.1)', padding: '2px 8px', borderRadius: '100px' }}>
+                    5+ days no contact
+                  </span>
+                </div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-dark)', marginTop: '4px' }}>
+                  {staleLeadsList.slice(0, 3).map((l) => l.full_name).join(', ')}
+                  {staleLeadsList.length > 3 && ` and ${staleLeadsList.length - 3} more`}
+                  {' — re-engage before they go cold.'}
+                </div>
+              </div>
+              <button
+                onClick={onGoToLeads}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '6px',
+                  padding: '10px 20px', border: 'none', borderRadius: '10px',
+                  background: '#F97316', color: 'var(--bg-card)', fontSize: '0.85rem', fontWeight: 700,
+                  cursor: 'pointer', transition: 'all 0.15s', whiteSpace: 'nowrap',
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = '#EA580C'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = '#F97316'; }}
+              >
+                Review Now <ArrowRight size={14} />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Unassigned Leads Alert */}
+      {unassignedLeads.length > 0 && (
+        <div
+          className="dash3d-card-scene"
+          style={{ marginBottom: 22 }}
+          onMouseMove={handleTilt}
+          onMouseLeave={handleTiltReset}
+        >
+          <div
+            className="dash3d-card"
+            style={{
+              background: 'linear-gradient(135deg, rgba(239,68,68,0.05), rgba(59,130,246,0.04))',
+              border: '1px solid rgba(239,68,68,0.2)',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
+              <div
+                style={{
+                  width: '44px', height: '44px', borderRadius: '12px',
+                  background: 'rgba(239,68,68,0.1)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  flexShrink: 0,
+                }}
+              >
+                <UserX size={22} style={{ color: '#EF4444' }} />
+              </div>
+              <div style={{ flex: 1, minWidth: '180px' }}>
+                <div style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-main)' }}>
+                  {unassignedLeads.length} interested/converted lead{unassignedLeads.length !== 1 ? 's' : ''} have no agent assigned
+                </div>
+                <div style={{ fontSize: '0.78rem', color: 'var(--text-dark)', marginTop: '3px' }}>
+                  Assign them to ensure proper follow-up and ownership.
+                </div>
+              </div>
+              <button
+                onClick={onGoToLeads}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '6px',
+                  padding: '8px 16px', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '10px',
+                  background: 'var(--bg-card)', color: '#EF4444', fontSize: '0.82rem', fontWeight: 600,
+                  cursor: 'pointer', transition: 'all 0.15s', whiteSpace: 'nowrap',
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = '#EF4444'; e.currentTarget.style.color = '#fff'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--bg-card)'; e.currentTarget.style.color = '#EF4444'; }}
+              >
+                Assign Leads <ArrowRight size={14} />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 3D Pipeline + Quick Actions + Calculator */}
       <div className="dash3d-three-col">
@@ -413,14 +578,15 @@ export default function DashboardOverview({
               ) : (
                 sourceBreakdown.map((src, idx) => {
                   const Icon = src.icon;
+                  const brandIcon = <SourceLogo source={src.key} size={16} />;
                   return (
                     <div
                       key={src.key}
                       className="dash3d-source-row"
                       style={{ transform: `translateZ(${Math.max(0, 18 - idx * 3)}px)` }}
                     >
-                      <div className="dash3d-source-icon-wrap" style={{ background: `${src.color}1a`, color: src.color }}>
-                        <Icon size={16} />
+                      <div className="dash3d-source-icon-wrap" style={{ background: `${src.color}1a`, color: src.color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        {brandIcon || <Icon size={16} />}
                       </div>
                       <div className="dash3d-source-info">
                         <div className="dash3d-source-top">

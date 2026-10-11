@@ -255,7 +255,7 @@ export default function PopupFormModal() {
       `}</style>
       <div
         style={{
-          background: '#fff', borderRadius: '18px', maxWidth: '440px', width: '100%',
+          background: 'var(--bg-card)', borderRadius: '18px', maxWidth: '440px', width: '100%',
           maxHeight: '90vh', overflowY: 'auto', padding: '32px 28px', position: 'relative',
           boxShadow: '0 25px 60px rgba(0,0,0,0.3)',
           animation: form.popup_position === 'bottom_left'
@@ -272,12 +272,12 @@ export default function PopupFormModal() {
           aria-label="Close"
           style={{
             position: 'absolute', top: '14px', right: '14px', border: 'none',
-            background: 'rgba(0,0,0,0.05)', borderRadius: '50%', width: '32px', height: '32px',
+            background: 'rgba(148, 163, 184, 0.1)', borderRadius: '50%', width: '32px', height: '32px',
             display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-            color: '#64748b', transition: 'background 0.15s',
+            color: 'var(--text-dark)', transition: 'background 0.15s',
           }}
           onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(0,0,0,0.1)'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(0,0,0,0.05)'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(148, 163, 184, 0.1)'; }}
         >
           <X size={18} />
         </button>
@@ -287,8 +287,8 @@ export default function PopupFormModal() {
             <div style={{ width: '56px', height: '56px', borderRadius: '50%', background: 'rgba(22,163,74,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
               <CheckCircle2 size={28} style={{ color: '#16a34a' }} />
             </div>
-            <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', marginBottom: '6px' }}>Thank You!</h2>
-            <p style={{ fontSize: '0.88rem', color: '#64748b' }}>{successMsg}</p>
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: '6px' }}>Thank You!</h2>
+            <p style={{ fontSize: '0.88rem', color: 'var(--text-dark)' }}>{successMsg}</p>
           </div>
         ) : (
           <>
@@ -297,14 +297,14 @@ export default function PopupFormModal() {
                 <img src={form.image_url} alt="" style={{ maxHeight: '80px', maxWidth: '100%', borderRadius: '8px' }} />
               </div>
             )}
-            <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#0f172a', marginBottom: '6px', paddingRight: '32px' }}>
+            <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: '6px', paddingRight: '32px' }}>
               {form.title}
             </h2>
-            <p style={{ color: '#64748b', fontSize: '0.88rem', marginBottom: form.description ? '8px' : '20px', lineHeight: 1.5 }}>
+            <p style={{ color: 'var(--text-dark)', fontSize: '0.88rem', marginBottom: form.description ? '8px' : '20px', lineHeight: 1.5 }}>
               {form.subtitle}
             </p>
             {form.description && (
-              <p style={{ color: '#94a3b8', fontSize: '0.8rem', marginBottom: '20px', lineHeight: 1.5 }}>
+              <p style={{ color: 'var(--text-dark)', fontSize: '0.8rem', marginBottom: '20px', lineHeight: 1.5 }}>
                 {form.description}
               </p>
             )}
@@ -324,7 +324,7 @@ export default function PopupFormModal() {
 
                 return (
                   <div key={field.id} style={wrapperStyle}>
-                    <label style={{ fontSize: '0.82rem', fontWeight: 600, color: '#334155', marginBottom: '5px', display: 'block' }}>
+                    <label style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '5px', display: 'block' }}>
                       {field.label} {field.required && <span style={{ color: '#ef4444' }}>*</span>}
                     </label>
                     {field.type === 'textarea' ? (
@@ -333,15 +333,15 @@ export default function PopupFormModal() {
                         onChange={(e) => setValues((prev) => ({ ...prev, [field.id]: e.target.value }))}
                         placeholder={field.placeholder}
                         rows={3}
-                        style={{ width: '100%', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '10px 14px', fontSize: '0.88rem', fontFamily: 'inherit', outline: 'none', transition: 'border-color 0.15s', boxSizing: 'border-box' }}
+                        style={{ width: '100%', border: '1px solid var(--border-subtle)', borderRadius: '10px', padding: '10px 14px', fontSize: '0.88rem', fontFamily: 'inherit', outline: 'none', transition: 'border-color 0.15s', boxSizing: 'border-box' }}
                         onFocus={(e) => { e.currentTarget.style.borderColor = form.button_bg_color; }}
-                        onBlur={(e) => { e.currentTarget.style.borderColor = '#e2e8f0'; }}
+                        onBlur={(e) => { e.currentTarget.style.borderColor = 'var(--border-subtle)'; }}
                       />
                     ) : field.type === 'select' ? (
                       <select
                         value={values[field.id] || ''}
                         onChange={(e) => setValues((prev) => ({ ...prev, [field.id]: e.target.value }))}
-                        style={{ width: '100%', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '10px 14px', fontSize: '0.88rem', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box', cursor: 'pointer' }}
+                        style={{ width: '100%', border: '1px solid var(--border-subtle)', borderRadius: '10px', padding: '10px 14px', fontSize: '0.88rem', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box', cursor: 'pointer' }}
                       >
                         <option value="">Select...</option>
                         {field.options.map((opt) => (
@@ -360,7 +360,7 @@ export default function PopupFormModal() {
                               onChange={(e) => setValues((prev) => ({ ...prev, [field.id]: e.target.value }))}
                               style={{ width: '16px', height: '16px', cursor: 'pointer', accentColor: form.button_bg_color }}
                             />
-                            <span style={{ fontSize: '0.85rem', color: '#475569' }}>{opt}</span>
+                            <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{opt}</span>
                           </label>
                         ))}
                       </div>
@@ -372,7 +372,7 @@ export default function PopupFormModal() {
                           onChange={(e) => setValues((prev) => ({ ...prev, [field.id]: e.target.checked ? 'true' : '' }))}
                           style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: form.button_bg_color }}
                         />
-                        <span style={{ fontSize: '0.85rem', color: '#475569' }}>{field.placeholder || 'I agree'}</span>
+                        <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{field.placeholder || 'I agree'}</span>
                       </label>
                     ) : (
                       <input
@@ -380,9 +380,9 @@ export default function PopupFormModal() {
                         value={values[field.id] || ''}
                         onChange={(e) => setValues((prev) => ({ ...prev, [field.id]: e.target.value }))}
                         placeholder={field.placeholder}
-                        style={{ width: '100%', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '10px 14px', fontSize: '0.88rem', fontFamily: 'inherit', outline: 'none', transition: 'border-color 0.15s', boxSizing: 'border-box' }}
+                        style={{ width: '100%', border: '1px solid var(--border-subtle)', borderRadius: '10px', padding: '10px 14px', fontSize: '0.88rem', fontFamily: 'inherit', outline: 'none', transition: 'border-color 0.15s', boxSizing: 'border-box' }}
                         onFocus={(e) => { e.currentTarget.style.borderColor = form.button_bg_color; }}
-                        onBlur={(e) => { e.currentTarget.style.borderColor = '#e2e8f0'; }}
+                        onBlur={(e) => { e.currentTarget.style.borderColor = 'var(--border-subtle)'; }}
                       />
                     )}
                   </div>

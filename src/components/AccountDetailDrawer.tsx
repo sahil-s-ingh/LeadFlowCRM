@@ -131,7 +131,7 @@ export default function AccountDetailDrawer({
   const roleIcon = (role: string) => {
     if (role === 'admin') return <Crown size={13} style={{ color: '#d97706' }} />;
     if (role === 'manager') return <UserCog size={13} style={{ color: '#2563eb' }} />;
-    return <CircleDot size={13} style={{ color: '#64748b' }} />;
+    return <CircleDot size={13} style={{ color: 'var(--text-dark)' }} />;
   };
 
   const statusColor = (status: string) => {
@@ -139,7 +139,7 @@ export default function AccountDetailDrawer({
       case 'active': return { bg: 'rgba(22,163,74,0.1)', color: '#16a34a' };
       case 'pending': return { bg: 'rgba(217,119,6,0.1)', color: '#d97706' };
       case 'disabled': return { bg: 'rgba(239,68,68,0.1)', color: '#dc2626' };
-      default: return { bg: 'rgba(148,163,184,0.1)', color: '#94a3b8' };
+      default: return { bg: 'rgba(148,163,184,0.1)', color: 'var(--text-dark)' };
     }
   };
 
@@ -149,7 +149,7 @@ export default function AccountDetailDrawer({
       case 'lost': case 'closed': return { bg: 'rgba(239,68,68,0.1)', color: '#dc2626' };
       case 'new': return { bg: 'rgba(37,99,235,0.1)', color: '#2563eb' };
       case 'contacted': case 'follow_up': return { bg: 'rgba(217,119,6,0.1)', color: '#d97706' };
-      default: return { bg: 'rgba(148,163,184,0.1)', color: '#94a3b8' };
+      default: return { bg: 'rgba(148,163,184,0.1)', color: 'var(--text-dark)' };
     }
   };
 
@@ -180,7 +180,7 @@ export default function AccountDetailDrawer({
       <div style={{
         position: 'fixed', top: 0, right: 0, bottom: 0,
         width: '100%', maxWidth: '560px',
-        background: '#fff', zIndex: 9999,
+        background: 'var(--bg-card)', zIndex: 9999,
         overflowY: 'auto', boxShadow: '-8px 0 30px -10px rgba(0,0,0,0.15)',
         animation: 'slideInRight 0.25s ease',
       }}>
@@ -197,10 +197,10 @@ export default function AccountDetailDrawer({
               background: 'rgba(255,255,255,0.15)', display: 'flex',
               alignItems: 'center', justifyContent: 'center', flexShrink: 0,
             }}>
-              <Users size={20} style={{ color: '#fff' }} />
+              <Users size={20} style={{ color: 'var(--bg-card)' }} />
             </div>
             <div style={{ minWidth: 0 }}>
-              <h2 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <h2 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700, color: 'var(--bg-card)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {details?.user.email || 'Loading...'}
               </h2>
               <p style={{ margin: 0, fontSize: '0.72rem', color: 'rgba(255,255,255,0.6)' }}>
@@ -214,7 +214,7 @@ export default function AccountDetailDrawer({
             style={{
               flexShrink: 0, width: '34px', height: '34px', borderRadius: '8px',
               border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.1)',
-              color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: 'var(--bg-card)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}
           >
             <X size={18} />
@@ -226,10 +226,10 @@ export default function AccountDetailDrawer({
           {loading ? (
             <div style={{ textAlign: 'center', padding: '48px 0' }}>
               <Loader2 size={28} className="crm-spin" style={{ color: '#0f766e' }} />
-              <p style={{ marginTop: '12px', color: '#94a3b8', fontSize: '0.85rem' }}>Loading account details...</p>
+              <p style={{ marginTop: '12px', color: 'var(--text-dark)', fontSize: '0.85rem' }}>Loading account details...</p>
             </div>
           ) : error ? (
-            <div style={{ padding: '14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '10px', color: '#dc2626', fontSize: '0.85rem' }}>
+            <div style={{ padding: '14px', background: 'var(--bg-card)', border: '1px solid #fecaca', borderRadius: '10px', color: '#dc2626', fontSize: '0.85rem' }}>
               {error}
             </div>
           ) : details ? (
@@ -243,8 +243,8 @@ export default function AccountDetailDrawer({
                   style={{
                     flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
                     padding: '10px', borderRadius: '10px', border: 'none',
-                    background: details.user.id === session.user.id ? '#f1f5f9' : '#0f766e',
-                    color: details.user.id === session.user.id ? '#94a3b8' : '#fff',
+                    background: details.user.id === session.user.id ? 'var(--bg-light)' : '#0f766e',
+                    color: details.user.id === session.user.id ? '#94a3b8' : 'var(--bg-card)',
                     fontSize: '0.82rem', fontWeight: 700, cursor: details.user.id === session.user.id ? 'not-allowed' : 'pointer',
                     transition: 'all 0.15s',
                   }}
@@ -254,7 +254,7 @@ export default function AccountDetailDrawer({
               </div>
 
               {/* Tabs */}
-              <div style={{ display: 'flex', gap: '4px', marginBottom: '20px', borderBottom: '2px solid #f1f5f9', paddingBottom: '0' }}>
+              <div style={{ display: 'flex', gap: '4px', marginBottom: '20px', borderBottom: '2px solid var(--border-subtle)', paddingBottom: '0' }}>
                 {(['overview', 'team', 'leads', 'activity'] as const).map((tab) => (
                   <button
                     key={tab}
@@ -263,7 +263,7 @@ export default function AccountDetailDrawer({
                     style={{
                       padding: '10px 16px', border: 'none', background: 'none',
                       fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer',
-                      color: activeTab === tab ? '#0f766e' : '#94a3b8',
+                      color: activeTab === tab ? '#0f766e' : 'var(--text-dark)',
                       borderBottom: activeTab === tab ? '2px solid #0f766e' : '2px solid transparent',
                       marginBottom: '-2px', transition: 'all 0.15s', textTransform: 'capitalize',
                     }}
@@ -277,45 +277,45 @@ export default function AccountDetailDrawer({
               {activeTab === 'overview' && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                   {/* User Info */}
-                  <div style={{ background: '#f8fafc', borderRadius: '12px', padding: '16px' }}>
+                  <div style={{ background: 'var(--bg-light)', borderRadius: '12px', padding: '16px' }}>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                       <div>
-                        <div style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Joined</div>
-                        <div style={{ fontSize: '0.85rem', color: '#1e293b', fontWeight: 600, marginTop: '3px' }}>{formatDate(details.user.created_at)}</div>
+                        <div style={{ fontSize: '0.72rem', color: 'var(--text-dark)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Joined</div>
+                        <div style={{ fontSize: '0.85rem', color: 'var(--text-main)', fontWeight: 600, marginTop: '3px' }}>{formatDate(details.user.created_at)}</div>
                       </div>
                       <div>
-                        <div style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Last Active</div>
-                        <div style={{ fontSize: '0.85rem', color: '#1e293b', fontWeight: 600, marginTop: '3px' }}>{formatRelative(details.user.last_sign_in_at)}</div>
+                        <div style={{ fontSize: '0.72rem', color: 'var(--text-dark)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Last Active</div>
+                        <div style={{ fontSize: '0.85rem', color: 'var(--text-main)', fontWeight: 600, marginTop: '3px' }}>{formatRelative(details.user.last_sign_in_at)}</div>
                       </div>
                     </div>
                   </div>
 
                   {/* Revenue Cards */}
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
-                    <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px' }}>
+                    <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', borderRadius: '12px', padding: '16px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
                         <DollarSign size={18} style={{ color: '#16a34a' }} />
-                        <span style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase' }}>Total Revenue</span>
+                        <span style={{ fontSize: '0.72rem', color: 'var(--text-dark)', fontWeight: 600, textTransform: 'uppercase' }}>Total Revenue</span>
                       </div>
-                      <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#0f172a' }}>{formatCurrency(details.revenue.total_revenue)}</div>
+                      <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-main)' }}>{formatCurrency(details.revenue.total_revenue)}</div>
                     </div>
-                    <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px' }}>
+                    <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', borderRadius: '12px', padding: '16px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
                         <TrendingUp size={18} style={{ color: '#d97706' }} />
-                        <span style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase' }}>Converted Leads</span>
+                        <span style={{ fontSize: '0.72rem', color: 'var(--text-dark)', fontWeight: 600, textTransform: 'uppercase' }}>Converted Leads</span>
                       </div>
-                      <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#0f172a' }}>
+                      <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-main)' }}>
                         {details.revenue.converted_count}
-                        <span style={{ fontSize: '0.82rem', color: '#94a3b8', fontWeight: 500 }}> / {details.revenue.total_leads}</span>
+                        <span style={{ fontSize: '0.82rem', color: 'var(--text-dark)', fontWeight: 500 }}> / {details.revenue.total_leads}</span>
                       </div>
                     </div>
                   </div>
 
                   {/* Lead Status Breakdown */}
-                  <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px' }}>
-                    <h3 style={{ margin: '0 0 12px', fontSize: '0.85rem', fontWeight: 700, color: '#0f172a' }}>Lead Status Breakdown</h3>
+                  <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', borderRadius: '12px', padding: '16px' }}>
+                    <h3 style={{ margin: '0 0 12px', fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-main)' }}>Lead Status Breakdown</h3>
                     {Object.keys(details.status_counts).length === 0 ? (
-                      <p style={{ fontSize: '0.82rem', color: '#94a3b8', margin: 0 }}>No leads yet.</p>
+                      <p style={{ fontSize: '0.82rem', color: 'var(--text-dark)', margin: 0 }}>No leads yet.</p>
                     ) : (
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                         {Object.entries(details.status_counts).map(([status, count]) => {
@@ -337,9 +337,9 @@ export default function AccountDetailDrawer({
 
                   {/* Avg Deal Size */}
                   {details.revenue.converted_count > 0 && (
-                    <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px' }}>
+                    <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', borderRadius: '12px', padding: '16px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <span style={{ fontSize: '0.82rem', color: '#64748b', fontWeight: 600 }}>Avg Deal Size</span>
+                        <span style={{ fontSize: '0.82rem', color: 'var(--text-dark)', fontWeight: 600 }}>Avg Deal Size</span>
                         <span style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0f766e' }}>{formatCurrency(details.revenue.avg_deal_size)}</span>
                       </div>
                     </div>
@@ -352,8 +352,8 @@ export default function AccountDetailDrawer({
                 <div>
                   {details.team_members.length === 0 ? (
                     <div style={{ textAlign: 'center', padding: '40px 0' }}>
-                      <Users size={32} style={{ color: '#cbd5e1', marginBottom: '10px' }} />
-                  <p style={{ fontSize: '0.85rem', color: '#94a3b8' }}>No team members yet.</p>
+                      <Users size={32} style={{ color: 'var(--text-dark)', marginBottom: '10px' }} />
+                  <p style={{ fontSize: '0.85rem', color: 'var(--text-dark)' }}>No team members yet.</p>
                     </div>
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -362,11 +362,11 @@ export default function AccountDetailDrawer({
                         return (
                           <div key={tm.id} style={{
                             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                            padding: '14px', border: '1px solid #e2e8f0', borderRadius: '10px',
+                            padding: '14px', border: '1px solid var(--border-subtle)', borderRadius: '10px',
                             transition: 'border-color 0.15s',
                           }}
-                            onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#cbd5e1'; }}
-                            onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#e2e8f0'; }}
+                            onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--border-subtle)'; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--border-subtle)'; }}
                           >
                             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                               <div style={{
@@ -377,11 +377,11 @@ export default function AccountDetailDrawer({
                                 {roleIcon(tm.role)}
                               </div>
                               <div>
-                                <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#1e293b' }}>
+                                <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-main)' }}>
                                   {tm.full_name || tm.email}
                                 </div>
                                 {tm.full_name && (
-                                  <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '2px' }}>{tm.email}</div>
+                                  <div style={{ fontSize: '0.75rem', color: 'var(--text-dark)', marginTop: '2px' }}>{tm.email}</div>
                                 )}
                               </div>
                             </div>
@@ -414,8 +414,8 @@ export default function AccountDetailDrawer({
                 <div>
                   {details.recent_leads.length === 0 ? (
                     <div style={{ textAlign: 'center', padding: '40px 0' }}>
-                      <TrendingUp size={32} style={{ color: '#cbd5e1', marginBottom: '10px' }} />
-                      <p style={{ fontSize: '0.85rem', color: '#94a3b8' }}>No leads yet.</p>
+                      <TrendingUp size={32} style={{ color: 'var(--text-dark)', marginBottom: '10px' }} />
+                      <p style={{ fontSize: '0.85rem', color: 'var(--text-dark)' }}>No leads yet.</p>
                     </div>
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -423,14 +423,14 @@ export default function AccountDetailDrawer({
                         const sc = leadStatusColor(lead.status);
                         return (
                           <div key={lead.id} style={{
-                            padding: '12px 14px', border: '1px solid #e2e8f0', borderRadius: '10px',
+                            padding: '12px 14px', border: '1px solid var(--border-subtle)', borderRadius: '10px',
                             transition: 'border-color 0.15s',
                           }}
-                            onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#cbd5e1'; }}
-                            onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#e2e8f0'; }}
+                            onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--border-subtle)'; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--border-subtle)'; }}
                           >
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
-                              <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#1e293b' }}>
+                              <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-main)' }}>
                                 {lead.name || lead.email || 'Unknown'}
                               </span>
                               <span style={{
@@ -441,7 +441,7 @@ export default function AccountDetailDrawer({
                                 {lead.status || 'new'}
                               </span>
                             </div>
-                            <div style={{ display: 'flex', gap: '12px', fontSize: '0.75rem', color: '#94a3b8' }}>
+                            <div style={{ display: 'flex', gap: '12px', fontSize: '0.75rem', color: 'var(--text-dark)' }}>
                               {lead.email && <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Mail size={11} /> {lead.email}</span>}
                               {lead.mobile_number && <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Phone size={11} /> {lead.mobile_number}</span>}
                               <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Clock size={11} /> {formatRelative(lead.created_at)}</span>
@@ -466,15 +466,15 @@ export default function AccountDetailDrawer({
                 <div>
                   {details.activity.length === 0 ? (
                     <div style={{ textAlign: 'center', padding: '40px 0' }}>
-                      <Activity size={32} style={{ color: '#cbd5e1', marginBottom: '10px' }} />
-                      <p style={{ fontSize: '0.85rem', color: '#94a3b8' }}>No recent activity.</p>
+                      <Activity size={32} style={{ color: 'var(--text-dark)', marginBottom: '10px' }} />
+                      <p style={{ fontSize: '0.85rem', color: 'var(--text-dark)' }}>No recent activity.</p>
                     </div>
                   ) : (
                     <div style={{ position: 'relative', paddingLeft: '20px' }}>
                       {/* Timeline line */}
                       <div style={{
                         position: 'absolute', left: '6px', top: '4px', bottom: '4px',
-                        width: '2px', background: '#e2e8f0',
+                        width: '2px', background: 'var(--border-subtle)',
                       }} />
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                         {details.activity.map((act) => (
@@ -483,7 +483,7 @@ export default function AccountDetailDrawer({
                             <div style={{
                               position: 'absolute', left: '-20px', top: '2px',
                               width: '12px', height: '12px', borderRadius: '50%',
-                              background: '#fff', border: '2px solid #0f766e',
+                              background: 'var(--bg-card)', border: '2px solid #0f766e',
                               zIndex: 1,
                             }} />
                             <div style={{ paddingBottom: '2px' }}>
@@ -492,9 +492,9 @@ export default function AccountDetailDrawer({
                                 <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#0f766e', textTransform: 'capitalize' }}>
                                   {act.activity_type.replace(/_/g, ' ')}
                                 </span>
-                                <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>{formatRelative(act.created_at)}</span>
+                                <span style={{ fontSize: '0.7rem', color: 'var(--text-dark)' }}>{formatRelative(act.created_at)}</span>
                               </div>
-                              <p style={{ margin: 0, fontSize: '0.82rem', color: '#475569', lineHeight: 1.4 }}>
+                              <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: 1.4 }}>
                                 {act.description || 'No description'}
                               </p>
                             </div>

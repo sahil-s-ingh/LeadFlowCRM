@@ -36,7 +36,7 @@ const ACTIVITY_ICONS: Record<string, { icon: typeof Phone; color: string; bg: st
   follow_up_done:   { icon: CheckCircle2,    color: '#16A34A', bg: 'rgba(22,163,74,0.08)',  border: 'rgba(22,163,74,0.2)',  label: 'Follow-Up Done' },
   lead_created:     { icon: Zap,             color: '#2563EB', bg: 'rgba(37,99,235,0.08)',  border: 'rgba(37,99,235,0.2)',  label: 'Lead Created' },
   tag_added:        { icon: Tag,             color: '#0891B2', bg: 'rgba(8,145,178,0.08)',  border: 'rgba(8,145,178,0.2)',  label: 'Tag Added' },
-  tag_removed:      { icon: Tag,             color: '#6B7280', bg: 'rgba(107,114,128,0.08)',border: 'rgba(107,114,128,0.2)',label: 'Tag Removed' },
+  tag_removed:      { icon: Tag,             color: 'var(--text-dark)', bg: 'rgba(107,114,128,0.08)',border: 'rgba(107,114,128,0.2)',label: 'Tag Removed' },
   call:             { icon: PhoneOutgoing,   color: '#2563EB', bg: 'rgba(37,99,235,0.08)',  border: 'rgba(37,99,235,0.2)',  label: 'Call' },
   call_completed:   { icon: CheckCircle2,    color: '#16A34A', bg: 'rgba(22,163,74,0.08)',  border: 'rgba(22,163,74,0.2)',  label: 'Call Completed' },
   call_failed:      { icon: XCircle,         color: '#DC2626', bg: 'rgba(220,38,38,0.08)',  border: 'rgba(220,38,38,0.2)',  label: 'Call Failed' },
@@ -47,7 +47,7 @@ const ACTIVITY_ICONS: Record<string, { icon: typeof Phone; color: string; bg: st
 };
 
 function getIconConfig(type: string, source: string) {
-  return ACTIVITY_ICONS[type] || ACTIVITY_ICONS[source] || ACTIVITY_ICONS[type.replace(/ /g, '_')] || { icon: Activity, color: '#6B7280', bg: 'rgba(107,114,128,0.08)', border: 'rgba(107,114,128,0.2)', label: type };
+  return ACTIVITY_ICONS[type] || ACTIVITY_ICONS[source] || ACTIVITY_ICONS[type.replace(/ /g, '_')] || { icon: Activity, color: 'var(--text-dark)', bg: 'rgba(107,114,128,0.08)', border: 'rgba(107,114,128,0.2)', label: type };
 }
 
 function formatRelativeTime(iso: string): string {
@@ -226,17 +226,17 @@ export default function LeadActivityTimeline({ session, onBack }: LeadActivityTi
             style={{
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               width: '40px', height: '40px', borderRadius: '10px',
-              border: '1px solid #e2e8f0', background: '#fff', cursor: 'pointer',
-              transition: 'all 0.2s', color: '#475569',
+              border: '1px solid var(--border-subtle)', background: 'var(--bg-card)', cursor: 'pointer',
+              transition: 'all 0.2s', color: 'var(--text-muted)',
             }}
-            onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#cbd5e1'; e.currentTarget.style.background = '#f8fafc'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.background = '#fff'; }}
+            onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--border-subtle)'; e.currentTarget.style.background = 'var(--bg-light)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--border-subtle)'; e.currentTarget.style.background = 'var(--bg-card)'; }}
           >
             <ArrowLeft size={18} />
           </button>
           <div>
-            <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#0f172a', margin: 0, letterSpacing: '-0.02em' }}>Activity Timeline</h1>
-            <p style={{ fontSize: '0.85rem', color: '#94a3b8', margin: '2px 0 0', fontWeight: 500 }}>Every call, message, email, note, and status change across all leads</p>
+            <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-main)', margin: 0, letterSpacing: '-0.02em' }}>Activity Timeline</h1>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-dark)', margin: '2px 0 0', fontWeight: 500 }}>Every call, message, email, note, and status change across all leads</p>
           </div>
         </div>
         <button
@@ -244,13 +244,13 @@ export default function LeadActivityTimeline({ session, onBack }: LeadActivityTi
           disabled={loading}
           style={{
             display: 'inline-flex', alignItems: 'center', gap: '8px',
-            padding: '9px 18px', borderRadius: '10px', border: '1px solid #e2e8f0',
-            background: '#fff', color: '#334155', fontSize: '0.84rem', fontWeight: 600,
+            padding: '9px 18px', borderRadius: '10px', border: '1px solid var(--border-subtle)',
+            background: 'var(--bg-card)', color: 'var(--text-muted)', fontSize: '0.84rem', fontWeight: 600,
             cursor: loading ? 'not-allowed' : 'pointer', transition: 'all 0.2s',
             opacity: loading ? 0.6 : 1,
           }}
-          onMouseEnter={(e) => { if (!loading) { e.currentTarget.style.borderColor = '#cbd5e1'; e.currentTarget.style.background = '#f8fafc'; } }}
-          onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.background = '#fff'; }}
+          onMouseEnter={(e) => { if (!loading) { e.currentTarget.style.borderColor = 'var(--border-subtle)'; e.currentTarget.style.background = 'var(--bg-light)'; } }}
+          onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--border-subtle)'; e.currentTarget.style.background = 'var(--bg-card)'; }}
         >
           {loading ? <Loader2 size={15} className="crm-spin" /> : <RefreshCw size={15} />}
           Refresh
@@ -263,12 +263,12 @@ export default function LeadActivityTimeline({ session, onBack }: LeadActivityTi
           <div
             key={s.label}
             style={{
-              padding: '18px 16px', borderRadius: '14px', background: '#fff',
-              border: '1px solid #e2e8f0', position: 'relative', overflow: 'hidden',
+              padding: '18px 16px', borderRadius: '14px', background: 'var(--bg-card)',
+              border: '1px solid var(--border-subtle)', position: 'relative', overflow: 'hidden',
               transition: 'all 0.25s',
             }}
-            onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#cbd5e1'; e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.06)'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}
+            onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--border-subtle)'; e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.06)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--border-subtle)'; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}
           >
             <div style={{
               width: '38px', height: '38px', borderRadius: '10px', display: 'flex',
@@ -276,33 +276,33 @@ export default function LeadActivityTimeline({ session, onBack }: LeadActivityTi
             }}>
               <s.icon size={18} />
             </div>
-            <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#0f172a', lineHeight: 1, letterSpacing: '-0.03em' }}>{s.value}</div>
-            <div style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 600, marginTop: '4px' }}>{s.label}</div>
+            <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--text-main)', lineHeight: 1, letterSpacing: '-0.03em' }}>{s.value}</div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-dark)', fontWeight: 600, marginTop: '4px' }}>{s.label}</div>
           </div>
         ))}
       </div>
 
       {/* Main Card */}
       <div style={{
-        background: '#fff', borderRadius: '16px', border: '1px solid #e2e8f0', overflow: 'hidden',
+        background: 'var(--bg-card)', borderRadius: '16px', border: '1px solid var(--border-subtle)', overflow: 'hidden',
       }}>
         {/* Toolbar */}
         <div style={{
-          padding: '16px 20px', borderBottom: '1px solid #f1f5f9',
+          padding: '16px 20px', borderBottom: '1px solid var(--border-subtle)',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(59,130,246,0.08)', color: '#3B82F6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <Activity size={16} />
             </div>
-            <h2 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#0f172a', margin: 0 }}>Activity Feed</h2>
-            <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 600, background: '#f1f5f9', padding: '2px 8px', borderRadius: '20px' }}>
+            <h2 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-main)', margin: 0 }}>Activity Feed</h2>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-dark)', fontWeight: 600, background: 'var(--bg-light)', padding: '2px 8px', borderRadius: '20px' }}>
               {filteredActivities.length}
             </span>
           </div>
           <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
             <div style={{ position: 'relative' }}>
-              <Search size={15} style={{ position: 'absolute', left: '11px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', pointerEvents: 'none' }} />
+              <Search size={15} style={{ position: 'absolute', left: '11px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dark)', pointerEvents: 'none' }} />
               <input
                 type="text"
                 value={search}
@@ -310,23 +310,23 @@ export default function LeadActivityTimeline({ session, onBack }: LeadActivityTi
                 placeholder="Search activities..."
                 style={{
                   paddingLeft: '34px', paddingRight: '12px', padding: '9px 12px 9px 34px',
-                  border: '1px solid #e2e8f0', borderRadius: '10px', fontSize: '0.82rem',
-                  background: '#f8fafc', color: '#334155', outline: 'none', width: '220px',
+                  border: '1px solid var(--border-subtle)', borderRadius: '10px', fontSize: '0.82rem',
+                  background: 'var(--bg-light)', color: 'var(--text-muted)', outline: 'none', width: '220px',
                   transition: 'all 0.2s',
                 }}
-                onFocus={(e) => { e.currentTarget.style.borderColor = '#93c5fd'; e.currentTarget.style.background = '#fff'; }}
-                onBlur={(e) => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.background = '#f8fafc'; }}
+                onFocus={(e) => { e.currentTarget.style.borderColor = '#93c5fd'; e.currentTarget.style.background = 'var(--bg-card)'; }}
+                onBlur={(e) => { e.currentTarget.style.borderColor = 'var(--border-subtle)'; e.currentTarget.style.background = 'var(--bg-light)'; }}
               />
             </div>
             <div style={{ position: 'relative' }}>
-              <Filter size={14} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', pointerEvents: 'none' }} />
+              <Filter size={14} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dark)', pointerEvents: 'none' }} />
               <select
                 value={typeFilter}
                 onChange={(e) => setTypeFilter(e.target.value)}
                 style={{
                   paddingLeft: '32px', paddingRight: '28px', padding: '9px 28px 9px 32px',
-                  border: '1px solid #e2e8f0', borderRadius: '10px', fontSize: '0.82rem',
-                  background: '#f8fafc', color: '#334155', cursor: 'pointer', outline: 'none',
+                  border: '1px solid var(--border-subtle)', borderRadius: '10px', fontSize: '0.82rem',
+                  background: 'var(--bg-light)', color: 'var(--text-muted)', cursor: 'pointer', outline: 'none',
                   appearance: 'none', WebkitAppearance: 'none',
                 }}
               >
@@ -339,7 +339,7 @@ export default function LeadActivityTimeline({ session, onBack }: LeadActivityTi
                 <option value="status">Status & Leads</option>
                 <option value="tags">Tags</option>
               </select>
-              <ChevronDown size={14} style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', pointerEvents: 'none' }} />
+              <ChevronDown size={14} style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dark)', pointerEvents: 'none' }} />
             </div>
           </div>
         </div>
@@ -348,14 +348,14 @@ export default function LeadActivityTimeline({ session, onBack }: LeadActivityTi
         {loading ? (
           <div style={{ padding: '80px 20px', textAlign: 'center' }}>
             <Loader2 size={28} className="crm-spin" style={{ color: '#3B82F6', marginBottom: '12px' }} />
-            <p style={{ color: '#94a3b8', fontSize: '0.88rem' }}>Loading activities...</p>
+            <p style={{ color: 'var(--text-dark)', fontSize: '0.88rem' }}>Loading activities...</p>
           </div>
         ) : visibleActivities.length === 0 ? (
           <div style={{ padding: '80px 20px', textAlign: 'center' }}>
-            <div style={{ width: '64px', height: '64px', borderRadius: '16px', background: '#f1f5f9', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px' }}>
-              <Activity size={28} style={{ color: '#cbd5e1' }} />
+            <div style={{ width: '64px', height: '64px', borderRadius: '16px', background: 'var(--bg-light)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px' }}>
+              <Activity size={28} style={{ color: 'var(--text-dark)' }} />
             </div>
-            <p style={{ color: '#94a3b8', fontSize: '0.9rem', fontWeight: 500 }}>No activities found. Try adjusting your filters.</p>
+            <p style={{ color: 'var(--text-dark)', fontSize: '0.9rem', fontWeight: 500 }}>No activities found. Try adjusting your filters.</p>
           </div>
         ) : (
           <div style={{ padding: '8px 0' }}>
@@ -365,12 +365,12 @@ export default function LeadActivityTimeline({ session, onBack }: LeadActivityTi
                 <div style={{
                   padding: '14px 20px 6px', display: 'flex', alignItems: 'center', gap: '10px',
                 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.72rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                    <Calendar size={12} style={{ color: '#94a3b8' }} />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-dark)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                    <Calendar size={12} style={{ color: 'var(--text-dark)' }} />
                     {group.label}
                   </div>
-                  <div style={{ flex: 1, height: '1px', background: '#f1f5f9' }} />
-                  <span style={{ fontSize: '0.72rem', color: '#cbd5e1', fontWeight: 600 }}>{group.items.length}</span>
+                  <div style={{ flex: 1, height: '1px', background: 'var(--bg-light)' }} />
+                  <span style={{ fontSize: '0.72rem', color: 'var(--text-dark)', fontWeight: 600 }}>{group.items.length}</span>
                 </div>
 
                 {/* Timeline items */}
@@ -385,7 +385,7 @@ export default function LeadActivityTimeline({ session, onBack }: LeadActivityTi
                         display: 'flex', gap: '14px', padding: '10px 20px',
                         transition: 'background 0.15s', cursor: 'default',
                       }}
-                      onMouseEnter={(e) => { e.currentTarget.style.background = '#f8fafc'; }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--bg-light)'; }}
                       onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
                     >
                       {/* Timeline rail */}
@@ -398,7 +398,7 @@ export default function LeadActivityTimeline({ session, onBack }: LeadActivityTi
                           <Icon size={16} />
                         </div>
                         {!isLastInGroup && (
-                          <div style={{ width: '2px', flex: 1, background: '#f1f5f9', marginTop: '4px', minHeight: '20px' }} />
+                          <div style={{ width: '2px', flex: 1, background: 'var(--bg-light)', marginTop: '4px', minHeight: '20px' }} />
                         )}
                       </div>
 
@@ -415,12 +415,12 @@ export default function LeadActivityTimeline({ session, onBack }: LeadActivityTi
                           </span>
                           <span
                             title={formatFullDate(item.created_at)}
-                            style={{ fontSize: '0.74rem', color: '#94a3b8', fontWeight: 600, whiteSpace: 'nowrap', flexShrink: 0 }}
+                            style={{ fontSize: '0.74rem', color: 'var(--text-dark)', fontWeight: 600, whiteSpace: 'nowrap', flexShrink: 0 }}
                           >
                             {formatRelativeTime(item.created_at)}
                           </span>
                         </div>
-                        <p style={{ fontSize: '0.85rem', color: '#334155', lineHeight: 1.55, margin: 0, wordBreak: 'break-word' }}>
+                        <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: 1.55, margin: 0, wordBreak: 'break-word' }}>
                           {item.description}
                         </p>
                         {item.metadata && Object.keys(item.metadata).length > 0 && (
@@ -428,8 +428,8 @@ export default function LeadActivityTimeline({ session, onBack }: LeadActivityTi
                             {Object.entries(item.metadata).slice(0, 3).map(([k, v]) => (
                               v != null && typeof v !== 'object' && (
                                 <span key={k} style={{
-                                  fontSize: '0.7rem', color: '#64748b', background: '#f8fafc',
-                                  border: '1px solid #f1f5f9', padding: '2px 8px', borderRadius: '6px', fontWeight: 500,
+                                  fontSize: '0.7rem', color: 'var(--text-dark)', background: 'var(--bg-light)',
+                                  border: '1px solid var(--border-subtle)', padding: '2px 8px', borderRadius: '6px', fontWeight: 500,
                                 }}>
                                   {k}: {String(v).slice(0, 50)}
                                 </span>
@@ -448,17 +448,17 @@ export default function LeadActivityTimeline({ session, onBack }: LeadActivityTi
 
         {/* Load more */}
         {!showAll && filteredActivities.length > 50 && (
-          <div style={{ padding: '14px', textAlign: 'center', borderTop: '1px solid #f1f5f9' }}>
+          <div style={{ padding: '14px', textAlign: 'center', borderTop: '1px solid var(--border-subtle)' }}>
             <button
               onClick={() => setShowAll(true)}
               style={{
                 display: 'inline-flex', alignItems: 'center', gap: '8px',
-                padding: '8px 20px', borderRadius: '10px', border: '1px solid #e2e8f0',
-                background: '#fff', color: '#334155', fontSize: '0.82rem', fontWeight: 600,
+                padding: '8px 20px', borderRadius: '10px', border: '1px solid var(--border-subtle)',
+                background: 'var(--bg-card)', color: 'var(--text-muted)', fontSize: '0.82rem', fontWeight: 600,
                 cursor: 'pointer', transition: 'all 0.2s',
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#cbd5e1'; e.currentTarget.style.background = '#f8fafc'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.background = '#fff'; }}
+              onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--border-subtle)'; e.currentTarget.style.background = 'var(--bg-light)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--border-subtle)'; e.currentTarget.style.background = 'var(--bg-card)'; }}
             >
               <ChevronDown size={16} /> Show {filteredActivities.length - 50} more
             </button>
