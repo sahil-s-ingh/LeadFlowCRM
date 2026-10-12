@@ -5,7 +5,7 @@ import {
   Shield, Users, TrendingUp, MessageSquare, UserCog, LogOut, Loader2,
   Building2, Mail, Activity, AlertCircle, Search, RefreshCw, CircleDot,
   LogIn, Eye, UserCircle, CreditCard, ToggleLeft, FileText, BarChart3,
-  Server, LayoutDashboard, Menu, X,
+  Server, LayoutDashboard, Menu, X, Wallet,
 } from 'lucide-react';
 import AccountDetailDrawer from './AccountDetailDrawer';
 import AdminProfilePage from './AdminProfilePage';
@@ -15,6 +15,7 @@ import SuperAdminLegal from './SuperAdminLegal';
 import SuperAdminUsage from './SuperAdminUsage';
 import SuperAdminSetupGuide from './SuperAdminSetupGuide';
 import SuperAdminEmailSettings from './SuperAdminEmailSettings';
+import SuperAdminPaymentSettings from './SuperAdminPaymentSettings';
 
 type Stats = {
   total_auth_users: number;
@@ -36,7 +37,7 @@ type Account = {
   conversation_count: number;
 };
 
-type NavKey = 'dashboard' | 'profile' | 'plans' | 'features' | 'legal' | 'usage' | 'setup' | 'email';
+type NavKey = 'dashboard' | 'profile' | 'plans' | 'features' | 'legal' | 'usage' | 'setup' | 'email' | 'payments';
 
 const NAV_ITEMS: { key: NavKey; label: string; icon: React.ReactNode; group: string }[] = [
   { key: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard size={18} />, group: 'Overview' },
@@ -45,6 +46,7 @@ const NAV_ITEMS: { key: NavKey; label: string; icon: React.ReactNode; group: str
   { key: 'features', label: 'Feature Toggles', icon: <ToggleLeft size={18} />, group: 'Platform' },
   { key: 'legal', label: 'Legal Pages', icon: <FileText size={18} />, group: 'Platform' },
   { key: 'email', label: 'Email Config', icon: <Mail size={18} />, group: 'Platform' },
+  { key: 'payments', label: 'Payment Gateway', icon: <Wallet size={18} />, group: 'Platform' },
   { key: 'setup', label: 'Setup Guide', icon: <Server size={18} />, group: 'System' },
   { key: 'profile', label: 'My Profile', icon: <UserCircle size={18} />, group: 'Account' },
 ];
@@ -56,6 +58,7 @@ const PAGE_SUBTITLES: Record<NavKey, string> = {
   features: 'Enable or disable platform features',
   legal: 'Edit legal pages published on your site',
   email: 'Configure default SMTP for all accounts',
+  payments: 'Configure Razorpay payment gateway for checkout',
   setup: 'Deploy your CRM on a VPS step by step',
   profile: 'Super admin account settings',
 };
@@ -101,7 +104,8 @@ export default function SuperAdminDashboard({ session, onSignOut }: { session: S
     setImpersonatingId(account.owner_id);
     setError('');
     try {
-      const { data: { session: adminSession } } = await supabase.auth.getSession();
+      const sessionResult = await supabase.auth.getSession();
+      const adminSession = sessionResult.data?.session;
       if (!adminSession) throw new Error('No active admin session');
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/impersonate`, {
         method: 'POST',
@@ -190,9 +194,10 @@ export default function SuperAdminDashboard({ session, onSignOut }: { session: S
     if (view === 'plans') return <SuperAdminPlans />;
     if (view === 'features') return <SuperAdminFeatures />;
     if (view === 'legal') return <SuperAdminLegal />;
-    if (view === 'usage') return <SuperAdminUsage />;
+    if (view === 'usage') return <SuperAdminUsage session={session} />;
     if (view === 'setup') return <SuperAdminSetupGuide />;
     if (view === 'email') return <SuperAdminEmailSettings />;
+    if (view === 'payments') return <SuperAdminPaymentSettings />;
 
     // Dashboard view
     if (loading) {

@@ -96,3 +96,12 @@ verify_jwt = false
 
 [functions.impersonate]
 verify_jwt = true
+
+[functions.admin-manage-account]
+verify_jwt = true
+
+[functions.razorpay-create-order]
+verify_jwt = false
+
+[functions.razorpay-verify-payment]
+verify_jwt = false

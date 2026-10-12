@@ -2,6 +2,7 @@ import { useEffect, useState, useRef, type FormEvent } from 'react';
 import { supabase } from '@/lib/supabase';
 import { DEFAULT_PALETTE, type LandingPalette } from '@/lib/colorPalette';
 import PopupFormModal from '@/components/PopupFormModal';
+import CheckoutDrawer from '@/components/CheckoutDrawer';
 
 const DEFAULT_TELEGRAM_URL = '#crm-signup';
 const OPEN_SETUP_EVENT = 'open-mt5-setup';
@@ -37,12 +38,6 @@ function initMetaPixel(pixelId: string) {
   })(window, document, 'script', 'https://connect.facebook.net/en_US/fbevents.js');
   window.fbq?.('init', pixelId);
   window.fbq?.('track', 'PageView');
-}
-
-function trackMetaLeadEvent() {
-  if (window.fbq) {
-    window.fbq('track', 'Lead', { content_name: 'Landing Page Signup' });
-  }
 }
 
 /** Fetch the saved landing page color palette. When enabled, applies CSS variables to the document root. */
@@ -124,37 +119,6 @@ function useTelegramLink() {
   }, []);
   return link;
 }
-
-type CrmProduct = 'starter' | 'pro' | '';
-
-type SetupForm = {
-  fullName: string;
-  mobileNumber: string;
-  email: string;
-  state: string;
-  crmProduct: CrmProduct;
-  teamSize: string;
-};
-
-const initialSetupForm: SetupForm = {
-  fullName: '',
-  mobileNumber: '',
-  email: '',
-  state: '',
-  crmProduct: '',
-  teamSize: '',
-};
-
-const INDIAN_STATES = [
-  'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh',
-  'Goa', 'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jharkhand',
-  'Karnataka', 'Kerala', 'Madhya Pradesh', 'Maharashtra', 'Manipur',
-  'Meghalaya', 'Mizoram', 'Nagaland', 'Odisha', 'Punjab',
-  'Rajasthan', 'Sikkim', 'Tamil Nadu', 'Telangana', 'Tripura',
-  'Uttar Pradesh', 'Uttarakhand', 'West Bengal',
-  'Andaman and Nicobar Islands', 'Chandigarh', 'Dadra and Nagar Haveli and Daman and Diu',
-  'Delhi', 'Jammu and Kashmir', 'Ladakh', 'Lakshadweep', 'Puducherry',
-];
 
 // ===================== Countdown Timer Hook =====================
 function useCountdown() {
@@ -3555,197 +3519,23 @@ function SocialToast() {
   );
 }
 
-// ===================== Submission Form Modal =====================
-function SetupModal() {
-  const telegramLink = useTelegramLink();
-  const [open, setOpen] = useState(false);
-  const [form, setForm] = useState<SetupForm>(initialSetupForm);
-  const [submitted, setSubmitted] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState(false);
-
-  useEffect(() => {
-    const openModal = () => {
-      setOpen(true);
-      setSubmitted(false);
-      setSubmitError(false);
-      setForm(initialSetupForm);
-    };
-    window.addEventListener(OPEN_SETUP_EVENT, openModal);
-    return () => window.removeEventListener(OPEN_SETUP_EVENT, openModal);
-  }, []);
-
-  useEffect(() => {
-    document.body.style.overflow = open ? 'hidden' : '';
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [open]);
-
-  if (!open) return null;
-
-  const update = (field: keyof SetupForm, value: string) => {
-    setForm((current) => ({ ...current, [field]: value }));
-    setSubmitError(false);
-  };
-
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setSubmitting(true);
-    setSubmitError(false);
-
-    const { data: ownerId } = await supabase.rpc('get_platform_owner_id');
-
-    const { data: leadData, error } = await supabase.from('submissions').insert({
-      full_name: form.fullName,
-      mobile_number: form.mobileNumber,
-      email: form.email,
-      state: form.state,
-      trading_product: form.crmProduct,
-      fund_amount: null,
-      user_id: ownerId ?? null,
-    }).select('id').single();
-
-    if (error) {
-      setSubmitError(true);
-      setSubmitting(false);
-      return;
-    }
-
-    setSubmitted(true);
-    setSubmitting(false);
-    trackMetaLeadEvent();
-
-    // Fire-and-forget: send auto welcome email if enabled
-    if (leadData?.id) {
-      fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-welcome-email`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          leadId: leadData.id,
-          fullName: form.fullName,
-          email: form.email,
-          tradingProduct: form.crmProduct,
-          fundAmount: null,
-        }),
-      }).catch(() => { /* best effort, don't block submission */ });
-    }
-  };
-
-  const isStarter = form.crmProduct === 'starter';
-  const canSubmit = Boolean(form.fullName && form.mobileNumber && form.email && form.state && form.crmProduct);
-
-  return (
-    <div className="setup-overlay" role="dialog" aria-modal="true" aria-labelledby="setup-title">
-      <div className="setup-modal">
-        <button className="setup-close" type="button" onClick={() => setOpen(false)} aria-label="Close form">×</button>
-        <div className="setup-heading">
-          <div className="setup-heading-icon"><ChartUpIcon /></div>
-          <div>
-            <h2 id="setup-title">Start Free Trial</h2>
-            <p>Fill in your details to get 14-day free CRM access</p>
-          </div>
-        </div>
-        <div className="setup-divider" />
-
-        {submitted ? (
-          <div className="setup-success">
-            <div className="setup-success-icon">✓</div>
-            <h3>Submission received!</h3>
-            <p>Thank you! Your free trial request has been received. Check your email for CRM access details and setup instructions.</p>
-            <a href={telegramLink} target="_blank" rel="noopener noreferrer" className="setup-primary-button" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Check Your Email for Access</a>
-            <button type="button" className="setup-footnote" style={{ background: 'none', border: 'none', cursor: 'pointer', marginTop: 12, color: 'var(--text-dark)' }} onClick={() => setOpen(false)}>Close</button>
-          </div>
-        ) : (
-          <form onSubmit={handleSubmit}>
-            <div className="setup-security-note"><ShieldIcon /><span>Your information is kept private and used only to set up your CRM trial account.</span></div>
-            <SetupSection number="1" title="YOUR DETAILS">
-              <label>Full Name <em>*</em><input required value={form.fullName} onChange={(e) => update('fullName', e.target.value)} placeholder="Enter your full name" /></label>
-              <div className="setup-grid">
-                <label>Mobile Number <em>*</em><input required value={form.mobileNumber} onChange={(e) => update('mobileNumber', e.target.value)} placeholder="e.g. +91 98765 43210" inputMode="tel" type="tel" /></label>
-                <label>Email ID <em>*</em><input required type="email" value={form.email} onChange={(e) => update('email', e.target.value)} placeholder="you@example.com" /></label>
-              </div>
-              <label>State <em>*</em>
-                <select required value={form.state} onChange={(e) => update('state', e.target.value)}>
-                  <option value="" disabled>Select your state</option>
-                  {INDIAN_STATES.map((s) => <option key={s} value={s}>{s}</option>)}
-                </select>
-              </label>
-            </SetupSection>
-            <SetupSection number="2" title="CHOOSE YOUR CRM PLAN">
-              <label>CRM Plan <em>*</em></label>
-              <div className="broker-options">
-                <button type="button" className={`broker-option ${form.crmProduct === 'starter' ? 'selected' : ''}`} onClick={() => update('crmProduct', 'starter')}>
-                  <span />
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 2 }}>
-                    <strong>Starter CRM</strong>
-                    <small style={{ fontSize: '0.72rem', fontWeight: 500, color: 'var(--text-dark)' }}>Up to 5 team members</small>
-                  </div>
-                </button>
-                <button type="button" className={`broker-option ${form.crmProduct === 'pro' ? 'selected' : ''}`} onClick={() => update('crmProduct', 'pro')}>
-                  <span />
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 2 }}>
-                    <strong>Pro CRM</strong>
-                    <small style={{ fontSize: '0.72rem', fontWeight: 500, color: 'var(--text-dark)' }}>Unlimited team &amp; automations</small>
-                  </div>
-                </button>
-              </div>
-            </SetupSection>
-            {isStarter && (
-              <SetupSection number="3" title="TEAM DETAILS">
-                <label>Team Size <em>*</em></label>
-                <div className="broker-options">
-                  <button type="button" className={`broker-option ${form.teamSize === '1-3' ? 'selected' : ''}`} onClick={() => update('teamSize', '1-3')}>
-                    <span />
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 2 }}>
-                      <strong>1-3 Members</strong>
-                      <small style={{ fontSize: '0.72rem', fontWeight: 500, color: 'var(--text-dark)' }}>Small sales team</small>
-                    </div>
-                  </button>
-                  <button type="button" className={`broker-option ${form.teamSize === '4-5' ? 'selected' : ''}`} onClick={() => update('teamSize', '4-5')}>
-                    <span />
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 2 }}>
-                      <strong>4-5 Members</strong>
-                      <small style={{ fontSize: '0.72rem', fontWeight: 500, color: 'var(--text-dark)' }}>Growing team</small>
-                    </div>
-                  </button>
-                </div>
-                <div style={{ background: '#fef9c3', border: '1px solid #fde047', borderRadius: 8, padding: '10px 12px', marginTop: 8, display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ color: '#ca8a04', flexShrink: 0, marginTop: 1 }}>
-                    <circle cx="12" cy="12" r="10" />
-                    <line x1="12" y1="16" x2="12" y2="12" />
-                    <line x1="12" y1="8" x2="12.01" y2="8" />
-                  </svg>
-                  <span style={{ fontSize: '0.76rem', color: '#854d0e', lineHeight: 1.4 }}>
-                    <strong>Starter CRM</strong> supports up to 5 team members with lead pipeline, follow-up automation, and WhatsApp broadcast.
-                  </span>
-                </div>
-              </SetupSection>
-            )}
-            {submitError && (
-              <p style={{ color: '#ef4444', fontSize: '0.8rem', textAlign: 'center', marginBottom: 10, fontWeight: 600 }}>Something went wrong. Please try again.</p>
-            )}
-            <button type="submit" className="setup-primary-button" disabled={!canSubmit || submitting}>
-              {submitting ? 'Submitting...' : canSubmit ? 'Start My Free Trial' : 'Fill all fields to continue'}
-            </button>
-            <p className="setup-footnote"><ShieldIcon /> Your data is safe and never shared.</p>
-          </form>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function SetupSection({ number, title, children }: { number: string; title: string; children: React.ReactNode }) {
-  return <section className="setup-section"><h3><span>{number}</span>{title}</h3>{children}</section>;
-}
-
-function ChartUpIcon() { return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4"><path d="M3 17 9 11l4 4 8-8" /><path d="M15 7h6v6" /></svg>; }
-function ShieldIcon() { return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M12 3 20 6v5c0 5-3.4 8.5-8 10-4.6-1.5-8-5-8-10V6l8-3Z" /><path d="m8.5 12 2.3 2.3 4.7-4.7" /></svg>; }
-
 // ===================== Landing Page =====================
 function LandingPage() {
   useLandingPalette();
+
+  useEffect(() => {
+    const onHashChange = () => {
+      const h = window.location.hash.replace(/^#\/?/, '');
+      if (h === 'signup') {
+        window.dispatchEvent(new Event('open-mt5-setup'));
+        history.replaceState(null, '', window.location.pathname + window.location.search);
+      }
+    };
+    onHashChange();
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, []);
+
   return (
     <div style={{ minHeight: '100vh', backgroundColor: 'var(--landing-bg, #F8FAFC)', fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
       <TopUrgencyBar />
@@ -3786,7 +3576,7 @@ function LandingPage() {
       <SocialToast />
       <HelpWidget />
       <ExitIntentPopup />
-      <SetupModal />
+      <CheckoutDrawer />
       <PopupFormModal />
     </div>
   );
