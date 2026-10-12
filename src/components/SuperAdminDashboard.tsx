@@ -206,35 +206,80 @@ export default function SuperAdminDashboard({ session, onSignOut }: { session: S
       );
     }
 
+    const avgLeads = accounts.length > 0 ? Math.round((stats?.total_submissions ?? 0) / accounts.length) : 0;
+    const engagementRate = accounts.length > 0 ? Math.round((activeCount / accounts.length) * 100) : 0;
+
     return (
       <>
         {error && (
           <div style={{
             padding: '14px 16px', background: 'var(--bg-card)', border: '1px solid #fecaca',
-            borderRadius: '12px', fontSize: '0.85rem', color: '#dc2626', marginBottom: '20px',
+            borderRadius: '14px', fontSize: '0.85rem', color: '#dc2626', marginBottom: '20px',
             display: 'flex', alignItems: 'center', gap: '10px',
           }}>
             <AlertCircle size={18} /> {error}
           </div>
         )}
 
+        {/* Hero banner */}
+        <div style={{
+          borderRadius: '20px', padding: '28px 28px', marginBottom: '24px', position: 'relative', overflow: 'hidden',
+          background: 'linear-gradient(135deg, #0f172a 0%, #0f766e 50%, #134e4a 100%)',
+        }}>
+          <div style={{
+            position: 'absolute', top: '-40px', right: '-40px', width: '200px', height: '200px',
+            borderRadius: '50%', background: 'rgba(20,184,166,0.15)', filter: 'blur(40px)',
+          }} />
+          <div style={{
+            position: 'absolute', bottom: '-60px', right: '80px', width: '160px', height: '160px',
+            borderRadius: '50%', background: 'rgba(13,148,136,0.12)', filter: 'blur(30px)',
+          }} />
+          <div style={{ position: 'relative' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+              <Shield size={18} style={{ color: '#5eead4' }} />
+              <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#5eead4', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Platform Overview</span>
+            </div>
+            <h2 style={{ margin: 0, fontSize: '1.6rem', fontWeight: 800, color: '#fff', letterSpacing: '-0.02em', lineHeight: 1.2 }}>
+              Welcome back, {(session.user.email || 'Admin').split('@')[0]}
+            </h2>
+            <p style={{ margin: '8px 0 0', fontSize: '0.88rem', color: 'rgba(255,255,255,0.6)', maxWidth: '480px' }}>
+              Managing {accounts.length} account{accounts.length !== 1 ? 's' : ''} with {stats?.total_submissions ?? 0} leads and {stats?.total_team_members ?? 0} team members across the platform.
+            </p>
+            <div style={{ display: 'flex', gap: '20px', marginTop: '20px', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#4ade80', boxShadow: '0 0 8px rgba(74,222,128,0.6)' }} />
+                <span style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.7)', fontWeight: 600 }}>{activeCount} active</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#fbbf24' }} />
+                <span style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.7)', fontWeight: 600 }}>{inactiveCount} inactive</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#5eead4' }} />
+                <span style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.7)', fontWeight: 600 }}>{engagementRate}% engagement</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Stats Cards */}
         <div style={{
-          display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-          gap: '16px', marginBottom: '32px',
+          display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+          gap: '14px', marginBottom: '28px',
         }}>
-          <StatCard icon={<Building2 size={22} />} label="Total Accounts" value={accounts.length} subtext="All signed-up users" color="#0f766e" bg="rgba(15,118,110,0.08)" />
-          <StatCard icon={<CircleDot size={22} />} label="Active Users (7 days)" value={activeCount} subtext={`${inactiveCount} inactive`} color="#16a34a" bg="rgba(22,163,74,0.08)" />
-          <StatCard icon={<TrendingUp size={22} />} label="Total Leads" value={stats?.total_submissions ?? 0} subtext="Across all accounts" color="#d97706" bg="rgba(217,119,6,0.08)" />
-          <StatCard icon={<UserCog size={22} />} label="Team Members" value={stats?.total_team_members ?? 0} subtext={`${stats?.active_team_members ?? 0} active`} color="#2563eb" bg="rgba(37,99,235,0.08)" />
-          <StatCard icon={<MessageSquare size={22} />} label="Conversations" value={stats?.total_conversations ?? 0} subtext="Total chat conversations" color="#0891b2" bg="rgba(8,145,178,0.08)" />
-          <StatCard icon={<Activity size={22} />} label="Avg Leads / Account" value={accounts.length > 0 ? Math.round((stats?.total_submissions ?? 0) / accounts.length) : 0} subtext="Average per account" color="#db2777" bg="rgba(219,39,119,0.08)" />
+          <StatCard icon={<Building2 size={20} />} label="Total Accounts" value={accounts.length} subtext="All signed-up users" color="#0f766e" bg="rgba(15,118,110,0.1)" accent="#0f766e" />
+          <StatCard icon={<CircleDot size={20} />} label="Active (7 days)" value={activeCount} subtext={`${inactiveCount} inactive`} color="#16a34a" bg="rgba(22,163,74,0.1)" accent="#16a34a" />
+          <StatCard icon={<TrendingUp size={20} />} label="Total Leads" value={stats?.total_submissions ?? 0} subtext="Across all accounts" color="#d97706" bg="rgba(217,119,6,0.1)" accent="#d97706" />
+          <StatCard icon={<UserCog size={20} />} label="Team Members" value={stats?.total_team_members ?? 0} subtext={`${stats?.active_team_members ?? 0} active`} color="#2563eb" bg="rgba(37,99,235,0.1)" accent="#2563eb" />
+          <StatCard icon={<MessageSquare size={20} />} label="Conversations" value={stats?.total_conversations ?? 0} subtext="Total chat threads" color="#0891b2" bg="rgba(8,145,178,0.1)" accent="#0891b2" />
+          <StatCard icon={<Activity size={20} />} label="Avg Leads / Account" value={avgLeads} subtext="Per account average" color="#db2777" bg="rgba(219,39,119,0.1)" accent="#db2777" />
         </div>
 
         {/* Accounts Table */}
         <div style={{
-          background: 'var(--bg-card)', borderRadius: '16px',
+          background: 'var(--bg-card)', borderRadius: '18px',
           border: '1px solid var(--border-subtle)', overflow: 'hidden',
+          boxShadow: '0 2px 12px -4px rgba(0,0,0,0.06)',
         }}>
           <div style={{
             padding: '20px 24px', borderBottom: '1px solid var(--border-subtle)',
@@ -242,43 +287,45 @@ export default function SuperAdminDashboard({ session, onSignOut }: { session: S
             flexWrap: 'wrap', gap: '12px',
           }}>
             <div>
-              <h2 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-main)' }}>All Accounts</h2>
-              <p style={{ margin: '4px 0 0', fontSize: '0.8rem', color: 'var(--text-dark)' }}>
-                {accounts.length} account{accounts.length !== 1 ? 's' : ''} on the platform
+              <h2 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-main)' }}>All Accounts</h2>
+              <p style={{ margin: '4px 0 0', fontSize: '0.78rem', color: 'var(--text-dark)' }}>
+                {filteredAccounts.length} of {accounts.length} account{accounts.length !== 1 ? 's' : ''}
               </p>
             </div>
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-              <div style={{ display: 'flex', gap: '4px' }}>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+              <div style={{ display: 'flex', gap: '4px', padding: '3px', borderRadius: '10px', background: 'var(--bg-light)' }}>
                 {(['all', 'active', 'inactive'] as const).map((f) => (
                   <button key={f} type="button" onClick={() => setStatusFilter(f)} style={{
-                    padding: '7px 12px', borderRadius: '8px', border: '1px solid',
-                    borderColor: statusFilter === f ? '#0f766e' : 'var(--border-subtle)',
-                    background: statusFilter === f ? 'rgba(15,118,110,0.08)' : 'var(--bg-card)',
-                    color: statusFilter === f ? '#0f766e' : 'var(--text-dark)',
-                    fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer',
-                    textTransform: 'capitalize', transition: 'all 0.15s',
+                    padding: '6px 14px', borderRadius: '7px', border: 'none',
+                    background: statusFilter === f ? 'var(--bg-card)' : 'transparent',
+                    color: statusFilter === f ? 'var(--text-main)' : 'var(--text-dark)',
+                    fontSize: '0.76rem', fontWeight: 600, cursor: 'pointer',
+                    textTransform: 'capitalize', transition: 'all 0.2s',
+                    boxShadow: statusFilter === f ? '0 1px 4px rgba(0,0,0,0.08)' : 'none',
                   }}>
                     {f}
                   </button>
                 ))}
               </div>
               <div style={{ position: 'relative' }}>
-                <Search size={16} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dark)' }} />
+                <Search size={16} style={{ position: 'absolute', left: '11px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dark)' }} />
                 <input
                   type="text" placeholder="Search by email..." value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  style={{ padding: '9px 12px 9px 34px', border: '1px solid var(--border-subtle)', borderRadius: '8px', fontSize: '0.85rem', outline: 'none', width: '240px' }}
-                  onFocus={(e) => { e.target.style.borderColor = '#0f766e'; }}
-                  onBlur={(e) => { e.target.style.borderColor = 'var(--border-subtle)'; }}
+                  style={{ padding: '9px 12px 9px 36px', border: '1px solid var(--border-subtle)', borderRadius: '10px', fontSize: '0.84rem', outline: 'none', width: '220px', background: 'var(--bg-light)', transition: 'border-color 0.15s, background 0.15s' }}
+                  onFocus={(e) => { e.target.style.borderColor = '#0f766e'; e.target.style.background = 'var(--bg-card)'; }}
+                  onBlur={(e) => { e.target.style.borderColor = 'var(--border-subtle)'; e.target.style.background = 'var(--bg-light)'; }}
                 />
               </div>
             </div>
           </div>
 
           {filteredAccounts.length === 0 ? (
-            <div style={{ padding: '48px 24px', textAlign: 'center' }}>
-              <Users size={36} style={{ color: 'var(--text-dark)', marginBottom: '10px' }} />
-              <p style={{ fontSize: '0.88rem', color: 'var(--text-dark)' }}>
+            <div style={{ padding: '56px 24px', textAlign: 'center' }}>
+              <div style={{ width: '56px', height: '56px', borderRadius: '16px', background: 'var(--bg-light)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: '14px' }}>
+                <Users size={28} style={{ color: 'var(--text-dark)' }} />
+              </div>
+              <p style={{ fontSize: '0.88rem', color: 'var(--text-dark)', margin: 0 }}>
                 {search || statusFilter !== 'all' ? 'No accounts match your filters.' : 'No accounts found yet.'}
               </p>
             </div>
@@ -287,21 +334,28 @@ export default function SuperAdminDashboard({ session, onSignOut }: { session: S
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ background: 'var(--bg-light)' }}>
-                    <th style={thStyle}>#</th>
-                    <th style={thStyle}><Mail size={12} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'middle' }} />Email</th>
+                    <th style={thStyle}>Account</th>
                     <th style={thStyle}>Status</th>
                     <th style={thStyle}>Joined</th>
                     <th style={thStyle}>Last Active</th>
-                    <th style={thStyle}>Team</th>
-                    <th style={thStyle}>Leads</th>
-                    <th style={thStyle}>Chats</th>
+                    <th style={thStyle} colSpan={3}>Usage</th>
                     <th style={thStyle}>Actions</th>
+                  </tr>
+                  <tr>
+                    <th colSpan={4} style={{ padding: 0, border: 'none' }} />
+                    <th style={subThStyle}>Team</th>
+                    <th style={subThStyle}>Leads</th>
+                    <th style={subThStyle}>Chats</th>
+                    <th style={{ padding: 0, border: 'none' }} />
                   </tr>
                 </thead>
                 <tbody>
                   {filteredAccounts.map((account, idx) => {
                     const active = isActive(account.last_sign_in_at);
                     const isSelf = account.owner_id === session.user.id;
+                    const initials = (account.email || '?').charAt(0).toUpperCase();
+                    const avatarColors = ['#0f766e', '#2563eb', '#d97706', '#db2777', '#0891b2', '#7c3aed'];
+                    const avatarColor = avatarColors[idx % avatarColors.length];
                     return (
                       <tr key={account.owner_id} style={{ borderBottom: '1px solid var(--border-subtle)', transition: 'background 0.15s', cursor: 'pointer' }}
                         onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--bg-light)'; }}
@@ -309,53 +363,60 @@ export default function SuperAdminDashboard({ session, onSignOut }: { session: S
                         onClick={() => setDrawerUserId(account.owner_id)}
                       >
                         <td style={tdStyle}>
-                          <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '26px', height: '26px', borderRadius: '50%', background: 'rgba(15,118,110,0.1)', color: '#0f766e', fontSize: '0.75rem', fontWeight: 700 }}>
-                            {idx + 1}
-                          </span>
-                        </td>
-                        <td style={tdStyle}>
-                          <div style={{ fontWeight: 600, color: 'var(--text-main)', fontSize: '0.85rem' }}>{account.email}</div>
-                          <div style={{ fontSize: '0.72rem', color: 'var(--text-dark)', marginTop: '2px' }}>{account.owner_id.slice(0, 8)}...</div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <div style={{
+                              width: '36px', height: '36px', borderRadius: '10px', flexShrink: 0,
+                              background: `${avatarColor}18`, color: avatarColor,
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              fontSize: '0.85rem', fontWeight: 700,
+                            }}>
+                              {initials}
+                            </div>
+                            <div style={{ minWidth: 0 }}>
+                              <div style={{ fontWeight: 600, color: 'var(--text-main)', fontSize: '0.84rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '220px' }}>{account.email}</div>
+                              <div style={{ fontSize: '0.7rem', color: 'var(--text-dark)', marginTop: '1px' }}>ID: {account.owner_id.slice(0, 8)}...</div>
+                            </div>
+                          </div>
                         </td>
                         <td style={tdStyle}>
                           <span style={{
                             display: 'inline-flex', alignItems: 'center', gap: '5px',
-                            padding: '3px 10px', borderRadius: '9999px',
-                            fontSize: '0.72rem', fontWeight: 700,
-                            background: active ? 'rgba(22,163,74,0.1)' : 'rgba(148,163,184,0.1)',
-                            color: active ? '#16a34a' : 'var(--text-dark)',
+                            padding: '4px 10px', borderRadius: '9999px',
+                            fontSize: '0.71rem', fontWeight: 700,
+                            background: active ? 'rgba(22,163,74,0.1)' : 'rgba(148,163,184,0.12)',
+                            color: active ? '#16a34a' : '#64748b',
                           }}>
-                            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: active ? '#16a34a' : 'var(--text-dark)' }} />
+                            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: active ? '#16a34a' : '#94a3b8', boxShadow: active ? '0 0 6px rgba(22,163,74,0.5)' : 'none' }} />
                             {active ? 'Active' : 'Inactive'}
                           </span>
                         </td>
                         <td style={{ ...tdStyle, fontSize: '0.8rem', color: 'var(--text-dark)' }}>{formatDate(account.created_at)}</td>
                         <td style={{ ...tdStyle, fontSize: '0.8rem', color: 'var(--text-dark)' }}>{formatRelative(account.last_sign_in_at)}</td>
                         <td style={tdStyle}>
-                          <span style={{ padding: '3px 10px', borderRadius: '6px', background: 'rgba(37,99,235,0.08)', color: '#2563eb', fontSize: '0.78rem', fontWeight: 700 }}>{account.team_count}</span>
+                          <span style={{ padding: '3px 10px', borderRadius: '7px', background: 'rgba(37,99,235,0.08)', color: '#2563eb', fontSize: '0.76rem', fontWeight: 700 }}>{account.team_count}</span>
                         </td>
                         <td style={tdStyle}>
-                          <span style={{ padding: '3px 10px', borderRadius: '6px', background: 'rgba(217,119,6,0.08)', color: '#d97706', fontSize: '0.78rem', fontWeight: 700 }}>{account.lead_count}</span>
+                          <span style={{ padding: '3px 10px', borderRadius: '7px', background: 'rgba(217,119,6,0.08)', color: '#d97706', fontSize: '0.76rem', fontWeight: 700 }}>{account.lead_count}</span>
                         </td>
                         <td style={tdStyle}>
-                          <span style={{ padding: '3px 10px', borderRadius: '6px', background: 'rgba(8,145,178,0.08)', color: '#0891b2', fontSize: '0.78rem', fontWeight: 700 }}>{account.conversation_count}</span>
+                          <span style={{ padding: '3px 10px', borderRadius: '7px', background: 'rgba(8,145,178,0.08)', color: '#0891b2', fontSize: '0.76rem', fontWeight: 700 }}>{account.conversation_count}</span>
                         </td>
                         <td style={tdStyle} onClick={(e) => e.stopPropagation()}>
                           <div style={{ display: 'flex', gap: '6px' }}>
                             <button type="button" onClick={() => setDrawerUserId(account.owner_id)} title="View account details" style={{
                               display: 'inline-flex', alignItems: 'center', gap: '5px',
-                              padding: '6px 10px', borderRadius: '7px', border: '1px solid var(--border-subtle)',
+                              padding: '6px 10px', borderRadius: '8px', border: '1px solid var(--border-subtle)',
                               background: 'var(--bg-card)', color: 'var(--text-muted)',
-                              fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', transition: 'all 0.15s', whiteSpace: 'nowrap',
+                              fontSize: '0.74rem', fontWeight: 700, cursor: 'pointer', transition: 'all 0.15s', whiteSpace: 'nowrap',
                             }}>
                               <Eye size={13} /> View
                             </button>
                             <button type="button" onClick={() => handleImpersonate(account)} disabled={isSelf || impersonatingId === account.owner_id} title={isSelf ? 'You cannot impersonate yourself' : "Log into this customer's CRM"} style={{
                               display: 'inline-flex', alignItems: 'center', gap: '5px',
-                              padding: '6px 12px', borderRadius: '7px', border: 'none',
+                              padding: '6px 12px', borderRadius: '8px', border: 'none',
                               background: isSelf ? 'var(--bg-light)' : '#0f766e',
-                              color: isSelf ? '#94a3b8' : 'var(--bg-card)',
-                              fontSize: '0.75rem', fontWeight: 700, cursor: (isSelf || impersonatingId === account.owner_id) ? 'not-allowed' : 'pointer',
+                              color: isSelf ? '#94a3b8' : '#fff',
+                              fontSize: '0.74rem', fontWeight: 700, cursor: (isSelf || impersonatingId === account.owner_id) ? 'not-allowed' : 'pointer',
                               transition: 'all 0.15s', whiteSpace: 'nowrap',
                             }}>
                               {impersonatingId === account.owner_id ? <Loader2 size={13} className="crm-spin" /> : <LogIn size={13} />}
@@ -572,32 +633,43 @@ const tdStyle: React.CSSProperties = {
   padding: '14px 16px', fontSize: '0.85rem', color: 'var(--text-muted)',
 };
 
-function StatCard({ icon, label, value, subtext, color, bg }: {
-  icon: React.ReactNode; label: string; value: number; subtext: string; color: string; bg: string;
+const subThStyle: React.CSSProperties = {
+  textAlign: 'left', padding: '4px 16px 10px', fontSize: '0.66rem', fontWeight: 700,
+  textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-dark)', whiteSpace: 'nowrap',
+};
+
+function StatCard({ icon, label, value, subtext, color, bg, accent }: {
+  icon: React.ReactNode; label: string; value: number; subtext: string; color: string; bg: string; accent: string;
 }) {
   return (
     <div style={{
-      background: 'var(--bg-card)', borderRadius: '14px', border: '1px solid var(--border-subtle)',
-      padding: '20px', transition: 'transform 0.2s, box-shadow 0.2s',
+      background: 'var(--bg-card)', borderRadius: '16px', border: '1px solid var(--border-subtle)',
+      padding: '18px 20px', transition: 'transform 0.2s, box-shadow 0.2s, border-color 0.2s',
+      position: 'relative', overflow: 'hidden',
     }}
-      onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 25px -8px rgba(0,0,0,0.12)'; }}
-      onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}
+      onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 10px 30px -8px rgba(0,0,0,0.12)'; e.currentTarget.style.borderColor = `${accent}40`; }}
+      onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = 'var(--border-subtle)'; }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '14px' }}>
+      <div style={{
+        position: 'absolute', top: 0, left: 0, right: 0, height: '3px',
+        background: `linear-gradient(90deg, ${accent}, ${accent}40)`,
+      }} />
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
         <div style={{
-          width: '44px', height: '44px', borderRadius: '10px',
+          width: '38px', height: '38px', borderRadius: '10px',
           background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', color,
+          flexShrink: 0,
         }}>
           {icon}
         </div>
-        <span style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-dark)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+        <span style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-dark)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
           {label}
         </span>
       </div>
-      <div style={{ fontSize: '1.9rem', fontWeight: 800, color: 'var(--text-main)', lineHeight: 1, marginBottom: '6px' }}>
+      <div style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--text-main)', lineHeight: 1, marginBottom: '5px' }}>
         {value.toLocaleString()}
       </div>
-      <div style={{ fontSize: '0.76rem', color: 'var(--text-dark)' }}>{subtext}</div>
+      <div style={{ fontSize: '0.74rem', color: 'var(--text-dark)' }}>{subtext}</div>
     </div>
   );
 }
