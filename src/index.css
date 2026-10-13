@@ -1230,207 +1230,568 @@ body {
 /* ==========================================
    CRM LOGIN PAGE
    ========================================== */
-.crm-login-page {
+/* ==========================================
+   3D CRM LOGIN PAGE
+   ========================================== */
+
+.crm3d-page {
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 24px 16px;
-  background:
-    radial-gradient(circle at 30% 20%, rgba(234, 179, 8, 0.12) 0%, transparent 50%),
-    radial-gradient(circle at 70% 80%, rgba(234, 179, 8, 0.08) 0%, transparent 50%),
-    linear-gradient(135deg, #FFFDF5 0%, #FEFCE8 50%, #FFFDF5 100%);
+  background: linear-gradient(160deg, #0a0e1a 0%, #0f172a 30%, #111827 60%, #0a0e1a 100%);
   font-family: 'Plus Jakarta Sans', sans-serif;
+  position: relative;
+  overflow: hidden;
+  perspective: 1500px;
 }
 
-.crm-login-card {
-  width: 100%;
-  max-width: 440px;
-  background: #FFFFFF;
-  border-radius: 20px;
-  padding: 36px 32px 28px 32px;
-  box-shadow: 0 25px 70px rgba(202, 138, 4, 0.15), 0 0 0 1px rgba(234, 179, 8, 0.2);
-  animation: crm-card-enter 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+/* --- Animated grid floor --- */
+.crm3d-grid-floor {
+  position: absolute;
+  bottom: -50%;
+  left: 50%;
+  width: 200%;
+  height: 100%;
+  transform: translateX(-50%) perspective(400px) rotateX(70deg);
+  background-image:
+    linear-gradient(rgba(250, 204, 21, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(250, 204, 21, 0.08) 1px, transparent 1px);
+  background-size: 48px 48px;
+  animation: crm3d-grid-scroll 20s linear infinite;
+  mask-image: radial-gradient(ellipse at center top, black 0%, transparent 70%);
+  -webkit-mask-image: radial-gradient(ellipse at center top, black 0%, transparent 70%);
+  pointer-events: none;
 }
 
-@keyframes crm-card-enter {
-  from { transform: translateY(20px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
+@keyframes crm3d-grid-scroll {
+  from { background-position: 0 0; }
+  to { background-position: 0 48px; }
 }
 
-.crm-login-brand {
+/* --- Glowing orbs --- */
+.crm3d-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  pointer-events: none;
+  opacity: 0.5;
+}
+.crm3d-glow-1 {
+  top: 10%; left: 5%;
+  width: 350px; height: 350px;
+  background: radial-gradient(circle, rgba(234, 179, 8, 0.35), transparent 70%);
+  animation: crm3d-orb-drift-1 12s ease-in-out infinite;
+}
+.crm3d-glow-2 {
+  bottom: 5%; right: 8%;
+  width: 400px; height: 400px;
+  background: radial-gradient(circle, rgba(13, 148, 136, 0.3), transparent 70%);
+  animation: crm3d-orb-drift-2 15s ease-in-out infinite;
+}
+
+@keyframes crm3d-orb-drift-1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(60px, -40px) scale(1.15); }
+}
+@keyframes crm3d-orb-drift-2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-80px, 50px) scale(0.9); }
+}
+
+/* --- 3D floating shapes --- */
+.crm3d-bg-shapes {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.crm3d-shape {
+  position: absolute;
+  transform-style: preserve-3d;
+}
+
+.crm3d-cube {
+  width: 80px; height: 80px;
+  background: linear-gradient(135deg, rgba(250, 204, 21, 0.12), rgba(234, 179, 8, 0.04));
+  border: 1.5px solid rgba(250, 204, 21, 0.2);
+  border-radius: 14px;
+  box-shadow: 0 20px 60px rgba(234, 179, 8, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+.crm3d-cube::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.08), transparent 60%);
+  pointer-events: none;
+}
+
+.crm3d-cube-small {
+  width: 48px; height: 48px;
+  background: linear-gradient(135deg, rgba(13, 148, 136, 0.15), rgba(13, 148, 136, 0.04));
+  border: 1.5px solid rgba(13, 148, 136, 0.25);
+  border-radius: 10px;
+  box-shadow: 0 15px 40px rgba(13, 148, 136, 0.12);
+}
+
+.crm3d-sphere {
+  width: 70px; height: 70px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, rgba(250, 204, 21, 0.2), rgba(234, 179, 8, 0.03));
+  border: 1px solid rgba(250, 204, 21, 0.15);
+  box-shadow: 0 20px 50px rgba(234, 179, 8, 0.08), inset -8px -8px 20px rgba(0, 0, 0, 0.2);
+}
+
+.crm3d-sphere-small {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, rgba(99, 102, 241, 0.2), rgba(99, 102, 241, 0.03));
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  box-shadow: 0 12px 30px rgba(99, 102, 241, 0.1), inset -6px -6px 14px rgba(0, 0, 0, 0.15);
+}
+
+.crm3d-pyramid {
+  width: 0; height: 0;
+  border-left: 45px solid transparent;
+  border-right: 45px solid transparent;
+  border-bottom: 78px solid rgba(13, 148, 136, 0.1);
+  filter: drop-shadow(0 15px 30px rgba(13, 148, 136, 0.15));
+}
+
+.crm3d-ring {
+  width: 90px; height: 90px;
+  border-radius: 50%;
+  border: 3px solid rgba(250, 204, 21, 0.15);
+  border-right-color: rgba(250, 204, 21, 0.35);
+  border-bottom-color: rgba(250, 204, 21, 0.25);
+  box-shadow: 0 15px 40px rgba(234, 179, 8, 0.06);
+}
+
+/* Shape positions and float animations */
+.crm3d-float-1 { top: 12%; left: 8%; animation: crm3d-float-1 18s ease-in-out infinite; }
+.crm3d-float-2 { top: 22%; right: 12%; animation: crm3d-float-2 22s ease-in-out infinite; }
+.crm3d-float-3 { bottom: 18%; left: 14%; animation: crm3d-float-3 16s ease-in-out infinite; }
+.crm3d-float-4 { top: 35%; left: 6%; animation: crm3d-float-4 20s ease-in-out infinite; }
+.crm3d-float-5 { bottom: 28%; right: 6%; animation: crm3d-float-5 24s ease-in-out infinite; }
+.crm3d-float-6 { top: 50%; right: 18%; animation: crm3d-float-6 19s ease-in-out infinite; }
+
+@keyframes crm3d-float-1 {
+  0%, 100% { transform: translate(0, 0) rotate(0deg) rotateX(0deg) rotateY(0deg); }
+  25% { transform: translate(30px, -20px) rotate(90deg) rotateX(15deg) rotateY(10deg); }
+  50% { transform: translate(10px, -40px) rotate(180deg) rotateX(0deg) rotateY(20deg); }
+  75% { transform: translate(-20px, -15px) rotate(270deg) rotateX(-10deg) rotateY(5deg); }
+}
+@keyframes crm3d-float-2 {
+  0%, 100% { transform: translate(0, 0) rotate(0deg) rotateY(0deg); }
+  33% { transform: translate(-25px, 30px) rotate(120deg) rotateY(180deg); }
+  66% { transform: translate(15px, 50px) rotate(240deg) rotateY(360deg); }
+}
+@keyframes crm3d-float-3 {
+  0%, 100% { transform: translate(0, 0) scale(1) rotate(0deg); }
+  50% { transform: translate(40px, -30px) scale(1.2) rotate(180deg); }
+}
+@keyframes crm3d-float-4 {
+  0%, 100% { transform: translate(0, 0) rotate(0deg) rotateX(0deg); }
+  50% { transform: translate(35px, 25px) rotate(180deg) rotateX(25deg); }
+}
+@keyframes crm3d-float-5 {
+  0%, 100% { transform: translate(0, 0) rotate(0deg) rotateY(0deg); }
+  50% { transform: translate(-40px, -35px) rotate(-180deg) rotateY(180deg); }
+}
+@keyframes crm3d-float-6 {
+  0%, 100% { transform: translate(0, 0) rotate(0deg) scale(1); }
+  50% { transform: translate(-30px, 40px) rotate(360deg) scale(1.1); }
+}
+
+/* --- 3D Card --- */
+.crm3d-card-outer {
+  position: relative;
+  z-index: 10;
+  transform-style: preserve-3d;
+}
+
+.crm3d-card {
+  width: 440px;
+  max-width: 100%;
+  background: linear-gradient(165deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.03) 100%);
+  backdrop-filter: blur(24px) saturate(1.5);
+  -webkit-backdrop-filter: blur(24px) saturate(1.5);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 24px;
+  padding: 40px 36px 30px 36px;
+  box-shadow:
+    0 40px 80px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(255, 255, 255, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+  transition: transform 0.15s ease-out, box-shadow 0.3s ease;
+  transform-style: preserve-3d;
+  position: relative;
+  animation: crm3d-card-enter 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes crm3d-card-enter {
+  from { transform: perspective(1200px) rotateX(15deg) translateZ(-50px); opacity: 0; }
+  to { transform: perspective(1200px) rotateX(0deg) translateZ(0px); opacity: 1; }
+}
+
+/* Card 3D edge — gives physical thickness */
+.crm3d-card-edge {
+  position: absolute;
+  inset: 0;
+  border-radius: 24px;
+  background: linear-gradient(180deg, rgba(234, 179, 8, 0.15), rgba(15, 23, 42, 0.4));
+  transform: translateZ(-12px);
+  box-shadow: 0 0 40px rgba(234, 179, 8, 0.1);
+  pointer-events: none;
+}
+
+/* Moving shine on the card */
+.crm3d-card-shine {
+  position: absolute;
+  inset: 0;
+  border-radius: 24px;
+  background: linear-gradient(
+    105deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.08) 45%,
+    rgba(255, 255, 255, 0.15) 50%,
+    rgba(255, 255, 255, 0.08) 55%,
+    transparent 70%
+  );
+  background-size: 200% 100%;
+  animation: crm3d-shine 8s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes crm3d-shine {
+  0%, 100% { background-position: 200% 0; }
+  50% { background-position: -200% 0; }
+}
+
+/* --- Brand --- */
+.crm3d-brand {
   text-align: center;
   margin-bottom: 28px;
+  transform: translateZ(30px);
 }
 
-.crm-login-logo {
-  width: 56px;
-  height: 56px;
-  border-radius: 16px;
+.crm3d-logo {
+  width: 60px; height: 60px;
+  margin: 0 auto 16px auto;
+  position: relative;
+  transform-style: preserve-3d;
+  animation: crm3d-logo-float 4s ease-in-out infinite;
+}
+
+@keyframes crm3d-logo-float {
+  0%, 100% { transform: translateZ(20px) rotateY(0deg); }
+  50% { transform: translateZ(35px) rotateY(10deg); }
+}
+
+.crm3d-logo-inner {
+  width: 60px; height: 60px;
+  border-radius: 18px;
   background: linear-gradient(135deg, #FACC15 0%, #EAB308 50%, #CA8A04 100%);
   color: #422006;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 0 auto 14px auto;
-  box-shadow: 0 8px 24px rgba(234, 179, 8, 0.35);
+  box-shadow:
+    0 12px 30px rgba(234, 179, 8, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    inset 0 -2px 5px rgba(0, 0, 0, 0.1);
+  position: relative;
+  z-index: 2;
 }
 
-.crm-login-brand h1 {
+.crm3d-logo-shadow {
+  position: absolute;
+  bottom: -6px;
+  left: 10%;
+  width: 80%;
+  height: 12px;
+  background: radial-gradient(ellipse, rgba(234, 179, 8, 0.4), transparent 70%);
+  filter: blur(8px);
+  animation: crm3d-logo-shadow-pulse 4s ease-in-out infinite;
+}
+
+@keyframes crm3d-logo-shadow-pulse {
+  0%, 100% { transform: scale(1); opacity: 0.6; }
+  50% { transform: scale(0.8); opacity: 0.9; }
+}
+
+.crm3d-brand h1 {
   font-family: 'Outfit', sans-serif;
-  font-size: 1.5rem;
+  font-size: 1.55rem;
   font-weight: 900;
-  color: #0F172A;
+  color: #FFFFFF;
   letter-spacing: -0.5px;
-  margin: 0 0 4px 0;
+  margin: 0 0 5px 0;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
 }
 
-.crm-login-brand p {
-  font-size: 0.85rem;
-  color: #64748B;
+.crm3d-brand p {
+  font-size: 0.86rem;
+  color: rgba(255, 255, 255, 0.5);
   margin: 0;
 }
 
-.crm-mode-toggle {
+/* --- 3D Mode Toggle --- */
+.crm3d-toggle {
   display: flex;
-  background: #F1F5F9;
-  border-radius: 12px;
-  padding: 4px;
-  margin-bottom: 24px;
+  position: relative;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 14px;
+  padding: 5px;
+  margin-bottom: 26px;
   gap: 4px;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  transform: translateZ(20px);
 }
 
-.crm-mode-toggle button {
+.crm3d-toggle-slider {
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  width: calc(50% - 5px);
+  height: calc(100% - 10px);
+  background: linear-gradient(180deg, #FACC15 0%, #EAB308 60%, #CA8A04 100%);
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(234, 179, 8, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.crm3d-toggle-slider.right {
+  transform: translateX(100%);
+}
+
+.crm3d-toggle button {
   flex: 1;
-  padding: 10px;
+  padding: 11px;
   border: none;
-  border-radius: 9px;
+  border-radius: 10px;
   background: transparent;
   font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: 0.84rem;
+  font-size: 0.85rem;
   font-weight: 700;
-  color: #64748B;
+  color: rgba(255, 255, 255, 0.5);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: color 0.3s ease;
+  position: relative;
+  z-index: 1;
+}
+.crm3d-toggle button.active {
+  color: #1a1a0a;
 }
 
-.crm-mode-toggle button.active {
-  background: #FFFFFF;
-  color: #0F172A;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-}
-
-.crm-login-form {
+/* --- 3D Form Fields --- */
+.crm3d-form {
   display: flex;
   flex-direction: column;
   gap: 18px;
+  transform: translateZ(15px);
 }
 
-.crm-field {
+.crm3d-field {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 7px;
 }
 
-.crm-field label {
+.crm3d-field label {
   font-size: 0.82rem;
   font-weight: 700;
-  color: #334155;
+  color: rgba(255, 255, 255, 0.6);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
-.crm-input-wrap {
+.crm3d-input-3d {
+  position: relative;
+  transform-style: preserve-3d;
+}
+
+.crm3d-input-face {
   position: relative;
   display: flex;
   align-items: center;
   gap: 10px;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 13px;
+  box-shadow:
+    inset 0 2px 6px rgba(0, 0, 0, 0.3),
+    0 1px 0 rgba(255, 255, 255, 0.05);
+  transition: all 0.25s ease;
 }
 
-.crm-input-wrap > svg {
+.crm3d-input-face:focus-within {
+  border-color: rgba(234, 179, 8, 0.4);
+  box-shadow:
+    inset 0 2px 6px rgba(0, 0, 0, 0.2),
+    0 0 0 3px rgba(234, 179, 8, 0.1),
+    0 0 20px rgba(234, 179, 8, 0.08);
+}
+
+.crm3d-input-face > svg {
   position: absolute;
   left: 14px;
-  color: #94A3B8;
+  color: rgba(255, 255, 255, 0.3);
+  pointer-events: none;
+  transition: color 0.25s ease;
+  z-index: 1;
+}
+
+.crm3d-input-face:focus-within > svg {
+  color: rgba(250, 204, 21, 0.7);
+}
+
+.crm3d-input-face input {
+  width: 100%;
+  padding: 13px 14px 13px 42px;
+  border: none;
+  border-radius: 13px;
+  font-size: 0.9rem;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  color: #FFFFFF;
+  background: transparent;
+  outline: none;
+  position: relative;
+  z-index: 1;
+}
+
+.crm3d-input-face input::placeholder {
+  color: rgba(255, 255, 255, 0.25);
+}
+
+.crm3d-input-glow {
+  position: absolute;
+  inset: 0;
+  border-radius: 13px;
+  background: radial-gradient(circle at var(--mx, 50%) var(--my, 50%), rgba(234, 179, 8, 0.06), transparent 50%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
   pointer-events: none;
 }
 
-.crm-input-wrap input {
-  width: 100%;
-  padding: 12px 14px 12px 42px;
-  border: 1.5px solid #E2E8F0;
-  border-radius: 12px;
-  font-size: 0.9rem;
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  color: #0F172A;
-  background: #F8FAFC;
-  transition: all 0.2s ease;
-  outline: none;
+.crm3d-input-face:focus-within .crm3d-input-glow {
+  opacity: 1;
 }
 
-.crm-input-wrap input:focus {
-  border-color: #EAB308;
-  background: #FFFDF5;
-  box-shadow: 0 0 0 3px rgba(234, 179, 8, 0.12);
-}
-
-.crm-password-toggle {
+.crm3d-password-toggle {
   position: absolute;
   right: 12px;
   background: none;
   border: none;
-  color: #94A3B8;
+  color: rgba(255, 255, 255, 0.3);
   cursor: pointer;
   padding: 4px;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: color 0.2s ease;
+  z-index: 2;
 }
 
-.crm-password-toggle:hover {
-  color: #475569;
+.crm3d-password-toggle:hover {
+  color: rgba(255, 255, 255, 0.6);
 }
 
-.crm-error {
-  background: #FEF2F2;
-  border: 1px solid rgba(239, 68, 68, 0.25);
-  border-radius: 10px;
+/* --- Error --- */
+.crm3d-error {
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 11px;
   padding: 10px 14px;
   font-size: 0.82rem;
-  color: #DC2626;
+  color: #FCA5A5;
   font-weight: 600;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  animation: crm3d-error-shake 0.4s ease;
 }
 
-.crm-login-button {
+@keyframes crm3d-error-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-8px); }
+  75% { transform: translateX(8px); }
+}
+
+/* --- 3D Submit Button --- */
+.crm3d-submit-btn {
   width: 100%;
-  padding: 14px;
-  border-radius: 12px;
-  border: 1px solid #CA8A04;
-  background: linear-gradient(180deg, #FACC15 0%, #EAB308 60%, #CA8A04 100%);
-  color: #000;
-  font-family: 'Outfit', sans-serif;
-  font-weight: 900;
-  font-size: 0.92rem;
-  letter-spacing: 0.3px;
+  padding: 0;
+  border: none;
   cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 6px 18px rgba(202, 138, 4, 0.3);
+  border-radius: 14px;
+  background: transparent;
+  position: relative;
+  transform-style: preserve-3d;
+  margin-top: 4px;
+}
+
+.crm3d-btn-text {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
+  padding: 15px;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #FACC15 0%, #EAB308 60%, #CA8A04 100%);
+  color: #1a1500;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 900;
+  font-size: 0.92rem;
+  letter-spacing: 0.3px;
+  box-shadow:
+    0 8px 20px rgba(234, 179, 8, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.12);
+  transition: all 0.2s ease;
+  position: relative;
+  z-index: 2;
+  transform: translateZ(0px);
 }
 
-.crm-login-button:hover:not(:disabled) {
-  background: linear-gradient(180deg, #FEF08A 0%, #FACC15 60%, #EAB308 100%);
-  transform: translateY(-1px);
-  box-shadow: 0 10px 24px rgba(202, 138, 4, 0.4);
+.crm3d-btn-side {
+  position: absolute;
+  bottom: -5px;
+  left: 4px;
+  right: 4px;
+  height: 6px;
+  background: linear-gradient(180deg, #CA8A04 0%, #854D0E 100%);
+  border-radius: 0 0 10px 10px;
+  transform: translateZ(-6px);
+  box-shadow: 0 4px 12px rgba(202, 138, 4, 0.3);
 }
 
-.crm-login-button:active:not(:disabled) {
-  transform: translateY(0) scale(0.98);
+.crm3d-btn-bottom {
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  width: 70%;
+  height: 16px;
+  background: radial-gradient(ellipse, rgba(234, 179, 8, 0.3), transparent 70%);
+  filter: blur(10px);
+  transform: translateX(-50%) translateZ(-10px);
 }
 
-.crm-login-button:disabled {
-  opacity: 0.6;
+.crm3d-submit-btn:hover:not(:disabled) .crm3d-btn-text {
+  background: linear-gradient(180deg, #FDE047 0%, #FACC15 60%, #EAB308 100%);
+  transform: translateZ(6px);
+  box-shadow:
+    0 12px 28px rgba(234, 179, 8, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.crm3d-submit-btn:active:not(:disabled) .crm3d-btn-text {
+  transform: translateZ(2px) scale(0.98);
+}
+
+.crm3d-submit-btn:disabled .crm3d-btn-text {
+  opacity: 0.5;
   cursor: not-allowed;
 }
 
@@ -1442,17 +1803,19 @@ body {
   to { transform: rotate(360deg); }
 }
 
-.crm-switch-mode {
+/* --- Switch Mode --- */
+.crm3d-switch {
   text-align: center;
-  margin-top: 20px;
+  margin-top: 22px;
   font-size: 0.82rem;
-  color: #64748B;
+  color: rgba(255, 255, 255, 0.4);
+  transform: translateZ(15px);
 }
 
-.crm-switch-mode button {
+.crm3d-switch button {
   background: none;
   border: none;
-  color: #CA8A04;
+  color: #FACC15;
   font-weight: 700;
   cursor: pointer;
   font-size: 0.82rem;
@@ -1460,31 +1823,92 @@ body {
   align-items: center;
   gap: 4px;
   font-family: 'Plus Jakarta Sans', sans-serif;
-  transition: color 0.2s ease;
+  transition: color 0.2s ease, text-shadow 0.2s ease;
+  text-shadow: 0 0 0px rgba(234, 179, 8, 0);
 }
 
-.crm-switch-mode button:hover {
-  color: #854D0E;
+.crm3d-switch button:hover {
+  color: #FDE047;
   text-decoration: underline;
+  text-shadow: 0 0 12px rgba(234, 179, 8, 0.3);
 }
 
-.crm-back-link {
+/* --- Back Link --- */
+.crm3d-back {
   text-align: center;
   margin-top: 16px;
   padding-top: 16px;
-  border-top: 1px solid #F1F5F9;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  transform: translateZ(10px);
 }
 
-.crm-back-link a {
+.crm3d-back a {
   font-size: 0.78rem;
-  color: #94A3B8;
+  color: rgba(255, 255, 255, 0.25);
   text-decoration: none;
   font-weight: 600;
   transition: color 0.2s ease;
 }
 
-.crm-back-link a:hover {
-  color: #64748B;
+.crm3d-back a:hover {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* --- 3D Feature Badges --- */
+.crm3d-features {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 12px;
+  z-index: 5;
+}
+
+.crm3d-feature-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 100px;
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.74rem;
+  font-weight: 700;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+  animation: crm3d-badge-float 5s ease-in-out infinite;
+}
+
+.crm3d-feature-badge:nth-child(1) { animation-delay: 0s; }
+.crm3d-feature-badge:nth-child(2) { animation-delay: 0.8s; }
+.crm3d-feature-badge:nth-child(3) { animation-delay: 1.6s; }
+.crm3d-feature-badge:nth-child(4) { animation-delay: 2.4s; }
+
+@keyframes crm3d-badge-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+/* --- Responsive --- */
+@media (max-width: 520px) {
+  .crm3d-card {
+    padding: 32px 24px 24px 24px;
+    border-radius: 20px;
+  }
+  .crm3d-brand h1 { font-size: 1.35rem; }
+  .crm3d-features {
+    flex-wrap: wrap;
+    justify-content: center;
+    width: 90%;
+  }
+  .crm3d-feature-badge { font-size: 0.68rem; padding: 6px 10px; }
+}
+
+@media (max-width: 400px) {
+  .crm3d-features { display: none; }
 }
 
 /* ==========================================
