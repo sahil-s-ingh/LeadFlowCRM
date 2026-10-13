@@ -63,7 +63,9 @@ const PAGE_SUBTITLES: Record<NavKey, string> = {
   profile: 'Super admin account settings',
 };
 
-export default function SuperAdminDashboard({ session, onSignOut }: { session: Session; onSignOut: () => void }) {
+const VALID_NAV_KEYS: NavKey[] = ['dashboard', 'profile', 'plans', 'features', 'legal', 'usage', 'setup', 'email', 'payments'];
+
+export default function SuperAdminDashboard({ session, onSignOut, initialView }: { session: Session; onSignOut: () => void; initialView?: string }) {
   const [stats, setStats] = useState<Stats | null>(null);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState(true);
@@ -72,7 +74,10 @@ export default function SuperAdminDashboard({ session, onSignOut }: { session: S
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [impersonatingId, setImpersonatingId] = useState<string | null>(null);
   const [drawerUserId, setDrawerUserId] = useState<string | null>(null);
-  const [view, setView] = useState<NavKey>('dashboard');
+  const [view, setView] = useState<NavKey>(() => {
+    if (initialView && VALID_NAV_KEYS.includes(initialView as NavKey)) return initialView as NavKey;
+    return 'dashboard';
+  });
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const loadData = useCallback(async () => {
@@ -187,7 +192,27 @@ export default function SuperAdminDashboard({ session, onSignOut }: { session: S
   const navigate = (key: NavKey) => {
     setView(key);
     setSidebarOpen(false);
+    const currentPath = window.location.hash.slice(1);
+    const prefix = currentPath.startsWith('/') ? '/' : '';
+    const newHash = `#${prefix}superadmin/${key}`;
+    if (window.location.hash !== newHash) {
+      window.location.hash = newHash;
+    }
   };
+
+  useEffect(() => {
+    const onHashChange = () => {
+      const currentPath = window.location.hash.slice(1);
+      const match = currentPath.replace(/^\/?superadmin\//, '');
+      if (match && VALID_NAV_KEYS.includes(match as NavKey)) {
+        setView(match as NavKey);
+      } else if (!currentPath.includes('/')) {
+        setView('dashboard');
+      }
+    };
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, []);
 
   const renderContent = () => {
     if (view === 'profile') return <AdminProfilePage session={session} />;

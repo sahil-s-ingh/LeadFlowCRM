@@ -171,7 +171,7 @@ function App() {
   }, [hash, session]);
 
   // If impersonating, inject banner above the CRM dashboard
-  const showImpersonationBanner = !!impersonationAdminEmail && (hash === 'admin' || hash === '/admin' || hash === 'signup' || hash === '/signup');
+  const showImpersonationBanner = !!impersonationAdminEmail && (hash.startsWith('admin') || hash.startsWith('/admin') || hash.startsWith('signup') || hash.startsWith('/signup'));
 
   // Landing page for root hash
   if (hash === '' || hash === '/' || hash === '#') {
@@ -194,8 +194,8 @@ function App() {
     return <LegalPageView slug={slug} />;
   }
 
-  // Super admin route: #/superadmin
-  if (hash === 'superadmin' || hash === '/superadmin') {
+  // Super admin route: #/superadmin or #/superadmin/<section>
+  if (hash === 'superadmin' || hash === '/superadmin' || hash.startsWith('superadmin/') || hash.startsWith('/superadmin/')) {
     if (!authChecked || (session && !superAdminChecked)) {
       return (
         <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #0f172a, #1e293b)' }}>
@@ -239,16 +239,18 @@ function App() {
       );
     }
 
+    const subPath = hash.replace(/^\/?superadmin\//, '').replace(/^\/?superadmin$/, '');
     return (
       <SuperAdminDashboard
         session={session}
         onSignOut={async () => { await supabase.auth.signOut(); }}
+        initialView={(subPath || undefined) as 'dashboard' | 'profile' | 'plans' | 'features' | 'legal' | 'usage' | 'setup' | 'email' | 'payments' | undefined}
       />
     );
   }
 
-  // CRM admin route: #/admin
-  if (hash === 'admin' || hash === '/admin') {
+  // CRM admin route: #/admin or #/admin/<section>
+  if (hash === 'admin' || hash === '/admin' || hash.startsWith('admin/') || hash.startsWith('/admin/')) {
     if (!authChecked) {
       return (
         <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-light)' }}>
@@ -261,18 +263,19 @@ function App() {
       return <CrmLogin />;
     }
 
+    const crmSubPath = hash.replace(/^\/?admin\//, '').replace(/^\/?admin$/, '');
     return (
       <>
         {showImpersonationBanner && (
           <ImpersonationBanner adminEmail={impersonationAdminEmail!} onExit={exitImpersonation} />
         )}
-        <CrmDashboard session={session} />
+        <CrmDashboard session={session} initialView={crmSubPath || undefined} />
       </>
     );
   }
 
-  // CRM signup route: #/signup
-  if (hash === 'signup' || hash === '/signup') {
+  // CRM signup route: #/signup or #/signup/<section>
+  if (hash === 'signup' || hash === '/signup' || hash.startsWith('signup/') || hash.startsWith('/signup/')) {
     if (!authChecked) {
       return (
         <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-light)' }}>
@@ -285,12 +288,13 @@ function App() {
       return <CrmLogin initialMode="signup" />;
     }
 
+    const signupSubPath = hash.replace(/^\/?signup\//, '').replace(/^\/?signup$/, '');
     return (
       <>
         {showImpersonationBanner && (
           <ImpersonationBanner adminEmail={impersonationAdminEmail!} onExit={exitImpersonation} />
         )}
-        <CrmDashboard session={session} />
+        <CrmDashboard session={session} initialView={signupSubPath || undefined} />
       </>
     );
   }

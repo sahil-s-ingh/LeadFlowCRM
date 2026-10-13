@@ -567,7 +567,9 @@ async function sendMetaConversionEvent(leadId: string, lead: Lead, newStatus: Le
   }
 }
 
-export default function CrmDashboard({ session }: { session: Session }) {
+const VALID_VIEWS: ActiveView[] = ['dashboard', 'leads', 'ib_leads', 'inbox_hub', 'inbox', 'whatsapp', 'email_inbox', 'settings', 'drip', 'analytics_hub', 'email_analytics', 'message_templates', 'broadcast_hub', 'broadcast', 'email_broadcast', 'telegram_broadcast', 'activity_timeline', 'revenue_forecast', 'direct_link', 'followups', 'leaderboard', 'goals', 'win_loss', 'duplicates', 'heatmap', 'automations', 'brokers', 'lead_tracker'];
+
+export default function CrmDashboard({ session, initialView }: { session: Session; initialView?: string }) {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -652,7 +654,36 @@ export default function CrmDashboard({ session }: { session: Session }) {
   const [bulkAssignValue, setBulkAssignValue] = useState('');
   const [bulkAssignUpdating, setBulkAssignUpdating] = useState(false);
   const [bulkAssignResult, setBulkAssignResult] = useState<number | null>(null);
-  const [activeView, setActiveView] = useState<ActiveView>('dashboard');
+  const [activeView, setActiveView] = useState<ActiveView>(() => {
+    if (initialView && VALID_VIEWS.includes(initialView as ActiveView)) return initialView as ActiveView;
+    return 'dashboard';
+  });
+
+  const navigateToView = (view: ActiveView) => {
+    setActiveView(view);
+    const basePath = window.location.hash.replace(/^#\/?[^/]*\/?.*$/, (m) => m.split('/')[0] || 'admin');
+    const currentPath = window.location.hash.slice(1);
+    const prefix = currentPath.startsWith('/') ? '/' : '';
+    const routeRoot = currentPath.replace(/^\/?[^/]+\/?.*$/, (m) => m.split('/')[0]) || 'admin';
+    const newHash = `#${prefix}${routeRoot}/${view}`;
+    if (window.location.hash !== newHash) {
+      window.location.hash = newHash;
+    }
+  };
+
+  useEffect(() => {
+    const onHashChange = () => {
+      const currentPath = window.location.hash.slice(1);
+      const match = currentPath.replace(/^\/?[^/]+\//, '');
+      if (match && VALID_VIEWS.includes(match as ActiveView)) {
+        setActiveView(match as ActiveView);
+      } else if (!match || !currentPath.includes('/')) {
+        setActiveView('dashboard');
+      }
+    };
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, []);
   const [unreadCount, setUnreadCount] = useState(0);
   const [waUnreadCount, setWaUnreadCount] = useState(0);
   const [emailUnreadCount, setEmailUnreadCount] = useState(0);
@@ -2027,22 +2058,22 @@ export default function CrmDashboard({ session }: { session: Session }) {
         {sidebarSections.main && (
         <div className="crm-nav-section">
           {!sidebarCollapsed && <span className="crm-nav-label">MAIN</span>}
-          <a className={`crm-nav-item ${activeView === 'dashboard' ? 'active' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`} onClick={() => { setActiveView('dashboard'); setMobileSidebarOpen(false); }} style={{ cursor: 'pointer' }} title={sidebarCollapsed ? 'Dashboard' : undefined}>
+          <a className={`crm-nav-item ${activeView === 'dashboard' ? 'active' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`} onClick={() => { navigateToView('dashboard'); setMobileSidebarOpen(false); }} style={{ cursor: 'pointer' }} title={sidebarCollapsed ? 'Dashboard' : undefined}>
             <LayoutGrid size={18} /> {!sidebarCollapsed && 'Dashboard'}
           </a>
           {sectionVisibility.leads && (
-          <a className={`crm-nav-item ${activeView === 'leads' ? 'active' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`} onClick={() => { setActiveView('leads'); setMobileSidebarOpen(false); setMobileNav('leads'); }} style={{ cursor: 'pointer' }} title={sidebarCollapsed ? 'Leads' : undefined}>
+          <a className={`crm-nav-item ${activeView === 'leads' ? 'active' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`} onClick={() => { navigateToView('leads'); setMobileSidebarOpen(false); setMobileNav('leads'); }} style={{ cursor: 'pointer' }} title={sidebarCollapsed ? 'Leads' : undefined}>
             <Users size={18} /> {!sidebarCollapsed && 'Leads'}
             {!sidebarCollapsed && <span className="crm-nav-badge">{stats.total}</span>}
           </a>
           )}
           {showIbLeads && sectionVisibility.ib_leads && (
-            <a className={`crm-nav-item ${activeView === 'ib_leads' ? 'active' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`} onClick={() => { setActiveView('ib_leads'); setMobileSidebarOpen(false); setMobileNav('leads'); }} style={{ cursor: 'pointer' }} title={sidebarCollapsed ? 'IB Leads' : undefined}>
+            <a className={`crm-nav-item ${activeView === 'ib_leads' ? 'active' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`} onClick={() => { navigateToView('ib_leads'); setMobileSidebarOpen(false); setMobileNav('leads'); }} style={{ cursor: 'pointer' }} title={sidebarCollapsed ? 'IB Leads' : undefined}>
               <Building2 size={18} /> {!sidebarCollapsed && 'IB Leads'}
             </a>
           )}
           {sectionVisibility.brokers && (
-          <a className={`crm-nav-item ${activeView === 'brokers' ? 'active' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`} onClick={() => { setActiveView('brokers'); setMobileSidebarOpen(false); setMobileNav('leads'); }} style={{ cursor: 'pointer' }} title={sidebarCollapsed ? 'Broker Tracker' : undefined}>
+          <a className={`crm-nav-item ${activeView === 'brokers' ? 'active' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`} onClick={() => { navigateToView('brokers'); setMobileSidebarOpen(false); setMobileNav('leads'); }} style={{ cursor: 'pointer' }} title={sidebarCollapsed ? 'Broker Tracker' : undefined}>
             <TrendingUp size={18} /> {!sidebarCollapsed && 'Broker Tracker'}
           </a>
           )}
@@ -2051,7 +2082,7 @@ export default function CrmDashboard({ session }: { session: Session }) {
         {sidebarSections.inbox && sectionVisibility.inbox && (
         <div className="crm-nav-section">
           {!sidebarCollapsed && <span className="crm-nav-label">INBOX</span>}
-          <a className={`crm-nav-item ${activeView === 'inbox_hub' ? 'active' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`} onClick={() => { if (permissions.inbox) { setActiveView('inbox_hub'); setMobileSidebarOpen(false); setMobileNav('leads'); } }} style={{ cursor: permissions.inbox ? 'pointer' : 'not-allowed', position: 'relative', opacity: permissions.inbox ? 1 : 0.4 }} title={sidebarCollapsed ? 'Shared Inbox' : undefined}>
+          <a className={`crm-nav-item ${activeView === 'inbox_hub' ? 'active' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`} onClick={() => { if (permissions.inbox) { navigateToView('inbox_hub'); setMobileSidebarOpen(false); setMobileNav('leads'); } }} style={{ cursor: permissions.inbox ? 'pointer' : 'not-allowed', position: 'relative', opacity: permissions.inbox ? 1 : 0.4 }} title={sidebarCollapsed ? 'Shared Inbox' : undefined}>
             <InboxIcon size={18} /> {!sidebarCollapsed && 'Shared Inbox'}
             {!sidebarCollapsed && (unreadCount + waUnreadCount + emailUnreadCount) > 0 && permissions.inbox && (
               <span className="crm-nav-badge" style={{ background: 'rgba(239,68,68,0.15)', color: '#dc2626', fontWeight: 700 }}>{unreadCount + waUnreadCount + emailUnreadCount}</span>
@@ -2066,7 +2097,7 @@ export default function CrmDashboard({ session }: { session: Session }) {
         <div className="crm-nav-section">
           {!sidebarCollapsed && <span className="crm-nav-label">CAMPAIGNS</span>}
           {sectionVisibility.broadcasts && (
-          <a className={`crm-nav-item ${activeView === 'broadcast_hub' ? 'active' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`} onClick={() => { setActiveView('broadcast_hub'); setMobileSidebarOpen(false); setMobileNav('leads'); }} style={{ cursor: 'pointer' }} title={sidebarCollapsed ? 'Broadcasts' : undefined}>
+          <a className={`crm-nav-item ${activeView === 'broadcast_hub' ? 'active' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`} onClick={() => { navigateToView('broadcast_hub'); setMobileSidebarOpen(false); setMobileNav('leads'); }} style={{ cursor: 'pointer' }} title={sidebarCollapsed ? 'Broadcasts' : undefined}>
             <Send size={18} /> {!sidebarCollapsed && 'Broadcasts'}
           </a>
           )}
@@ -2076,12 +2107,12 @@ export default function CrmDashboard({ session }: { session: Session }) {
         <div className="crm-nav-section">
           {!sidebarCollapsed && <span className="crm-nav-label">ANALYTICS</span>}
           {sectionVisibility.analytics && (
-          <a className={`crm-nav-item ${activeView === 'analytics_hub' ? 'active' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`} onClick={() => { setActiveView('analytics_hub'); setMobileSidebarOpen(false); setMobileNav('leads'); }} style={{ cursor: 'pointer' }} title={sidebarCollapsed ? 'Analytics' : undefined}>
+          <a className={`crm-nav-item ${activeView === 'analytics_hub' ? 'active' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`} onClick={() => { navigateToView('analytics_hub'); setMobileSidebarOpen(false); setMobileNav('leads'); }} style={{ cursor: 'pointer' }} title={sidebarCollapsed ? 'Analytics' : undefined}>
             <BarChart3 size={18} /> {!sidebarCollapsed && 'Analytics'}
           </a>
           )}
           {sectionVisibility.lead_tracker && (
-          <a className={`crm-nav-item ${activeView === 'lead_tracker' ? 'active' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`} onClick={() => { setActiveView('lead_tracker'); setMobileSidebarOpen(false); setMobileNav('leads'); }} style={{ cursor: 'pointer' }} title={sidebarCollapsed ? 'Lead Tracker' : undefined}>
+          <a className={`crm-nav-item ${activeView === 'lead_tracker' ? 'active' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`} onClick={() => { navigateToView('lead_tracker'); setMobileSidebarOpen(false); setMobileNav('leads'); }} style={{ cursor: 'pointer' }} title={sidebarCollapsed ? 'Lead Tracker' : undefined}>
             <Radar size={18} /> {!sidebarCollapsed && 'Lead Tracker'}
           </a>
           )}
@@ -2091,12 +2122,12 @@ export default function CrmDashboard({ session }: { session: Session }) {
         <div className="crm-nav-section">
           {!sidebarCollapsed && <span className="crm-nav-label">TOOLS</span>}
           {permissions.broadcasts && sectionVisibility.templates && (
-          <a className={`crm-nav-item ${activeView === 'message_templates' ? 'active' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`} onClick={() => { setActiveView('message_templates'); setMobileSidebarOpen(false); setMobileNav('leads'); }} style={{ cursor: 'pointer' }} title={sidebarCollapsed ? 'Templates' : undefined}>
+          <a className={`crm-nav-item ${activeView === 'message_templates' ? 'active' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`} onClick={() => { navigateToView('message_templates'); setMobileSidebarOpen(false); setMobileNav('leads'); }} style={{ cursor: 'pointer' }} title={sidebarCollapsed ? 'Templates' : undefined}>
             <FileTextIcon size={18} /> {!sidebarCollapsed && 'Templates'}
           </a>
           )}
           {permissions.followUps && sectionVisibility.followups && (
-          <a className={`crm-nav-item ${activeView === 'followups' ? 'active' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`} onClick={() => { setActiveView('followups'); setMobileSidebarOpen(false); setMobileNav('leads'); }} style={{ cursor: 'pointer', position: 'relative' }} title={sidebarCollapsed ? 'Follow-Ups' : undefined}>
+          <a className={`crm-nav-item ${activeView === 'followups' ? 'active' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`} onClick={() => { navigateToView('followups'); setMobileSidebarOpen(false); setMobileNav('leads'); }} style={{ cursor: 'pointer', position: 'relative' }} title={sidebarCollapsed ? 'Follow-Ups' : undefined}>
             <Bell size={18} /> {!sidebarCollapsed && 'Follow-Ups'}
             {!sidebarCollapsed && dashFollowups.filter((f) => f.status === 'pending' && new Date(f.reminder_at).getTime() <= Date.now()).length > 0 && (
               <span className="crm-nav-badge" style={{ background: 'rgba(239,68,68,0.15)', color: '#dc2626', fontWeight: 700 }}>
@@ -2109,7 +2140,7 @@ export default function CrmDashboard({ session }: { session: Session }) {
           </a>
           )}
           {permissions.automations && sectionVisibility.automations && (
-          <a className={`crm-nav-item ${activeView === 'automations' ? 'active' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`} onClick={() => { setActiveView('automations'); setMobileSidebarOpen(false); setMobileNav('leads'); }} style={{ cursor: 'pointer' }} title={sidebarCollapsed ? 'Automations' : undefined}>
+          <a className={`crm-nav-item ${activeView === 'automations' ? 'active' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`} onClick={() => { navigateToView('automations'); setMobileSidebarOpen(false); setMobileNav('leads'); }} style={{ cursor: 'pointer' }} title={sidebarCollapsed ? 'Automations' : undefined}>
             <Zap size={18} /> {!sidebarCollapsed && 'Automations'}
           </a>
           )}
@@ -2187,7 +2218,7 @@ export default function CrmDashboard({ session }: { session: Session }) {
         </div>
         <div className={`crm-sidebar-footer-actions ${sidebarCollapsed ? 'collapsed' : ''}`}>
           {permissions.settings && (
-            <button className={`crm-nav-item ${activeView === 'settings' ? 'active' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`} onClick={() => { setActiveView('settings'); setMobileSidebarOpen(false); setMobileNav('leads'); }} style={{ cursor: 'pointer', flex: 1 }} title={sidebarCollapsed ? 'Settings' : undefined}>
+            <button className={`crm-nav-item ${activeView === 'settings' ? 'active' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`} onClick={() => { navigateToView('settings'); setMobileSidebarOpen(false); setMobileNav('leads'); }} style={{ cursor: 'pointer', flex: 1 }} title={sidebarCollapsed ? 'Settings' : undefined}>
               <SettingsIcon size={18} /> {!sidebarCollapsed && 'Settings'}
             </button>
           )}
@@ -2267,19 +2298,19 @@ export default function CrmDashboard({ session }: { session: Session }) {
             session={session}
             leads={leads}
             followUps={dashFollowups}
-            onGoToLeads={() => setActiveView('leads')}
-            onGoToInbox={() => permissions.inbox && setActiveView('inbox_hub')}
-            onGoToWhatsApp={() => permissions.inbox && setActiveView('inbox_hub')}
-            onGoToEmailAnalytics={() => setActiveView('analytics_hub')}
-            onGoToMessageTemplates={() => setActiveView('message_templates')}
-            onGoToBroadcast={() => permissions.broadcasts && setActiveView('broadcast_hub')}
-            onGoToFollowUps={() => permissions.followUps && setActiveView('followups')}
-            onGoToAnalytics={() => permissions.analytics && setActiveView('analytics_hub')}
+            onGoToLeads={() => navigateToView('leads')}
+            onGoToInbox={() => permissions.inbox && navigateToView('inbox_hub')}
+            onGoToWhatsApp={() => permissions.inbox && navigateToView('inbox_hub')}
+            onGoToEmailAnalytics={() => navigateToView('analytics_hub')}
+            onGoToMessageTemplates={() => navigateToView('message_templates')}
+            onGoToBroadcast={() => permissions.broadcasts && navigateToView('broadcast_hub')}
+            onGoToFollowUps={() => permissions.followUps && navigateToView('followups')}
+            onGoToAnalytics={() => permissions.analytics && navigateToView('analytics_hub')}
             onGoToAddLead={() => permissions.addLeads && setShowAddLead(true)}
-            onGoToLeaderboard={() => setActiveView('leaderboard')}
-            onGoToGoals={() => setActiveView('goals')}
-            onGoToWinLoss={() => setActiveView('win_loss')}
-            onGoToDuplicates={() => setActiveView('duplicates')}
+            onGoToLeaderboard={() => navigateToView('leaderboard')}
+            onGoToGoals={() => navigateToView('goals')}
+            onGoToWinLoss={() => navigateToView('win_loss')}
+            onGoToDuplicates={() => navigateToView('duplicates')}
           />
         ) : activeView === 'inbox_hub' ? (
           <InboxHub
@@ -2294,35 +2325,35 @@ export default function CrmDashboard({ session }: { session: Session }) {
             onCall={(number) => { window.location.href = `tel:${number.replace(/[^+\d]/g, '')}`; }}
           />
         ) : activeView === 'settings' ? (
-          <SettingsPage session={session} userRole={userRole} permissions={permissions} customPermissions={customPermissions} onBack={() => setActiveView('leads')} onSignOut={handleSignOut} onInboxVisibilityChange={(tg, wa, em, ib) => { setShowTelegramInbox(tg); setShowWhatsAppInbox(wa); setShowEmailInbox(em); setShowIbLeads(ib); }} onOpenRecycleBin={() => { fetchTrashedLeads(); setShowTrashModal(true); }} pipelineAutoAssignEnabled={pipelineAutoAssignEnabled} pipelineAutoAssignStages={pipelineAutoAssignStages} onPipelineAutoAssignChange={(enabled, stages) => { setPipelineAutoAssignEnabled(enabled); setPipelineAutoAssignStages(stages); }} onStageLabelsChange={async () => { const { data } = await supabase.from('pipeline_stage_labels').select('stage_key, label'); if (data) { const map: Record<string, string> = {}; for (const row of data as { stage_key: string; label: string }[]) { map[row.stage_key] = row.label; } setStageLabelMap(map); } }} sidebarSections={sidebarSections} onSidebarSectionChange={updateSidebarSection} sectionVisibility={sectionVisibility} onSectionVisibilityChange={(key, visible) => setSectionVisibility((prev) => ({ ...prev, [key]: visible }))} />
+          <SettingsPage session={session} userRole={userRole} permissions={permissions} customPermissions={customPermissions} onBack={() => navigateToView('leads')} onSignOut={handleSignOut} onInboxVisibilityChange={(tg, wa, em, ib) => { setShowTelegramInbox(tg); setShowWhatsAppInbox(wa); setShowEmailInbox(em); setShowIbLeads(ib); }} onOpenRecycleBin={() => { fetchTrashedLeads(); setShowTrashModal(true); }} pipelineAutoAssignEnabled={pipelineAutoAssignEnabled} pipelineAutoAssignStages={pipelineAutoAssignStages} onPipelineAutoAssignChange={(enabled, stages) => { setPipelineAutoAssignEnabled(enabled); setPipelineAutoAssignStages(stages); }} onStageLabelsChange={async () => { const { data } = await supabase.from('pipeline_stage_labels').select('stage_key, label'); if (data) { const map: Record<string, string> = {}; for (const row of data as { stage_key: string; label: string }[]) { map[row.stage_key] = row.label; } setStageLabelMap(map); } }} sidebarSections={sidebarSections} onSidebarSectionChange={updateSidebarSection} sectionVisibility={sectionVisibility} onSectionVisibilityChange={(key, visible) => setSectionVisibility((prev) => ({ ...prev, [key]: visible }))} />
         ) : activeView === 'analytics_hub' ? (
-          <AnalyticsHub session={session} onBack={() => setActiveView('dashboard')} />
+          <AnalyticsHub session={session} onBack={() => navigateToView('dashboard')} />
         ) : activeView === 'message_templates' ? (
-          <TemplatesHub session={session} onBack={() => setActiveView('dashboard')} />
+          <TemplatesHub session={session} onBack={() => navigateToView('dashboard')} />
         ) : activeView === 'broadcast_hub' ? (
-          <BroadcastHub session={session} onBack={() => setActiveView('dashboard')} />
+          <BroadcastHub session={session} onBack={() => navigateToView('dashboard')} />
         ) : activeView === 'followups' ? (
-          <FollowUpsPage session={session} onBack={() => setActiveView('dashboard')} onCall={(number) => { window.location.href = `tel:${number.replace(/[^+\d]/g, '')}`; }} />
+          <FollowUpsPage session={session} onBack={() => navigateToView('dashboard')} onCall={(number) => { window.location.href = `tel:${number.replace(/[^+\d]/g, '')}`; }} />
         ) : activeView === 'ib_leads' ? (
-          <IBLeadsPage session={session} onBack={() => setActiveView('dashboard')} onCall={(number) => { window.location.href = `tel:${number.replace(/[^+\d]/g, '')}`; }} />
+          <IBLeadsPage session={session} onBack={() => navigateToView('dashboard')} onCall={(number) => { window.location.href = `tel:${number.replace(/[^+\d]/g, '')}`; }} />
         ) : activeView === 'leaderboard' ? (
-          <AgentLeaderboard session={session} leads={leads} onBack={() => setActiveView('dashboard')} />
+          <AgentLeaderboard session={session} leads={leads} onBack={() => navigateToView('dashboard')} />
         ) : activeView === 'goals' ? (
-          <GoalTracking session={session} leads={leads} onBack={() => setActiveView('dashboard')} />
+          <GoalTracking session={session} leads={leads} onBack={() => navigateToView('dashboard')} />
         ) : activeView === 'win_loss' ? (
-          <WinLossAnalysis session={session} leads={leads} onBack={() => setActiveView('dashboard')} />
+          <WinLossAnalysis session={session} leads={leads} onBack={() => navigateToView('dashboard')} />
         ) : activeView === 'duplicates' ? (
-          <DuplicateDetectionView leads={leads} onBack={() => setActiveView('dashboard')} onMerge={mergeDuplicates} assigneeMap={assigneeMap} />
+          <DuplicateDetectionView leads={leads} onBack={() => navigateToView('dashboard')} onMerge={mergeDuplicates} assigneeMap={assigneeMap} />
         ) : activeView === 'automations' ? (
-          <AutomationBuilder session={session} onBack={() => setActiveView('dashboard')} stages={pipelineStages} />
+          <AutomationBuilder session={session} onBack={() => navigateToView('dashboard')} stages={pipelineStages} />
         ) : activeView === 'brokers' ? (
-          <BrokerTrackerPage session={session} onBack={() => setActiveView('dashboard')} />
+          <BrokerTrackerPage session={session} onBack={() => navigateToView('dashboard')} />
         ) : activeView === 'lead_tracker' ? (
-          <LeadTrackerPage leads={leads} onBack={() => setActiveView('dashboard')} />
+          <LeadTrackerPage leads={leads} onBack={() => navigateToView('dashboard')} />
         ) : activeView === 'heatmap' ? (
           <div className="dash-overview">
             <div className="dash-page-header">
-              <button className="dash-back-btn" onClick={() => setActiveView('dashboard')}><ArrowLeft size={18} /> Back</button>
+              <button className="dash-back-btn" onClick={() => navigateToView('dashboard')}><ArrowLeft size={18} /> Back</button>
               <h1>Activity Heatmap</h1>
               <p>See when your leads are most active across all channels</p>
             </div>
@@ -2340,7 +2371,7 @@ export default function CrmDashboard({ session }: { session: Session }) {
             <div className="crm-notif-wrap">
               <button
                 className="crm-notif-btn"
-                onClick={() => setActiveView('followups')}
+                onClick={() => navigateToView('followups')}
                 aria-label="Follow-up reminders"
               >
                 <Bell size={18} />
@@ -3491,7 +3522,7 @@ export default function CrmDashboard({ session }: { session: Session }) {
         {permissions.inbox && (
           <button
             className={`crm-mobile-nav-item ${activeView === 'inbox_hub' ? 'active' : ''}`}
-            onClick={() => { setActiveView('inbox_hub'); setMobileSidebarOpen(false); setMobileNav('leads'); }}
+            onClick={() => { navigateToView('inbox_hub'); setMobileSidebarOpen(false); setMobileNav('leads'); }}
           >
             <span className="crm-mobile-nav-icon">
               <MessageCircle size={20} />
