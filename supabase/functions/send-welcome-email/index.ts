@@ -39,27 +39,41 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const { data: smtpConfig } = await supabase
-      .from("smtp_settings")
-      .select("smtp_host, smtp_port, smtp_username, smtp_password, from_email, from_name, user_id")
-      .limit(1)
-      .maybeSingle();
+    // Load SMTP servers by priority (multi-SMTP with fallback)
+    const { data: smtpServers } = await supabase
+      .from("smtp_servers")
+      .select("*")
+      .eq("is_active", true)
+      .order("priority", { ascending: true })
+      .order("created_at", { ascending: true })
+      .limit(1);
 
     let smtpToUse: Record<string, unknown> | null = null;
 
-    if (smtpConfig && smtpConfig.smtp_host && smtpConfig.smtp_username && smtpConfig.smtp_password) {
-      smtpToUse = smtpConfig;
+    if (smtpServers && smtpServers.length > 0 && smtpServers[0].smtp_host && smtpServers[0].smtp_username && smtpServers[0].smtp_password) {
+      smtpToUse = smtpServers[0] as Record<string, unknown>;
     } else {
-      const { data: platformSmtp } = await supabase
-        .from("platform_smtp_settings")
-        .select("smtp_host, smtp_port, smtp_username, smtp_password, from_email, from_name")
-        .eq("is_active", true)
-        .order("created_at", { ascending: false })
+      // Fallback to legacy smtp_settings
+      const { data: legacySmtp } = await supabase
+        .from("smtp_settings")
+        .select("smtp_host, smtp_port, smtp_username, smtp_password, from_email, from_name, user_id")
         .limit(1)
         .maybeSingle();
 
-      if (platformSmtp && platformSmtp.smtp_host && platformSmtp.smtp_username && platformSmtp.smtp_password) {
-        smtpToUse = platformSmtp;
+      if (legacySmtp && legacySmtp.smtp_host && legacySmtp.smtp_username && legacySmtp.smtp_password) {
+        smtpToUse = legacySmtp as Record<string, unknown>;
+      } else {
+        const { data: platformSmtp } = await supabase
+          .from("platform_smtp_settings")
+          .select("smtp_host, smtp_port, smtp_username, smtp_password, from_email, from_name")
+          .eq("is_active", true)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (platformSmtp && platformSmtp.smtp_host && platformSmtp.smtp_username && platformSmtp.smtp_password) {
+          smtpToUse = platformSmtp as Record<string, unknown>;
+        }
       }
     }
 
@@ -243,3 +257,4 @@ Deno.serve(async (req: Request) => {
     );
   }
 });
+

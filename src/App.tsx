@@ -127,11 +127,13 @@ function App() {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
+      setSession(data?.session ?? null);
       setAuthChecked(true);
-      if (data.session?.access_token) {
+      if (data?.session?.access_token) {
         supabase.realtime.setAuth(data.session.access_token);
       }
+    }).catch(() => {
+      setAuthChecked(true);
     });
 
     const { data: listener } = supabase.auth.onAuthStateChange((_event, sess) => {

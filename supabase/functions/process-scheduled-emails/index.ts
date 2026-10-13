@@ -62,13 +62,33 @@ Deno.serve(async (req: Request) => {
       contentType: string;
     }>;
 
-    const { data: smtpConfig } = await supabase
-      .from("smtp_settings")
+    // Load SMTP servers by priority (multi-SMTP with fallback)
+    const { data: smtpServers } = await supabase
+      .from("smtp_servers")
       .select("*")
       .eq("user_id", batch.user_id)
-      .maybeSingle();
+      .eq("is_active", true)
+      .order("priority", { ascending: true })
+      .order("created_at", { ascending: true });
 
-    if (!smtpConfig || !smtpConfig.smtp_host || !smtpConfig.smtp_username || !smtpConfig.smtp_password) {
+    let smtpConfig: Record<string, unknown> | null = null;
+
+    if (smtpServers && smtpServers.length > 0 && smtpServers[0].smtp_host && smtpServers[0].smtp_username && smtpServers[0].smtp_password) {
+      smtpConfig = smtpServers[0] as Record<string, unknown>;
+    } else {
+      // Fallback to legacy smtp_settings
+      const { data: legacySmtp } = await supabase
+        .from("smtp_settings")
+        .select("*")
+        .eq("user_id", batch.user_id)
+        .maybeSingle();
+
+      if (legacySmtp && legacySmtp.smtp_host && legacySmtp.smtp_username && legacySmtp.smtp_password) {
+        smtpConfig = legacySmtp as Record<string, unknown>;
+      }
+    }
+
+    if (!smtpConfig) {
       await supabase
         .from("scheduled_emails")
         .update({
@@ -226,3 +246,4 @@ Deno.serve(async (req: Request) => {
     );
   }
 });
+

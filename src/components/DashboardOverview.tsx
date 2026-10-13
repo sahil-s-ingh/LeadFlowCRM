@@ -353,112 +353,66 @@ export default function DashboardOverview({
         })}
       </div>
 
-      {/* Stale Lead Recovery Banner */}
-      {staleLeadsList.length > 0 && (
-        <div
-          className="dash3d-card-scene"
-          style={{ marginBottom: 22 }}
-          onMouseMove={handleTilt}
-          onMouseLeave={handleTiltReset}
-        >
-          <div
-            className="dash3d-card"
-            style={{
-              background: 'linear-gradient(135deg, rgba(249,115,22,0.06), rgba(234,179,8,0.04))',
-              border: '1px solid rgba(249,115,22,0.25)',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
-              <div
-                style={{
-                  width: '52px', height: '52px', borderRadius: '14px',
-                  background: 'rgba(249,115,22,0.12)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  flexShrink: 0,
-                }}
-              >
-                <AlertTriangle size={26} style={{ color: '#F97316' }} />
-              </div>
-              <div style={{ flex: 1, minWidth: '200px' }}>
-                <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  {staleLeadsList.length} Stale Lead{staleLeadsList.length !== 1 ? 's' : ''} Need Attention
-                  <span style={{ fontSize: '0.72rem', fontWeight: 600, color: '#F97316', background: 'rgba(249,115,22,0.1)', padding: '2px 8px', borderRadius: '100px' }}>
-                    5+ days no contact
-                  </span>
+      {/* Action Items — Stale Leads + Unassigned Leads */}
+      {(staleLeadsList.length > 0 || unassignedLeads.length > 0) && (
+        <div className="dash3d-action-items" style={{ marginBottom: 22 }}>
+          {staleLeadsList.length > 0 && (
+            <div
+              className="dash3d-action-card dash3d-action-stale"
+              onMouseMove={handleTilt}
+              onMouseLeave={handleTiltReset}
+            >
+              <div className="dash3d-action-card-scene">
+                <div className="dash3d-action-icon-wrap">
+                  <AlertTriangle size={20} />
                 </div>
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-dark)', marginTop: '4px' }}>
-                  {staleLeadsList.slice(0, 3).map((l) => l.full_name).join(', ')}
-                  {staleLeadsList.length > 3 && ` and ${staleLeadsList.length - 3} more`}
-                  {' — re-engage before they go cold.'}
+                <div className="dash3d-action-content">
+                  <div className="dash3d-action-title-row">
+                    <span className="dash3d-action-title">
+                      {staleLeadsList.length} Stale Lead{staleLeadsList.length !== 1 ? 's' : ''} Need Attention
+                    </span>
+                    <span className="dash3d-action-badge">5+ days no contact</span>
+                  </div>
+                  <p className="dash3d-action-desc">
+                    {staleLeadsList.slice(0, 3).map((l) => l.full_name).join(', ')}
+                    {staleLeadsList.length > 3 && ` and ${staleLeadsList.length - 3} more`}
+                    {' — re-engage before they go cold.'}
+                  </p>
                 </div>
+                <button className="dash3d-action-btn dash3d-action-btn-solid" onClick={onGoToLeads}>
+                  Review Now <ArrowRight size={14} />
+                </button>
               </div>
-              <button
-                onClick={onGoToLeads}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: '6px',
-                  padding: '10px 20px', border: 'none', borderRadius: '10px',
-                  background: '#F97316', color: 'var(--bg-card)', fontSize: '0.85rem', fontWeight: 700,
-                  cursor: 'pointer', transition: 'all 0.15s', whiteSpace: 'nowrap',
-                }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = '#EA580C'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = '#F97316'; }}
-              >
-                Review Now <ArrowRight size={14} />
-              </button>
             </div>
-          </div>
-        </div>
-      )}
+          )}
 
-      {/* Unassigned Leads Alert */}
-      {unassignedLeads.length > 0 && (
-        <div
-          className="dash3d-card-scene"
-          style={{ marginBottom: 22 }}
-          onMouseMove={handleTilt}
-          onMouseLeave={handleTiltReset}
-        >
-          <div
-            className="dash3d-card"
-            style={{
-              background: 'linear-gradient(135deg, rgba(239,68,68,0.05), rgba(59,130,246,0.04))',
-              border: '1px solid rgba(239,68,68,0.2)',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
-              <div
-                style={{
-                  width: '44px', height: '44px', borderRadius: '12px',
-                  background: 'rgba(239,68,68,0.1)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  flexShrink: 0,
-                }}
-              >
-                <UserX size={22} style={{ color: '#EF4444' }} />
-              </div>
-              <div style={{ flex: 1, minWidth: '180px' }}>
-                <div style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-main)' }}>
-                  {unassignedLeads.length} interested/converted lead{unassignedLeads.length !== 1 ? 's' : ''} have no agent assigned
+          {unassignedLeads.length > 0 && (
+            <div
+              className="dash3d-action-card dash3d-action-unassigned"
+              onMouseMove={handleTilt}
+              onMouseLeave={handleTiltReset}
+            >
+              <div className="dash3d-action-card-scene">
+                <div className="dash3d-action-icon-wrap">
+                  <UserX size={20} />
                 </div>
-                <div style={{ fontSize: '0.78rem', color: 'var(--text-dark)', marginTop: '3px' }}>
-                  Assign them to ensure proper follow-up and ownership.
+                <div className="dash3d-action-content">
+                  <div className="dash3d-action-title-row">
+                    <span className="dash3d-action-title">
+                      {unassignedLeads.length} Unassigned Lead{unassignedLeads.length !== 1 ? 's' : ''}
+                    </span>
+                    <span className="dash3d-action-badge">No agent</span>
+                  </div>
+                  <p className="dash3d-action-desc">
+                    {unassignedLeads.length} interested/converted lead{unassignedLeads.length !== 1 ? 's' : ''} have no agent assigned. Assign them to ensure proper follow-up and ownership.
+                  </p>
                 </div>
+                <button className="dash3d-action-btn dash3d-action-btn-outline" onClick={onGoToLeads}>
+                  Assign Leads <ArrowRight size={14} />
+                </button>
               </div>
-              <button
-                onClick={onGoToLeads}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: '6px',
-                  padding: '8px 16px', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '10px',
-                  background: 'var(--bg-card)', color: '#EF4444', fontSize: '0.82rem', fontWeight: 600,
-                  cursor: 'pointer', transition: 'all 0.15s', whiteSpace: 'nowrap',
-                }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = '#EF4444'; e.currentTarget.style.color = '#fff'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--bg-card)'; e.currentTarget.style.color = '#EF4444'; }}
-              >
-                Assign Leads <ArrowRight size={14} />
-              </button>
             </div>
-          </div>
+          )}
         </div>
       )}
 

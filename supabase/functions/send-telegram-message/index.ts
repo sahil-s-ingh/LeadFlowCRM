@@ -36,20 +36,6 @@ Deno.serve(async (req: Request) => {
     }
 
     const adminSupabase = createClient(supabaseUrl, supabaseKey);
-
-    const { data: settings, error: settingsError } = await adminSupabase
-      .from("telegram_settings")
-      .select("*")
-      .eq("user_id", userData.user.id)
-      .maybeSingle();
-
-    if (settingsError || !settings || !settings.bot_token) {
-      return new Response(
-        JSON.stringify({ error: "Telegram bot not configured. Go to Settings to set it up." }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    }
-
     const contentType = req.headers.get("Content-Type") || "";
 
     // ---- Multipart: media upload (photo/video/audio/document) ----
@@ -67,7 +53,7 @@ Deno.serve(async (req: Request) => {
         );
       }
 
-      // Verify conversation ownership
+      // Verify conversation ownership and get bot_id
       const { data: conversation, error: convError } = await adminSupabase
         .from("chat_conversations")
         .select("*")
@@ -82,7 +68,34 @@ Deno.serve(async (req: Request) => {
         );
       }
 
-      const botToken = settings.bot_token;
+      // Resolve bot token: prefer bot_id from conversation, fall back to telegram_settings
+      let botToken: string | null = null;
+
+      if (conversation.bot_id) {
+        const { data: bot } = await adminSupabase
+          .from("telegram_bots")
+          .select("bot_token")
+          .eq("id", conversation.bot_id)
+          .maybeSingle();
+        botToken = bot?.bot_token || null;
+      }
+
+      if (!botToken) {
+        const { data: settings } = await adminSupabase
+          .from("telegram_settings")
+          .select("bot_token")
+          .eq("user_id", userData.user.id)
+          .maybeSingle();
+        botToken = settings?.bot_token || null;
+      }
+
+      if (!botToken) {
+        return new Response(
+          JSON.stringify({ error: "Telegram bot not configured. Go to Settings to set it up." }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
       const chatId = conversation.telegram_chat_id;
       const mimeType = file.type || "";
       const fileSize = file.size;
@@ -92,8 +105,6 @@ Deno.serve(async (req: Request) => {
       let fileField = "document";
 
       if (isVoice) {
-        // Telegram sendVoice requires OGG/Opus. Browser recordings are often webm,
-        // so use sendAudio for non-ogg files (still delivered as playable audio).
         if (mimeType.includes("ogg") || (file.name && file.name.endsWith(".ogg"))) {
           messageType = "voice";
           tgApiMethod = "sendVoice";
@@ -117,7 +128,6 @@ Deno.serve(async (req: Request) => {
         fileField = "audio";
       }
 
-      // Build multipart form for Telegram API
       const tgForm = new FormData();
       tgForm.append(fileField, file, file.name || `upload.${mimeType.split("/")[1] || "bin"}`);
       tgForm.append("chat_id", String(chatId));
@@ -136,7 +146,6 @@ Deno.serve(async (req: Request) => {
         );
       }
 
-      // Extract file metadata from Telegram response
       const result = tgData.result;
       let fileId: string | null = null;
       let fileUniqueId: string | null = null;
@@ -169,7 +178,6 @@ Deno.serve(async (req: Request) => {
         fileUniqueId = result.document.file_unique_id;
       }
 
-      // Save message in database
       const { data: message, error: msgError } = await adminSupabase
         .from("chat_messages")
         .insert({
@@ -196,9 +204,7 @@ Deno.serve(async (req: Request) => {
         );
       }
 
-      const preview = caption
-        ? caption.slice(0, 100)
-        : `[${messageType}]`;
+      const preview = caption ? caption.slice(0, 100) : `[${messageType}]`;
       await adminSupabase
         .from("chat_conversations")
         .update({
@@ -223,7 +229,6 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Verify the conversation belongs to this admin
     const { data: conversation, error: convError } = await adminSupabase
       .from("chat_conversations")
       .select("*")
@@ -238,8 +243,35 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Send message to Telegram
-    const apiUrl = `https://api.telegram.org/bot${settings.bot_token}/sendMessage`;
+    // Resolve bot token: prefer bot_id from conversation, fall back to telegram_settings
+    let botToken: string | null = null;
+
+    if (conversation.bot_id) {
+      const { data: bot } = await adminSupabase
+        .from("telegram_bots")
+        .select("bot_token")
+        .eq("id", conversation.bot_id)
+        .maybeSingle();
+      botToken = bot?.bot_token || null;
+    }
+
+    if (!botToken) {
+      const { data: settings } = await adminSupabase
+        .from("telegram_settings")
+        .select("bot_token")
+        .eq("user_id", userData.user.id)
+        .maybeSingle();
+      botToken = settings?.bot_token || null;
+    }
+
+    if (!botToken) {
+      return new Response(
+        JSON.stringify({ error: "Telegram bot not configured. Go to Settings to set it up." }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    const apiUrl = `https://api.telegram.org/bot${botToken}/sendMessage`;
     const tgResponse = await fetch(apiUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -257,7 +289,6 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Save message in database
     const { data: message, error: msgError } = await adminSupabase
       .from("chat_messages")
       .insert({
@@ -276,7 +307,6 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Update conversation preview
     await adminSupabase
       .from("chat_conversations")
       .update({

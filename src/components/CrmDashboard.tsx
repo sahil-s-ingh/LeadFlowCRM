@@ -9,7 +9,7 @@ import {
   ArrowUpRight, ArrowLeft, Clock, Filter, LayoutGrid, Table as TableIcon, X,
   Tag, PhoneCall, PhoneMissed, CheckCircle2, XCircle, UserCheck,
   Plus, StickyNote, Zap, Star, Trash2, AlertTriangle,
-  Upload, FileSpreadsheet, FileText, CheckCircle2 as CheckIcon,
+  Upload, FileText, CheckCircle2 as CheckIcon,
   Grid3X3 as DialpadIcon, Delete as DeleteIcon, PhoneOutgoing,
   Menu, SlidersHorizontal, ChevronDown, ChevronUp, Phone as PhoneIcon,
   DollarSign, Send, Settings as SettingsIcon, Save, PhoneOff,
@@ -18,11 +18,11 @@ import {
   Smile, X as XIcon, MoreVertical, CheckSquare, Square, Copy, FileText as FileTextIcon, Edit3, Eye,
   Camera,
   Bell, CalendarClock, BellRing, Shuffle, ClipboardList, History, Droplets, MessageSquare, RotateCcw,
-  BookOpen, Palette, MousePointerClick, EyeOff,
+  BookOpen, MousePointerClick, EyeOff, FileSpreadsheet,
   PanelLeft, Type, Signal, GitMerge, ShieldAlert, Activity, Wallet,
   Building2, Trophy, Target, TrendingDown, GitBranch, Hash, Radar,
 
-  Webhook, ArrowDownLeft, LayoutTemplate, Inbox as InboxIcon,
+  LayoutTemplate, Inbox as InboxIcon,
   HelpCircle, Sun, Moon,
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
@@ -36,11 +36,8 @@ import EmailBroadcast from '@/components/EmailBroadcast';
 import TelegramBroadcast from '@/components/TelegramBroadcast';
 import BroadcastHub from '@/components/BroadcastHub';
 import WhatsAppCreditsPage from '@/components/WhatsAppCreditsPage';
-import EmailInbox from '@/components/EmailInbox';
 import InboxHub from '@/components/InboxHub';
-import DirectLinkGenerator from '@/components/DirectLinkGenerator';
 import FollowUpsPage from '@/components/FollowUpsPage';
-import IBLeadsPage from '@/components/IBLeadsPage';
 import TeamDashboardPanel from '@/components/TeamDashboardPanel';
 import LeadDistributionPanel from '@/components/LeadDistributionPanel';
 import AgentLeaderboard from '@/components/AgentLeaderboard';
@@ -83,7 +80,7 @@ type Lead = {
   partner_code?: string | null;
 };
 
-const SOURCE_OPTIONS = ['Manual Entry', 'Meta Ads', 'Google Ads', 'YouTube Ads', 'Telegram Channel', 'WhatsApp Group', 'Landing Page', 'Direct Link', 'Popup Form', 'Bulk Upload', 'Webhook'];
+const SOURCE_OPTIONS = ['Manual Entry', 'Meta Ads', 'Google Ads', 'YouTube Ads', 'Telegram Channel', 'WhatsApp Group', 'Landing Page', 'Popup Form', 'Bulk Upload'];
 
 type SortKey = 'created_at' | 'full_name' | 'state' | 'trading_product' | 'status';
 type SortDir = 'asc' | 'desc';
@@ -100,7 +97,7 @@ const MOBILE_STAT_OPTIONS: { key: MobileStatKey; label: string }[] = [
 ];
 
 type DateFilterPreset = 'all' | 'today' | 'yesterday' | 'last_7_days' | 'this_week' | 'this_month' | 'this_year' | 'custom';
-type ActiveView = 'dashboard' | 'leads' | 'ib_leads' | 'inbox_hub' | 'inbox' | 'whatsapp' | 'email_inbox' | 'settings' | 'drip' | 'analytics_hub' | 'email_analytics' | 'message_templates' | 'broadcast_hub' | 'broadcast' | 'email_broadcast' | 'telegram_broadcast' | 'activity_timeline' | 'revenue_forecast' | 'direct_link' | 'followups' | 'leaderboard' | 'goals' | 'win_loss' | 'duplicates' | 'heatmap' | 'automations' | 'brokers' | 'lead_tracker' | 'wa_credits';
+type ActiveView = 'dashboard' | 'leads' | 'inbox_hub' | 'inbox' | 'whatsapp' | 'settings' | 'drip' | 'analytics_hub' | 'email_analytics' | 'message_templates' | 'broadcast_hub' | 'broadcast' | 'email_broadcast' | 'telegram_broadcast' | 'activity_timeline' | 'revenue_forecast' | 'followups' | 'leaderboard' | 'goals' | 'win_loss' | 'duplicates' | 'heatmap' | 'automations' | 'brokers' | 'lead_tracker' | 'wa_credits';
 
 type UserRole = 'owner' | 'admin' | 'manager' | 'agent';
 
@@ -187,6 +184,8 @@ type ChatConversation = {
   last_message_at: string | null;
   unread_count: number;
   created_at: string;
+  bot_id?: string | null;
+  bot_label?: string | null;
 };
 
 type ChatMessage = {
@@ -323,6 +322,14 @@ type LeadActivity = {
   created_at: string;
 };
 
+type LeadNote = {
+  id: string;
+  lead_id: string;
+  note: string;
+  stage_at_time: string | null;
+  created_at: string;
+};
+
 type DripCampaign = {
   id: string;
   name: string;
@@ -389,56 +396,6 @@ export type PopupFormRow = {
   description?: string;
   image_url?: string;
 };
-
-type WebhookRow = {
-  id: string;
-  user_id: string;
-  url: string;
-  label: string;
-  secret_token: string;
-  events: string[];
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-};
-
-type WebhookDeliveryRow = {
-  id: string;
-  webhook_id: string;
-  event: string;
-  status: string;
-  response_status: number | null;
-  created_at: string;
-};
-
-type InboundKeyRow = {
-  id: string;
-  user_id: string;
-  api_key: string;
-  label: string;
-  source_tag: string | null;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-};
-
-type InboundLogRow = {
-  id: string;
-  api_key_id: string | null;
-  lead_id: string | null;
-  source: string | null;
-  status: string;
-  error_message: string | null;
-  created_at: string;
-};
-
-const WEBHOOK_EVENTS = [
-  { key: 'lead.created', label: 'Lead Created' },
-  { key: 'lead.updated', label: 'Lead Updated' },
-  { key: 'lead.status_changed', label: 'Status Changed' },
-  { key: 'lead.deleted', label: 'Lead Deleted' },
-  { key: 'lead.converted', label: 'Lead Converted' },
-] as const;
 
 const PAGE_SIZE = 10;
 
@@ -513,21 +470,6 @@ const DEFAULT_STAGE_EVENTS: Record<LeadStatus, string> = {
 
 const META_EVENT_OPTIONS = ['Lead', 'Contact', 'Purchase', 'AddToCart', 'InitiateCheckout', 'Subscribe', 'CompleteRegistration', 'Custom'] as const;
 
-async function fireWebhookEvent(event: string, payload: Record<string, unknown>, userId: string) {
-  try {
-    const { data: sessionData } = await supabase.auth.getSession();
-    const token = sessionData.session?.access_token;
-    if (!token) return;
-    await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/fire-webhook`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ event, payload, user_id: userId }),
-    });
-  } catch {
-    // Silent fail — webhook delivery should not block CRM operations
-  }
-}
-
 async function sendMetaConversionEvent(leadId: string, lead: Lead, newStatus: LeadStatus) {
   try {
     const { data: sessionData } = await supabase.auth.getSession();
@@ -569,7 +511,7 @@ async function sendMetaConversionEvent(leadId: string, lead: Lead, newStatus: Le
   }
 }
 
-const VALID_VIEWS: ActiveView[] = ['dashboard', 'leads', 'ib_leads', 'inbox_hub', 'inbox', 'whatsapp', 'email_inbox', 'settings', 'drip', 'analytics_hub', 'email_analytics', 'message_templates', 'broadcast_hub', 'broadcast', 'email_broadcast', 'telegram_broadcast', 'activity_timeline', 'revenue_forecast', 'direct_link', 'followups', 'leaderboard', 'goals', 'win_loss', 'duplicates', 'heatmap', 'automations', 'brokers', 'lead_tracker', 'wa_credits'];
+const VALID_VIEWS: ActiveView[] = ['dashboard', 'leads', 'inbox_hub', 'inbox', 'whatsapp', 'settings', 'drip', 'analytics_hub', 'email_analytics', 'message_templates', 'broadcast_hub', 'broadcast', 'email_broadcast', 'telegram_broadcast', 'activity_timeline', 'revenue_forecast', 'followups', 'leaderboard', 'goals', 'win_loss', 'duplicates', 'heatmap', 'automations', 'brokers', 'lead_tracker', 'wa_credits'];
 
 export default function CrmDashboard({ session, initialView }: { session: Session; initialView?: string }) {
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -689,13 +631,11 @@ export default function CrmDashboard({ session, initialView }: { session: Sessio
   const [unreadCount, setUnreadCount] = useState(0);
   const [waUnreadCount, setWaUnreadCount] = useState(0);
   const [emailUnreadCount, setEmailUnreadCount] = useState(0);
-  const [emailInboxRefreshKey, setEmailInboxRefreshKey] = useState(0);
   const [showTelegramInbox, setShowTelegramInbox] = useState(true);
   const [showWhatsAppInbox, setShowWhatsAppInbox] = useState(true);
-  const [showEmailInbox, setShowEmailInbox] = useState(true);
-  const [showIbLeads, setShowIbLeads] = useState(true);
+
   const [sectionVisibility, setSectionVisibility] = useState<Record<string, boolean>>({
-    leads: true, brokers: true, ib_leads: true, inbox: true, broadcasts: true,
+    leads: true, brokers: true, inbox: true, broadcasts: true,
     analytics: true, lead_tracker: true, templates: true, followups: true,
     automations: true, pipeline: true,
   });
@@ -1011,29 +951,15 @@ export default function CrmDashboard({ session, initialView }: { session: Sessio
     (async () => {
       const { data } = await supabase
         .from('appearance_settings')
-        .select('border_color, border_width, border_radius, btn_bg_color, btn_text_color, btn_border_color, btn_border_width, btn_border_radius, show_telegram_inbox, show_whatsapp_inbox, show_email_inbox, show_ib_leads, show_leads, show_brokers, show_inbox, show_broadcasts, show_analytics, show_lead_tracker, show_templates, show_followups, show_automations, show_pipeline, crm_bg_color, sidebar_color, font_size, setup_cost')
+        .select('show_telegram_inbox, show_whatsapp_inbox, show_leads, show_brokers, show_inbox, show_broadcasts, show_analytics, show_lead_tracker, show_templates, show_followups, show_automations, show_pipeline, setup_cost')
         .maybeSingle();
       if (data) {
-        const a = data as { border_color: string; border_width: number; border_radius: number; btn_bg_color: string; btn_text_color: string; btn_border_color: string; btn_border_width: number; btn_border_radius: number; show_telegram_inbox: boolean; show_whatsapp_inbox: boolean; show_email_inbox: boolean; show_ib_leads: boolean; show_leads: boolean; show_brokers: boolean; show_inbox: boolean; show_broadcasts: boolean; show_analytics: boolean; show_lead_tracker: boolean; show_templates: boolean; show_followups: boolean; show_automations: boolean; show_pipeline: boolean; crm_bg_color: string | null; sidebar_color: string | null; font_size: string | null; setup_cost: number | null };
-        document.documentElement.style.setProperty('--app-border-color', a.border_color || '#EAB308');
-        document.documentElement.style.setProperty('--app-border-width', `${a.border_width ?? 1.5}px`);
-        document.documentElement.style.setProperty('--app-border-radius', `${a.border_radius ?? 16}px`);
-        document.documentElement.style.setProperty('--app-btn-bg', a.btn_bg_color || '#0F172A');
-        document.documentElement.style.setProperty('--app-btn-text', a.btn_text_color || '#FFFFFF');
-        document.documentElement.style.setProperty('--app-btn-border-color', a.btn_border_color || '#EAB308');
-        document.documentElement.style.setProperty('--app-btn-border-width', `${a.btn_border_width ?? 0}px`);
-        document.documentElement.style.setProperty('--app-btn-border-radius', `${a.btn_border_radius ?? 10}px`);
-        document.documentElement.style.setProperty('--app-crm-bg', a.crm_bg_color || '#FFFFFF');
-        document.documentElement.style.setProperty('--app-sidebar-bg', a.sidebar_color || '#FFFFFF');
-        document.documentElement.setAttribute('data-font-size', a.font_size || 'medium');
+        const a = data as { show_telegram_inbox: boolean; show_whatsapp_inbox: boolean; show_leads: boolean; show_brokers: boolean; show_inbox: boolean; show_broadcasts: boolean; show_analytics: boolean; show_lead_tracker: boolean; show_templates: boolean; show_followups: boolean; show_automations: boolean; show_pipeline: boolean; setup_cost: number | null };
         setShowTelegramInbox(a.show_telegram_inbox !== false);
         setShowWhatsAppInbox(a.show_whatsapp_inbox !== false);
-        setShowEmailInbox(a.show_email_inbox !== false);
-        setShowIbLeads(a.show_ib_leads !== false);
         setSectionVisibility({
           leads: a.show_leads !== false,
           brokers: a.show_brokers !== false,
-          ib_leads: a.show_ib_leads !== false,
           inbox: a.show_inbox !== false,
           broadcasts: a.show_broadcasts !== false,
           analytics: a.show_analytics !== false,
@@ -1235,18 +1161,13 @@ export default function CrmDashboard({ session, initialView }: { session: Sessio
     if (updateError) {
       setError(updateError.message);
     } else {
-      fireWebhookEvent('lead.updated', { id, ...updates }, session.user.id);
       if (updates.status) {
-        fireWebhookEvent('lead.status_changed', { id, ...updates }, session.user.id);
         if (updates.status === 'converted') {
-          fireWebhookEvent('lead.converted', { id, ...updates }, session.user.id);
         }
       }
       if (updates.tags) {
-        fireWebhookEvent('lead.tagged', { id, ...updates }, session.user.id);
       }
       if (updates.assigned_to !== undefined) {
-        fireWebhookEvent('lead.assigned', { id, ...updates }, session.user.id);
       }
     }
     if (updates.status) {
@@ -1276,7 +1197,6 @@ export default function CrmDashboard({ session, initialView }: { session: Sessio
       setError(deleteError.message);
       fetchLeads();
     } else {
-      fireWebhookEvent('lead.deleted', { id }, session.user.id);
     }
   }, [fetchLeads, session.user.id]);
 
@@ -1321,9 +1241,7 @@ export default function CrmDashboard({ session, initialView }: { session: Sessio
     }
     setLeads((prev) => prev.map((l) => ids.includes(l.id) ? { ...l, status: newStatus } : l));
     for (const id of ids) {
-      fireWebhookEvent('lead.status_changed', { id, status: newStatus }, session.user.id);
       if (newStatus === 'converted') {
-        fireWebhookEvent('lead.converted', { id, status: newStatus }, session.user.id);
       }
       const currentLead = leads.find((l) => l.id === id);
       if (currentLead) sendMetaConversionEvent(id, { ...currentLead, status: newStatus }, newStatus);
@@ -1350,7 +1268,6 @@ export default function CrmDashboard({ session, initialView }: { session: Sessio
     }
     setLeads((prev) => prev.map((l) => ids.includes(l.id) ? { ...l, fund_amount: fundAmount } : l));
     for (const id of ids) {
-      fireWebhookEvent('lead.updated', { id, fund_amount: fundAmount }, session.user.id);
     }
     return ids.length;
   }, [session.user.id]);
@@ -1374,7 +1291,6 @@ export default function CrmDashboard({ session, initialView }: { session: Sessio
     }
     setLeads((prev) => prev.map((l) => ids.includes(l.id) ? { ...l, assigned_to: assigneeId || null } : l));
     for (const id of ids) {
-      fireWebhookEvent('lead.assigned', { id, assigned_to: assigneeId || null }, session.user.id);
     }
     return ids.length;
   }, [session.user.id]);
@@ -1645,7 +1561,6 @@ export default function CrmDashboard({ session, initialView }: { session: Sessio
 
     if (data) {
       setLeads((prev) => [data as Lead, ...prev]);
-      fireWebhookEvent('lead.created', data as Record<string, unknown>, session.user.id);
     }
     return true;
   }, [session.user.id, getNextAssignee]);
@@ -2069,11 +1984,6 @@ export default function CrmDashboard({ session, initialView }: { session: Sessio
             {!sidebarCollapsed && <span className="crm-nav-badge">{stats.total}</span>}
           </a>
           )}
-          {showIbLeads && sectionVisibility.ib_leads && (
-            <a className={`crm-nav-item ${activeView === 'ib_leads' ? 'active' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`} onClick={() => { navigateToView('ib_leads'); setMobileSidebarOpen(false); setMobileNav('leads'); }} style={{ cursor: 'pointer' }} title={sidebarCollapsed ? 'IB Leads' : undefined}>
-              <Building2 size={18} /> {!sidebarCollapsed && 'IB Leads'}
-            </a>
-          )}
           {sectionVisibility.brokers && (
           <a className={`crm-nav-item ${activeView === 'brokers' ? 'active' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`} onClick={() => { navigateToView('brokers'); setMobileSidebarOpen(false); setMobileNav('leads'); }} style={{ cursor: 'pointer' }} title={sidebarCollapsed ? 'Broker Tracker' : undefined}>
             <TrendingUp size={18} /> {!sidebarCollapsed && 'Broker Tracker'}
@@ -2322,15 +2232,13 @@ export default function CrmDashboard({ session, initialView }: { session: Sessio
             session={session}
             showTelegram={showTelegramInbox}
             showWhatsApp={showWhatsAppInbox}
-            showEmail={showEmailInbox}
             ChatInbox={ChatInbox}
             WhatsAppInbox={WhatsAppInbox}
-            EmailInbox={EmailInbox}
             onTotalUnreadChange={() => {}}
             onCall={(number) => { window.location.href = `tel:${number.replace(/[^+\d]/g, '')}`; }}
           />
         ) : activeView === 'settings' ? (
-          <SettingsPage session={session} userRole={userRole} permissions={permissions} customPermissions={customPermissions} onBack={() => navigateToView('leads')} onSignOut={handleSignOut} onInboxVisibilityChange={(tg, wa, em, ib) => { setShowTelegramInbox(tg); setShowWhatsAppInbox(wa); setShowEmailInbox(em); setShowIbLeads(ib); }} onOpenRecycleBin={() => { fetchTrashedLeads(); setShowTrashModal(true); }} pipelineAutoAssignEnabled={pipelineAutoAssignEnabled} pipelineAutoAssignStages={pipelineAutoAssignStages} onPipelineAutoAssignChange={(enabled, stages) => { setPipelineAutoAssignEnabled(enabled); setPipelineAutoAssignStages(stages); }} onStageLabelsChange={async () => { const { data } = await supabase.from('pipeline_stage_labels').select('stage_key, label'); if (data) { const map: Record<string, string> = {}; for (const row of data as { stage_key: string; label: string }[]) { map[row.stage_key] = row.label; } setStageLabelMap(map); } }} sidebarSections={sidebarSections} onSidebarSectionChange={updateSidebarSection} sectionVisibility={sectionVisibility} onSectionVisibilityChange={(key, visible) => setSectionVisibility((prev) => ({ ...prev, [key]: visible }))} />
+          <SettingsPage session={session} userRole={userRole} permissions={permissions} customPermissions={customPermissions} onBack={() => navigateToView('leads')} onSignOut={handleSignOut} onInboxVisibilityChange={(tg, wa) => { setShowTelegramInbox(tg); setShowWhatsAppInbox(wa); }} onOpenRecycleBin={() => { fetchTrashedLeads(); setShowTrashModal(true); }} pipelineAutoAssignEnabled={pipelineAutoAssignEnabled} pipelineAutoAssignStages={pipelineAutoAssignStages} onPipelineAutoAssignChange={(enabled, stages) => { setPipelineAutoAssignEnabled(enabled); setPipelineAutoAssignStages(stages); }} onStageLabelsChange={async () => { const { data } = await supabase.from('pipeline_stage_labels').select('stage_key, label'); if (data) { const map: Record<string, string> = {}; for (const row of data as { stage_key: string; label: string }[]) { map[row.stage_key] = row.label; } setStageLabelMap(map); } }} sidebarSections={sidebarSections} onSidebarSectionChange={updateSidebarSection} sectionVisibility={sectionVisibility} onSectionVisibilityChange={(key, visible) => setSectionVisibility((prev) => ({ ...prev, [key]: visible }))} />
         ) : activeView === 'analytics_hub' ? (
           <AnalyticsHub session={session} onBack={() => navigateToView('dashboard')} />
         ) : activeView === 'message_templates' ? (
@@ -2341,8 +2249,6 @@ export default function CrmDashboard({ session, initialView }: { session: Sessio
           <WhatsAppCreditsPage session={session} onBack={() => navigateToView('dashboard')} />
         ) : activeView === 'followups' ? (
           <FollowUpsPage session={session} onBack={() => navigateToView('dashboard')} onCall={(number) => { window.location.href = `tel:${number.replace(/[^+\d]/g, '')}`; }} />
-        ) : activeView === 'ib_leads' ? (
-          <IBLeadsPage session={session} onBack={() => navigateToView('dashboard')} onCall={(number) => { window.location.href = `tel:${number.replace(/[^+\d]/g, '')}`; }} />
         ) : activeView === 'leaderboard' ? (
           <AgentLeaderboard session={session} leads={leads} onBack={() => navigateToView('dashboard')} />
         ) : activeView === 'goals' ? (
@@ -5864,8 +5770,10 @@ function LeadDetailDrawer({ lead, onClose, onUpdate, onDelete, formatDate, onSen
 }) {
   const [tagInput, setTagInput] = useState('');
   const [showTagSuggestions, setShowTagSuggestions] = useState(false);
-  const [notesValue, setNotesValue] = useState(lead.notes || '');
+  const [notesValue, setNotesValue] = useState('');
   const [savingNotes, setSavingNotes] = useState(false);
+  const [leadNotes, setLeadNotes] = useState<LeadNote[]>([]);
+  const [leadNotesLoading, setLeadNotesLoading] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [fundInput, setFundInput] = useState(lead.fund_amount != null ? String(lead.fund_amount) : '');
@@ -6022,10 +5930,43 @@ function LeadDetailDrawer({ lead, onClose, onUpdate, onDelete, formatDate, onSen
     }
   };
 
-  const saveNotes = () => {
+  const fetchLeadNotes = useCallback(async () => {
+    setLeadNotesLoading(true);
+    const { data } = await supabase
+      .from('lead_notes')
+      .select('*')
+      .eq('lead_id', lead.id)
+      .order('created_at', { ascending: false });
+    if (data) setLeadNotes(data as LeadNote[]);
+    setLeadNotesLoading(false);
+  }, [lead.id]);
+
+  useEffect(() => {
+    fetchLeadNotes();
+  }, [fetchLeadNotes]);
+
+  const saveNotes = async () => {
+    const trimmed = notesValue.trim();
+    if (!trimmed) return;
     setSavingNotes(true);
-    onUpdate(lead.id, { notes: notesValue });
-    logActivity('note', 'Call notes updated', { note_preview: notesValue.slice(0, 100) });
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData.session?.user.id;
+    if (!userId) { setSavingNotes(false); return; }
+    const { data, error } = await supabase
+      .from('lead_notes')
+      .insert({
+        lead_id: lead.id,
+        note: trimmed,
+        stage_at_time: lead.status,
+      })
+      .select()
+      .single();
+    if (!error && data) {
+      setLeadNotes((prev) => [data as LeadNote, ...prev]);
+      onUpdate(lead.id, { notes: trimmed });
+      logActivity('note', 'Note added to timeline', { note_preview: trimmed.slice(0, 100) });
+      setNotesValue('');
+    }
     setSavingNotes(false);
   };
 
@@ -6101,6 +6042,11 @@ function LeadDetailDrawer({ lead, onClose, onUpdate, onDelete, formatDate, onSen
     setFollowups((prev) => prev.filter((f) => f.id !== id));
   };
 
+  const handleDeleteNote = async (noteId: string) => {
+    await supabase.from('lead_notes').delete().eq('id', noteId);
+    setLeadNotes((prev) => prev.filter((n) => n.id !== noteId));
+  };
+
   const handleMarkReminderDone = async (id: string) => {
     await supabase.from('lead_followups').update({ status: 'done', updated_at: new Date().toISOString() }).eq('id', id);
     setFollowups((prev) => prev.map((f) => f.id === id ? { ...f, status: 'done' } : f));
@@ -6110,6 +6056,8 @@ function LeadDetailDrawer({ lead, onClose, onUpdate, onDelete, formatDate, onSen
   const availableSuggestions = SUGGESTED_TAGS.filter(
     (s) => !(lead.tags || []).some((t) => t.toLowerCase() === s.toLowerCase())
   );
+
+  const stageChanges = activities.filter((a) => a.activity_type === 'status_change');
 
   return (
     <>
@@ -6466,20 +6414,102 @@ function LeadDetailDrawer({ lead, onClose, onUpdate, onDelete, formatDate, onSen
           )}
         </div>
 
-        {/* Notes */}
+        {/* Notes Timeline */}
         <div className="crm-drawer-section">
-          <label className="crm-drawer-label">CALL NOTES</label>
+          <label className="crm-drawer-label"><StickyNote size={14} style={{ display: 'inline', marginRight: '4px' }} /> NOTES TIMELINE</label>
           <textarea
             className="crm-notes-textarea"
             value={notesValue}
             onChange={(e) => setNotesValue(e.target.value)}
-            placeholder="Write call notes here — what was discussed, follow-up needed, etc..."
-            rows={4}
+            placeholder="Write a note about this lead — what was discussed, interest level, follow-up needed..."
+            rows={3}
           />
-          <button className="crm-btn-save-notes" onClick={saveNotes} disabled={savingNotes || notesValue === lead.notes}>
-            <CheckCircle2 size={16} /> {savingNotes ? 'Saving...' : 'Save Notes'}
+          <button className="crm-btn-save-notes" onClick={saveNotes} disabled={savingNotes || !notesValue.trim()}>
+            {savingNotes ? <Loader2 size={16} className="crm-spin" /> : <Plus size={16} />} {savingNotes ? 'Saving...' : 'Add Note'}
           </button>
+
+          {leadNotesLoading ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 0', color: 'var(--text-dark)', fontSize: '0.82rem' }}>
+              <Loader2 size={16} className="crm-spin" /> Loading notes...
+            </div>
+          ) : leadNotes.length === 0 ? (
+            <div style={{ padding: '16px', textAlign: 'center', color: 'var(--text-dark)', fontSize: '0.82rem' }}>
+              <StickyNote size={28} style={{ marginBottom: '6px', opacity: 0.3 }} />
+              <p>No notes yet. Add your first note above — it will be saved with the date and time.</p>
+            </div>
+          ) : (
+            <div className="crm-notes-timeline">
+              {leadNotes.map((n, idx) => {
+                const noteStage = stages.find((s) => s.key === n.stage_at_time);
+                const noteColors = noteStage ? STAGE_COLORS[noteStage.color] : null;
+                return (
+                  <div key={n.id} className="crm-note-timeline-item">
+                    {idx < leadNotes.length - 1 && <div className="crm-note-timeline-line" />}
+                    <div className="crm-note-timeline-dot" style={noteColors ? { background: noteColors.bg, border: `2px solid ${noteColors.dot}` } : {}}>
+                      <StickyNote size={12} style={noteColors ? { color: noteColors.text } : {}} />
+                    </div>
+                    <div className="crm-note-timeline-body">
+                      <div className="crm-note-timeline-header">
+                        {noteStage && (
+                          <span className="crm-note-stage-badge" style={noteColors ? { background: noteColors.bg, color: noteColors.text, border: `1px solid ${noteColors.border}` } : {}}>
+                            {noteStage.label}
+                          </span>
+                        )}
+                        <span className="crm-note-timeline-time">
+                          {new Date(n.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} at{' '}
+                          {new Date(n.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
+                        </span>
+                      </div>
+                      <p className="crm-note-timeline-text">{n.note}</p>
+                      <button className="crm-note-delete-btn" onClick={() => handleDeleteNote(n.id)} aria-label="Delete note" title="Delete this note">
+                        <Trash2 size={12} />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
+
+        {/* Stage Timeline */}
+        {stageChanges.length > 0 && (
+          <div className="crm-drawer-section">
+            <label className="crm-drawer-label"><Shuffle size={14} style={{ display: 'inline', marginRight: '4px' }} /> STAGE TIMELINE</label>
+            <div className="crm-notes-timeline">
+              {stageChanges.map((change, idx) => {
+                const meta = change.metadata as Record<string, unknown>;
+                const newStatus = meta.new_status as string;
+                const oldStatus = meta.old_status as string;
+                const newStage = stages.find((s) => s.key === newStatus);
+                const oldStage = stages.find((s) => s.key === oldStatus);
+                const newColors = newStage ? STAGE_COLORS[newStage.color] : null;
+                return (
+                  <div key={change.id} className="crm-note-timeline-item">
+                    {idx < stageChanges.length - 1 && <div className="crm-note-timeline-line" />}
+                    <div className="crm-note-timeline-dot" style={newColors ? { background: newColors.bg, border: `2px solid ${newColors.dot}` } : {}}>
+                      <Shuffle size={12} style={newColors ? { color: newColors.text } : {}} />
+                    </div>
+                    <div className="crm-note-timeline-body">
+                      <div className="crm-note-timeline-header">
+                        <span className="crm-note-stage-badge" style={newColors ? { background: newColors.bg, color: newColors.text, border: `1px solid ${newColors.border}` } : {}}>
+                          {newStage?.label || newStatus}
+                        </span>
+                        <span className="crm-note-timeline-time">
+                          {new Date(change.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} at{' '}
+                          {new Date(change.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
+                        </span>
+                      </div>
+                      <p className="crm-note-timeline-text" style={{ fontSize: '0.78rem' }}>
+                        Moved from <strong>{oldStage?.label || oldStatus}</strong> to <strong>{newStage?.label || newStatus}</strong>
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Last Contacted */}
         {lead.last_contacted_at && (
@@ -7132,7 +7162,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
   customPermissions: Record<string, PermissionFlags>;
   onBack: () => void;
   onSignOut: () => void;
-  onInboxVisibilityChange?: (telegram: boolean, whatsapp: boolean, email: boolean, ibLeads: boolean) => void;
+  onInboxVisibilityChange?: (telegram: boolean, whatsapp: boolean) => void;
   onOpenRecycleBin?: () => void;
   pipelineAutoAssignEnabled?: boolean;
   pipelineAutoAssignStages?: string[];
@@ -7143,7 +7173,12 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
   sectionVisibility?: Record<string, boolean>;
   onSectionVisibilityChange?: (key: string, visible: boolean) => void;
 }) {
-  const [activeTab, setActiveTab] = useState<'account' | 'email' | 'scheduled_emails' | 'telegram' | 'whatsapp' | 'twilio' | 'team' | 'team_dashboard' | 'role_management' | 'lead_distribution' | 'pipeline_autoassign' | 'pipeline_stages' | 'followup' | 'meta' | 'assignment' | 'appearance' | 'direct_link' | 'recycle_bin' | 'webhooks' | 'google_sheets' | 'section_visibility' | 'danger'>('account');
+  const [activeTab, setActiveTab] = useState<'account' | 'email' | 'scheduled_emails' | 'telegram' | 'whatsapp' | 'twilio' | 'team' | 'team_dashboard' | 'role_management' | 'lead_distribution' | 'pipeline_autoassign' | 'pipeline_stages' | 'followup' | 'meta' | 'assignment' | 'recycle_bin' | 'section_visibility' | 'danger'>('account');
+
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
 
   // Account state
   const [firstName, setFirstName] = useState('');
@@ -7160,7 +7195,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
   const [uploadingPic, setUploadingPic] = useState(false);
   const profilePicInputRef = useRef<HTMLInputElement>(null);
 
-  // SMTP state
+  // SMTP state (legacy)
   const [smtpHost, setSmtpHost] = useState('');
   const [smtpPort, setSmtpPort] = useState('587');
   const [smtpUsername, setSmtpUsername] = useState('');
@@ -7168,13 +7203,43 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
   const [fromEmail, setFromEmail] = useState('');
   const [fromName, setFromName] = useState('');
   const [useTls, setUseTls] = useState(true);
-  const [imapHost, setImapHost] = useState('');
-  const [imapPort, setImapPort] = useState('993');
-  const [imapUsername, setImapUsername] = useState('');
-  const [imapPassword, setImapPassword] = useState('');
-  const [imapUseTls, setImapUseTls] = useState(true);
   const [showImapPassword, setShowImapPassword] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
+  // Multi-SMTP servers state
+  type SmtpServer = {
+    id: string;
+    label: string;
+    smtp_host: string;
+    smtp_port: number;
+    smtp_username: string;
+    from_email: string | null;
+    from_name: string | null;
+    use_tls: boolean;
+    priority: number;
+    is_active: boolean;
+    daily_limit: number | null;
+    total_sent: number;
+    total_failed: number;
+    last_error: string | null;
+    last_error_at: string | null;
+  };
+  const [smtpServersList, setSmtpServersList] = useState<SmtpServer[]>([]);
+  const [editingSmtpServerId, setEditingSmtpServerId] = useState<string | null>(null);
+  const [smtpServerLabel, setSmtpServerLabel] = useState('');
+  const [smtpServerHost, setSmtpServerHost] = useState('');
+  const [smtpServerPort, setSmtpServerPort] = useState('587');
+  const [smtpServerUsername, setSmtpServerUsername] = useState('');
+  const [smtpServerPassword, setSmtpServerPassword] = useState('');
+  const [smtpServerFromEmail, setSmtpServerFromEmail] = useState('');
+  const [smtpServerFromName, setSmtpServerFromName] = useState('');
+  const [smtpServerUseTls, setSmtpServerUseTls] = useState(true);
+  const [smtpServerDailyLimit, setSmtpServerDailyLimit] = useState('');
+  const [showSmtpServerPassword, setShowSmtpServerPassword] = useState(false);
+  const [smtpServerSaving, setSmtpServerSaving] = useState(false);
+  const [smtpServerError, setSmtpServerError] = useState('');
+  const [smtpServerSuccess, setSmtpServerSuccess] = useState(false);
+  const [deletingSmtpServerId, setDeletingSmtpServerId] = useState<string | null>(null);
 
   // Telegram state
   const [botToken, setBotToken] = useState('');
@@ -7182,10 +7247,35 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
   const [welcomeMessage, setWelcomeMessage] = useState('');
   const [telegramLink, setTelegramLink] = useState('');
   const [whatsappGroupLink, setWhatsappGroupLink] = useState('');
-  const [personalPhoneNumber, setPersonalPhoneNumber] = useState('');
+
   const [showBotToken, setShowBotToken] = useState(false);
   const [webhookStatus, setWebhookStatus] = useState<'idle' | 'setting' | 'set' | 'error'>('idle');
   const [webhookUrl, setWebhookUrl] = useState('');
+
+  // Telegram multi-bot state
+  type TgBot = {
+    id: string;
+    label: string;
+    bot_token: string;
+    bot_username: string | null;
+    welcome_message: string | null;
+    webhook_secret: string;
+    is_active: boolean;
+    created_at: string;
+  };
+  const [tgBotsList, setTgBotsList] = useState<TgBot[]>([]);
+  const [editingTgBotId, setEditingTgBotId] = useState<string | null>(null);
+  const [tgBotLabel, setTgBotLabel] = useState('');
+  const [tgBotToken, setTgBotToken] = useState('');
+  const [tgBotUsername, setTgBotUsername] = useState('');
+  const [tgBotWelcomeMsg, setTgBotWelcomeMsg] = useState('');
+  const [showTgBotToken, setShowTgBotToken] = useState(false);
+  const [tgBotSaving, setTgBotSaving] = useState(false);
+  const [tgBotError, setTgBotError] = useState('');
+  const [tgBotSuccess, setTgBotSuccess] = useState(false);
+  const [deletingTgBotId, setDeletingTgBotId] = useState<string | null>(null);
+  const [tgWebhookStatuses, setTgWebhookStatuses] = useState<Record<string, 'idle' | 'setting' | 'set' | 'error'>>({});
+  const [tgWebhookCopied, setTgWebhookCopied] = useState<string | null>(null);
 
   // WhatsApp state (multi-number support)
   const [waNumbersList, setWaNumbersList] = useState<WaNumberConfig[]>([]);
@@ -7405,6 +7495,94 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
     setDeletingWaNumberId(null);
   };
 
+  // Multi-SMTP server handlers
+  const resetSmtpServerForm = () => {
+    setEditingSmtpServerId(null);
+    setSmtpServerLabel('');
+    setSmtpServerHost('');
+    setSmtpServerPort('587');
+    setSmtpServerUsername('');
+    setSmtpServerPassword('');
+    setSmtpServerFromEmail('');
+    setSmtpServerFromName('');
+    setSmtpServerUseTls(true);
+    setSmtpServerDailyLimit('');
+    setSmtpServerError('');
+    setSmtpServerSuccess(false);
+  };
+
+  const startEditSmtpServer = (s: SmtpServer) => {
+    setEditingSmtpServerId(s.id);
+    setSmtpServerLabel(s.label || '');
+    setSmtpServerHost(s.smtp_host || '');
+    setSmtpServerPort(String(s.smtp_port || 587));
+    setSmtpServerUsername(s.smtp_username || '');
+    setSmtpServerPassword('');
+    setSmtpServerFromEmail(s.from_email || '');
+    setSmtpServerFromName(s.from_name || '');
+    setSmtpServerUseTls(s.use_tls !== false);
+    setSmtpServerDailyLimit(s.daily_limit ? String(s.daily_limit) : '');
+    setSmtpServerError('');
+    setSmtpServerSuccess(false);
+  };
+
+  const handleSaveSmtpServer = async () => {
+    setSmtpServerSaving(true);
+    setSmtpServerError('');
+    setSmtpServerSuccess(false);
+    if (!smtpServerHost.trim() || !smtpServerUsername.trim()) {
+      setSmtpServerError('SMTP Host and Username are required.');
+      setSmtpServerSaving(false);
+      return;
+    }
+    if (!editingSmtpServerId && !smtpServerPassword.trim()) {
+      setSmtpServerError('SMTP Password is required for new servers.');
+      setSmtpServerSaving(false);
+      return;
+    }
+    const payload: Record<string, unknown> = {
+      user_id: session.user.id,
+      label: smtpServerLabel.trim() || 'SMTP Server',
+      smtp_host: smtpServerHost.trim(),
+      smtp_port: parseInt(smtpServerPort) || 587,
+      smtp_username: smtpServerUsername.trim(),
+      from_email: smtpServerFromEmail.trim() || null,
+      from_name: smtpServerFromName.trim() || null,
+      use_tls: smtpServerUseTls,
+      daily_limit: smtpServerDailyLimit.trim() ? parseInt(smtpServerDailyLimit) : null,
+      updated_at: new Date().toISOString(),
+    };
+    if (smtpServerPassword.trim()) payload.smtp_password = smtpServerPassword;
+    if (editingSmtpServerId) {
+      const { error: updErr } = await supabase.from('smtp_servers').update(payload).eq('id', editingSmtpServerId);
+      if (updErr) { setSmtpServerError(updErr.message); setSmtpServerSaving(false); return; }
+    } else {
+      const { error: insErr } = await supabase.from('smtp_servers').insert(payload);
+      if (insErr) { setSmtpServerError(insErr.message); setSmtpServerSaving(false); return; }
+    }
+    const { data: refreshed } = await supabase.from('smtp_servers').select('*').order('priority', { ascending: true }).order('created_at', { ascending: true });
+    if (refreshed) setSmtpServersList(refreshed as SmtpServer[]);
+    setSmtpServerSaving(false);
+    setSmtpServerSuccess(true);
+    setTimeout(() => setSmtpServerSuccess(false), 3000);
+    resetSmtpServerForm();
+  };
+
+  const handleDeleteSmtpServer = async (id: string) => {
+    setDeletingSmtpServerId(id);
+    const { error: delErr } = await supabase.from('smtp_servers').delete().eq('id', id);
+    if (delErr) { setSmtpServerError(delErr.message); setDeletingSmtpServerId(null); return; }
+    setSmtpServersList((prev) => prev.filter((s) => s.id !== id));
+    if (editingSmtpServerId === id) resetSmtpServerForm();
+    setDeletingSmtpServerId(null);
+  };
+
+  const handleToggleSmtpServer = async (s: SmtpServer) => {
+    const { error } = await supabase.from('smtp_servers').update({ is_active: !s.is_active, updated_at: new Date().toISOString() }).eq('id', s.id);
+    if (error) { setSmtpServerError(error.message); return; }
+    setSmtpServersList((prev) => prev.map((x) => x.id === s.id ? { ...x, is_active: !x.is_active } : x));
+  };
+
   // WhatsApp message templates state
   type WaTemplate = {
     meta_template_id: string | null;
@@ -7508,28 +7686,14 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
 
 
   // Appearance state
-  const [borderColor, setBorderColor] = useState('#EAB308');
-  const [borderWidth, setBorderWidth] = useState(1.5);
-  const [borderRadius, setBorderRadius] = useState(16);
-  const [btnBgColor, setBtnBgColor] = useState('#0F172A');
-  const [btnTextColor, setBtnTextColor] = useState('#FFFFFF');
-  const [btnBorderColor, setBtnBorderColor] = useState('#EAB308');
-  const [btnBorderWidth, setBtnBorderWidth] = useState(0);
-  const [btnBorderRadius, setBtnBorderRadius] = useState(10);
-  const [crmBgColor, setCrmBgColor] = useState('#FFFFFF');
-  const [sidebarColor, setSidebarColor] = useState('#FFFFFF');
-  const [fontSize, setFontSize] = useState<'small' | 'medium' | 'large'>('medium');
   const [showTelegramInbox, setShowTelegramInbox] = useState(true);
   const [showWhatsAppInbox, setShowWhatsAppInbox] = useState(true);
-  const [showEmailInbox, setShowEmailInbox] = useState(true);
-  const [showIbLeads, setShowIbLeads] = useState(true);
-  const [appearanceSaving, setAppearanceSaving] = useState(false);
-  const [appearanceSaved, setAppearanceSaved] = useState(false);
+
   const [setupCost, setSetupCost] = useState(10);
 
   // Section visibility (per-page show/hide) state
   const [localSectionVis, setLocalSectionVis] = useState<Record<string, boolean>>({
-    leads: true, brokers: true, ib_leads: true, inbox: true, broadcasts: true,
+    leads: true, brokers: true, inbox: true, broadcasts: true,
     analytics: true, lead_tracker: true, templates: true, followups: true,
     automations: true, pipeline: true,
   });
@@ -7561,144 +7725,52 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
   const [metaConversionLog, setMetaConversionLog] = useState<{ id: string; event_name: string; success: boolean; error_message: string | null; created_at: string }[]>([]);
   const [eventMapping, setEventMapping] = useState<Record<LeadStatus, string>>({ ...DEFAULT_STAGE_EVENTS });
 
-  // Webhook state
-  const [webhooks, setWebhooks] = useState<WebhookRow[]>([]);
-  const [webhookDeliveries, setWebhookDeliveries] = useState<WebhookDeliveryRow[]>([]);
-  const [webhookSaving, setWebhookSaving] = useState(false);
-  const [webhookError, setWebhookError] = useState('');
-  const [webhookTesting, setWebhookTesting] = useState<string | null>(null);
-  const [editingWebhook, setEditingWebhook] = useState<WebhookRow | null>(null);
-  const [whUrl, setWhUrl] = useState('');
-  const [whLabel, setWhLabel] = useState('');
-  const [whSecret, setWhSecret] = useState('');
-  const [whEvents, setWhEvents] = useState<string[]>(['lead.created', 'lead.status_changed']);
-  const [whActive, setWhActive] = useState(true);
-
-  // Inbound webhook state
-  const [inboundKeys, setInboundKeys] = useState<InboundKeyRow[]>([]);
-  const [inboundLogs, setInboundLogs] = useState<InboundLogRow[]>([]);
-  const [inboundLabel, setInboundLabel] = useState('');
-  const [inboundSource, setInboundSource] = useState('');
-  const [inboundSaving, setInboundSaving] = useState(false);
-  const [inboundError, setInboundError] = useState('');
-  const [copiedKeyId, setCopiedKeyId] = useState<string | null>(null);
-
-  // Google Sheets sync state
-  type GoogleSheetConfig = {
-    id: string;
-    sheet_url: string;
-    sheet_name: string | null;
-    column_mapping: Record<string, string>;
-    trading_product_default: string;
-    source_tag: string;
-    is_active: boolean;
-    last_synced_at: string | null;
-    last_row_count: number;
-  };
-  type GsSyncLog = {
-    id: string;
-    settings_id: string;
-    row_data: Record<string, string> | null;
-    lead_id: string | null;
-    status: string;
-    error_message: string | null;
-    row_number: number;
-    created_at: string;
-  };
-  const [gsConfigs, setGsConfigs] = useState<GoogleSheetConfig[]>([]);
-  const [gsSyncLogs, setGsSyncLogs] = useState<GsSyncLog[]>([]);
-  const [gsSheetUrl, setGsSheetUrl] = useState('');
-  const [gsSheetName, setGsSheetName] = useState('');
-  const [gsSourceTag, setGsSourceTag] = useState('Google Sheets');
-  const [gsTradingProduct, setGsTradingProduct] = useState<'algo' | 'tradingview_premium'>('algo');
-  const [gsMapFullName, setGsMapFullName] = useState('');
-  const [gsMapMobile, setGsMapMobile] = useState('');
-  const [gsMapEmail, setGsMapEmail] = useState('');
-  const [gsMapState, setGsMapState] = useState('');
-  const [gsMapProduct, setGsMapProduct] = useState('');
-  const [gsMapFund, setGsMapFund] = useState('');
-  const [gsMapNotes, setGsMapNotes] = useState('');
-  const [gsSaving, setGsSaving] = useState(false);
-  const [gsError, setGsError] = useState('');
-  const [gsSuccess, setGsSuccess] = useState(false);
-  const [gsEditingId, setGsEditingId] = useState<string | null>(null);
-  const [gsSyncing, setGsSyncing] = useState<string | null>(null);
-
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const [error, setError] = useState('');
-
   useEffect(() => {
+    if (!session?.user) return;
+    setLoading(true);
     (async () => {
      try {
-      const settled = await Promise.allSettled([
+      const results = await Promise.allSettled([
         supabase.from('smtp_settings').select('*').maybeSingle(),
         supabase.from('telegram_settings').select('*').maybeSingle(),
+        supabase.from('telegram_bots').select('*').order('created_at', { ascending: true }),
         supabase.from('whatsapp_settings').select('*').order('created_at', { ascending: true }).limit(1).maybeSingle(),
-        supabase.from('team_members').select('*').order('created_at', { ascending: false }),
+        supabase.from('team_members').select('*').order('created_at', { ascending: true }),
         supabase.from('follow_up_settings').select('*').maybeSingle(),
-        supabase.from('lead_followups').select('*').order('reminder_at', { ascending: true }).limit(50),
+        supabase.from('lead_followups').select('*').order('reminder_at', { ascending: true }),
         supabase.from('meta_conversion_settings').select('*').maybeSingle(),
-        supabase.from('meta_conversion_log').select('id, event_name, success, error_message, created_at').order('created_at', { ascending: false }).limit(20),
+        supabase.from('meta_conversion_log').select('*').order('created_at', { ascending: false }).limit(50),
         supabase.from('lead_assignment_settings').select('*').maybeSingle(),
         supabase.from('role_permissions').select('*'),
         supabase.from('appearance_settings').select('*').maybeSingle(),
         supabase.from('twilio_settings').select('*').maybeSingle(),
-        supabase.from('call_logs').select('id, phone_number, lead_name, status, duration, created_at').order('created_at', { ascending: false }).limit(30),
-        supabase.from('webhooks').select('*').order('created_at', { ascending: false }),
-        supabase.from('webhook_deliveries').select('id, webhook_id, event, status, response_status, created_at').order('created_at', { ascending: false }).limit(30),
-        supabase.from('inbound_webhook_keys').select('*').order('created_at', { ascending: false }),
-        supabase.from('inbound_webhook_logs').select('id, api_key_id, lead_id, source, status, error_message, created_at').order('created_at', { ascending: false }).limit(30),
+        supabase.from('twilio_call_logs').select('*').order('created_at', { ascending: false }).limit(50),
         supabase.from('landing_page_appearance').select('*').maybeSingle(),
-        supabase.from('google_sheets_settings').select('*').order('created_at', { ascending: false }),
-        supabase.from('google_sheets_sync_log').select('*').order('created_at', { ascending: false }).limit(30),
+        supabase.from('smtp_servers').select('*').order('priority', { ascending: true }),
       ]);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const R = (idx: number): { data: any } => {
-        const r = settled[idx];
-        return r.status === 'fulfilled' ? { data: r.value.data } : { data: null };
+      const R = (idx: number) => {
+        const r = results[idx];
+        return r.status === 'fulfilled' ? r.value : { data: null, error: null as unknown };
       };
-
       const smtpRes = R(0);
       const tgRes = R(1);
-      const waRes = R(2);
-      const teamRes = R(3);
-      const fuRes = R(4);
-      const fuRemindersRes = R(5);
-      const metaRes = R(6);
-      const metaLogRes = R(7);
-      const assignRes = R(8);
-      const rolePermRes = R(9);
-      const appearanceRes = R(10);
-      const twilioRes = R(11);
-      const twilioLogRes = R(12);
-      const webhooksRes = R(13);
-      const webhookDeliveriesRes = R(14);
-      const inboundKeysRes = R(15);
-      const inboundLogsRes = R(16);
-      const landingAppearanceRes = R(17);
-      const gsConfigsRes = R(18);
-      const gsSyncLogsRes = R(19);
+      const tgBotsRes = R(2);
+      const waRes = R(3);
+      const teamRes = R(4);
+      const fuRes = R(5);
+      const fuRemindersRes = R(6);
+      const metaRes = R(7);
+      const metaLogRes = R(8);
+      const assignRes = R(9);
+      const rolePermRes = R(10);
+      const appearanceRes = R(11);
+      const twilioRes = R(12);
+      const twilioLogRes = R(13);
+      const landingAppearanceRes = R(14);
+      const smtpServersRes = R(15);
 
-      if (webhooksRes.data) {
-        setWebhooks(webhooksRes.data as WebhookRow[]);
-      }
-      if (webhookDeliveriesRes.data) {
-        setWebhookDeliveries(webhookDeliveriesRes.data as WebhookDeliveryRow[]);
-      }
-      if (inboundKeysRes.data) {
-        setInboundKeys(inboundKeysRes.data as InboundKeyRow[]);
-      }
-      if (inboundLogsRes.data) {
-        setInboundLogs(inboundLogsRes.data as InboundLogRow[]);
-      }
-
-      if (gsConfigsRes.data) {
-        setGsConfigs(gsConfigsRes.data as GoogleSheetConfig[]);
-      }
-      if (gsSyncLogsRes.data) {
-        setGsSyncLogs(gsSyncLogsRes.data as GsSyncLog[]);
+      if (smtpServersRes.data) {
+        setSmtpServersList(smtpServersRes.data as SmtpServer[]);
       }
 
       if (twilioRes.data) {
@@ -7714,28 +7786,14 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
       }
 
       if (appearanceRes.data) {
-        const a = appearanceRes.data as { border_color: string; border_width: number; border_radius: number; btn_bg_color: string; btn_text_color: string; btn_border_color: string; btn_border_width: number; btn_border_radius: number; show_telegram_inbox: boolean; show_whatsapp_inbox: boolean; show_email_inbox: boolean; show_ib_leads: boolean; crm_bg_color: string | null; sidebar_color: string | null; font_size: string | null; setup_cost: number | null };
-        setBorderColor(a.border_color || '#EAB308');
-        setBorderWidth(a.border_width ?? 1.5);
-        setBorderRadius(a.border_radius ?? 16);
-        setBtnBgColor(a.btn_bg_color || '#0F172A');
-        setBtnTextColor(a.btn_text_color || '#FFFFFF');
-        setBtnBorderColor(a.btn_border_color || '#EAB308');
-        setBtnBorderWidth(a.btn_border_width ?? 0);
-        setBtnBorderRadius(a.btn_border_radius ?? 10);
-        setCrmBgColor(a.crm_bg_color || '#FFFFFF');
-        setSidebarColor(a.sidebar_color || '#FFFFFF');
-        setFontSize((a.font_size as 'small' | 'medium' | 'large') || 'medium');
+        const a = appearanceRes.data as { show_telegram_inbox: boolean; show_whatsapp_inbox: boolean; setup_cost: number | null };
         setSetupCost(a.setup_cost ?? 10);
         setShowTelegramInbox(a.show_telegram_inbox !== false);
         setShowWhatsAppInbox(a.show_whatsapp_inbox !== false);
-        setShowEmailInbox(a.show_email_inbox !== false);
-        setShowIbLeads(a.show_ib_leads !== false);
         const sv = appearanceRes.data as Record<string, unknown>;
         setLocalSectionVis({
           leads: sv.show_leads !== false,
           brokers: sv.show_brokers !== false,
-          ib_leads: sv.show_ib_leads !== false,
           inbox: sv.show_inbox !== false,
           broadcasts: sv.show_broadcasts !== false,
           analytics: sv.show_analytics !== false,
@@ -7745,29 +7803,6 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
           automations: sv.show_automations !== false,
           pipeline: sv.show_pipeline !== false,
         });
-        document.documentElement.style.setProperty('--app-border-color', a.border_color || '#EAB308');
-        document.documentElement.style.setProperty('--app-border-width', `${a.border_width ?? 1.5}px`);
-        document.documentElement.style.setProperty('--app-border-radius', `${a.border_radius ?? 16}px`);
-        document.documentElement.style.setProperty('--app-btn-bg', a.btn_bg_color || '#0F172A');
-        document.documentElement.style.setProperty('--app-btn-text', a.btn_text_color || '#FFFFFF');
-        document.documentElement.style.setProperty('--app-btn-border-color', a.btn_border_color || '#EAB308');
-        document.documentElement.style.setProperty('--app-btn-border-width', `${a.btn_border_width ?? 0}px`);
-        document.documentElement.style.setProperty('--app-btn-border-radius', `${a.btn_border_radius ?? 10}px`);
-        document.documentElement.style.setProperty('--app-crm-bg', a.crm_bg_color || '#FFFFFF');
-        document.documentElement.style.setProperty('--app-sidebar-bg', a.sidebar_color || '#FFFFFF');
-        document.documentElement.setAttribute('data-font-size', a.font_size || 'medium');
-      } else {
-        document.documentElement.style.setProperty('--app-border-color', '#EAB308');
-        document.documentElement.style.setProperty('--app-border-width', '1.5px');
-        document.documentElement.style.setProperty('--app-border-radius', '16px');
-        document.documentElement.style.setProperty('--app-btn-bg', '#0F172A');
-        document.documentElement.style.setProperty('--app-btn-text', '#FFFFFF');
-        document.documentElement.style.setProperty('--app-btn-border-color', '#EAB308');
-        document.documentElement.style.setProperty('--app-btn-border-width', '0px');
-        document.documentElement.style.setProperty('--app-btn-border-radius', '10px');
-        document.documentElement.style.setProperty('--app-crm-bg', '#FFFFFF');
-        document.documentElement.style.setProperty('--app-sidebar-bg', '#FFFFFF');
-        document.documentElement.setAttribute('data-font-size', 'medium');
       }
 
       if (landingAppearanceRes.data) {
@@ -7826,28 +7861,17 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
         setMetaConversionLog(metaLogRes.data as { id: string; event_name: string; success: boolean; error_message: string | null; created_at: string }[]);
       }
 
-      if (smtpRes.data) {
-        setSmtpHost(smtpRes.data.smtp_host || '');
-        setSmtpPort(String(smtpRes.data.smtp_port || 587));
-        setSmtpUsername(smtpRes.data.smtp_username || '');
-        setSmtpPassword(smtpRes.data.smtp_password || '');
-        setFromEmail(smtpRes.data.from_email || '');
-        setFromName(smtpRes.data.from_name || '');
-        setUseTls(smtpRes.data.use_tls !== false);
-        setImapHost(smtpRes.data.imap_host || '');
-        setImapPort(String(smtpRes.data.imap_port || 993));
-        setImapUsername(smtpRes.data.imap_username || '');
-        setImapPassword(smtpRes.data.imap_password || '');
-        setImapUseTls(smtpRes.data.imap_use_tls !== false);
-      }
-
       if (tgRes.data) {
         setBotToken(tgRes.data.bot_token || '');
         setBotUsername(tgRes.data.bot_username || '');
         setWelcomeMessage(tgRes.data.welcome_message || '');
         setTelegramLink(tgRes.data.telegram_link || '');
         setWhatsappGroupLink(tgRes.data.whatsapp_group_link || '');
-        setPersonalPhoneNumber(tgRes.data.personal_phone_number || '');
+
+      }
+
+      if (tgBotsRes.data) {
+        setTgBotsList(tgBotsRes.data as TgBot[]);
       }
 
       if (waRes.data) {
@@ -7959,29 +7983,10 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
     setSaved(false);
 
     if (activeTab === 'email') {
-      const payload = {
-        user_id: session.user.id,
-        smtp_host: smtpHost.trim(),
-        smtp_port: parseInt(smtpPort) || 587,
-        smtp_username: smtpUsername.trim(),
-        smtp_password: smtpPassword,
-        from_email: fromEmail.trim(),
-        from_name: fromName.trim(),
-        use_tls: useTls,
-        imap_host: imapHost.trim() || null,
-        imap_port: parseInt(imapPort) || 993,
-        imap_username: imapUsername.trim() || null,
-        imap_password: imapPassword || null,
-        imap_use_tls: imapUseTls,
-        updated_at: new Date().toISOString(),
-      };
-
-      const { data: existing } = await supabase.from('smtp_settings').select('id').maybeSingle();
-      const result = existing
-        ? await supabase.from('smtp_settings').update(payload).eq('id', existing.id)
-        : await supabase.from('smtp_settings').insert(payload);
-
-      if (result.error) { setError(result.error.message); setSaving(false); return; }
+      setSaving(false);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+      return;
     } else if (activeTab === 'account') {
       setAccountSaving(true);
       setAccountError('');
@@ -8010,19 +8015,16 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
     } else if (activeTab === 'telegram') {
       const payload = {
         user_id: session.user.id,
-        bot_token: botToken.trim(),
-        bot_username: botUsername.trim().replace(/^@/, ''),
-        welcome_message: welcomeMessage.trim(),
         telegram_link: telegramLink.trim(),
         whatsapp_group_link: whatsappGroupLink.trim(),
-        personal_phone_number: personalPhoneNumber.trim(),
+
         updated_at: new Date().toISOString(),
       };
 
       const { data: existing } = await supabase.from('telegram_settings').select('id').maybeSingle();
       const result = existing
         ? await supabase.from('telegram_settings').update(payload).eq('id', existing.id)
-        : await supabase.from('telegram_settings').insert(payload);
+        : await supabase.from('telegram_settings').insert({ ...payload, bot_token: botToken.trim(), bot_username: botUsername.trim().replace(/^@/, ''), welcome_message: welcomeMessage.trim() });
 
       if (result.error) { setError(result.error.message); setSaving(false); return; }
     } else if (activeTab === 'whatsapp') {
@@ -8156,109 +8158,6 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
       setTimeout(() => setRolePermsSaved(false), 3000);
       setSaving(false);
       return;
-    } else if (activeTab === 'webhooks') {
-      setWebhookSaving(true);
-      setWebhookError('');
-
-      const payload = {
-        user_id: session.user.id,
-        url: whUrl.trim(),
-        label: whLabel.trim(),
-        secret_token: whSecret.trim(),
-        events: whEvents,
-        is_active: whActive,
-        updated_at: new Date().toISOString(),
-      };
-
-      if (!payload.url) {
-        setWebhookError('Webhook URL is required.');
-        setWebhookSaving(false);
-        setSaving(false);
-        return;
-      }
-      if (whEvents.length === 0) {
-        setWebhookError('Select at least one event.');
-        setWebhookSaving(false);
-        setSaving(false);
-        return;
-      }
-
-      let result;
-      if (editingWebhook) {
-        result = await supabase.from('webhooks').update(payload).eq('id', editingWebhook.id).select().single();
-      } else {
-        result = await supabase.from('webhooks').insert(payload).select().single();
-      }
-
-      if (result.error) {
-        setWebhookError(result.error.message);
-        setWebhookSaving(false);
-        setSaving(false);
-        return;
-      }
-
-      if (editingWebhook) {
-        setWebhooks((prev) => prev.map((w) => w.id === editingWebhook.id ? { ...w, ...payload } as WebhookRow : w));
-        setEditingWebhook(null);
-      } else if (result.data) {
-        setWebhooks((prev) => [result.data as WebhookRow, ...prev]);
-      }
-
-      setWhUrl(''); setWhLabel(''); setWhSecret(''); setWhEvents(['lead.created', 'lead.status_changed']); setWhActive(true);
-      setWebhookSaving(false);
-      setSaving(false);
-      return;
-    } else if (activeTab === 'appearance') {
-      setAppearanceSaving(true);
-      setError('');
-      setAppearanceSaved(false);
-
-      const payload = {
-        user_id: session.user.id,
-        border_color: borderColor,
-        border_width: borderWidth,
-        border_radius: borderRadius,
-        btn_bg_color: btnBgColor,
-        btn_text_color: btnTextColor,
-        btn_border_color: btnBorderColor,
-        btn_border_width: btnBorderWidth,
-        btn_border_radius: btnBorderRadius,
-        crm_bg_color: crmBgColor,
-        sidebar_color: sidebarColor,
-        font_size: fontSize,
-        show_telegram_inbox: showTelegramInbox,
-        show_whatsapp_inbox: showWhatsAppInbox,
-        show_email_inbox: showEmailInbox,
-        show_ib_leads: showIbLeads,
-        setup_cost: setupCost,
-        updated_at: new Date().toISOString(),
-      };
-
-      const { data: existing } = await supabase.from('appearance_settings').select('id').maybeSingle();
-      const result = existing
-        ? await supabase.from('appearance_settings').update(payload).eq('id', existing.id)
-        : await supabase.from('appearance_settings').insert(payload);
-
-      if (result.error) { setError(result.error.message); setAppearanceSaving(false); setSaving(false); return; }
-
-      document.documentElement.style.setProperty('--app-border-color', borderColor);
-      document.documentElement.style.setProperty('--app-border-width', `${borderWidth}px`);
-      document.documentElement.style.setProperty('--app-border-radius', `${borderRadius}px`);
-      document.documentElement.style.setProperty('--app-btn-bg', btnBgColor);
-      document.documentElement.style.setProperty('--app-btn-text', btnTextColor);
-      document.documentElement.style.setProperty('--app-btn-border-color', btnBorderColor);
-      document.documentElement.style.setProperty('--app-btn-border-width', `${btnBorderWidth}px`);
-      document.documentElement.style.setProperty('--app-btn-border-radius', `${btnBorderRadius}px`);
-      document.documentElement.style.setProperty('--app-crm-bg', crmBgColor);
-      document.documentElement.style.setProperty('--app-sidebar-bg', sidebarColor);
-      document.documentElement.setAttribute('data-font-size', fontSize);
-
-      setAppearanceSaved(true);
-      setAppearanceSaving(false);
-      onInboxVisibilityChange?.(showTelegramInbox, showWhatsAppInbox, showEmailInbox, showIbLeads);
-      setTimeout(() => setAppearanceSaved(false), 3000);
-      setSaving(false);
-      return;
     }
 
     setSaved(true);
@@ -8274,7 +8173,6 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
       const payload = {
         show_leads: localSectionVis.leads,
         show_brokers: localSectionVis.brokers,
-        show_ib_leads: localSectionVis.ib_leads,
         show_inbox: localSectionVis.inbox,
         show_broadcasts: localSectionVis.broadcasts,
         show_analytics: localSectionVis.analytics,
@@ -8349,221 +8247,21 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
     setTimeout(() => setLandingSaved(false), 3000);
   };
 
-  const handleTestWebhook = async (webhookId: string) => {
-    setWebhookTesting(webhookId);
-    try {
-      const token = (await supabase.auth.getSession()).session?.access_token;
-      if (!token) return;
-      await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/fire-webhook`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ event: 'webhook.test', user_id: session.user.id, payload: { test: true, webhook_id: webhookId, message: 'This is a test payload from LeadCentre CRM.' } }),
-      });
-      const { data: dels } = await supabase.from('webhook_deliveries').select('id, webhook_id, event, status, response_status, created_at').order('created_at', { ascending: false }).limit(30);
-      if (dels) setWebhookDeliveries(dels as WebhookDeliveryRow[]);
-    } catch { /* ignore */ }
-    setWebhookTesting(null);
-  };
+  const handleSetupWebhook = async (botId?: string, botToken?: string, webhookSecret?: string) => {
+    const token = botToken?.trim();
+    if (!token) return;
 
-  const handleDeleteWebhook = async (webhookId: string) => {
-    await supabase.from('webhooks').delete().eq('id', webhookId);
-    setWebhooks((prev) => prev.filter((x) => x.id !== webhookId));
-  };
-
-  const handleEditWebhook = (w: WebhookRow) => {
-    setEditingWebhook(w);
-    setWhUrl(w.url);
-    setWhLabel(w.label || '');
-    setWhSecret(w.secret_token || '');
-    setWhEvents(w.events);
-    setWhActive(w.is_active);
-  };
-
-  const handleCancelEditWebhook = () => {
-    setEditingWebhook(null);
-    setWhUrl('');
-    setWhLabel('');
-    setWhSecret('');
-    setWhEvents(['lead.created', 'lead.status_changed']);
-    setWhActive(true);
-  };
-
-  const generateApiKey = () => {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    let key = 'lcr_';
-    for (let i = 0; i < 40; i++) key += chars[Math.floor(Math.random() * chars.length)];
-    return key;
-  };
-
-  const handleCreateInboundKey = async () => {
-    setInboundSaving(true);
-    setInboundError('');
-    try {
-      const apiKey = generateApiKey();
-      const { data, error: insertError } = await supabase
-        .from('inbound_webhook_keys')
-        .insert({
-          user_id: session.user.id,
-          api_key: apiKey,
-          label: inboundLabel.trim() || 'Inbound Webhook',
-          source_tag: inboundSource.trim() || null,
-          is_active: true,
-        })
-        .select('*')
-        .single();
-      if (insertError) {
-        setInboundError(insertError.message);
-      } else if (data) {
-        setInboundKeys((prev) => [data as InboundKeyRow, ...prev]);
-        setInboundLabel('');
-        setInboundSource('');
-      }
-    } catch (err) {
-      setInboundError(err instanceof Error ? err.message : 'Failed to create API key');
-    }
-    setInboundSaving(false);
-  };
-
-  const handleDeleteInboundKey = async (keyId: string) => {
-    const { error: delError } = await supabase.from('inbound_webhook_keys').delete().eq('id', keyId);
-    if (!delError) {
-      setInboundKeys((prev) => prev.filter((k) => k.id !== keyId));
-    }
-  };
-
-  const handleToggleInboundKey = async (key: InboundKeyRow) => {
-    const newVal = !key.is_active;
-    const { error } = await supabase.from('inbound_webhook_keys').update({ is_active: newVal, updated_at: new Date().toISOString() }).eq('id', key.id);
-    if (!error) {
-      setInboundKeys((prev) => prev.map((k) => (k.id === key.id ? { ...k, is_active: newVal } : k)));
-    }
-  };
-
-  const handleCopyInboundKey = (keyId: string, value: string) => {
-    navigator.clipboard?.writeText(value);
-    setCopiedKeyId(keyId);
-    setTimeout(() => setCopiedKeyId(null), 2000);
-  };
-
-  // Google Sheets handlers
-  const handleSaveGsConfig = async () => {
-    setGsSaving(true);
-    setGsError('');
-    setGsSuccess(false);
-    if (!gsSheetUrl.trim()) {
-      setGsError('Google Sheet CSV URL is required.');
-      setGsSaving(false);
-      return;
-    }
-    const columnMapping: Record<string, string> = {};
-    if (gsMapFullName.trim()) columnMapping.full_name = gsMapFullName.trim();
-    if (gsMapMobile.trim()) columnMapping.mobile_number = gsMapMobile.trim();
-    if (gsMapEmail.trim()) columnMapping.email = gsMapEmail.trim();
-    if (gsMapState.trim()) columnMapping.state = gsMapState.trim();
-    if (gsMapProduct.trim()) columnMapping.trading_product = gsMapProduct.trim();
-    if (gsMapFund.trim()) columnMapping.fund_amount = gsMapFund.trim();
-    if (gsMapNotes.trim()) columnMapping.notes = gsMapNotes.trim();
-
-    const payload = {
-      user_id: session.user.id,
-      sheet_url: gsSheetUrl.trim(),
-      sheet_name: gsSheetName.trim() || null,
-      column_mapping: columnMapping,
-      trading_product_default: gsTradingProduct,
-      source_tag: gsSourceTag.trim() || 'Google Sheets',
-      is_active: true,
-      updated_at: new Date().toISOString(),
-    };
-
-    if (gsEditingId) {
-      const { error: updErr } = await supabase.from('google_sheets_settings').update(payload).eq('id', gsEditingId);
-      if (updErr) { setGsError(updErr.message); setGsSaving(false); return; }
+    if (botId) {
+      setTgWebhookStatuses((prev) => ({ ...prev, [botId]: 'setting' }));
     } else {
-      const { error: insErr } = await supabase.from('google_sheets_settings').insert(payload);
-      if (insErr) { setGsError(insErr.message); setGsSaving(false); return; }
+      setWebhookStatus('setting');
     }
-    const { data: refreshed } = await supabase.from('google_sheets_settings').select('*').order('created_at', { ascending: false });
-    if (refreshed) setGsConfigs(refreshed as GoogleSheetConfig[]);
-    setGsSheetUrl(''); setGsSheetName(''); setGsSourceTag('Google Sheets'); setGsTradingProduct('algo');
-    setGsMapFullName(''); setGsMapMobile(''); setGsMapEmail(''); setGsMapState(''); setGsMapProduct(''); setGsMapFund(''); setGsMapNotes('');
-    setGsEditingId(null);
-    setGsSuccess(true);
-    setTimeout(() => setGsSuccess(false), 3000);
-    setGsSaving(false);
-  };
-
-  const handleEditGsConfig = (cfg: GoogleSheetConfig) => {
-    setGsEditingId(cfg.id);
-    setGsSheetUrl(cfg.sheet_url);
-    setGsSheetName(cfg.sheet_name || '');
-    setGsSourceTag(cfg.source_tag);
-    setGsTradingProduct((cfg.trading_product_default as 'algo' | 'tradingview_premium') || 'algo');
-    const m = cfg.column_mapping || {};
-    setGsMapFullName(m.full_name || '');
-    setGsMapMobile(m.mobile_number || '');
-    setGsMapEmail(m.email || '');
-    setGsMapState(m.state || '');
-    setGsMapProduct(m.trading_product || '');
-    setGsMapFund(m.fund_amount || '');
-    setGsMapNotes(m.notes || '');
-    setGsError('');
-    setGsSuccess(false);
-  };
-
-  const handleCancelEditGs = () => {
-    setGsEditingId(null);
-    setGsSheetUrl(''); setGsSheetName(''); setGsSourceTag('Google Sheets'); setGsTradingProduct('algo');
-    setGsMapFullName(''); setGsMapMobile(''); setGsMapEmail(''); setGsMapState(''); setGsMapProduct(''); setGsMapFund(''); setGsMapNotes('');
-    setGsError(''); setGsSuccess(false);
-  };
-
-  const handleDeleteGsConfig = async (id: string) => {
-    const { error: delErr } = await supabase.from('google_sheets_settings').delete().eq('id', id);
-    if (!delErr) {
-      setGsConfigs((prev) => prev.filter((c) => c.id !== id));
-      if (gsEditingId === id) handleCancelEditGs();
-    }
-  };
-
-  const handleToggleGsConfig = async (cfg: GoogleSheetConfig) => {
-    const newVal = !cfg.is_active;
-    const { error } = await supabase.from('google_sheets_settings').update({ is_active: newVal, updated_at: new Date().toISOString() }).eq('id', cfg.id);
-    if (!error) {
-      setGsConfigs((prev) => prev.map((c) => (c.id === cfg.id ? { ...c, is_active: newVal } : c)));
-    }
-  };
-
-  const handleSyncGsConfig = async (id: string) => {
-    setGsSyncing(id);
-    setGsError('');
-    try {
-      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/google-sheets-sync`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ settings_id: id }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setGsError(data.error || 'Sync failed');
-      } else {
-        const { data: refreshed } = await supabase.from('google_sheets_settings').select('*').order('created_at', { ascending: false });
-        if (refreshed) setGsConfigs(refreshed as GoogleSheetConfig[]);
-        const { data: refreshedLogs } = await supabase.from('google_sheets_sync_log').select('*').order('created_at', { ascending: false }).limit(30);
-        if (refreshedLogs) setGsSyncLogs(refreshedLogs as GsSyncLog[]);
-      }
-    } catch {
-      setGsError('Network error during sync');
-    }
-    setGsSyncing(null);
-  };
-
-  const handleSetupWebhook = async () => {
-    setWebhookStatus('setting');
     setError('');
 
     try {
-      const hookUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/telegram-webhook`;
-      const tgApiUrl = `https://api.telegram.org/bot${botToken.trim()}/setWebhook`;
+      const secretPath = webhookSecret ? `/${webhookSecret}` : '';
+      const hookUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/telegram-webhook${secretPath}`;
+      const tgApiUrl = `https://api.telegram.org/bot${token}/setWebhook`;
       const tgResponse = await fetch(tgApiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -8572,15 +8270,99 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
       const tgData = await tgResponse.json();
 
       if (tgData.ok) {
-        setWebhookStatus('set');
-        setWebhookUrl(hookUrl);
+        if (botId) {
+          setTgWebhookStatuses((prev) => ({ ...prev, [botId]: 'set' }));
+        } else {
+          setWebhookStatus('set');
+          setWebhookUrl(hookUrl);
+        }
       } else {
-        setWebhookStatus('error');
+        if (botId) {
+          setTgWebhookStatuses((prev) => ({ ...prev, [botId]: 'error' }));
+        } else {
+          setWebhookStatus('error');
+        }
         setError(tgData.description || 'Failed to set webhook');
       }
     } catch {
-      setWebhookStatus('error');
+      if (botId) {
+        setTgWebhookStatuses((prev) => ({ ...prev, [botId]: 'error' }));
+      } else {
+        setWebhookStatus('error');
+      }
       setError('Network error while setting up webhook');
+    }
+  };
+
+  const resetTgBotForm = () => {
+    setEditingTgBotId(null);
+    setTgBotLabel('');
+    setTgBotToken('');
+    setTgBotUsername('');
+    setTgBotWelcomeMsg('');
+    setTgBotError('');
+    setTgBotSuccess(false);
+  };
+
+  const startEditTgBot = (bot: TgBot) => {
+    setEditingTgBotId(bot.id);
+    setTgBotLabel(bot.label || '');
+    setTgBotToken(bot.bot_token || '');
+    setTgBotUsername(bot.bot_username || '');
+    setTgBotWelcomeMsg(bot.welcome_message || '');
+    setTgBotError('');
+    setTgBotSuccess(false);
+  };
+
+  const handleSaveTgBot = async () => {
+    if (!tgBotToken.trim()) {
+      setTgBotError('Bot token is required.');
+      return;
+    }
+    setTgBotSaving(true);
+    setTgBotError('');
+    setTgBotSuccess(false);
+
+    const payload = {
+      user_id: session.user.id,
+      label: tgBotLabel.trim() || 'Telegram Bot',
+      bot_token: tgBotToken.trim(),
+      bot_username: tgBotUsername.trim().replace(/^@/, '') || null,
+      welcome_message: tgBotWelcomeMsg.trim() || null,
+      updated_at: new Date().toISOString(),
+    };
+
+    if (editingTgBotId) {
+      const { error: updErr } = await supabase.from('telegram_bots').update(payload).eq('id', editingTgBotId);
+      if (updErr) { setTgBotError(updErr.message); setTgBotSaving(false); return; }
+    } else {
+      const { error: insErr } = await supabase.from('telegram_bots').insert(payload);
+      if (insErr) { setTgBotError(insErr.message); setTgBotSaving(false); return; }
+    }
+
+    const { data: refreshed } = await supabase.from('telegram_bots').select('*').order('created_at', { ascending: true });
+    if (refreshed) setTgBotsList(refreshed as TgBot[]);
+
+    setTgBotSaving(false);
+    setTgBotSuccess(true);
+    setTimeout(() => setTgBotSuccess(false), 3000);
+    resetTgBotForm();
+  };
+
+  const handleDeleteTgBot = async (id: string) => {
+    setDeletingTgBotId(id);
+    const { error: delErr } = await supabase.from('telegram_bots').delete().eq('id', id);
+    if (delErr) { setTgBotError(delErr.message); setDeletingTgBotId(null); return; }
+    setTgBotsList((prev) => prev.filter((b) => b.id !== id));
+    if (editingTgBotId === id) resetTgBotForm();
+    setDeletingTgBotId(null);
+  };
+
+  const handleToggleTgBot = async (bot: TgBot) => {
+    const newVal = !bot.is_active;
+    const { error } = await supabase.from('telegram_bots').update({ is_active: newVal, updated_at: new Date().toISOString() }).eq('id', bot.id);
+    if (!error) {
+      setTgBotsList((prev) => prev.map((b) => (b.id === bot.id ? { ...b, is_active: newVal } : b)));
     }
   };
 
@@ -8726,19 +8508,15 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
   };
 
   const canSave = activeTab === 'email'
-    ? Boolean(smtpHost.trim() && smtpUsername.trim() && smtpPassword && fromEmail.trim())
-    : activeTab === 'telegram' ? Boolean(botToken.trim())
+    ? smtpServersList.length > 0
+    : activeTab === 'telegram' ? true
     : activeTab === 'whatsapp' ? Boolean(waPhoneNumberId.trim() && waAccessToken.trim()) || waNumbersList.length > 0
     : activeTab === 'account' ? Boolean(firstName.trim() || lastName.trim() || phoneNumber.trim() || addressLine.trim() || area.trim() || pinCode.trim())
     : activeTab === 'followup' ? reminderEmails.some((e) => e.trim())
     : activeTab === 'meta' ? Boolean(metaPixelId.trim() && metaAccessToken.trim())
     : activeTab === 'assignment' ? true
     : activeTab === 'role_management' ? true
-    : activeTab === 'appearance' ? true
     : activeTab === 'section_visibility' ? true
-    : activeTab === 'direct_link' ? true
-    : activeTab === 'webhooks' ? true
-    : activeTab === 'google_sheets' ? true
     : false;
 
   const tabs: { key: typeof activeTab; label: string; icon: React.ReactNode; accent: string; show: boolean }[] = [
@@ -8758,12 +8536,8 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
     { key: 'followup', label: 'Follow-Ups', icon: <Bell size={18} />, accent: 'followup', show: true },
 
     { key: 'meta', label: 'Meta Ads', icon: <TrendingUp size={18} />, accent: 'meta', show: true },
-    { key: 'webhooks', label: 'Webhooks', icon: <Webhook size={18} />, accent: 'webhooks', show: permissions.settings },
-    { key: 'google_sheets', label: 'Google Sheets', icon: <FileSpreadsheet size={18} />, accent: 'google_sheets', show: permissions.settings },
 
-    { key: 'appearance', label: 'Appearance', icon: <Palette size={18} />, accent: 'appearance', show: permissions.settings },
     { key: 'section_visibility', label: 'Section Visibility', icon: <Eye size={18} />, accent: 'section_visibility', show: permissions.settings },
-    { key: 'direct_link', label: 'Direct Link Generator', icon: <Link2 size={18} />, accent: 'direct_link', show: permissions.settings },
     { key: 'recycle_bin', label: 'Recycle Bin', icon: <Trash2 size={18} />, accent: 'recycle_bin', show: permissions.deleteLeads },
     { key: 'danger', label: 'Delete Account', icon: <Trash2 size={18} />, accent: 'danger', show: true },
   ];
@@ -9400,83 +9174,141 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
               ) : activeTab === 'email' ? (
                 <>
                   <div className="crm-settings-card-header">
-                    <h2 className="crm-settings-card-title"><Mail size={20} style={{ color: '#2563eb' }} /> SMTP Configuration</h2>
-                    <p className="crm-settings-card-desc">Enter your company email's SMTP details. For Gmail, use an App Password (not your regular password). For Outlook, use smtp.office365.com on port 587.</p>
+                    <h2 className="crm-settings-card-title"><Mail size={20} style={{ color: '#2563eb' }} /> SMTP Servers</h2>
+                    <p className="crm-settings-card-desc">Add multiple SMTP servers for sending emails. Servers are tried in priority order — if the first fails, the next is used automatically. For Gmail, use an App Password (not your regular password).</p>
                   </div>
 
-                  <div className="crm-add-lead-grid">
-                    <label className="crm-add-lead-field">
-                      <span>SMTP Host <em>*</em></span>
-                      <input type="text" required value={smtpHost} onChange={(e) => setSmtpHost(e.target.value)} placeholder="smtp.gmail.com" />
-                    </label>
-                    <label className="crm-add-lead-field">
-                      <span>SMTP Port <em>*</em></span>
-                      <input type="number" required value={smtpPort} onChange={(e) => setSmtpPort(e.target.value)} placeholder="587" inputMode="numeric" />
-                    </label>
-                    <label className="crm-add-lead-field">
-                      <span>SMTP Username <em>*</em></span>
-                      <input type="email" required value={smtpUsername} onChange={(e) => setSmtpUsername(e.target.value)} placeholder="you@yourcompany.com" />
-                    </label>
-                    <label className="crm-add-lead-field">
-                      <span>SMTP Password <em>*</em></span>
-                      <div style={{ position: 'relative' }}>
-                        <input type={showPassword ? 'text' : 'password'} required value={smtpPassword} onChange={(e) => setSmtpPassword(e.target.value)} placeholder="App password or email password" style={{ width: '100%', paddingRight: '40px' }} />
-                        <button type="button" onClick={() => setShowPassword(!showPassword)} style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', border: 'none', background: 'none', cursor: 'pointer', color: 'var(--text-dark)', fontSize: '0.75rem', padding: '4px' }}>
-                          {showPassword ? 'Hide' : 'Show'}
-                        </button>
+                  {/* SMTP servers list */}
+                  <div style={{ marginBottom: '20px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <Mail size={16} style={{ color: '#2563eb' }} />
+                        <strong style={{ fontSize: '0.85rem' }}>Configured SMTP Servers ({smtpServersList.length})</strong>
                       </div>
-                    </label>
-                    <label className="crm-add-lead-field">
-                      <span>From Email <em>*</em></span>
-                      <input type="email" required value={fromEmail} onChange={(e) => setFromEmail(e.target.value)} placeholder="you@yourcompany.com" />
-                    </label>
-                    <label className="crm-add-lead-field">
-                      <span>From Name</span>
-                      <input type="text" value={fromName} onChange={(e) => setFromName(e.target.value)} placeholder="Your Company Name" />
-                    </label>
+                      {editingSmtpServerId === null && smtpServerHost.trim() === '' ? (
+                        <button type="button" onClick={() => { resetSmtpServerForm(); }} style={{ fontSize: '0.78rem', fontWeight: 600, color: '#2563eb', border: '1px solid #2563eb', borderRadius: '6px', padding: '4px 10px', cursor: 'pointer', background: 'var(--bg-card)' }}>+ Add Server</button>
+                      ) : (
+                        <button type="button" onClick={resetSmtpServerForm} style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-dark)', border: '1px solid var(--border-subtle)', borderRadius: '6px', padding: '4px 10px', cursor: 'pointer', background: 'var(--bg-card)' }}>Cancel</button>
+                      )}
+                    </div>
+                    {smtpServersList.length === 0 ? (
+                      <div style={{ padding: '20px', textAlign: 'center', background: 'var(--bg-light)', borderRadius: '10px', border: '1px dashed var(--border-subtle)' }}>
+                        <Mail size={32} style={{ color: 'var(--text-dark)', margin: '0 auto 8px', display: 'block' }} />
+                        <p style={{ fontSize: '0.82rem', color: 'var(--text-dark)' }}>No SMTP servers configured yet. Add your first server using the form below.</p>
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        {smtpServersList.map((s, idx) => (
+                          <div key={s.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: 'var(--bg-light)', borderRadius: '10px', border: editingSmtpServerId === s.id ? '2px solid #2563eb' : '1px solid var(--border-subtle)' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
+                              <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'linear-gradient(135deg, #2563eb, #1e40af)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--bg-card)', fontWeight: 700, fontSize: '0.8rem', flexShrink: 0 }}>
+                                {idx + 1}
+                              </div>
+                              <div style={{ minWidth: 0 }}>
+                                <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                  {s.label || s.smtp_username}
+                                  {idx === 0 && <span style={{ fontSize: '0.62rem', fontWeight: 700, padding: '1px 6px', borderRadius: '4px', background: 'rgba(37,99,235,0.15)', color: '#1e40af' }}>PRIMARY</span>}
+                                  {!s.is_active && <span style={{ fontSize: '0.62rem', fontWeight: 700, padding: '1px 6px', borderRadius: '4px', background: 'rgba(100,116,139,0.15)', color: 'var(--text-muted)' }}>DISABLED</span>}
+                                  {s.last_error && <span style={{ fontSize: '0.62rem', fontWeight: 700, padding: '1px 6px', borderRadius: '4px', background: 'rgba(239,68,68,0.15)', color: '#b91c1c' }} title={s.last_error}>ERROR</span>}
+                                </div>
+                                <div style={{ fontSize: '0.72rem', color: 'var(--text-dark)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                  {s.smtp_host}:{s.smtp_port} · {s.smtp_username}
+                                </div>
+                                {(s.total_sent > 0 || s.total_failed > 0) && (
+                                  <div style={{ fontSize: '0.68rem', color: 'var(--text-dark)', marginTop: '2px' }}>
+                                    Sent: {s.total_sent} · Failed: {s.total_failed}
+                                    {s.daily_limit && ` · Limit: ${s.daily_limit}/day`}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+                              <button type="button" onClick={() => handleToggleSmtpServer(s)} style={{ fontSize: '0.72rem', fontWeight: 600, color: s.is_active ? '#16a34a' : 'var(--text-dark)', border: `1px solid ${s.is_active ? 'rgba(22,163,74,0.3)' : 'var(--border-subtle)'}`, borderRadius: '6px', padding: '4px 10px', cursor: 'pointer', background: 'var(--bg-card)' }}>
+                                {s.is_active ? 'Enabled' : 'Disabled'}
+                              </button>
+                              <button type="button" onClick={() => startEditSmtpServer(s)} style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', border: '1px solid var(--border-subtle)', borderRadius: '6px', padding: '4px 10px', cursor: 'pointer', background: 'var(--bg-card)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <Edit3 size={12} /> Edit
+                              </button>
+                              <button type="button" onClick={() => handleDeleteSmtpServer(s.id)} disabled={deletingSmtpServerId === s.id} style={{ fontSize: '0.75rem', fontWeight: 600, color: '#ef4444', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '6px', padding: '4px 10px', cursor: 'pointer', background: 'var(--bg-card)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                {deletingSmtpServerId === s.id ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />} Delete
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
-                  <label className="crm-add-lead-field" style={{ flexDirection: 'row', alignItems: 'center', gap: '10px', marginTop: '12px' }}>
-                    <input type="checkbox" checked={useTls} onChange={(e) => setUseTls(e.target.checked)} style={{ width: '18px', height: '18px', accentColor: '#2563eb' }} />
-                    <span style={{ fontSize: '0.88rem', fontWeight: 500 }}>Use TLS / STARTTLS (recommended for port 587)</span>
-                  </label>
-
-                  <div style={{ marginTop: '24px', paddingTop: '20px', borderTop: '1px solid var(--border-subtle)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                      <Mail size={18} style={{ color: '#2563eb' }} />
-                      <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-main)', margin: 0 }}>IMAP Configuration (Email Inbox)</h3>
+                  {/* Add / Edit SMTP server form — show when adding or editing */}
+                  {(editingSmtpServerId !== null || smtpServerHost.trim() !== '') && (
+                  <div style={{ marginBottom: '20px', padding: '20px', background: 'var(--bg-card)', borderRadius: '10px', border: '1px solid var(--border-subtle)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
+                      <Plus size={16} style={{ color: '#2563eb' }} />
+                      <strong style={{ fontSize: '0.85rem' }}>{editingSmtpServerId ? 'Edit SMTP Server' : 'Add New SMTP Server'}</strong>
                     </div>
-                    <p style={{ fontSize: '0.82rem', color: 'var(--text-dark)', marginBottom: '16px', lineHeight: 1.5 }}>Configure IMAP to receive and read emails in the Email Inbox. For Hostinger, use imap.hostinger.com on port 993 with TLS enabled.</p>
-
+                    {smtpServerError && (
+                      <div style={{ marginBottom: '10px', padding: '8px 12px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '6px', color: '#dc2626', fontSize: '0.78rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <AlertTriangle size={14} /> {smtpServerError}
+                      </div>
+                    )}
+                    {smtpServerSuccess && (
+                      <div style={{ marginBottom: '10px', padding: '8px 12px', background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)', borderRadius: '6px', color: '#15803d', fontSize: '0.78rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <CheckCircle2 size={14} /> Server saved successfully!
+                      </div>
+                    )}
                     <div className="crm-add-lead-grid">
-                      <label className="crm-add-lead-field">
-                        <span>IMAP Host</span>
-                        <input type="text" value={imapHost} onChange={(e) => setImapHost(e.target.value)} placeholder="imap.hostinger.com" />
+                      <label className="crm-add-lead-field" style={{ gridColumn: '1 / -1' }}>
+                        <span>Label <em>*</em></span>
+                        <input type="text" value={smtpServerLabel} onChange={(e) => setSmtpServerLabel(e.target.value)} placeholder="e.g. Gmail, SendGrid, Office365" />
                       </label>
                       <label className="crm-add-lead-field">
-                        <span>IMAP Port</span>
-                        <input type="number" value={imapPort} onChange={(e) => setImapPort(e.target.value)} placeholder="993" inputMode="numeric" />
+                        <span>SMTP Host <em>*</em></span>
+                        <input type="text" value={smtpServerHost} onChange={(e) => setSmtpServerHost(e.target.value)} placeholder="smtp.gmail.com" />
                       </label>
                       <label className="crm-add-lead-field">
-                        <span>IMAP Username</span>
-                        <input type="email" value={imapUsername} onChange={(e) => setImapUsername(e.target.value)} placeholder="you@yourcompany.com" />
+                        <span>SMTP Port <em>*</em></span>
+                        <input type="number" value={smtpServerPort} onChange={(e) => setSmtpServerPort(e.target.value)} placeholder="587" inputMode="numeric" />
                       </label>
                       <label className="crm-add-lead-field">
-                        <span>IMAP Password</span>
+                        <span>SMTP Username <em>*</em></span>
+                        <input type="email" value={smtpServerUsername} onChange={(e) => setSmtpServerUsername(e.target.value)} placeholder="you@yourcompany.com" />
+                      </label>
+                      <label className="crm-add-lead-field">
+                        <span>SMTP Password {editingSmtpServerId ? '(leave blank to keep current)' : <em>*</em>}</span>
                         <div style={{ position: 'relative' }}>
-                          <input type={showImapPassword ? 'text' : 'password'} value={imapPassword} onChange={(e) => setImapPassword(e.target.value)} placeholder="Email password" style={{ width: '100%', paddingRight: '40px' }} />
-                          <button type="button" onClick={() => setShowImapPassword(!showImapPassword)} style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', border: 'none', background: 'none', cursor: 'pointer', color: 'var(--text-dark)', fontSize: '0.75rem', padding: '4px' }}>
-                            {showImapPassword ? 'Hide' : 'Show'}
+                          <input type={showSmtpServerPassword ? 'text' : 'password'} value={smtpServerPassword} onChange={(e) => setSmtpServerPassword(e.target.value)} placeholder={editingSmtpServerId ? '••••••••' : 'App password or email password'} style={{ width: '100%', paddingRight: '40px' }} />
+                          <button type="button" onClick={() => setShowSmtpServerPassword(!showSmtpServerPassword)} style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', border: 'none', background: 'none', cursor: 'pointer', color: 'var(--text-dark)', fontSize: '0.75rem', padding: '4px' }}>
+                            {showSmtpServerPassword ? 'Hide' : 'Show'}
                           </button>
                         </div>
                       </label>
+                      <label className="crm-add-lead-field">
+                        <span>From Email</span>
+                        <input type="email" value={smtpServerFromEmail} onChange={(e) => setSmtpServerFromEmail(e.target.value)} placeholder="you@yourcompany.com" />
+                      </label>
+                      <label className="crm-add-lead-field">
+                        <span>From Name</span>
+                        <input type="text" value={smtpServerFromName} onChange={(e) => setSmtpServerFromName(e.target.value)} placeholder="Your Company Name" />
+                      </label>
+                      <label className="crm-add-lead-field">
+                        <span>Daily Send Limit (optional)</span>
+                        <input type="number" value={smtpServerDailyLimit} onChange={(e) => setSmtpServerDailyLimit(e.target.value)} placeholder="e.g. 500" inputMode="numeric" />
+                      </label>
                     </div>
-
                     <label className="crm-add-lead-field" style={{ flexDirection: 'row', alignItems: 'center', gap: '10px', marginTop: '12px' }}>
-                      <input type="checkbox" checked={imapUseTls} onChange={(e) => setImapUseTls(e.target.checked)} style={{ width: '18px', height: '18px', accentColor: '#2563eb' }} />
-                      <span style={{ fontSize: '0.88rem', fontWeight: 500 }}>Use TLS / SSL (recommended for port 993)</span>
+                      <input type="checkbox" checked={smtpServerUseTls} onChange={(e) => setSmtpServerUseTls(e.target.checked)} style={{ width: '18px', height: '18px', accentColor: '#2563eb' }} />
+                      <span style={{ fontSize: '0.88rem', fontWeight: 500 }}>Use TLS / STARTTLS (recommended for port 587)</span>
                     </label>
+                    <div style={{ marginTop: '14px', display: 'flex', gap: '8px' }}>
+                      <button type="button" onClick={handleSaveSmtpServer} disabled={smtpServerSaving} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 20px', border: 'none', borderRadius: '8px', background: smtpServerSaving ? '#94a3b8' : '#2563eb', color: '#fff', fontSize: '0.82rem', fontWeight: 600, cursor: smtpServerSaving ? 'not-allowed' : 'pointer' }}>
+                        {smtpServerSaving ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
+                        {smtpServerSaving ? 'Saving...' : editingSmtpServerId ? 'Update Server' : 'Add Server'}
+                      </button>
+                      <button type="button" onClick={resetSmtpServerForm} style={{ padding: '8px 16px', border: '1px solid var(--border-subtle)', borderRadius: '8px', background: 'var(--bg-card)', color: 'var(--text-muted)', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
+                    </div>
                   </div>
+                  )}
+
                 </>
               ) : activeTab === 'whatsapp' ? (
                 <>
@@ -10548,7 +10380,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                         <label className="crm-add-lead-field" style={{ marginTop: '12px' }}>
                           <span>Email subject (optional)</span>
                           <input type="text" value={autoWelcomeEmailSubject} onChange={(e) => setAutoWelcomeEmailSubject(e.target.value)} placeholder="Welcome to {product}, {name}!" style={{ width: '100%' }} />
-                          <small style={{ color: 'var(--text-dark)', fontSize: '0.74rem', marginTop: '4px', display: 'block' }}>Use {'{name}'}, {'{email}'}, {'{product}'}, {'{fund_amount}'}, {'{telegram_link}'}, {'{whatsapp_group_link}'}, {'{personal_phone_number}'} as placeholders.</small>
+                          <small style={{ color: 'var(--text-dark)', fontSize: '0.74rem', marginTop: '4px', display: 'block' }}>Use {'{name}'}, {'{email}'}, {'{product}'}, {'{fund_amount}'}, {'{telegram_link}'}, {'{whatsapp_group_link}'} as placeholders.</small>
                         </label>
                         <label className="crm-add-lead-field" style={{ marginTop: '10px' }}>
                           <span>Email body (optional)</span>
@@ -10568,7 +10400,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                           <label className="crm-add-lead-field" style={{ marginTop: '8px' }}>
                             <span>Next steps checklist (optional)</span>
                             <textarea value={welcomeNextSteps} onChange={(e) => setWelcomeNextSteps(e.target.value)} rows={4} placeholder="1. Join our Telegram group&#10;2. Reply with your MT5 account number&#10;3. Wait for our team to approve access" style={{ width: '100%', fontFamily: 'inherit', resize: 'vertical' }} />
-                            <small style={{ color: 'var(--text-dark)', fontSize: '0.74rem', marginTop: '4px', display: 'block' }}>Shown as a numbered action plan. Use {'{telegram_link}'}, {'{whatsapp_group_link}'}, {'{personal_phone_number}'} as placeholders.</small>
+                            <small style={{ color: 'var(--text-dark)', fontSize: '0.74rem', marginTop: '4px', display: 'block' }}>Shown as a numbered action plan. Use {'{telegram_link}'}, {'{whatsapp_group_link}'} as placeholders.</small>
                           </label>
 
                           <label className="crm-add-lead-field" style={{ marginTop: '8px' }}>
@@ -10642,123 +10474,192 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
               ) : activeTab === 'telegram' ? (
                 <>
                   <div className="crm-settings-card-header">
-                    <h2 className="crm-settings-card-title"><MessageCircle size={20} style={{ color: '#0088cc' }} /> Telegram Bot</h2>
-                    <p className="crm-settings-card-desc">Create a bot via <strong>@BotFather</strong> on Telegram to get your bot token. Once configured, clients can message your bot and their messages appear in the Inbox tab. You can reply directly from here.</p>
+                    <h2 className="crm-settings-card-title"><MessageCircle size={20} style={{ color: '#0088cc' }} /> Telegram Bots</h2>
+                    <p className="crm-settings-card-desc">Connect multiple Telegram bots (e.g. Sales, Support, Community). Create each bot via <strong>@BotFather</strong> on Telegram to get its token. Each bot has its own conversations, welcome message, and webhook.</p>
                   </div>
 
-                  <div className="crm-add-lead-grid">
-                    <label className="crm-add-lead-field" style={{ gridColumn: '1 / -1' }}>
-                      <span>Bot Token <em>*</em></span>
-                      <div style={{ position: 'relative' }}>
-                        <input
-                          type={showBotToken ? 'text' : 'password'}
-                          required
-                          value={botToken}
-                          onChange={(e) => { setBotToken(e.target.value); setWebhookStatus('idle'); }}
-                          placeholder="123456789:ABCdefGhIJKlmNoPQRsTUVwxyz"
-                          style={{ width: '100%', paddingRight: '40px', fontFamily: 'monospace', fontSize: '0.82rem' }}
-                        />
-                        <button type="button" onClick={() => setShowBotToken(!showBotToken)} style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', border: 'none', background: 'none', cursor: 'pointer', color: 'var(--text-dark)', fontSize: '0.75rem', padding: '4px' }}>
-                          {showBotToken ? 'Hide' : 'Show'}
-                        </button>
-                      </div>
-                      <small style={{ color: 'var(--text-dark)', fontSize: '0.74rem', marginTop: '4px', display: 'block' }}>
-                        Get this from @BotFather when you create your bot.
-                      </small>
-                    </label>
-                    <label className="crm-add-lead-field">
-                      <span>Bot Username</span>
-                      <input type="text" value={botUsername} onChange={(e) => setBotUsername(e.target.value)} placeholder="my_trading_bot" />
-                    </label>
-                    <label className="crm-add-lead-field" style={{ gridColumn: '1 / -1' }}>
-                      <span>Welcome Message</span>
-                      <textarea
-                        value={welcomeMessage}
-                        onChange={(e) => setWelcomeMessage(e.target.value)}
-                        rows={3}
-                        placeholder="Hi! Thanks for reaching out. Our team will get back to you shortly."
-                        style={{ fontFamily: 'inherit', resize: 'vertical' }}
-                      />
-                      <small style={{ color: 'var(--text-dark)', fontSize: '0.74rem', marginTop: '4px', display: 'block' }}>
-                        Sent automatically when someone starts your bot with /start.
-                      </small>
-                    </label>
-                    <label className="crm-add-lead-field" style={{ gridColumn: '1 / -1' }}>
-                      <span>Telegram Community Link</span>
-                      <input
-                        type="text"
-                        value={telegramLink}
-                        onChange={(e) => setTelegramLink(e.target.value)}
-                        placeholder="https://t.me/your_channel"
-                        style={{ fontFamily: 'monospace', fontSize: '0.82rem' }}
-                      />
-                      <small style={{ color: 'var(--text-dark)', fontSize: '0.74rem', marginTop: '4px', display: 'block' }}>
-                        This link appears as a "Join Telegram Community" button on your landing page after a visitor submits the form.
-                      </small>
-                    </label>
-                    <label className="crm-add-lead-field" style={{ gridColumn: '1 / -1' }}>
-                      <span>WhatsApp Group Link</span>
-                      <input
-                        type="text"
-                        value={whatsappGroupLink}
-                        onChange={(e) => setWhatsappGroupLink(e.target.value)}
-                        placeholder="https://chat.whatsapp.com/your_group"
-                        style={{ fontFamily: 'monospace', fontSize: '0.82rem' }}
-                      />
-                      <small style={{ color: 'var(--text-dark)', fontSize: '0.74rem', marginTop: '4px', display: 'block' }}>
-                        This link is included in the auto welcome email sent to new leads so they can join your WhatsApp group.
-                      </small>
-                    </label>
-                    <label className="crm-add-lead-field" style={{ gridColumn: '1 / -1' }}>
-                      <span>Personal Phone Number</span>
-                      <input
-                        type="text"
-                        value={personalPhoneNumber}
-                        onChange={(e) => setPersonalPhoneNumber(e.target.value)}
-                        placeholder="+91 98765 43210"
-                        style={{ fontFamily: 'monospace', fontSize: '0.82rem' }}
-                      />
-                      <small style={{ color: 'var(--text-dark)', fontSize: '0.74rem', marginTop: '4px', display: 'block' }}>
-                        This number is included in the auto welcome email so leads can contact you directly.
-                      </small>
-                    </label>
-                  </div>
-
-                  {/* Webhook Setup */}
-                  <div style={{ marginTop: '16px', padding: '16px', background: 'var(--bg-light)', borderRadius: '10px', border: '1px solid var(--border-subtle)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                      <Link2 size={16} style={{ color: '#0088cc' }} />
-                      <strong style={{ fontSize: '0.85rem' }}>Webhook Setup</strong>
+                  {/* General Telegram settings (links shown on landing page / welcome emails) */}
+                  <div style={{ marginBottom: '20px' }}>
+                    <div style={{ fontSize: '0.82rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-dark)', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <Link2 size={14} style={{ color: '#0088cc' }} /> Landing Page & Welcome Email Links
                     </div>
-                    <p style={{ fontSize: '0.78rem', color: 'var(--text-dark)', marginBottom: '12px', lineHeight: 1.5 }}>
-                      After saving your bot token, click the button below to connect your bot to this CRM. This allows incoming messages to flow into your Inbox.
-                    </p>
-                    {webhookStatus === 'set' && (
-                      <div style={{ background: 'rgba(22,163,74,0.1)', border: '1px solid rgba(22,163,74,0.3)', borderRadius: '8px', padding: '10px 14px', color: '#16a34a', fontSize: '0.8rem', fontWeight: 600, marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <CheckCircle2 size={16} /> Webhook connected! Your bot is now live.
-                      </div>
-                    )}
-                    {webhookStatus === 'error' && (
-                      <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '8px', padding: '10px 14px', color: '#dc2626', fontSize: '0.8rem', fontWeight: 600, marginBottom: '10px' }}>
-                        Failed to set up webhook. Make sure the bot token is correct.
-                      </div>
-                    )}
-                    <button
-                      type="button"
-                      onClick={handleSetupWebhook}
-                      disabled={!botToken.trim() || webhookStatus === 'setting'}
-                      style={{
-                        padding: '8px 16px', border: 'none', borderRadius: '8px',
-                        background: webhookStatus === 'set' ? 'rgba(22,163,74,0.1)' : '#0088cc',
-                        color: webhookStatus === 'set' ? '#16a34a' : 'var(--bg-card)',
-                        fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer',
-                        display: 'flex', alignItems: 'center', gap: '6px',
-                      }}
-                    >
-                      {webhookStatus === 'setting' ? <Loader2 size={14} className="crm-spin" /> : webhookStatus === 'set' ? <CheckCircle2 size={14} /> : <Link2 size={14} />}
-                      {webhookStatus === 'setting' ? 'Connecting...' : webhookStatus === 'set' ? 'Webhook Active' : 'Connect Webhook'}
-                    </button>
+                    <div className="crm-add-lead-grid">
+                      <label className="crm-add-lead-field" style={{ gridColumn: '1 / -1' }}>
+                        <span>Telegram Community Link</span>
+                        <input
+                          type="text"
+                          value={telegramLink}
+                          onChange={(e) => setTelegramLink(e.target.value)}
+                          placeholder="https://t.me/your_channel"
+                          style={{ fontFamily: 'monospace', fontSize: '0.82rem' }}
+                        />
+                        <small style={{ color: 'var(--text-dark)', fontSize: '0.74rem', marginTop: '4px', display: 'block' }}>
+                          Appears as a "Join Telegram Community" button on your landing page after a visitor submits the form.
+                        </small>
+                      </label>
+                      <label className="crm-add-lead-field" style={{ gridColumn: '1 / -1' }}>
+                        <span>WhatsApp Group Link</span>
+                        <input
+                          type="text"
+                          value={whatsappGroupLink}
+                          onChange={(e) => setWhatsappGroupLink(e.target.value)}
+                          placeholder="https://chat.whatsapp.com/your_group"
+                          style={{ fontFamily: 'monospace', fontSize: '0.82rem' }}
+                        />
+                        <small style={{ color: 'var(--text-dark)', fontSize: '0.74rem', marginTop: '4px', display: 'block' }}>
+                          Included in the auto welcome email so leads can join your WhatsApp group.
+                        </small>
+                      </label>
+
+                    </div>
                   </div>
+
+                  {/* Connected Bots List */}
+                  <div style={{ marginBottom: '20px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                      <div style={{ fontSize: '0.82rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-dark)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <Bot size={16} style={{ color: '#0088cc' }} /> Connected Bots ({tgBotsList.length})
+                      </div>
+                      {!editingTgBotId && (
+                        <button
+                          type="button"
+                          onClick={() => { resetTgBotForm(); setEditingTgBotId(''); }}
+                          style={{ padding: '7px 14px', border: '1px solid #0088cc', borderRadius: '8px', background: 'rgba(0,136,204,0.06)', color: '#0088cc', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', transition: 'all 0.15s' }}
+                          onMouseEnter={(e) => { e.currentTarget.style.background = '#0088cc'; e.currentTarget.style.color = '#fff'; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(0,136,204,0.06)'; e.currentTarget.style.color = '#0088cc'; }}
+                        >
+                          <Plus size={15} /> Add Bot
+                        </button>
+                      )}
+                    </div>
+
+                    {tgBotsList.length === 0 && !editingTgBotId && (
+                      <div style={{ padding: '24px', background: 'var(--bg-light)', borderRadius: '10px', border: '1px dashed var(--border-subtle)', textAlign: 'center' }}>
+                        <Bot size={32} style={{ color: 'var(--text-dark)', opacity: 0.3, marginBottom: '8px' }} />
+                        <p style={{ fontSize: '0.85rem', color: 'var(--text-dark)', margin: 0 }}>No bots connected yet. Click "Add Bot" to connect your first Telegram bot.</p>
+                      </div>
+                    )}
+
+                    {tgBotsList.map((bot) => {
+                      const ws = tgWebhookStatuses[bot.id] || 'idle';
+                      const hookUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/telegram-webhook/${bot.webhook_secret}`;
+                      return (
+                        <div key={bot.id} style={{ padding: '16px', background: 'var(--bg-light)', borderRadius: '10px', border: '1px solid var(--border-subtle)', marginBottom: '12px' }}>
+                          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+                            <div style={{ flex: 1, minWidth: '200px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                                <span style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-main)' }}>{bot.label}</span>
+                                {bot.bot_username && <span style={{ fontSize: '0.78rem', color: '#0088cc', fontWeight: 600 }}>@{bot.bot_username}</span>}
+                                <span style={{ fontSize: '0.72rem', padding: '2px 8px', borderRadius: '6px', fontWeight: 600, background: bot.is_active ? 'rgba(22,163,74,0.1)' : 'rgba(239,68,68,0.1)', color: bot.is_active ? '#16a34a' : '#dc2626' }}>
+                                  {bot.is_active ? 'Active' : 'Disabled'}
+                                </span>
+                              </div>
+                              {bot.welcome_message && <p style={{ fontSize: '0.78rem', color: 'var(--text-dark)', margin: '0 0 8px' }}>Welcome: {bot.welcome_message.slice(0, 60)}{bot.welcome_message.length > 60 ? '...' : ''}</p>}
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '8px' }}>
+                                <button
+                                  type="button"
+                                  onClick={() => handleSetupWebhook(bot.id, bot.bot_token, bot.webhook_secret)}
+                                  disabled={ws === 'setting'}
+                                  style={{ padding: '6px 12px', border: 'none', borderRadius: '6px', background: ws === 'set' ? 'rgba(22,163,74,0.1)' : '#0088cc', color: ws === 'set' ? '#16a34a' : '#fff', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}
+                                >
+                                  {ws === 'setting' ? <Loader2 size={12} className="crm-spin" /> : ws === 'set' ? <CheckCircle2 size={12} /> : <Link2 size={12} />}
+                                  {ws === 'setting' ? 'Connecting...' : ws === 'set' ? 'Webhook Active' : ws === 'error' ? 'Retry Webhook' : 'Connect Webhook'}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => { navigator.clipboard.writeText(hookUrl); setTgWebhookCopied(bot.id); setTimeout(() => setTgWebhookCopied(null), 2000); }}
+                                  style={{ padding: '6px 10px', border: '1px solid var(--border-subtle)', borderRadius: '6px', background: 'var(--bg-card)', color: 'var(--text-dark)', fontSize: '0.72rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                                >
+                                  {tgWebhookCopied === bot.id ? <CheckCircle2 size={12} style={{ color: '#16a34a' }} /> : <Copy size={12} />}
+                                  {tgWebhookCopied === bot.id ? 'Copied!' : 'Webhook URL'}
+                                </button>
+                              </div>
+                              {ws === 'error' && <p style={{ fontSize: '0.72rem', color: '#dc2626', margin: '6px 0 0' }}>Failed to connect. Make sure the bot token is correct.</p>}
+                            </div>
+                            <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+                              <button type="button" onClick={() => handleToggleTgBot(bot)} style={{ padding: '6px 10px', border: '1px solid var(--border-subtle)', borderRadius: '6px', background: 'var(--bg-card)', color: bot.is_active ? '#dc2626' : '#16a34a', fontSize: '0.72rem', fontWeight: 600, cursor: 'pointer' }}>
+                                {bot.is_active ? 'Disable' : 'Enable'}
+                              </button>
+                              <button type="button" onClick={() => startEditTgBot(bot)} style={{ padding: '6px 10px', border: '1px solid var(--border-subtle)', borderRadius: '6px', background: 'var(--bg-card)', color: 'var(--text-dark)', fontSize: '0.72rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <Edit3 size={12} /> Edit
+                              </button>
+                              <button type="button" onClick={() => handleDeleteTgBot(bot.id)} disabled={deletingTgBotId === bot.id} style={{ padding: '6px 10px', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '6px', background: 'rgba(239,68,68,0.06)', color: '#dc2626', fontSize: '0.72rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                {deletingTgBotId === bot.id ? <Loader2 size={12} className="crm-spin" /> : <Trash2 size={12} />} Delete
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+
+                    {/* Add/Edit Bot Form */}
+                    {editingTgBotId !== null && (
+                      <div style={{ padding: '20px', background: 'var(--bg-card)', borderRadius: '10px', border: '1px solid #0088cc', marginTop: '12px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+                          <span style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text-main)' }}>{editingTgBotId ? 'Edit Bot' : 'Add New Bot'}</span>
+                          <button type="button" onClick={resetTgBotForm} style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--text-dark)', padding: '4px' }}>
+                            <X size={18} />
+                          </button>
+                        </div>
+                        <div className="crm-add-lead-grid">
+                          <label className="crm-add-lead-field">
+                            <span>Bot Label</span>
+                            <input type="text" value={tgBotLabel} onChange={(e) => setTgBotLabel(e.target.value)} placeholder="Sales Bot" />
+                            <small style={{ color: 'var(--text-dark)', fontSize: '0.74rem', marginTop: '4px', display: 'block' }}>A name to identify this bot in your inbox.</small>
+                          </label>
+                          <label className="crm-add-lead-field" style={{ gridColumn: '1 / -1' }}>
+                            <span>Bot Token <em>*</em></span>
+                            <div style={{ position: 'relative' }}>
+                              <input
+                                type={showTgBotToken ? 'text' : 'password'}
+                                required
+                                value={tgBotToken}
+                                onChange={(e) => setTgBotToken(e.target.value)}
+                                placeholder="123456789:ABCdefGhIJKlmNoPQRsTUVwxyz"
+                                style={{ width: '100%', paddingRight: '40px', fontFamily: 'monospace', fontSize: '0.82rem' }}
+                              />
+                              <button type="button" onClick={() => setShowTgBotToken(!showTgBotToken)} style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', border: 'none', background: 'none', cursor: 'pointer', color: 'var(--text-dark)', fontSize: '0.75rem', padding: '4px' }}>
+                                {showTgBotToken ? 'Hide' : 'Show'}
+                              </button>
+                            </div>
+                            <small style={{ color: 'var(--text-dark)', fontSize: '0.74rem', marginTop: '4px', display: 'block' }}>Get this from @BotFather when you create your bot.</small>
+                          </label>
+                          <label className="crm-add-lead-field">
+                            <span>Bot Username</span>
+                            <input type="text" value={tgBotUsername} onChange={(e) => setTgBotUsername(e.target.value)} placeholder="my_sales_bot" />
+                          </label>
+                          <label className="crm-add-lead-field" style={{ gridColumn: '1 / -1' }}>
+                            <span>Welcome Message</span>
+                            <textarea
+                              value={tgBotWelcomeMsg}
+                              onChange={(e) => setTgBotWelcomeMsg(e.target.value)}
+                              rows={2}
+                              placeholder="Hi! Thanks for reaching out. Our team will get back to you shortly."
+                              style={{ fontFamily: 'inherit', resize: 'vertical' }}
+                            />
+                            <small style={{ color: 'var(--text-dark)', fontSize: '0.74rem', marginTop: '4px', display: 'block' }}>Sent automatically when someone starts this bot with /start.</small>
+                          </label>
+                        </div>
+                        {tgBotError && <div style={{ marginTop: '10px', fontSize: '0.82rem', color: '#dc2626' }}>{tgBotError}</div>}
+                        {tgBotSuccess && <div style={{ marginTop: '10px', fontSize: '0.82rem', color: '#16a34a', fontWeight: 600 }}>Bot saved successfully!</div>}
+                        <div style={{ marginTop: '14px', display: 'flex', gap: '10px' }}>
+                          <button
+                            type="button"
+                            onClick={handleSaveTgBot}
+                            disabled={tgBotSaving || !tgBotToken.trim()}
+                            style={{ padding: '9px 18px', border: 'none', borderRadius: '8px', background: '#0088cc', color: '#fff', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', opacity: (tgBotSaving || !tgBotToken.trim()) ? 0.6 : 1 }}
+                          >
+                            {tgBotSaving ? <Loader2 size={14} className="crm-spin" /> : <Save size={14} />} {editingTgBotId ? 'Update Bot' : 'Add Bot'}
+                          </button>
+                          <button type="button" onClick={resetTgBotForm} style={{ padding: '9px 16px', border: '1px solid var(--border-subtle)', borderRadius: '8px', background: 'var(--bg-card)', color: 'var(--text-dark)', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer' }}>
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {tgBotError && <div style={{ marginTop: '8px', fontSize: '0.82rem', color: '#dc2626' }}>{tgBotError}</div>}
                 </>
               ) : activeTab === 'lead_distribution' ? (
                 <LeadDistributionPanel session={session} />
@@ -11464,518 +11365,6 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                     </div>
                   )}
                 </>
-              ) : activeTab === 'appearance' ? (
-                <>
-                  <div className="crm-settings-card-header">
-                    <h2 className="crm-settings-card-title"><Palette size={20} style={{ color: '#6366F1' }} /> Appearance & Borders</h2>
-                    <p className="crm-settings-card-desc">Customize borders, colors, buttons, and visibility across your CRM dashboard.</p>
-                  </div>
-
-                  {appearanceSaved && (
-                    <div className="appearance-success-banner">
-                      <CheckCircle2 size={16} /> Appearance settings saved successfully.
-                    </div>
-                  )}
-
-                  {/* ===== Live Preview ===== */}
-                  <div className="appearance-section" style={{ marginBottom: '20px' }}>
-                    <div className="appearance-section-head">
-                      <div className="appearance-section-icon" style={{ background: 'rgba(99,102,241,0.1)', color: '#6366F1' }}>
-                        <Eye size={18} />
-                      </div>
-                      <h3 className="appearance-section-title">Live Preview</h3>
-                    </div>
-                    <p className="appearance-section-desc">See how your cards and inputs will look with the current border settings.</p>
-                    <div className="appearance-preview-box">
-                      <div className="appearance-preview-card" style={{ borderRadius: `${borderRadius}px`, border: `${borderWidth}px solid ${borderColor}` }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
-                          <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(59,130,246,0.1)', color: '#3B82F6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <Users size={18} />
-                          </div>
-                          <div>
-                            <div style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-main)' }}>Sample Card Title</div>
-                            <div style={{ fontSize: '0.78rem', color: 'var(--text-dark)' }}>This is how your cards will look</div>
-                          </div>
-                        </div>
-                        <input
-                          type="text"
-                          placeholder="Sample input field..."
-                          className="appearance-preview-input"
-                          style={{ borderRadius: `${Math.max(4, borderRadius - 6)}px`, border: `${borderWidth}px solid ${borderColor}` }}
-                          readOnly
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* ===== Two-column grid: Border Color + Border Width ===== */}
-                  <div className="appearance-grid">
-                    {/* Border Color */}
-                    <div className="appearance-section">
-                      <div className="appearance-section-head">
-                        <div className="appearance-section-icon" style={{ background: 'rgba(234,179,8,0.1)', color: '#EAB308' }}>
-                          <Palette size={18} />
-                        </div>
-                        <h3 className="appearance-section-title">Border Color</h3>
-                      </div>
-                      <p className="appearance-section-desc">Set the border color used on cards and inputs throughout the CRM.</p>
-                      <div className="appearance-color-row">
-                        <input type="color" value={borderColor} onChange={(e) => setBorderColor(e.target.value)} className="appearance-color-picker" />
-                        <input type="text" value={borderColor} onChange={(e) => setBorderColor(e.target.value)} placeholder="#e2e8f0" className="appearance-color-text" />
-                      </div>
-                      <div className="appearance-swatches" style={{ marginTop: '10px' }}>
-                        {['var(--border-subtle)', 'var(--border-subtle)', '#94a3b8', '#3B82F6', '#16a34a', '#EAB308', '#EF4444', '#8B5CF6'].map((c) => (
-                          <button key={c} type="button" onClick={() => setBorderColor(c)}
-                            className={`appearance-swatch ${borderColor === c ? 'appearance-swatch-active' : ''}`}
-                            style={{ background: c }} />
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Border Width */}
-                    <div className="appearance-section">
-                      <div className="appearance-section-head">
-                        <div className="appearance-section-icon" style={{ background: 'rgba(99,102,241,0.1)', color: '#6366F1' }}>
-                          <SlidersHorizontal size={18} />
-                        </div>
-                        <h3 className="appearance-section-title">Border Thickness</h3>
-                      </div>
-                      <p className="appearance-section-desc">Adjust how thick card and input borders appear.</p>
-                      <div className="appearance-slider-row">
-                        <button type="button" className="appearance-step-btn"
-                          onClick={() => setBorderWidth(Math.max(0, Math.round((borderWidth - 0.5) * 10) / 10))}
-                          disabled={borderWidth <= 0}>-</button>
-                        <input type="range" min="0" max="10" step="0.5" value={borderWidth}
-                          onChange={(e) => setBorderWidth(parseFloat(e.target.value))} className="appearance-slider" />
-                        <button type="button" className="appearance-step-btn"
-                          onClick={() => setBorderWidth(Math.min(10, Math.round((borderWidth + 0.5) * 10) / 10))}
-                          disabled={borderWidth >= 10}>+</button>
-                        <span className="appearance-slider-value">{borderWidth}px</span>
-                      </div>
-                      <div className="appearance-presets">
-                        {[
-                          { label: 'None', val: 0 }, { label: 'Thin', val: 1 }, { label: 'Default', val: 1.5 },
-                          { label: 'Medium', val: 2 }, { label: 'Thick', val: 4 }, { label: 'Bold', val: 6 },
-                        ].map((preset) => (
-                          <button key={preset.val} type="button" onClick={() => setBorderWidth(preset.val)}
-                            className={`appearance-preset-btn ${borderWidth === preset.val ? 'appearance-preset-active' : ''}`}>{preset.label}</button>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* ===== Corner Roundness + CRM Background ===== */}
-                  <div className="appearance-grid">
-                    {/* Corner Roundness */}
-                    <div className="appearance-section">
-                      <div className="appearance-section-head">
-                        <div className="appearance-section-icon" style={{ background: 'rgba(6,182,212,0.1)', color: '#06B6D4' }}>
-                          <LayoutGrid size={18} />
-                        </div>
-                        <h3 className="appearance-section-title">Corner Roundness</h3>
-                      </div>
-                      <p className="appearance-section-desc">Control how rounded the corners of cards and panels are.</p>
-                      <div className="appearance-slider-row">
-                        <button type="button" className="appearance-step-btn"
-                          onClick={() => setBorderRadius(Math.max(0, borderRadius - 2))}
-                          disabled={borderRadius <= 0}>-</button>
-                        <input type="range" min="0" max="32" value={borderRadius}
-                          onChange={(e) => setBorderRadius(parseInt(e.target.value))} className="appearance-slider" />
-                        <button type="button" className="appearance-step-btn"
-                          onClick={() => setBorderRadius(Math.min(32, borderRadius + 2))}
-                          disabled={borderRadius >= 32}>+</button>
-                        <span className="appearance-slider-value">{borderRadius}px</span>
-                      </div>
-                      <div className="appearance-presets">
-                        {[
-                          { label: 'Sharp', val: 0 }, { label: 'Subtle', val: 6 }, { label: 'Medium', val: 12 },
-                          { label: 'Round', val: 16 }, { label: 'Pill', val: 28 },
-                        ].map((preset) => (
-                          <button key={preset.val} type="button" onClick={() => setBorderRadius(preset.val)}
-                            className={`appearance-preset-btn ${borderRadius === preset.val ? 'appearance-preset-active' : ''}`}>{preset.label}</button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* CRM Background + Sidebar */}
-                    <div className="appearance-section">
-                      <div className="appearance-section-head">
-                        <div className="appearance-section-icon" style={{ background: 'rgba(37,99,235,0.1)', color: '#2563EB' }}>
-                          <PanelLeft size={18} />
-                        </div>
-                        <h3 className="appearance-section-title">CRM Background & Sidebar</h3>
-                      </div>
-                      <p className="appearance-section-desc">Set the page and sidebar background colors for the CRM.</p>
-                      <label className="crm-settings-label">Page Background</label>
-                      <div className="appearance-color-row">
-                        <input type="color" value={crmBgColor} onChange={(e) => setCrmBgColor(e.target.value)} className="appearance-color-picker" />
-                        <input type="text" value={crmBgColor} onChange={(e) => setCrmBgColor(e.target.value)} placeholder="#FFFFFF" className="appearance-color-text" />
-                      </div>
-                      <div className="appearance-swatches" style={{ marginTop: '8px' }}>
-                        {['#FFFFFF', '#F8FAFC', '#F1F5F9', '#EFF6FF', '#F0FDF4', '#FEFCE8', '#FFF7ED', '#0F172A'].map((c) => (
-                          <button key={c} type="button" onClick={() => setCrmBgColor(c)}
-                            className={`appearance-swatch ${crmBgColor.toUpperCase() === c.toUpperCase() ? 'appearance-swatch-active' : ''}`}
-                            style={{ background: c }} />
-                        ))}
-                      </div>
-                      <label className="crm-settings-label" style={{ marginTop: '14px' }}>Sidebar Background</label>
-                      <div className="appearance-color-row">
-                        <input type="color" value={sidebarColor} onChange={(e) => setSidebarColor(e.target.value)} className="appearance-color-picker" />
-                        <input type="text" value={sidebarColor} onChange={(e) => setSidebarColor(e.target.value)} placeholder="#FFFFFF" className="appearance-color-text" />
-                      </div>
-                      <div className="appearance-swatches" style={{ marginTop: '8px' }}>
-                        {['#FFFFFF', '#F8FAFC', '#F1F5F9', '#FEF3C7', '#E0E7FF', '#DCFCE7', '#1E293B', '#0F172A'].map((c) => (
-                          <button key={c} type="button" onClick={() => setSidebarColor(c)}
-                            className={`appearance-swatch ${sidebarColor.toUpperCase() === c.toUpperCase() ? 'appearance-swatch-active' : ''}`}
-                            style={{ background: c }} />
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* ===== Font Size + Inbox Visibility ===== */}
-                  <div className="appearance-grid">
-                    {/* Font Size */}
-                    <div className="appearance-section">
-                      <div className="appearance-section-head">
-                        <div className="appearance-section-icon" style={{ background: 'rgba(236,72,153,0.1)', color: '#EC4899' }}>
-                          <Type size={18} />
-                        </div>
-                        <h3 className="appearance-section-title">Font Size</h3>
-                      </div>
-                      <p className="appearance-section-desc">Scale text size across the CRM for better readability.</p>
-                      <div className="appearance-font-grid">
-                        {[
-                          { label: 'Small', val: 'small' as const, size: '0.8rem', preview: 'Aa' },
-                          { label: 'Medium', val: 'medium' as const, size: '0.9rem', preview: 'Aa' },
-                          { label: 'Large', val: 'large' as const, size: '1rem', preview: 'Aa' },
-                        ].map((opt) => (
-                          <button key={opt.val} type="button" onClick={() => setFontSize(opt.val)}
-                            className={`appearance-font-btn ${fontSize === opt.val ? 'appearance-font-active' : ''}`}>
-                            <span className="appearance-font-preview" style={{ fontSize: opt.size, color: fontSize === opt.val ? '#EC4899' : '#0F172A' }}>{opt.preview}</span>
-                            <span className="appearance-font-label" style={{ color: fontSize === opt.val ? '#EC4899' : 'var(--text-dark)' }}>{opt.label}</span>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Inbox Visibility */}
-                    <div className="appearance-section">
-                      <div className="appearance-section-head">
-                        <div className="appearance-section-icon" style={{ background: 'rgba(15,118,110,0.1)', color: '#0F766E' }}>
-                          <Eye size={18} />
-                        </div>
-                        <h3 className="appearance-section-title">Inbox Visibility</h3>
-                      </div>
-                      <p className="appearance-section-desc">Show or hide inbox sections from the CRM sidebar.</p>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                        {[
-                          { label: 'Telegram Inbox', sub: showTelegramInbox ? 'Visible in sidebar' : 'Hidden from sidebar', active: showTelegramInbox, toggle: () => setShowTelegramInbox((v) => !v), icon: <MessageCircle size={18} />, iconBg: 'rgba(239,68,68,0.1)', iconColor: '#dc2626' },
-                          { label: 'WhatsApp Inbox', sub: showWhatsAppInbox ? 'Visible in sidebar' : 'Hidden from sidebar', active: showWhatsAppInbox, toggle: () => setShowWhatsAppInbox((v) => !v), icon: <PhoneIcon size={18} />, iconBg: 'rgba(37,211,102,0.1)', iconColor: '#16a34a' },
-                          { label: 'Email Inbox', sub: showEmailInbox ? 'Visible in inbox hub' : 'Hidden from inbox hub', active: showEmailInbox, toggle: () => setShowEmailInbox((v) => !v), icon: <Mail size={18} />, iconBg: 'rgba(37,99,235,0.1)', iconColor: '#2563eb' },
-                          { label: 'IB Leads', sub: showIbLeads ? 'Visible in sidebar' : 'Hidden from sidebar', active: showIbLeads, toggle: () => setShowIbLeads((v) => !v), icon: <Building2 size={18} />, iconBg: 'rgba(234,179,8,0.1)', iconColor: '#EAB308' },
-                        ].map((item) => (
-                          <div key={item.label} className="appearance-toggle-row">
-                            <div className="appearance-toggle-info">
-                              <div className="appearance-toggle-icon" style={{ background: item.iconBg, color: item.iconColor }}>{item.icon}</div>
-                              <div>
-                                <span className="appearance-toggle-label">{item.label}</span>
-                                <p className="appearance-toggle-sub">{item.sub}</p>
-                              </div>
-                            </div>
-                            <button type="button" onClick={item.toggle}
-                              className="appearance-toggle-switch"
-                              style={{ background: item.active ? '#16a34a' : 'var(--text-dark)' }}
-                              aria-label={`Toggle ${item.label}`}>
-                              <span className="appearance-toggle-knob" style={{ left: item.active ? '25px' : '3px' }} />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* ===== Sidebar Sections Visibility ===== */}
-                  <div className="appearance-section" style={{ marginBottom: '20px' }}>
-                    <div className="appearance-section-head">
-                      <div className="appearance-section-icon" style={{ background: 'rgba(99,102,241,0.1)', color: '#6366F1' }}>
-                        <PanelLeft size={18} />
-                      </div>
-                      <h3 className="appearance-section-title">Sidebar Sections</h3>
-                    </div>
-                    <p className="appearance-section-desc">Show or hide entire sections from the CRM sidebar. Changes apply instantly and are saved per browser.</p>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                      {[
-                        { key: 'main', label: 'Main', sub: 'Dashboard, Leads, IB Leads', icon: <LayoutGrid size={18} />, iconBg: 'rgba(99,102,241,0.1)', iconColor: '#6366F1' },
-                        { key: 'inbox', label: 'Inbox', sub: 'Shared Inbox (Telegram, WhatsApp, Email)', icon: <InboxIcon size={18} />, iconBg: 'rgba(15,118,110,0.1)', iconColor: '#0F766E' },
-                        { key: 'campaigns', label: 'Campaigns', sub: 'Broadcasts', icon: <Send size={18} />, iconBg: 'rgba(234,179,8,0.1)', iconColor: '#EAB308' },
-                        { key: 'analytics', label: 'Analytics', sub: 'Analytics dashboard', icon: <BarChart3 size={18} />, iconBg: 'rgba(59,130,246,0.1)', iconColor: '#3B82F6' },
-                        { key: 'tools', label: 'Tools', sub: 'Templates, Follow-Ups, Automations', icon: <Zap size={18} />, iconBg: 'rgba(245,158,11,0.1)', iconColor: '#F59E0B' },
-                        { key: 'pipeline', label: 'Pipeline', sub: 'Lead pipeline funnel visualization', icon: <Filter size={18} />, iconBg: 'rgba(139,92,246,0.1)', iconColor: '#8B5CF6' },
-                      ].map((item) => {
-                        const isVisible = sidebarSections?.[item.key] !== false;
-                        return (
-                          <div key={item.key} className="appearance-toggle-row">
-                            <div className="appearance-toggle-info">
-                              <div className="appearance-toggle-icon" style={{ background: item.iconBg, color: item.iconColor }}>{item.icon}</div>
-                              <div>
-                                <span className="appearance-toggle-label">{item.label}</span>
-                                <p className="appearance-toggle-sub">{isVisible ? 'Visible in sidebar' : 'Hidden from sidebar'}</p>
-                              </div>
-                            </div>
-                            <button type="button"
-                              onClick={() => onSidebarSectionChange?.(item.key, !isVisible)}
-                              className="appearance-toggle-switch"
-                              style={{ background: isVisible ? '#16a34a' : 'var(--text-dark)' }}
-                              aria-label={`Toggle ${item.label}`}>
-                              <span className="appearance-toggle-knob" style={{ left: isVisible ? '25px' : '3px' }} />
-                            </button>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                  <div className="appearance-section" style={{ marginBottom: '20px' }}>
-                    <div className="appearance-section-head">
-                      <div className="appearance-section-icon" style={{ background: 'rgba(139,92,246,0.1)', color: '#8B5CF6' }}>
-                        <MousePointerClick size={18} />
-                      </div>
-                      <h3 className="appearance-section-title">Button Styling</h3>
-                    </div>
-                    <p className="appearance-section-desc">Customize the appearance of action buttons throughout the CRM.</p>
-
-                    <div className="appearance-grid">
-                      {/* Button BG + Text Color */}
-                      <div>
-                        <label className="crm-settings-label">Background Color</label>
-                        <div className="appearance-color-row">
-                          <input type="color" value={btnBgColor} onChange={(e) => setBtnBgColor(e.target.value)} className="appearance-color-picker" />
-                          <input type="text" value={btnBgColor} onChange={(e) => setBtnBgColor(e.target.value)} placeholder="#0F172A" className="appearance-color-text" />
-                        </div>
-                        <div className="appearance-swatches" style={{ marginTop: '8px' }}>
-                          {['#0F172A', '#1E293B', '#2563EB', '#16a34a', '#EAB308', '#EF4444', '#8B5CF6', '#0F766E'].map((c) => (
-                            <button key={c} type="button" onClick={() => setBtnBgColor(c)}
-                              className={`appearance-swatch ${btnBgColor === c ? 'appearance-swatch-active' : ''}`} style={{ background: c }} />
-                          ))}
-                        </div>
-
-                        <label className="crm-settings-label" style={{ marginTop: '14px' }}>Text Color</label>
-                        <div className="appearance-color-row">
-                          <input type="color" value={btnTextColor} onChange={(e) => setBtnTextColor(e.target.value)} className="appearance-color-picker" />
-                          <input type="text" value={btnTextColor} onChange={(e) => setBtnTextColor(e.target.value)} placeholder="#FFFFFF" className="appearance-color-text" />
-                        </div>
-                        <div className="appearance-swatches" style={{ marginTop: '8px' }}>
-                          {['#FFFFFF', '#F8FAFC', 'var(--border-subtle)', '#0F172A', '#FDE68A', '#A7F3D0', '#BFDBFE', '#FECACA'].map((c) => (
-                            <button key={c} type="button" onClick={() => setBtnTextColor(c)}
-                              className={`appearance-swatch ${btnTextColor === c ? 'appearance-swatch-active' : ''}`} style={{ background: c }} />
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Button Border Color + Width + Radius */}
-                      <div>
-                        <label className="crm-settings-label">Border Color</label>
-                        <div className="appearance-color-row">
-                          <input type="color" value={btnBorderColor} onChange={(e) => setBtnBorderColor(e.target.value)} className="appearance-color-picker" />
-                          <input type="text" value={btnBorderColor} onChange={(e) => setBtnBorderColor(e.target.value)} placeholder="#EAB308" className="appearance-color-text" />
-                        </div>
-                        <div className="appearance-swatches" style={{ marginTop: '8px' }}>
-                          {['#EAB308', '#3B82F6', '#16a34a', '#EF4444', '#8B5CF6', '#0F172A', 'var(--border-subtle)', '#FFFFFF'].map((c) => (
-                            <button key={c} type="button" onClick={() => setBtnBorderColor(c)}
-                              className={`appearance-swatch ${btnBorderColor === c ? 'appearance-swatch-active' : ''}`} style={{ background: c }} />
-                          ))}
-                        </div>
-
-                        <label className="crm-settings-label" style={{ marginTop: '14px' }}>Border Thickness: {btnBorderWidth}px</label>
-                        <div className="appearance-slider-row">
-                          <button type="button" className="appearance-step-btn"
-                            onClick={() => setBtnBorderWidth(Math.max(0, Math.round((btnBorderWidth - 0.5) * 10) / 10))}
-                            disabled={btnBorderWidth <= 0}>-</button>
-                          <input type="range" min="0" max="10" step="0.5" value={btnBorderWidth}
-                            onChange={(e) => setBtnBorderWidth(parseFloat(e.target.value))} className="appearance-slider" />
-                          <button type="button" className="appearance-step-btn"
-                            onClick={() => setBtnBorderWidth(Math.min(10, Math.round((btnBorderWidth + 0.5) * 10) / 10))}
-                            disabled={btnBorderWidth >= 10}>+</button>
-                          <span className="appearance-slider-value">{btnBorderWidth}px</span>
-                        </div>
-
-                        <label className="crm-settings-label" style={{ marginTop: '14px' }}>Corner Roundness: {btnBorderRadius}px</label>
-                        <div className="appearance-slider-row">
-                          <button type="button" className="appearance-step-btn"
-                            onClick={() => setBtnBorderRadius(Math.max(0, btnBorderRadius - 2))}
-                            disabled={btnBorderRadius <= 0}>-</button>
-                          <input type="range" min="0" max="32" value={btnBorderRadius}
-                            onChange={(e) => setBtnBorderRadius(parseInt(e.target.value))} className="appearance-slider" />
-                          <button type="button" className="appearance-step-btn"
-                            onClick={() => setBtnBorderRadius(Math.min(32, btnBorderRadius + 2))}
-                            disabled={btnBorderRadius >= 32}>+</button>
-                          <span className="appearance-slider-value">{btnBorderRadius}px</span>
-                        </div>
-                        <div className="appearance-presets">
-                          {[
-                            { label: 'Sharp', val: 0 }, { label: 'Subtle', val: 6 }, { label: 'Medium', val: 10 },
-                            { label: 'Round', val: 16 }, { label: 'Pill', val: 28 },
-                          ].map((preset) => (
-                            <button key={preset.val} type="button" onClick={() => setBtnBorderRadius(preset.val)}
-                              className={`appearance-preset-btn ${btnBorderRadius === preset.val ? 'appearance-preset-active' : ''}`}>{preset.label}</button>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Button Preview */}
-                    <div style={{ marginTop: '16px' }}>
-                      <label className="crm-settings-label">Live Preview</label>
-                      <div className="appearance-btn-preview">
-                        <button type="button" style={{ borderRadius: `${btnBorderRadius}px`, border: `${btnBorderWidth}px solid ${btnBorderColor}`, background: btnBgColor, color: btnTextColor }}>
-                          <Plus size={16} /> Add Lead
-                        </button>
-                        <button type="button" style={{ borderRadius: `${btnBorderRadius}px`, border: `${btnBorderWidth}px solid ${btnBorderColor}`, background: btnBgColor, color: btnTextColor }}>
-                          <Download size={16} /> Export
-                        </button>
-                        <button type="button" style={{ borderRadius: `${btnBorderRadius}px`, border: `${btnBorderWidth}px solid ${btnBorderColor}`, background: btnBgColor, color: btnTextColor }}>
-                          <Save size={16} /> Save
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* ===== Setup Cost + Landing Page Colors ===== */}
-                  <div className="appearance-grid">
-                    {/* Setup Cost */}
-                    <div className="appearance-section">
-                      <div className="appearance-section-head">
-                        <div className="appearance-section-icon" style={{ background: 'rgba(37,99,235,0.1)', color: '#2563EB' }}>
-                          <DollarSign size={18} />
-                        </div>
-                        <h3 className="appearance-section-title">Setup Cost Per Client</h3>
-                      </div>
-                      <p className="appearance-section-desc">Amount charged per converted client, used in dashboard total setup cost calculations.</p>
-                      <label className="crm-settings-label">Amount per Converted Client ($)</label>
-                      <div className="appearance-cost-row">
-                        <div className="appearance-cost-input-wrap">
-                          <span className="appearance-cost-prefix">$</span>
-                          <input type="number" min="0" step="0.01" value={setupCost}
-                            onChange={(e) => setSetupCost(Math.max(0, parseFloat(e.target.value) || 0))}
-                            className="appearance-cost-input" />
-                        </div>
-                        <span style={{ fontSize: '0.8rem', color: 'var(--text-dark)' }}>per converted lead</span>
-                      </div>
-                    </div>
-
-                    {/* Landing Page Colors */}
-                    <div className="appearance-section">
-                      <div className="appearance-section-head">
-                        <div className="appearance-section-icon" style={{ background: 'rgba(37,99,235,0.1)', color: '#2563EB' }}>
-                          <Palette size={18} />
-                        </div>
-                        <h3 className="appearance-section-title">Landing Page Colors</h3>
-                      </div>
-                      <p className="appearance-section-desc">Pick a primary color and style for your public landing page. The full palette is generated automatically.</p>
-                      <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-main)', cursor: 'pointer', marginBottom: '14px' }}>
-                        <input type="checkbox" checked={landingEnabled} onChange={(e) => setLandingEnabled(e.target.checked)} style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
-                        Apply custom colors to landing page
-                      </label>
-                      <label className="crm-settings-label">Primary Color</label>
-                      <div className="appearance-landing-row">
-                        <input type="color" value={landingPrimary}
-                          onChange={(e) => { setLandingPrimary(e.target.value); setLandingPalette(generatePalette(e.target.value, landingStyle)); }}
-                          className="appearance-landing-color" />
-                        <input type="text" value={landingPrimary}
-                          onChange={(e) => { setLandingPrimary(e.target.value); setLandingPalette(generatePalette(e.target.value, landingStyle)); }}
-                          className="appearance-landing-color-text" />
-                      </div>
-                      <label className="crm-settings-label" style={{ marginTop: '14px' }}>Palette Style</label>
-                      <div className="appearance-style-btns">
-                        {(['vibrant', 'muted', 'monochrome'] as const).map((s) => (
-                          <button key={s} type="button"
-                            onClick={() => { setLandingStyle(s); setLandingPalette(generatePalette(landingPrimary, s)); }}
-                            className={`appearance-style-btn ${landingStyle === s ? 'appearance-style-active' : ''}`}>{s}</button>
-                        ))}
-                      </div>
-                      <label className="crm-settings-label" style={{ marginTop: '14px' }}>Meta Pixel ID (for landing page tracking)</label>
-                      <input
-                        type="text"
-                        value={landingMetaPixelId}
-                        onChange={(e) => setLandingMetaPixelId(e.target.value)}
-                        placeholder="e.g. 123456789012345"
-                        style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: '1px solid var(--border-subtle)', fontSize: '0.85rem', marginTop: '4px' }}
-                      />
-                      <p style={{ fontSize: '0.72rem', color: 'var(--text-dark)', marginTop: '4px' }}>Enter your Meta Pixel ID to track PageView and Lead events on your landing page. Find it in Meta Events Manager.</p>
-                      <div className="appearance-save-row" style={{ marginTop: '16px' }}>
-                        <button type="button" onClick={handleSaveLandingAppearance} disabled={landingSaving} className="appearance-save-btn">
-                          {landingSaving ? <Loader2 size={16} className="crm-spin" /> : <Save size={16} />} Save Landing Colors
-                        </button>
-                        {landingSaved && (
-                          <span className="appearance-saved-badge"><CheckCircle2 size={16} /> Saved!</span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* ===== Landing Page Preview + Palette ===== */}
-                  <div className="appearance-grid">
-                    <div className="appearance-section">
-                      <div className="appearance-section-head">
-                        <div className="appearance-section-icon" style={{ background: 'rgba(37,99,235,0.1)', color: '#2563EB' }}>
-                          <Eye size={18} />
-                        </div>
-                        <h3 className="appearance-section-title">Landing Page Preview</h3>
-                      </div>
-                      <p className="appearance-section-desc">Preview how your landing page will look with the selected colors.</p>
-                      <div className="appearance-landing-preview">
-                        <div className="appearance-landing-preview-bar"><Eye size={14} /> Live Preview</div>
-                        <div style={{ padding: '24px', background: landingPalette.background }}>
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
-                            <span style={{ fontSize: '1.1rem', fontWeight: 800, color: landingPalette.text }}>LeadCentre</span>
-                            <span style={{ padding: '4px 12px', borderRadius: '6px', fontSize: '0.72rem', fontWeight: 700, background: landingPalette.badgeBg, color: landingPalette.badgeText }}>New</span>
-                          </div>
-                          <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: landingPalette.text, marginBottom: '8px' }}>Grow your trading business</h2>
-                          <p style={{ fontSize: '0.88rem', color: landingPalette.textMuted, marginBottom: '20px' }}>Capture, nurture, and convert leads with our powerful CRM.</p>
-                          <button style={{ padding: '10px 24px', borderRadius: '8px', border: 'none', background: landingPalette.buttonBg, color: landingPalette.buttonText, fontSize: '0.88rem', fontWeight: 700, cursor: 'default' }}>
-                            Get Started Free
-                          </button>
-                          <div style={{ marginTop: '24px', padding: '16px', borderRadius: '10px', background: landingPalette.surface, border: `1px solid ${landingPalette.border}` }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                              <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: landingPalette.accent }} />
-                              <span style={{ fontSize: '0.82rem', fontWeight: 700, color: landingPalette.text }}>Featured Plan</span>
-                            </div>
-                            <p style={{ fontSize: '0.78rem', color: landingPalette.textMuted }}>Access advanced algo trading tools and premium signals.</p>
-                          </div>
-                        </div>
-                        <div style={{ padding: '12px 24px', background: landingPalette.footerBg, display: 'flex', justifyContent: 'center' }}>
-                          <span style={{ fontSize: '0.72rem', color: landingPalette.footerText }}>&copy; 2025 LeadCentre. All rights reserved.</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="appearance-section">
-                      <div className="appearance-section-head">
-                        <div className="appearance-section-icon" style={{ background: 'rgba(234,179,8,0.1)', color: '#EAB308' }}>
-                          <Palette size={18} />
-                        </div>
-                        <h3 className="appearance-section-title">Generated Palette</h3>
-                      </div>
-                      <p className="appearance-section-desc">The full color palette generated from your primary color and style selection.</p>
-                      <div className="appearance-palette-grid">
-                        {Object.entries(landingPalette).map(([key, color]) => (
-                          <div key={key} className="appearance-palette-swatch">
-                            <div className="appearance-palette-color" style={{ background: color }} title={key} />
-                            <span className="appearance-palette-name">{key}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Reset button */}
-                  <div style={{ marginTop: '20px' }}>
-                    <button type="button" className="appearance-reset-btn"
-                      onClick={() => { setBorderColor('#EAB308'); setBorderWidth(1.5); setBorderRadius(16); setBtnBgColor('#0F172A'); setBtnTextColor('#FFFFFF'); setBtnBorderColor('#EAB308'); setBtnBorderWidth(0); setBtnBorderRadius(10); setShowTelegramInbox(true); setShowWhatsAppInbox(true); setShowIbLeads(true); }}>
-                      <RefreshCw size={14} /> Reset to Defaults
-                    </button>
-                  </div>
-                </>
               ) : activeTab === 'section_visibility' ? (
                 <>
                   <div className="crm-settings-card-header">
@@ -12001,7 +11390,6 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                       {[
                         { key: 'leads', label: 'Leads', sub: 'View and manage all your leads', icon: <Users size={18} />, iconBg: 'rgba(59,130,246,0.1)', iconColor: '#3B82F6' },
                         { key: 'brokers', label: 'Broker Tracker', sub: 'Track broker relationships and performance', icon: <TrendingUp size={18} />, iconBg: 'rgba(234,179,8,0.1)', iconColor: '#EAB308' },
-                        { key: 'ib_leads', label: 'IB Leads', sub: 'Introducing Broker leads and applications', icon: <Building2 size={18} />, iconBg: 'rgba(234,179,8,0.1)', iconColor: '#EAB308' },
                         { key: 'inbox', label: 'Shared Inbox', sub: 'Telegram, WhatsApp, and Email conversations', icon: <InboxIcon size={18} />, iconBg: 'rgba(15,118,110,0.1)', iconColor: '#0F766E' },
                         { key: 'broadcasts', label: 'Broadcasts', sub: 'Send bulk messages across channels', icon: <Send size={18} />, iconBg: 'rgba(234,179,8,0.1)', iconColor: '#EAB308' },
                         { key: 'analytics', label: 'Analytics', sub: 'Dashboards and performance metrics', icon: <BarChart3 size={18} />, iconBg: 'rgba(59,130,246,0.1)', iconColor: '#3B82F6' },
@@ -12043,459 +11431,6 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                     )}
                   </div>
                 </>
-              ) : activeTab === 'webhooks' ? (
-                <>
-                  <div className="crm-settings-card-header">
-                    <h2 className="crm-settings-card-title"><Webhook size={20} style={{ color: '#0ea5e9' }} /> Webhooks</h2>
-                    <p className="crm-settings-card-desc">Send real-time event notifications to an external URL when leads are created, updated, or deleted. Connect your CRM to Zapier, Make.com, Slack, or your own server.</p>
-                  </div>
-
-                  <div style={{ display: 'flex', gap: '8px', padding: '14px 16px', background: 'rgba(14,165,233,0.06)', border: '1px solid rgba(14,165,233,0.2)', borderRadius: '10px', marginBottom: '20px', fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
-                    <Webhook size={16} style={{ color: '#0ea5e9', flexShrink: 0, marginTop: '2px' }} />
-                    <div>
-                      <strong style={{ color: '#0369a1' }}>How it works:</strong> When a subscribed event happens (e.g. a new lead arrives), your CRM sends an HTTP POST with the lead data to your URL. The <code style={{ background: 'var(--bg-light)', padding: '1px 4px', borderRadius: '3px', fontSize: '0.75rem' }}>X-Webhook-Token</code> header carries your secret so the receiver can verify it's from you. Use the Test button to send a sample payload before relying on it.
-                    </div>
-                  </div>
-
-                  {/* Outbound webhook setup guide */}
-                  <details style={{ marginBottom: '20px', borderRadius: '10px', border: '1px solid var(--border-subtle)', background: 'var(--bg-light)', overflow: 'hidden' }}>
-                    <summary style={{ padding: '12px 16px', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px', listStyle: 'none', userSelect: 'none' }}>
-                      <BookOpen size={15} style={{ color: '#0ea5e9' }} /> Step-by-step: Set up an outbound webhook (secret token)
-                    </summary>
-                    <div style={{ padding: '0 16px 16px 16px', fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>
-                      <ol style={{ paddingLeft: '18px', margin: 0, display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                        <li><strong>Get a destination URL</strong> from the service you want to notify. In Zapier, create a "Webhooks by Zapier" trigger and copy the catch URL (looks like <code style={{ background: 'var(--bg-card)', padding: '1px 4px', borderRadius: '3px' }}>https://hooks.zapier.com/hooks/catch/123/abc</code>). In Make.com, create a custom webhook module and copy its URL.</li>
-                        <li><strong>Paste the URL</strong> into the <em>Destination URL</em> field in the form below.</li>
-                        <li><strong>Give it a label</strong> (optional) so you can identify it later, e.g. "Zapier — Slack notification".</li>
-                        <li><strong>Set a secret token</strong> (optional but recommended). Type any random string here. This is sent as the <code style={{ background: 'var(--bg-card)', padding: '1px 4px', borderRadius: '3px' }}>X-Webhook-Token</code> HTTP header on every delivery, so the receiving server can verify the request came from your CRM. You can use any password generator or just type a random string.</li>
-                        <li><strong>Pick the events</strong> you want to subscribe to. Each checked event will trigger a POST to your URL when it happens:
-                          <ul style={{ marginTop: '6px', paddingLeft: '18px', display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                            {WEBHOOK_EVENTS.map((ev) => (
-                              <li key={ev.key}><code style={{ background: 'var(--bg-card)', padding: '1px 4px', borderRadius: '3px' }}>{ev.key}</code> — {ev.label}</li>
-                            ))}
-                          </ul>
-                        </li>
-                        <li><strong>Keep "Active" checked</strong> so the webhook fires. Uncheck it to pause without deleting.</li>
-                        <li><strong>Click "Add Webhook"</strong> to save it.</li>
-                        <li><strong>Test it</strong> by clicking the <em>Test</em> button on the webhook card. A sample payload is sent immediately and the delivery log shows the HTTP status code your server returned. A 200 means success.</li>
-                        <li><strong>On the receiving end</strong>, verify the <code style={{ background: 'var(--bg-card)', padding: '1px 4px', borderRadius: '3px' }}>X-Webhook-Token</code> header matches your secret before trusting the payload. The body is JSON with <code style={{ background: 'var(--bg-card)', padding: '1px 4px', borderRadius: '3px' }}>event</code> and <code style={{ background: 'var(--bg-card)', padding: '1px 4px', borderRadius: '3px' }}>payload</code> fields.</li>
-                      </ol>
-                    </div>
-                  </details>
-
-                  {/* Add / Edit form */}
-                  <div style={{ padding: '20px', background: 'var(--bg-light)', borderRadius: '10px', border: '1px solid var(--border-subtle)', marginBottom: '24px' }}>
-                    <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      {editingWebhook ? <Pencil size={14} /> : <Plus size={16} />} {editingWebhook ? 'Edit Webhook' : 'Add New Webhook'}
-                      {editingWebhook && (
-                        <button type="button" onClick={handleCancelEditWebhook} style={{ marginLeft: 'auto', border: 'none', background: 'none', cursor: 'pointer', color: 'var(--text-dark)', fontSize: '0.75rem', fontWeight: 600 }}>Cancel edit</button>
-                      )}
-                    </div>
-                    <div className="crm-add-lead-grid">
-                      <label className="crm-add-lead-field" style={{ gridColumn: '1 / -1' }}>
-                        <span>Destination URL <em>*</em></span>
-                        <input type="url" value={whUrl} onChange={(e) => setWhUrl(e.target.value)} placeholder="https://hooks.zapier.com/hooks/catch/..." />
-                      </label>
-                      <label className="crm-add-lead-field">
-                        <span>Label (optional)</span>
-                        <input type="text" value={whLabel} onChange={(e) => setWhLabel(e.target.value)} placeholder="Zapier — Slack notification" />
-                      </label>
-                      <label className="crm-add-lead-field">
-                        <span>Secret Token (optional)</span>
-                        <input type="password" value={whSecret} onChange={(e) => setWhSecret(e.target.value)} placeholder="Used in X-Webhook-Token header" />
-                      </label>
-                    </div>
-
-                    <div style={{ marginTop: '14px' }}>
-                      <label style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: '8px' }}>Events to subscribe</label>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                        {WEBHOOK_EVENTS.map((ev) => {
-                          const checked = whEvents.includes(ev.key);
-                          return (
-                            <button key={ev.key} type="button" onClick={() => { setWhEvents((prev) => checked ? prev.filter((k) => k !== ev.key) : [...prev, ev.key]); setSaved(false); }}
-                              style={{ padding: '7px 14px', borderRadius: '8px', border: checked ? '1px solid #0ea5e9' : '1px solid var(--border-subtle)', background: checked ? 'rgba(14,165,233,0.08)' : 'var(--bg-card)', color: checked ? '#0369a1' : 'var(--text-dark)', fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', transition: 'all 0.15s' }}>
-                              {checked ? <CheckSquare size={13} /> : <Square size={13} />} {ev.label}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    <div style={{ marginTop: '14px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', color: 'var(--text-muted)', cursor: 'pointer', fontWeight: 600 }}>
-                        <input type="checkbox" checked={whActive} onChange={(e) => setWhActive(e.target.checked)} style={{ width: '16px', height: '16px', cursor: 'pointer' }} />
-                        Active
-                      </label>
-                      <div style={{ flex: 1 }} />
-                      <button type="button" className="crm-add-lead-submit" onClick={handleSave} disabled={webhookSaving}
-                        style={{ padding: '9px 20px', fontSize: '0.82rem' }}>
-                        {webhookSaving ? <Loader2 size={16} className="crm-spin" /> : <Plus size={16} />} {editingWebhook ? 'Update Webhook' : 'Add Webhook'}
-                      </button>
-                    </div>
-                    {webhookError && (
-                      <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '8px', padding: '10px 14px', color: '#dc2626', fontSize: '0.8rem', fontWeight: 600, marginTop: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <AlertTriangle size={14} /> {webhookError}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Existing webhooks list */}
-                  {webhooks.length === 0 ? (
-                    <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-dark)', fontSize: '0.85rem' }}>
-                      <Webhook size={36} style={{ color: 'var(--text-dark)', marginBottom: '12px' }} />
-                      <p>No webhooks configured yet. Add one above to get started.</p>
-                    </div>
-                  ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                      {webhooks.map((w) => (
-                        <div key={w.id} style={{ padding: '16px', background: 'var(--bg-card)', borderRadius: '10px', border: '1px solid var(--border-subtle)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: w.is_active ? 'rgba(14,165,233,0.1)' : 'var(--bg-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                              <Webhook size={18} style={{ color: w.is_active ? '#0ea5e9' : 'var(--text-dark)' }} />
-                            </div>
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <strong style={{ fontSize: '0.85rem', color: 'var(--text-main)', display: 'block' }}>{w.label || 'Untitled Webhook'}</strong>
-                              <span style={{ fontSize: '0.72rem', color: 'var(--text-dark)', wordBreak: 'break-all' }}>{w.url}</span>
-                            </div>
-                            <span style={{ fontSize: '0.68rem', fontWeight: 700, padding: '3px 8px', borderRadius: '6px', background: w.is_active ? 'rgba(22,163,74,0.1)' : 'var(--bg-light)', color: w.is_active ? '#16a34a' : 'var(--text-dark)', flexShrink: 0 }}>{w.is_active ? 'Active' : 'Paused'}</span>
-                          </div>
-                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-                            {w.events.map((ev) => {
-                              const evLabel = WEBHOOK_EVENTS.find((e) => e.key === ev)?.label || ev;
-                              return <span key={ev} style={{ fontSize: '0.68rem', padding: '2px 7px', borderRadius: '5px', background: 'var(--bg-light)', color: 'var(--text-muted)', fontWeight: 600 }}>{evLabel}</span>;
-                            })}
-                          </div>
-                          <div style={{ display: 'flex', gap: '6px' }}>
-                            <button type="button" onClick={() => handleTestWebhook(w.id)} disabled={webhookTesting === w.id}
-                            style={{ padding: '5px 12px', borderRadius: '6px', border: '1px solid var(--border-subtle)', background: 'var(--bg-card)', color: 'var(--text-muted)', fontSize: '0.72rem', fontWeight: 600, cursor: webhookTesting === w.id ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                              {webhookTesting === w.id ? <Loader2 size={12} className="crm-spin" /> : <Send size={12} />} Test
-                            </button>
-                            <button type="button" onClick={() => handleEditWebhook(w)} style={{ padding: '5px 12px', borderRadius: '6px', border: '1px solid var(--border-subtle)', background: 'var(--bg-card)', color: 'var(--text-muted)', fontSize: '0.72rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                              <Pencil size={12} /> Edit
-                            </button>
-                            <button type="button" onClick={() => handleDeleteWebhook(w.id)} style={{ padding: '5px 12px', borderRadius: '6px', border: '1px solid rgba(239,68,68,0.3)', background: 'var(--bg-card)', color: '#dc2626', fontSize: '0.72rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                              <Trash2 size={12} /> Delete
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Delivery log */}
-                  {webhookDeliveries.length > 0 && (
-                    <div style={{ marginTop: '28px' }}>
-                      <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <History size={16} style={{ color: '#0ea5e9' }} /> Recent Deliveries
-                      </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '280px', overflowY: 'auto' }}>
-                        {webhookDeliveries.map((d) => (
-                          <div key={d.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', background: 'var(--bg-light)', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
-                            <div style={{ width: '28px', height: '28px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, background: d.status === 'success' ? 'rgba(22,163,74,0.1)' : 'rgba(239,68,68,0.1)' }}>
-                              {d.status === 'success' ? <CheckCircle2 size={14} style={{ color: '#16a34a' }} /> : <XCircle size={14} style={{ color: '#dc2626' }} />}
-                            </div>
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <span style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-main)' }}>{d.event}</span>
-                              <span style={{ fontSize: '0.68rem', color: 'var(--text-dark)', marginLeft: '8px' }}>{new Date(d.created_at).toLocaleString()}</span>
-                            </div>
-                            <span style={{ fontSize: '0.68rem', fontWeight: 700, padding: '2px 7px', borderRadius: '5px', background: d.status === 'success' ? 'rgba(22,163,74,0.1)' : 'rgba(239,68,68,0.1)', color: d.status === 'success' ? '#16a34a' : '#dc2626', flexShrink: 0 }}>
-                              {d.response_status ? `HTTP ${d.response_status}` : d.status}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Inbound Webhooks */}
-                  <div style={{ marginTop: '32px', paddingTop: '24px', borderTop: '1px solid var(--border-subtle)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-                      <ArrowDownLeft size={18} style={{ color: '#0ea5e9' }} />
-                      <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-main)', margin: 0 }}>Inbound Webhooks</h3>
-                    </div>
-                    <p style={{ fontSize: '0.78rem', color: 'var(--text-dark)', marginBottom: '16px' }}>
-                      Generate an API key and use the URL below to receive leads from external tools like Zapier, Make.com, or your own forms. POST lead data as JSON to create leads automatically.
-                    </p>
-
-                    {/* Inbound webhook setup guide */}
-                    <details style={{ marginBottom: '16px', borderRadius: '10px', border: '1px solid var(--border-subtle)', background: 'var(--bg-light)', overflow: 'hidden' }}>
-                      <summary style={{ padding: '12px 16px', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px', listStyle: 'none', userSelect: 'none' }}>
-                        <BookOpen size={15} style={{ color: '#0ea5e9' }} /> Step-by-step: Set up an inbound webhook (API key)
-                      </summary>
-                      <div style={{ padding: '0 16px 16px 16px', fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>
-                        <ol style={{ paddingLeft: '18px', margin: 0, display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                          <li><strong>Generate an API key</strong> by typing a label (e.g. "Zapier" or "Typeform") in the <em>Label</em> field above and clicking <em>Generate Key</em>. You can optionally add a source tag to group requests by origin.</li>
-                          <li><strong>Copy the webhook URL</strong> shown on the key card (click the <em>Copy</em> button). It looks like:<br /><code style={{ background: 'var(--bg-card)', padding: '4px 8px', borderRadius: '4px', fontSize: '0.72rem', display: 'inline-block', marginTop: '4px', wordBreak: 'break-all' }}>https://your-project.supabase.co/functions/v1/inbound-webhook?key=abc123...</code></li>
-                          <li><strong>In your external tool</strong> (Zapier, Make.com, Typeform, or your own form), set up an action that sends an HTTP POST to that URL. The body must be JSON with lead fields. Required fields:
-                            <ul style={{ marginTop: '6px', paddingLeft: '18px', display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                              <li><code style={{ background: 'var(--bg-card)', padding: '1px 4px', borderRadius: '3px' }}>full_name</code> (string) — the lead's name</li>
-                              <li><code style={{ background: 'var(--bg-card)', padding: '1px 4px', borderRadius: '3px' }}>mobile_number</code> (string) — phone number</li>
-                            </ul>
-                            <span style={{ marginTop: '4px', display: 'block' }}>Optional fields: <code style={{ background: 'var(--bg-card)', padding: '1px 4px', borderRadius: '3px' }}>email</code>, <code style={{ background: 'var(--bg-card)', padding: '1px 4px', borderRadius: '3px' }}>state</code>, <code style={{ background: 'var(--bg-card)', padding: '1px 4px', borderRadius: '3px' }}>trading_product</code> ("algo" or "tradingview_premium"), <code style={{ background: 'var(--bg-card)', padding: '1px 4px', borderRadius: '3px' }}>fund_amount</code> (number), <code style={{ background: 'var(--bg-card)', padding: '1px 4px', borderRadius: '3px' }}>notes</code> (string), <code style={{ background: 'var(--bg-card)', padding: '1px 4px', borderRadius: '3px' }}>tags</code> (array of strings).</span>
-                          </li>
-                          <li><strong>Example POST body</strong>:<br /><code style={{ background: 'var(--bg-card)', padding: '6px 10px', borderRadius: '4px', fontSize: '0.72rem', display: 'block', marginTop: '4px', whiteSpace: 'pre-wrap' }}>{`{\n  "full_name": "Jane Doe",\n  "mobile_number": "+919876543210",\n  "email": "jane@example.com",\n  "state": "Karnataka",\n  "trading_product": "algo",\n  "fund_amount": 50000,\n  "notes": "Interested in premium plan",\n  "tags": ["hot", "website"]\n}`}</code></li>
-                          <li><strong>Check the response</strong>. A successful request returns HTTP 200 with <code style={{ background: 'var(--bg-card)', padding: '1px 4px', borderRadius: '3px' }}>{`{ "success": true, "lead_id": "..." }`}</code>. If the phone number already exists, it returns status <code style={{ background: 'var(--bg-card)', padding: '1px 4px', borderRadius: '3px' }}>duplicate</code> and skips creating a new lead.</li>
-                          <li><strong>Monitor the logs</strong> in the <em>Recent Inbound Requests</em> section below. Each request is logged with its status (success, duplicate, or failed) so you can troubleshoot.</li>
-                          <li><strong>Pause or delete</strong> a key anytime. Pausing keeps the key but rejects new requests. Deleting removes it permanently — external tools using that key will stop working.</li>
-                          <li><strong>Security</strong>: the API key in the URL acts as a secret. Anyone with the URL can POST leads to your CRM, so only share it with trusted services and never publish it publicly. You can rotate keys by deleting and generating a new one.</li>
-                        </ol>
-                      </div>
-                    </details>
-
-                    {inboundError && (
-                      <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '8px', padding: '10px 14px', color: '#dc2626', fontSize: '0.78rem', fontWeight: 600, marginBottom: '12px' }}>
-                        {inboundError}
-                      </div>
-                    )}
-
-                    {/* Create new key */}
-                    <div style={{ display: 'flex', gap: '10px', marginBottom: '16px', flexWrap: 'wrap' }}>
-                      <input
-                        type="text"
-                        placeholder="Label (e.g. Zapier, Typeform)"
-                        value={inboundLabel}
-                        onChange={(e) => setInboundLabel(e.target.value)}
-                        style={{ flex: '1', minWidth: '180px', padding: '9px 12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', fontSize: '0.82rem', outline: 'none' }}
-                      />
-                      <input
-                        type="text"
-                        placeholder="Source tag (optional)"
-                        value={inboundSource}
-                        onChange={(e) => setInboundSource(e.target.value)}
-                        style={{ flex: '1', minWidth: '140px', padding: '9px 12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', fontSize: '0.82rem', outline: 'none' }}
-                      />
-                      <button
-                        type="button"
-                        onClick={handleCreateInboundKey}
-                        disabled={inboundSaving}
-                        style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '9px 16px', borderRadius: '8px', border: 'none', background: '#0ea5e9', color: 'var(--bg-card)', fontSize: '0.82rem', fontWeight: 600, cursor: inboundSaving ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap' }}
-                      >
-                        {inboundSaving ? <Loader2 size={14} className="crm-spin" /> : <Plus size={14} />} Generate Key
-                      </button>
-                    </div>
-
-                    {/* Existing keys */}
-                    {inboundKeys.length === 0 ? (
-                      <div style={{ padding: '20px', textAlign: 'center', background: 'var(--bg-light)', borderRadius: '10px', border: '1px dashed var(--border-subtle)' }}>
-                        <p style={{ fontSize: '0.82rem', color: 'var(--text-dark)' }}>No inbound API keys yet. Generate one above to start receiving leads.</p>
-                      </div>
-                    ) : (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                        {inboundKeys.map((k) => {
-                          const webhookUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/inbound-webhook?key=${k.api_key}`;
-                          return (
-                            <div key={k.id} style={{ padding: '14px', background: 'var(--bg-light)', borderRadius: '10px', border: '1px solid var(--border-subtle)' }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                                <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-main)' }}>{k.label}</span>
-                                {k.source_tag && (
-                                  <span style={{ fontSize: '0.68rem', fontWeight: 600, padding: '2px 8px', borderRadius: '5px', background: 'rgba(14,165,233,0.1)', color: '#0284c7' }}>
-                                    {k.source_tag}
-                                  </span>
-                                )}
-                                <span style={{ fontSize: '0.68rem', fontWeight: 600, padding: '2px 8px', borderRadius: '5px', marginLeft: 'auto', background: k.is_active ? 'rgba(22,163,74,0.1)' : 'rgba(107,114,128,0.1)', color: k.is_active ? '#16a34a' : 'var(--text-dark)' }}>
-                                  {k.is_active ? 'Active' : 'Paused'}
-                                </span>
-                              </div>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
-                                <code style={{ flex: 1, fontSize: '0.72rem', color: 'var(--text-muted)', background: 'var(--bg-card)', padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--border-subtle)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                  {webhookUrl}
-                                </code>
-                                <button type="button" onClick={() => handleCopyInboundKey(k.id, webhookUrl)} style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--border-subtle)', background: 'var(--bg-card)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
-                                  {copiedKeyId === k.id ? <Check size={12} style={{ color: '#16a34a' }} /> : <Copy size={12} />} {copiedKeyId === k.id ? 'Copied' : 'Copy'}
-                                </button>
-                              </div>
-                              <div style={{ display: 'flex', gap: '6px' }}>
-                                <button type="button" onClick={() => handleToggleInboundKey(k)} style={{ padding: '5px 10px', borderRadius: '6px', border: '1px solid var(--border-subtle)', background: 'var(--bg-card)', cursor: 'pointer', fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)' }}>
-                                  {k.is_active ? 'Pause' : 'Activate'}
-                                </button>
-                                <button type="button" onClick={() => handleDeleteInboundKey(k.id)} style={{ padding: '5px 10px', borderRadius: '6px', border: '1px solid rgba(239,68,68,0.3)', background: 'var(--bg-card)', cursor: 'pointer', fontSize: '0.72rem', fontWeight: 600, color: '#dc2626', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                  <Trash2 size={12} /> Delete
-                                </button>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-
-                    {/* Inbound logs */}
-                    {inboundLogs.length > 0 && (
-                      <div style={{ marginTop: '20px' }}>
-                        <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <History size={15} style={{ color: '#0ea5e9' }} /> Recent Inbound Requests
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', maxHeight: '240px', overflowY: 'auto' }}>
-                          {inboundLogs.map((log) => {
-                            const keyMatch = inboundKeys.find((k) => k.id === log.api_key_id);
-                            return (
-                              <div key={log.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 12px', background: 'var(--bg-light)', borderRadius: '7px', border: '1px solid var(--border-subtle)' }}>
-                                <div style={{ width: '24px', height: '24px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, background: log.status === 'success' ? 'rgba(22,163,74,0.1)' : log.status === 'duplicate' ? 'rgba(234,179,8,0.1)' : 'rgba(239,68,68,0.1)' }}>
-                                  {log.status === 'success' ? <CheckCircle2 size={12} style={{ color: '#16a34a' }} /> : log.status === 'duplicate' ? <AlertTriangle size={12} style={{ color: '#ca8a04' }} /> : <XCircle size={12} style={{ color: '#dc2626' }} />}
-                                </div>
-                                <div style={{ flex: 1, minWidth: 0 }}>
-                                  <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-main)' }}>{keyMatch?.label || log.source || 'Unknown'}</span>
-                                  <span style={{ fontSize: '0.66rem', color: 'var(--text-dark)', marginLeft: '6px' }}>{new Date(log.created_at).toLocaleString()}</span>
-                                </div>
-                                <span style={{ fontSize: '0.66rem', fontWeight: 700, padding: '2px 7px', borderRadius: '5px', flexShrink: 0, background: log.status === 'success' ? 'rgba(22,163,74,0.1)' : log.status === 'duplicate' ? 'rgba(234,179,8,0.1)' : 'rgba(239,68,68,0.1)', color: log.status === 'success' ? '#16a34a' : log.status === 'duplicate' ? '#ca8a04' : '#dc2626' }}>
-                                  {log.status}
-                                </span>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </>
-              ) : activeTab === 'google_sheets' ? (
-                <>
-                  <div className="crm-settings-card-header">
-                    <h2 className="crm-settings-card-title"><FileSpreadsheet size={20} style={{ color: '#16a34a' }} /> Google Sheets Sync</h2>
-                    <p className="crm-settings-card-desc">Connect a published Google Sheet and new rows will automatically appear as leads in your Lead Centre. Syncs every 5 minutes.</p>
-                  </div>
-
-                  {/* Setup guide */}
-                  <details style={{ marginBottom: '16px', borderRadius: '10px', border: '1px solid var(--border-subtle)', background: 'var(--bg-light)', overflow: 'hidden' }}>
-                    <summary style={{ padding: '12px 16px', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px', listStyle: 'none', userSelect: 'none' }}>
-                      <BookOpen size={15} style={{ color: '#16a34a' }} /> Step-by-step: Connect a Google Sheet
-                    </summary>
-                    <div style={{ padding: '0 16px 16px 16px', fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>
-                      <ol style={{ paddingLeft: '18px', margin: 0, display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                        <li><strong>Open your Google Sheet</strong> with the lead data (name, phone, email, etc.).</li>
-                        <li><strong>Publish the sheet</strong>: Go to <em>File &gt; Share &gt; Publish to Web</em>. Choose the specific sheet tab, select <em>Comma-separated values (.csv)</em> as the format, and click <em>Publish</em>.</li>
-                        <li><strong>Copy the published CSV URL</strong> — it looks like <code style={{ background: 'var(--bg-card)', padding: '2px 6px', borderRadius: '4px', fontSize: '0.72rem' }}>https://docs.google.com/spreadsheets/d/e/XXXXX/pub?output=csv</code></li>
-                        <li><strong>Paste the URL</strong> in the <em>Published CSV URL</em> field below.</li>
-                        <li><strong>Map columns</strong>: Type the exact column header names from your sheet (first row) into the mapping fields. For example, if your sheet has a column called "Phone Number", type that exactly in the <em>Mobile Number column</em> field. At minimum, map <em>Full Name</em> or <em>Mobile Number</em>.</li>
-                        <li><strong>Save and sync</strong>: Click <em>Save Configuration</em>, then click <em>Sync Now</em> to import immediately. New rows will also auto-sync every 5 minutes.</li>
-                        <li><strong>Duplicates</strong>: If a row's email or phone matches an existing lead, it's skipped (logged as "duplicate").</li>
-                      </ol>
-                    </div>
-                  </details>
-
-                  {gsError && (
-                    <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '8px', padding: '10px 14px', color: '#dc2626', fontSize: '0.78rem', fontWeight: 600, marginBottom: '12px' }}>
-                      {gsError}
-                    </div>
-                  )}
-                  {gsSuccess && (
-                    <div style={{ background: 'rgba(22,163,74,0.1)', border: '1px solid rgba(22,163,74,0.3)', borderRadius: '8px', padding: '10px 14px', color: '#16a34a', fontSize: '0.78rem', fontWeight: 600, marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <CheckCircle2 size={14} /> Configuration saved successfully.
-                    </div>
-                  )}
-
-                  {/* Config form */}
-                  <div style={{ padding: '16px', background: 'var(--bg-light)', borderRadius: '10px', border: '1px solid var(--border-subtle)', marginBottom: '20px' }}>
-                    <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '12px' }}>
-                      {gsEditingId ? 'Edit Sheet Configuration' : 'Add New Sheet'}
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                      <input type="text" placeholder="Published CSV URL (https://docs.google.com/spreadsheets/d/e/XXX/pub?output=csv)" value={gsSheetUrl} onChange={(e) => setGsSheetUrl(e.target.value)} style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', fontSize: '0.82rem', outline: 'none' }} />
-                      <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                        <input type="text" placeholder="Sheet name (optional, e.g. 'Facebook Leads')" value={gsSheetName} onChange={(e) => setGsSheetName(e.target.value)} style={{ flex: '1', minWidth: '160px', padding: '9px 12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', fontSize: '0.82rem', outline: 'none' }} />
-                        <input type="text" placeholder="Source tag" value={gsSourceTag} onChange={(e) => setGsSourceTag(e.target.value)} style={{ flex: '1', minWidth: '120px', padding: '9px 12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', fontSize: '0.82rem', outline: 'none' }} />
-                        <select value={gsTradingProduct} onChange={(e) => setGsTradingProduct(e.target.value as 'algo' | 'tradingview_premium')} style={{ padding: '9px 12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', fontSize: '0.82rem', outline: 'none' }}>
-                          <option value="algo">Default product: Algo</option>
-                          <option value="tradingview_premium">Default product: TradingView Premium</option>
-                        </select>
-                      </div>
-                      <div style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-dark)', marginTop: '4px' }}>Column Mapping — type the exact header name from row 1 of your sheet:</div>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                        <input type="text" placeholder="Full Name column (e.g. Name)" value={gsMapFullName} onChange={(e) => setGsMapFullName(e.target.value)} style={{ padding: '8px 10px', borderRadius: '6px', border: '1px solid var(--border-subtle)', fontSize: '0.78rem', outline: 'none' }} />
-                        <input type="text" placeholder="Mobile Number column (e.g. Phone)" value={gsMapMobile} onChange={(e) => setGsMapMobile(e.target.value)} style={{ padding: '8px 10px', borderRadius: '6px', border: '1px solid var(--border-subtle)', fontSize: '0.78rem', outline: 'none' }} />
-                        <input type="text" placeholder="Email column (e.g. Email)" value={gsMapEmail} onChange={(e) => setGsMapEmail(e.target.value)} style={{ padding: '8px 10px', borderRadius: '6px', border: '1px solid var(--border-subtle)', fontSize: '0.78rem', outline: 'none' }} />
-                        <input type="text" placeholder="State column (e.g. State)" value={gsMapState} onChange={(e) => setGsMapState(e.target.value)} style={{ padding: '8px 10px', borderRadius: '6px', border: '1px solid var(--border-subtle)', fontSize: '0.78rem', outline: 'none' }} />
-                        <input type="text" placeholder="Trading Product column (optional)" value={gsMapProduct} onChange={(e) => setGsMapProduct(e.target.value)} style={{ padding: '8px 10px', borderRadius: '6px', border: '1px solid var(--border-subtle)', fontSize: '0.78rem', outline: 'none' }} />
-                        <input type="text" placeholder="Fund Amount column (optional)" value={gsMapFund} onChange={(e) => setGsMapFund(e.target.value)} style={{ padding: '8px 10px', borderRadius: '6px', border: '1px solid var(--border-subtle)', fontSize: '0.78rem', outline: 'none' }} />
-                        <input type="text" placeholder="Notes column (optional)" value={gsMapNotes} onChange={(e) => setGsMapNotes(e.target.value)} style={{ padding: '8px 10px', borderRadius: '6px', border: '1px solid var(--border-subtle)', fontSize: '0.78rem', outline: 'none', gridColumn: '1 / -1' }} />
-                      </div>
-                      <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
-                        <button type="button" onClick={handleSaveGsConfig} disabled={gsSaving} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '9px 16px', borderRadius: '8px', border: 'none', background: '#16a34a', color: 'var(--bg-card)', fontSize: '0.82rem', fontWeight: 600, cursor: gsSaving ? 'not-allowed' : 'pointer' }}>
-                          {gsSaving ? <Loader2 size={14} className="crm-spin" /> : <Save size={14} />} {gsEditingId ? 'Update Configuration' : 'Save Configuration'}
-                        </button>
-                        {gsEditingId && (
-                          <button type="button" onClick={handleCancelEditGs} style={{ padding: '9px 16px', borderRadius: '8px', border: '1px solid var(--border-subtle)', background: 'var(--bg-card)', fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-dark)', cursor: 'pointer' }}>
-                            Cancel
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Existing configs */}
-                  {gsConfigs.length === 0 ? (
-                    <div style={{ padding: '20px', textAlign: 'center', background: 'var(--bg-light)', borderRadius: '10px', border: '1px dashed var(--border-subtle)' }}>
-                      <FileSpreadsheet size={32} style={{ color: 'var(--text-dark)', opacity: 0.5, marginBottom: '8px' }} />
-                      <p style={{ fontSize: '0.82rem', color: 'var(--text-dark)' }}>No Google Sheets connected yet. Add your first sheet above.</p>
-                    </div>
-                  ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                      {gsConfigs.map((cfg) => (
-                        <div key={cfg.id} style={{ padding: '14px', background: 'var(--bg-light)', borderRadius: '10px', border: '1px solid var(--border-subtle)' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', flexWrap: 'wrap' }}>
-                            <FileSpreadsheet size={16} style={{ color: '#16a34a' }} />
-                            <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-main)' }}>{cfg.sheet_name || 'Untitled Sheet'}</span>
-                            {cfg.source_tag && (
-                              <span style={{ fontSize: '0.68rem', fontWeight: 600, padding: '2px 8px', borderRadius: '5px', background: 'rgba(22,163,74,0.1)', color: '#16a34a' }}>{cfg.source_tag}</span>
-                            )}
-                            <span style={{ fontSize: '0.68rem', fontWeight: 600, padding: '2px 8px', borderRadius: '5px', marginLeft: 'auto', background: cfg.is_active ? 'rgba(22,163,74,0.1)' : 'rgba(107,114,128,0.1)', color: cfg.is_active ? '#16a34a' : 'var(--text-dark)' }}>
-                              {cfg.is_active ? 'Active' : 'Paused'}
-                            </span>
-                          </div>
-                          <code style={{ display: 'block', fontSize: '0.72rem', color: 'var(--text-muted)', background: 'var(--bg-card)', padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--border-subtle)', marginBottom: '8px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {cfg.sheet_url}
-                          </code>
-                          {cfg.last_synced_at && (
-                            <div style={{ fontSize: '0.72rem', color: 'var(--text-dark)', marginBottom: '8px' }}>
-                              Last synced: {new Date(cfg.last_synced_at).toLocaleString()} · {cfg.last_row_count} rows processed
-                            </div>
-                          )}
-                          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                            <button type="button" onClick={() => handleSyncGsConfig(cfg.id)} disabled={gsSyncing === cfg.id} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', borderRadius: '6px', border: '1px solid var(--border-subtle)', background: 'var(--bg-card)', cursor: gsSyncing === cfg.id ? 'not-allowed' : 'pointer', fontSize: '0.72rem', fontWeight: 600, color: '#16a34a' }}>
-                              {gsSyncing === cfg.id ? <Loader2 size={12} className="crm-spin" /> : <RefreshCw size={12} />} Sync Now
-                            </button>
-                            <button type="button" onClick={() => handleEditGsConfig(cfg)} style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid var(--border-subtle)', background: 'var(--bg-card)', cursor: 'pointer', fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                              <Pencil size={12} /> Edit
-                            </button>
-                            <button type="button" onClick={() => handleToggleGsConfig(cfg)} style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid var(--border-subtle)', background: 'var(--bg-card)', cursor: 'pointer', fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)' }}>
-                              {cfg.is_active ? 'Pause' : 'Activate'}
-                            </button>
-                            <button type="button" onClick={() => handleDeleteGsConfig(cfg.id)} style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid rgba(239,68,68,0.3)', background: 'var(--bg-card)', cursor: 'pointer', fontSize: '0.72rem', fontWeight: 600, color: '#dc2626', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                              <Trash2 size={12} /> Delete
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Recent sync logs */}
-                  {gsSyncLogs.length > 0 && (
-                    <div style={{ marginTop: '20px' }}>
-                      <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <History size={15} style={{ color: '#16a34a' }} /> Recent Sync Activity
-                      </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', maxHeight: '240px', overflowY: 'auto' }}>
-                        {gsSyncLogs.map((log) => {
-                          const cfgMatch = gsConfigs.find((c) => c.id === log.settings_id);
-                          return (
-                            <div key={log.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 12px', background: 'var(--bg-light)', borderRadius: '7px', border: '1px solid var(--border-subtle)' }}>
-                              <div style={{ width: '24px', height: '24px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, background: log.status === 'success' ? 'rgba(22,163,74,0.1)' : log.status === 'duplicate' ? 'rgba(234,179,8,0.1)' : 'rgba(239,68,68,0.1)' }}>
-                                {log.status === 'success' ? <CheckCircle2 size={12} style={{ color: '#16a34a' }} /> : log.status === 'duplicate' ? <AlertTriangle size={12} style={{ color: '#ca8a04' }} /> : <XCircle size={12} style={{ color: '#dc2626' }} />}
-                              </div>
-                              <div style={{ flex: 1, minWidth: 0 }}>
-                                <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-main)' }}>{cfgMatch?.sheet_name || 'Sheet'} · Row {log.row_number}</span>
-                                <span style={{ fontSize: '0.66rem', color: 'var(--text-dark)', marginLeft: '6px' }}>{new Date(log.created_at).toLocaleString()}</span>
-                              </div>
-                              <span style={{ fontSize: '0.66rem', fontWeight: 700, padding: '2px 7px', borderRadius: '5px', flexShrink: 0, background: log.status === 'success' ? 'rgba(22,163,74,0.1)' : log.status === 'duplicate' ? 'rgba(234,179,8,0.1)' : 'rgba(239,68,68,0.1)', color: log.status === 'success' ? '#16a34a' : log.status === 'duplicate' ? '#ca8a04' : '#dc2626' }}>
-                                {log.status}
-                              </span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-                </>
               ) : activeTab === 'recycle_bin' ? (
                 <>
                   <div className="crm-settings-card-header">
@@ -12516,8 +11451,6 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                     </button>
                   </div>
                 </>
-              ) : activeTab === 'direct_link' ? (
-                <DirectLinkGenerator session={session} onBack={onBack} />
               ) : activeTab === 'danger' ? (
                 <DeleteAccountPanel session={session} onSignOut={onSignOut} />
               ) : null}
@@ -12538,16 +11471,10 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                 <button type="button" className="crm-add-lead-cancel" onClick={onBack} disabled={saving}>
                   Back to Dashboard
                 </button>
-                {activeTab !== 'team' && activeTab !== 'scheduled_emails' && activeTab !== 'danger' && activeTab !== 'appearance' && activeTab !== 'recycle_bin' && activeTab !== 'direct_link' && activeTab !== 'webhooks' && activeTab !== 'google_sheets' && activeTab !== 'lead_distribution' && activeTab !== 'pipeline_autoassign' && activeTab !== 'section_visibility' && activeTab !== 'pipeline_stages' && (
-                  <button type="button" className="crm-add-lead-submit" onClick={handleSave} disabled={!canSave || saving || accountSaving || appearanceSaving}>
-                    {(saving || accountSaving || appearanceSaving) ? <Loader2 size={18} className="crm-spin" /> : <Save size={18} />}
-                    {(saving || accountSaving || appearanceSaving) ? 'Saving...' : 'Save Settings'}
-                  </button>
-                )}
-                {activeTab === 'appearance' && (
-                  <button type="button" className="crm-add-lead-submit" onClick={handleSave} disabled={appearanceSaving || saving}>
-                    {appearanceSaving ? <Loader2 size={18} className="crm-spin" /> : <Save size={18} />}
-                    {appearanceSaving ? 'Saving...' : 'Save Appearance'}
+                {activeTab !== 'team' && activeTab !== 'scheduled_emails' && activeTab !== 'danger' && activeTab !== 'recycle_bin' && activeTab !== 'lead_distribution' && activeTab !== 'pipeline_autoassign' && activeTab !== 'section_visibility' && activeTab !== 'pipeline_stages' && (
+                  <button type="button" className="crm-add-lead-submit" onClick={handleSave} disabled={!canSave || saving || accountSaving}>
+                    {(saving || accountSaving) ? <Loader2 size={18} className="crm-spin" /> : <Save size={18} />}
+                    {(saving || accountSaving) ? 'Saving...' : 'Save Settings'}
                   </button>
                 )}
               </div>
@@ -13281,6 +12208,8 @@ function ChatInbox({ session, onUnreadChange, refreshKey, onRefresh, onCall }: {
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [showProfilePanel, setShowProfilePanel] = useState(false);
+  const [botFilter, setBotFilter] = useState<string>('all');
+  const [botLabels, setBotLabels] = useState<Record<string, string>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [recordDuration, setRecordDuration] = useState(0);
@@ -13358,8 +12287,14 @@ function ChatInbox({ session, onUnreadChange, refreshKey, onRefresh, onCall }: {
   useEffect(() => {
     fetchConversations();
     (async () => {
-      const { data } = await supabase.from('telegram_settings').select('bot_token').maybeSingle();
-      setBotConfigured(Boolean(data?.bot_token));
+      const { data: tgData } = await supabase.from('telegram_settings').select('bot_token').maybeSingle();
+      setBotConfigured(Boolean(tgData?.bot_token));
+      const { data: botsData } = await supabase.from('telegram_bots').select('id,label').order('created_at', { ascending: true });
+      if (botsData) {
+        const map: Record<string, string> = {};
+        for (const b of botsData as { id: string; label: string }[]) map[b.id] = b.label;
+        setBotLabels(map);
+      }
     })();
   }, [fetchConversations, refreshKey]);
 
@@ -13873,6 +12808,26 @@ function ChatInbox({ session, onUnreadChange, refreshKey, onRefresh, onCall }: {
           <input placeholder="Search conversations" aria-label="Search conversations" />
         </div>
 
+        {Object.keys(botLabels).length > 0 && (
+          <div style={{ padding: '0 16px 8px', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+            <button
+              onClick={() => setBotFilter('all')}
+              style={{ padding: '4px 10px', borderRadius: '6px', border: `1px solid ${botFilter === 'all' ? '#0088cc' : 'var(--border-subtle)'}`, background: botFilter === 'all' ? 'rgba(0,136,204,0.1)' : 'var(--bg-card)', color: botFilter === 'all' ? '#0088cc' : 'var(--text-dark)', fontSize: '0.72rem', fontWeight: 600, cursor: 'pointer' }}
+            >
+              All Bots
+            </button>
+            {Object.entries(botLabels).map(([bid, blabel]) => (
+              <button
+                key={bid}
+                onClick={() => setBotFilter(bid)}
+                style={{ padding: '4px 10px', borderRadius: '6px', border: `1px solid ${botFilter === bid ? '#0088cc' : 'var(--border-subtle)'}`, background: botFilter === bid ? 'rgba(0,136,204,0.1)' : 'var(--bg-card)', color: botFilter === bid ? '#0088cc' : 'var(--text-dark)', fontSize: '0.72rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+              >
+                <Bot size={11} /> {blabel}
+              </button>
+            ))}
+          </div>
+        )}
+
         <div className="crm-chat-list-body">
           {conversations.length === 0 ? (
             <div style={{ padding: '40px 20px', textAlign: 'center', color: 'var(--text-dark)' }}>
@@ -13880,7 +12835,7 @@ function ChatInbox({ session, onUnreadChange, refreshKey, onRefresh, onCall }: {
               <p style={{ fontSize: '0.85rem' }}>No conversations yet. When clients message your Telegram bot, they'll appear here.</p>
             </div>
           ) : (
-            conversations.map((conv) => (
+            conversations.filter((c) => botFilter === 'all' || c.bot_id === botFilter).map((conv) => (
               <div
                 key={conv.id}
                 className={`crm-chat-conv-item ${selectedConv === conv.id ? 'active' : ''}`}
@@ -13916,6 +12871,11 @@ function ChatInbox({ session, onUnreadChange, refreshKey, onRefresh, onCall }: {
                       <strong className="crm-chat-conv-name">
                         {conv.telegram_first_name || conv.telegram_username || 'Unknown'}
                       </strong>
+                      {conv.bot_id && botLabels[conv.bot_id] && (
+                        <span style={{ fontSize: '0.62rem', fontWeight: 600, color: '#0088cc', background: 'rgba(0,136,204,0.08)', padding: '1px 6px', borderRadius: '4px', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                          <Bot size={9} /> {botLabels[conv.bot_id]}
+                        </span>
+                      )}
                       {conv.last_message_at && (
                         <span className="crm-chat-conv-time">{formatTime(conv.last_message_at)}</span>
                       )}

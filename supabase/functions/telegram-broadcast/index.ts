@@ -98,12 +98,19 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // ─── COUNT: get recipient count (all conversations) ──────────────────
+    // ─── COUNT: get recipient count (optionally filtered by bot) ─────────
     if (action === "count" && req.method === "GET") {
-      const { count, error: countError } = await adminSupabase
+      const botId = url.searchParams.get("bot_id");
+      let query = adminSupabase
         .from("chat_conversations")
         .select("id", { count: "exact", head: true })
         .eq("user_id", userData.user.id);
+
+      if (botId) {
+        query = query.eq("bot_id", botId);
+      }
+
+      const { count, error: countError } = await query;
 
       if (countError) {
         return new Response(
@@ -121,7 +128,7 @@ Deno.serve(async (req: Request) => {
     // ─── CREATE: create campaign with recipients ─────────────────────────
     if (action === "create" && req.method === "POST") {
       const body = await req.json();
-      const { message_text } = body;
+      const { message_text, bot_id } = body;
 
       if (!message_text || !message_text.trim()) {
         return new Response(
@@ -130,11 +137,17 @@ Deno.serve(async (req: Request) => {
         );
       }
 
-      // Fetch all Telegram conversations for this user
-      const { data: conversations, error: convError } = await adminSupabase
+      // Fetch conversations, optionally filtered by bot
+      let convQuery = adminSupabase
         .from("chat_conversations")
-        .select("id, telegram_chat_id, telegram_username, telegram_first_name")
+        .select("id, telegram_chat_id, telegram_username, telegram_first_name, bot_id")
         .eq("user_id", userData.user.id);
+
+      if (bot_id) {
+        convQuery = convQuery.eq("bot_id", bot_id);
+      }
+
+      const { data: conversations, error: convError } = await convQuery;
 
       if (convError) {
         return new Response(
@@ -145,15 +158,32 @@ Deno.serve(async (req: Request) => {
 
       if (!conversations || conversations.length === 0) {
         return new Response(
-          JSON.stringify({ error: "No Telegram conversations found. You need at least one person who has messaged your bot." }),
+          JSON.stringify({ error: "No Telegram conversations found for this bot. You need at least one person who has messaged the bot." }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
+      }
+
+      // Determine which bot_id to attach to the campaign
+      let campaignBotId: string | null = bot_id || conversations[0]?.bot_id || null;
+
+      // If still no bot_id, try to get the user's first bot
+      if (!campaignBotId) {
+        const { data: firstBot } = await adminSupabase
+          .from("telegram_bots")
+          .select("id")
+          .eq("user_id", userData.user.id)
+          .eq("is_active", true)
+          .order("created_at", { ascending: true })
+          .limit(1)
+          .maybeSingle();
+        campaignBotId = firstBot?.id || null;
       }
 
       const { data: campaign, error: campError } = await adminSupabase
         .from("tg_broadcast_campaigns")
         .insert({
           user_id: userData.user.id,
+          bot_id: campaignBotId,
           message_text: message_text.trim(),
           status: "draft",
           total_recipients: conversations.length,
@@ -221,13 +251,28 @@ Deno.serve(async (req: Request) => {
         );
       }
 
-      const { data: settings, error: settingsError } = await adminSupabase
-        .from("telegram_settings")
-        .select("bot_token")
-        .eq("user_id", userData.user.id)
-        .maybeSingle();
+      // Resolve bot token: prefer campaign's bot_id, fall back to telegram_settings
+      let botToken: string | null = null;
 
-      if (settingsError || !settings || !settings.bot_token) {
+      if (campaign.bot_id) {
+        const { data: bot } = await adminSupabase
+          .from("telegram_bots")
+          .select("bot_token")
+          .eq("id", campaign.bot_id)
+          .maybeSingle();
+        botToken = bot?.bot_token || null;
+      }
+
+      if (!botToken) {
+        const { data: settings } = await adminSupabase
+          .from("telegram_settings")
+          .select("bot_token")
+          .eq("user_id", userData.user.id)
+          .maybeSingle();
+        botToken = settings?.bot_token || null;
+      }
+
+      if (!botToken) {
         return new Response(
           JSON.stringify({ error: "Telegram bot is not configured. Go to Settings to set it up." }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
@@ -253,7 +298,6 @@ Deno.serve(async (req: Request) => {
         .update({ status: "sending", updated_at: new Date().toISOString() })
         .eq("id", campaign_id);
 
-      const botToken = settings.bot_token;
       const messageText = campaign.message_text;
 
       let sentCount = campaign.sent_count || 0;

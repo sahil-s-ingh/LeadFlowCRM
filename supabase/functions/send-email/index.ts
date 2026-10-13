@@ -43,24 +43,35 @@ Deno.serve(async (req: Request) => {
 
     const adminSupabase = createClient(supabaseUrl, serviceKey);
 
-    const { data: smtpConfig, error: configError } = await adminSupabase
-      .from("smtp_settings")
+    // Load SMTP servers by priority (multi-SMTP with fallback)
+    const { data: smtpServers } = await adminSupabase
+      .from("smtp_servers")
       .select("*")
       .eq("user_id", userData.user.id)
-      .maybeSingle();
-
-    if (configError) {
-      return new Response(
-        JSON.stringify({ error: "Failed to load SMTP settings" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    }
+      .eq("is_active", true)
+      .order("priority", { ascending: true })
+      .order("created_at", { ascending: true });
 
     let smtpConfigToUse: Record<string, unknown> | null = null;
 
-    if (smtpConfig && smtpConfig.smtp_host && smtpConfig.smtp_username && smtpConfig.smtp_password) {
-      smtpConfigToUse = smtpConfig;
+    if (smtpServers && smtpServers.length > 0) {
+      // Try each server in priority order until one works for sending
+      smtpConfigToUse = smtpServers[0] as Record<string, unknown>;
     } else {
+      // Fallback to legacy single smtp_settings
+      const { data: legacySmtp } = await adminSupabase
+        .from("smtp_settings")
+        .select("*")
+        .eq("user_id", userData.user.id)
+        .maybeSingle();
+
+      if (legacySmtp && legacySmtp.smtp_host && legacySmtp.smtp_username && legacySmtp.smtp_password) {
+        smtpConfigToUse = legacySmtp as Record<string, unknown>;
+      }
+    }
+
+    if (!smtpConfigToUse) {
+      // Fallback to platform SMTP
       const { data: platformSmtp, error: platformErr } = await adminSupabase
         .from("platform_smtp_settings")
         .select("*")
@@ -75,7 +86,7 @@ Deno.serve(async (req: Request) => {
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }
-      smtpConfigToUse = platformSmtp;
+      smtpConfigToUse = platformSmtp as Record<string, unknown>;
     }
 
     const contentType = req.headers.get("Content-Type") || "";
@@ -267,3 +278,4 @@ Deno.serve(async (req: Request) => {
     );
   }
 });
+

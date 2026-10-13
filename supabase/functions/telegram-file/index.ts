@@ -37,19 +37,6 @@ Deno.serve(async (req: Request) => {
 
     const adminSupabase = createClient(supabaseUrl, supabaseKey);
 
-    const { data: settings } = await adminSupabase
-      .from("telegram_settings")
-      .select("bot_token")
-      .eq("user_id", userData.user.id)
-      .maybeSingle();
-
-    if (!settings || !settings.bot_token) {
-      return new Response(
-        JSON.stringify({ error: "Telegram bot not configured" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    }
-
     const url = new URL(req.url);
     const fileId = url.searchParams.get("file_id");
     const messageId = url.searchParams.get("message_id");
@@ -61,7 +48,9 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // If message_id is provided, verify ownership of the conversation
+    // Resolve bot token: find the conversation/message's bot, fall back to telegram_settings
+    let botToken: string | null = null;
+
     if (messageId) {
       const { data: msg } = await adminSupabase
         .from("chat_messages")
@@ -72,7 +61,7 @@ Deno.serve(async (req: Request) => {
       if (msg) {
         const { data: conv } = await adminSupabase
           .from("chat_conversations")
-          .select("user_id")
+          .select("user_id, bot_id")
           .eq("id", msg.conversation_id)
           .maybeSingle();
 
@@ -82,11 +71,37 @@ Deno.serve(async (req: Request) => {
             { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
           );
         }
+
+        if (conv.bot_id) {
+          const { data: bot } = await adminSupabase
+            .from("telegram_bots")
+            .select("bot_token")
+            .eq("id", conv.bot_id)
+            .maybeSingle();
+          botToken = bot?.bot_token || null;
+        }
       }
     }
 
+    // Fallback to telegram_settings
+    if (!botToken) {
+      const { data: settings } = await adminSupabase
+        .from("telegram_settings")
+        .select("bot_token")
+        .eq("user_id", userData.user.id)
+        .maybeSingle();
+      botToken = settings?.bot_token || null;
+    }
+
+    if (!botToken) {
+      return new Response(
+        JSON.stringify({ error: "Telegram bot not configured" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
     // Get file info from Telegram
-    const fileInfoUrl = `https://api.telegram.org/bot${settings.bot_token}/getFile?file_id=${encodeURIComponent(fileId)}`;
+    const fileInfoUrl = `https://api.telegram.org/bot${botToken}/getFile?file_id=${encodeURIComponent(fileId)}`;
     const fileInfoResponse = await fetch(fileInfoUrl);
     const fileInfo = await fileInfoResponse.json();
 
@@ -98,9 +113,8 @@ Deno.serve(async (req: Request) => {
     }
 
     const filePath = fileInfo.result.file_path;
-    const fileDownloadUrl = `https://api.telegram.org/file/bot${settings.bot_token}/${filePath}`;
+    const fileDownloadUrl = `https://api.telegram.org/file/bot${botToken}/${filePath}`;
 
-    // Fetch the actual file
     const fileResponse = await fetch(fileDownloadUrl);
     if (!fileResponse.ok) {
       return new Response(

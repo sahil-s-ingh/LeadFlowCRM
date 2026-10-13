@@ -3,7 +3,7 @@ import { supabase } from '@/lib/supabase';
 import type { Session } from '@supabase/supabase-js';
 import {
   ArrowLeft, Loader2, Plus, Send, Trash2, Eye, AlertTriangle,
-  RefreshCw, Users, CheckCircle2, XCircle, Clock,
+  RefreshCw, Users, CheckCircle2, XCircle, Clock, Bot,
 } from 'lucide-react';
 
 type TgCampaign = {
@@ -14,6 +14,14 @@ type TgCampaign = {
   sent_count: number;
   failed_count: number;
   created_at: string;
+  bot_id?: string | null;
+};
+
+type TgBot = {
+  id: string;
+  label: string;
+  bot_username: string | null;
+  is_active: boolean;
 };
 
 type TgRecipient = {
@@ -40,11 +48,22 @@ export default function TelegramBroadcast({ session, onBack }: { session: Sessio
   const [selectedCampaign, setSelectedCampaign] = useState<TgCampaign | null>(null);
   const [recipients, setRecipients] = useState<TgRecipient[]>([]);
   const [recipientsLoading, setRecipientsLoading] = useState(false);
+  const [tgBots, setTgBots] = useState<TgBot[]>([]);
+  const [selectedBotId, setSelectedBotId] = useState<string>('');
 
   useEffect(() => {
     fetchCampaigns();
     fetchRecipientCount();
+    fetchBots();
   }, []);
+
+  const fetchBots = async () => {
+    const { data } = await supabase.from('telegram_bots').select('id,label,bot_username,is_active').eq('is_active', true).order('created_at', { ascending: true });
+    if (data) {
+      setTgBots(data as TgBot[]);
+      if (data.length > 0 && !selectedBotId) setSelectedBotId((data as TgBot[])[0].id);
+    }
+  };
 
   const getToken = async () => {
     const { data: sessionData } = await supabase.auth.getSession();
@@ -118,7 +137,7 @@ export default function TelegramBroadcast({ session, onBack }: { session: Sessio
       const res = await fetch(apiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ message_text: messageText.trim() }),
+        body: JSON.stringify({ message_text: messageText.trim(), bot_id: selectedBotId || undefined }),
       });
       const data = await res.json();
       if (!res.ok || data.error) {
@@ -349,6 +368,25 @@ export default function TelegramBroadcast({ session, onBack }: { session: Sessio
           </div>
 
           <div className="wb-form-body">
+            {tgBots.length > 0 && (
+              <label className="wb-field">
+                <span>Send from Bot</span>
+                <select
+                  value={selectedBotId}
+                  onChange={(e) => setSelectedBotId(e.target.value)}
+                  className="wb-select"
+                  style={{ padding: '10px 12px' }}
+                >
+                  {tgBots.map((b) => (
+                    <option key={b.id} value={b.id}>{b.label}{b.bot_username ? ` (@${b.bot_username})` : ''}</option>
+                  ))}
+                </select>
+                <small className="wb-field-hint">
+                  Choose which bot sends this broadcast. Only contacts who have messaged this bot will receive it.
+                </small>
+              </label>
+            )}
+
             <label className="wb-field">
               <span>Message <em>*</em></span>
               <textarea

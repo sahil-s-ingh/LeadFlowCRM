@@ -2,16 +2,14 @@ import { useState, useEffect, useRef } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { MessageCircle, Phone as PhoneIcon, Mail, Inbox as InboxIcon } from 'lucide-react';
 
-type InboxTab = 'telegram' | 'whatsapp' | 'email';
+type InboxTab = 'telegram' | 'whatsapp';
 
 interface InboxHubProps {
   session: Session;
   showTelegram: boolean;
   showWhatsApp: boolean;
-  showEmail: boolean;
   ChatInbox: React.ComponentType<{ session: Session; onUnreadChange: (n: number) => void; refreshKey: number; onRefresh: () => void; onCall?: (number: string) => void }>;
   WhatsAppInbox: React.ComponentType<{ session: Session; onUnreadChange: (n: number) => void; refreshKey: number; onRefresh: () => void; onCall?: (number: string) => void }>;
-  EmailInbox: React.ComponentType<{ session: Session; onUnreadChange: (n: number) => void; refreshKey: number; onRefresh: () => void }>;
   onTotalUnreadChange?: (total: number) => void;
   onCall?: (number: string) => void;
   initialTab?: InboxTab;
@@ -21,10 +19,8 @@ export default function InboxHub({
   session,
   showTelegram,
   showWhatsApp,
-  showEmail,
   ChatInbox,
   WhatsAppInbox,
-  EmailInbox,
   onTotalUnreadChange,
   onCall,
   initialTab,
@@ -32,19 +28,16 @@ export default function InboxHub({
   const availableTabs: InboxTab[] = [];
   if (showTelegram) availableTabs.push('telegram');
   if (showWhatsApp) availableTabs.push('whatsapp');
-  if (showEmail) availableTabs.push('email');
 
   const [tab, setTab] = useState<InboxTab>(
-    initialTab && availableTabs.includes(initialTab) ? initialTab : availableTabs[0] || 'email'
+    initialTab && availableTabs.includes(initialTab) ? initialTab : availableTabs[0] || 'telegram'
   );
 
   // Per-tab unread counts + refresh keys
   const [tgUnread, setTgUnread] = useState(0);
   const [waUnread, setWaUnread] = useState(0);
-  const [emailUnread, setEmailUnread] = useState(0);
   const [tgRefresh, setTgRefresh] = useState(0);
   const [waRefresh, setWaRefresh] = useState(0);
-  const [emailRefresh, setEmailRefresh] = useState(0);
 
   // Keep track of which tabs have been mounted so we don't unmount/remount
   // (preserves chat state when switching back)
@@ -61,9 +54,9 @@ export default function InboxHub({
 
   useEffect(() => {
     if (onTotalUnreadChange) {
-      onTotalUnreadChange(tgUnread + waUnread + emailUnread);
+      onTotalUnreadChange(tgUnread + waUnread);
     }
-  }, [tgUnread, waUnread, emailUnread, onTotalUnreadChange]);
+  }, [tgUnread, waUnread, onTotalUnreadChange]);
 
   // Suppress the initial total-unread callback so we don't double-count
   // on first render (parent already has its own counters).
@@ -76,11 +69,10 @@ export default function InboxHub({
   const TAB_META: Record<InboxTab, { label: string; icon: typeof Mail; color: string }> = {
     telegram: { label: 'Telegram', icon: MessageCircle, color: '#0088CC' },
     whatsapp: { label: 'WhatsApp', icon: PhoneIcon, color: '#25D366' },
-    email: { label: 'Email', icon: Mail, color: '#2563EB' },
   };
 
   const unreadFor = (t: InboxTab) =>
-    t === 'telegram' ? tgUnread : t === 'whatsapp' ? waUnread : emailUnread;
+    t === 'telegram' ? tgUnread : waUnread;
 
   return (
     <div>
@@ -134,16 +126,6 @@ export default function InboxHub({
               refreshKey={waRefresh}
               onRefresh={() => setWaRefresh((k) => k + 1)}
               onCall={onCall}
-            />
-          </div>
-        )}
-        {mounted.has('email') && showEmail && (
-          <div style={{ display: tab === 'email' ? 'block' : 'none' }}>
-            <EmailInbox
-              session={session}
-              onUnreadChange={setEmailUnread}
-              refreshKey={emailRefresh}
-              onRefresh={() => setEmailRefresh((k) => k + 1)}
             />
           </div>
         )}

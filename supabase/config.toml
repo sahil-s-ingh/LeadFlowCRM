@@ -58,12 +58,6 @@ verify_jwt = true
 [functions.whatsapp-call-signaling]
 verify_jwt = false
 
-[functions.fire-webhook]
-verify_jwt = true
-
-[functions.inbound-webhook]
-verify_jwt = false
-
 [functions.send-chat-notification]
 verify_jwt = true
 
@@ -82,17 +76,11 @@ verify_jwt = false
 [functions.telegram-broadcast]
 verify_jwt = true
 
-[functions.email-inbox]
-verify_jwt = true
-
 [functions.meta-marketing-sync]
 verify_jwt = true
 
 [functions.meta-optimize-campaigns]
 verify_jwt = true
-
-[functions.google-sheets-sync]
-verify_jwt = false
 
 [functions.impersonate]
 verify_jwt = true

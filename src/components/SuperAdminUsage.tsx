@@ -163,8 +163,8 @@ export default function SuperAdminUsage({ session }: { session: Session }) {
 
   const getAdminSession = async () => {
     const { data: adminSession } = await supabase.auth.getSession();
-    if (!adminSession.data.session) throw new Error('No active session');
-    return adminSession.data.session;
+    if (!adminSession.session) throw new Error('No active session');
+    return adminSession.session;
   };
 
   // ── Delete ──

@@ -182,14 +182,32 @@ Deno.serve(async (req: Request) => {
         );
       }
 
-      // Load SMTP settings
-      const { data: smtpConfig, error: configError } = await adminSupabase
-        .from("smtp_settings")
+      // Load SMTP servers by priority (multi-SMTP with fallback)
+      const { data: smtpServers } = await adminSupabase
+        .from("smtp_servers")
         .select("*")
         .eq("user_id", userData.user.id)
-        .maybeSingle();
+        .eq("is_active", true)
+        .order("priority", { ascending: true })
+        .order("created_at", { ascending: true });
 
-      if (configError || !smtpConfig || !smtpConfig.smtp_host || !smtpConfig.smtp_username || !smtpConfig.smtp_password) {
+      let smtpConfig: Record<string, unknown> | null = null;
+
+      if (smtpServers && smtpServers.length > 0 && smtpServers[0].smtp_host && smtpServers[0].smtp_username && smtpServers[0].smtp_password) {
+        smtpConfig = smtpServers[0] as Record<string, unknown>;
+      } else {
+        const { data: legacySmtp } = await adminSupabase
+          .from("smtp_settings")
+          .select("*")
+          .eq("user_id", userData.user.id)
+          .maybeSingle();
+
+        if (legacySmtp && legacySmtp.smtp_host && legacySmtp.smtp_username && legacySmtp.smtp_password) {
+          smtpConfig = legacySmtp as Record<string, unknown>;
+        }
+      }
+
+      if (!smtpConfig) {
         return new Response(
           JSON.stringify({ error: "SMTP settings not configured. Please set up your SMTP in Settings first." }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
@@ -385,3 +403,4 @@ Deno.serve(async (req: Request) => {
     );
   }
 });
+

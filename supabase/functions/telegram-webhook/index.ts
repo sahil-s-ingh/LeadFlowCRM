@@ -117,23 +117,29 @@ interface TelegramUpdate {
   message?: TelegramMessage;
 }
 
+interface BotRecord {
+  id: string;
+  user_id: string;
+  bot_token: string;
+  welcome_message: string;
+  bot_username: string | null;
+  label: string;
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { status: 200, headers: corsHeaders });
   }
-
-  // Webhook verification: Telegram sends a GET with the token in the path
-  // We also accept POST for actual updates
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Extract bot token from URL path: /functions/v1/telegram-webhook/{token}
+    // Extract webhook_secret from URL path: /functions/v1/telegram-webhook/{webhook_secret}
     const url = new URL(req.url);
     const pathParts = url.pathname.split("/");
-    const tokenFromUrl = pathParts[pathParts.length - 1];
+    const pathToken = pathParts[pathParts.length - 1];
 
     if (req.method === "GET") {
       return new Response(
@@ -155,71 +161,85 @@ Deno.serve(async (req: Request) => {
     const chatId = msg.chat.id;
     const fromUser = msg.from;
 
-    // Find the admin whose bot token matches
-    let tokenToMatch = tokenFromUrl;
-    if (!tokenToMatch || tokenToMatch === "telegram-webhook") {
-      // If no token in URL, try to match by looking up all telegram_settings
-      // This is a fallback - ideally the webhook URL includes the token
-      const { data: allSettings } = await supabase
-        .from("telegram_settings")
-        .select("user_id, bot_token");
+    // Resolve which bot received this update
+    let bot: BotRecord | null = null;
 
-      if (!allSettings || allSettings.length === 0) {
-        return new Response(
-          JSON.stringify({ error: "No Telegram settings configured" }),
-          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-        );
-      }
-
-      // For now, use the first (and typically only) admin's settings
-      // In multi-admin setups, the webhook URL should contain the token
-      const settings = allSettings[0];
-      tokenToMatch = settings.bot_token;
+    // Try by webhook_secret from URL path
+    if (pathToken && pathToken !== "telegram-webhook") {
+      const { data: botBySecret } = await supabase
+        .from("telegram_bots")
+        .select("id, user_id, bot_token, welcome_message, bot_username, label")
+        .eq("webhook_secret", pathToken)
+        .eq("is_active", true)
+        .maybeSingle();
+      bot = botBySecret as BotRecord | null;
     }
 
-    // Find settings matching this token
-    const { data: settings, error: settingsError } = await supabase
-      .from("telegram_settings")
-      .select("*")
-      .eq("bot_token", tokenToMatch)
-      .maybeSingle();
+    // Fallback: try by bot_token directly in the path (legacy mode)
+    if (!bot && pathToken && pathToken !== "telegram-webhook") {
+      const { data: botByToken } = await supabase
+        .from("telegram_bots")
+        .select("id, user_id, bot_token, welcome_message, bot_username, label")
+        .eq("bot_token", pathToken)
+        .eq("is_active", true)
+        .maybeSingle();
+      bot = botByToken as BotRecord | null;
+    }
 
-    if (settingsError || !settings) {
-      // Try matching by first available settings if token didn't match
-      const { data: fallbackSettings } = await supabase
+    // Last resort fallback: try old telegram_settings table (single-bot legacy)
+    if (!bot) {
+      const { data: legacySettings } = await supabase
         .from("telegram_settings")
-        .select("*")
+        .select("user_id, bot_token, welcome_message")
         .limit(1)
         .maybeSingle();
 
-      if (!fallbackSettings) {
-        return new Response(
-          JSON.stringify({ ok: true }),
-          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-        );
-      }
+      if (legacySettings && legacySettings.bot_token) {
+        // Try to find a matching bot in telegram_bots
+        const { data: matchingBot } = await supabase
+          .from("telegram_bots")
+          .select("id, user_id, bot_token, welcome_message, bot_username, label")
+          .eq("user_id", legacySettings.user_id)
+          .eq("bot_token", legacySettings.bot_token)
+          .eq("is_active", true)
+          .maybeSingle();
 
-      // Use fallback
-      const adminUserId = fallbackSettings.user_id;
-      await processMessage(supabase, adminUserId, msg, fallbackSettings.welcome_message, fallbackSettings.bot_token);
+        if (matchingBot) {
+          bot = matchingBot as BotRecord;
+        } else {
+          // Use legacy settings directly with a synthetic bot record
+          bot = {
+            id: "",
+            user_id: legacySettings.user_id,
+            bot_token: legacySettings.bot_token,
+            welcome_message: legacySettings.welcome_message,
+            bot_username: null,
+            label: "Default Bot",
+          };
+        }
+      }
+    }
+
+    if (!bot) {
       return new Response(
         JSON.stringify({ ok: true }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
-    const adminUserId = settings.user_id;
+    const adminUserId = bot.user_id;
+    const botId = bot.id || null;
 
     // Handle /start command
     if (msg.text && msg.text.trim() === "/start") {
-      const welcomeMsg = settings.welcome_message || "Hi! Thanks for reaching out. Our team will get back to you shortly.";
-      await sendTelegramMessage(settings.bot_token, chatId, welcomeMsg);
+      const welcomeMsg = bot.welcome_message || "Hi! Thanks for reaching out. Our team will get back to you shortly.";
+      await sendTelegramMessage(bot.bot_token, chatId, welcomeMsg);
 
-      // Create conversation if it doesn't exist
       await supabase
         .from("chat_conversations")
         .upsert({
           user_id: adminUserId,
+          bot_id: botId || undefined,
           telegram_chat_id: chatId,
           telegram_user_id: fromUser?.id,
           telegram_username: fromUser?.username,
@@ -227,7 +247,7 @@ Deno.serve(async (req: Request) => {
           telegram_last_name: fromUser?.last_name,
           last_message_text: "Started conversation",
           last_message_at: new Date().toISOString(),
-          profile_pic_url: fromUser?.id ? await getTelegramProfilePhoto(settings.bot_token, fromUser.id) : null,
+          profile_pic_url: fromUser?.id ? await getTelegramProfilePhoto(bot.bot_token, fromUser.id) : null,
         }, { onConflict: "user_id,telegram_chat_id" })
         .select()
         .single();
@@ -238,7 +258,7 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    await processMessage(supabase, adminUserId, msg, settings.welcome_message, settings.bot_token);
+    await processMessage(supabase, adminUserId, botId, msg, bot.welcome_message, bot.bot_token);
 
     return new Response(
       JSON.stringify({ ok: true }),
@@ -256,6 +276,7 @@ Deno.serve(async (req: Request) => {
 async function processMessage(
   supabase: ReturnType<typeof createClient>,
   adminUserId: string,
+  botId: string | null,
   msg: TelegramMessage,
   _welcomeMessage: string,
   botToken: string,
@@ -263,7 +284,6 @@ async function processMessage(
   const chatId = msg.chat.id;
   const fromUser = msg.from;
 
-  // Fetch profile photo if user ID is available and not already stored
   let profilePicUrl: string | null = null;
   if (fromUser?.id) {
     profilePicUrl = await getTelegramProfilePhoto(botToken, fromUser.id);
@@ -274,6 +294,7 @@ async function processMessage(
     .from("chat_conversations")
     .upsert({
       user_id: adminUserId,
+      bot_id: botId || undefined,
       telegram_chat_id: chatId,
       telegram_user_id: fromUser?.id,
       telegram_username: fromUser?.username,
@@ -289,16 +310,18 @@ async function processMessage(
 
   if (convError || !conversation) return;
 
-  // Increment unread count (upsert sets to 1 for new, but for existing we need to increment)
   const updateData: Record<string, unknown> = {
     last_message_text: getPreviewText(msg),
     last_message_at: new Date().toISOString(),
     unread_count: conversation.unread_count + 1,
   };
 
-  // Only update profile pic if we got a new one and conversation doesn't have one
   if (profilePicUrl && !conversation.profile_pic_url) {
     updateData.profile_pic_url = profilePicUrl;
+  }
+
+  if (botId && !conversation.bot_id) {
+    updateData.bot_id = botId;
   }
 
   await supabase
@@ -306,7 +329,6 @@ async function processMessage(
     .update(updateData)
     .eq("id", conversation.id);
 
-  // Insert the message
   const messageData: Record<string, unknown> = {
     conversation_id: conversation.id,
     sender: "client",
@@ -341,7 +363,6 @@ async function processMessage(
     });
   } catch { /* best effort */ }
 
-  // Send email notification to the admin
   const senderName = [fromUser?.first_name, fromUser?.last_name].filter(Boolean).join(" ").trim() || fromUser?.username || "Unknown sender";
   const previewText = getPreviewText(msg);
   await sendChatNotificationEmail(supabase, adminUserId, senderName, previewText, "Telegram");
@@ -468,4 +489,3 @@ async function getTelegramProfilePhoto(botToken: string, userId: number): Promis
     return null;
   }
 }
-
