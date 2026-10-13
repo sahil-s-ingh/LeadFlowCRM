@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, type FormEvent } from 'react';
+import { useState, type FormEvent } from 'react';
 import { supabase } from '@/lib/supabase';
 import {
   ArrowRight,
@@ -41,35 +41,6 @@ export default function CrmLogin({ initialMode = 'login' }: { initialMode?: Mode
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-
-  const storyRef = useRef<HTMLDivElement>(null);
-  const cardRef = useRef<HTMLDivElement>(null);
-
-  const handleStoryTilt = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    const el = storyRef.current;
-    if (!el) return;
-    const rect = el.getBoundingClientRect();
-    const x = (e.clientX - rect.left) / rect.width - 0.5;
-    const y = (e.clientY - rect.top) / rect.height - 0.5;
-    el.style.transform = `perspective(1200px) rotateY(${x * 4}deg) rotateX(${-y * 4}deg)`;
-  }, []);
-
-  const handleStoryReset = useCallback(() => {
-    if (storyRef.current) storyRef.current.style.transform = 'perspective(1200px) rotateY(0deg) rotateX(0deg)';
-  }, []);
-
-  const handleCardTilt = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    const el = cardRef.current;
-    if (!el) return;
-    const rect = el.getBoundingClientRect();
-    const x = (e.clientX - rect.left) / rect.width - 0.5;
-    const y = (e.clientY - rect.top) / rect.height - 0.5;
-    el.style.transform = `perspective(1000px) rotateY(${x * 6}deg) rotateX(${-y * 6}deg) translateZ(0)`;
-  }, []);
-
-  const handleCardReset = useCallback(() => {
-    if (cardRef.current) cardRef.current.style.transform = 'perspective(1000px) rotateY(0deg) rotateX(0deg) translateZ(0)';
-  }, []);
 
   const changeMode = (nextMode: Mode) => {
     setMode(nextMode);
@@ -117,16 +88,8 @@ export default function CrmLogin({ initialMode = 'login' }: { initialMode?: Mode
       <section className="admin-auth-story" aria-label="LeadFlow CRM overview">
         <div className="admin-auth-story-glow admin-auth-story-glow-one" />
         <div className="admin-auth-story-glow admin-auth-story-glow-two" />
-        <div className="admin-auth-story-glow admin-auth-story-glow-three" />
-
-        {/* 3D floating shapes */}
-        <div className="admin-auth-shape admin-auth-shape-cube" />
-        <div className="admin-auth-shape admin-auth-shape-sphere" />
-        <div className="admin-auth-shape admin-auth-shape-ring" />
-        <div className="admin-auth-shape admin-auth-shape-bars" />
-
-        <div className="admin-auth-story-content" ref={storyRef} onMouseMove={handleStoryTilt} onMouseLeave={handleStoryReset} style={{ transformStyle: 'preserve-3d' }}>
-          <a href="#/" className="admin-auth-brand" aria-label="Back to LeadFlow CRM home" style={{ transform: 'translateZ(40px)' }}>
+        <div className="admin-auth-story-content">
+          <a href="#/" className="admin-auth-brand" aria-label="Back to LeadFlow CRM home">
             <span className="admin-auth-brand-mark"><Sparkles size={17} strokeWidth={2.6} /></span>
             <span>
               <strong>LeadFlow</strong>
@@ -134,13 +97,13 @@ export default function CrmLogin({ initialMode = 'login' }: { initialMode?: Mode
             </span>
           </a>
 
-          <div className="admin-auth-story-copy" style={{ transform: 'translateZ(55px)' }}>
+          <div className="admin-auth-story-copy">
             <span className="admin-auth-kicker"><span className="admin-auth-kicker-dot" /> PREMIUM SALES PLATFORM</span>
             <h1>Turn every lead into your next <em>big win.</em></h1>
             <p>One calm, powerful workspace for your team to capture leads, build relationships, and close more business.</p>
           </div>
 
-          <div className="admin-auth-benefits" style={{ transform: 'translateZ(30px)' }}>
+          <div className="admin-auth-benefits">
             {benefits.map(({ icon: Icon, title, detail }) => (
               <div className="admin-auth-benefit" key={title}>
                 <span className="admin-auth-benefit-icon"><Icon size={18} /></span>
@@ -149,33 +112,33 @@ export default function CrmLogin({ initialMode = 'login' }: { initialMode?: Mode
             ))}
           </div>
 
-          <div className="admin-auth-stats" style={{ transform: 'translateZ(20px)' }}>
+          <div className="admin-auth-stats">
             <div><strong>10K<span>+</span></strong><small>LEADS MANAGED</small></div>
             <div><strong>42<span>%</span></strong><small>MORE CONVERSIONS</small></div>
             <div><strong>24<span>/7</span></strong><small>TEAM VISIBILITY</small></div>
           </div>
         </div>
-        <p className="admin-auth-story-footer">Built for ambitious teams <span>&middot;</span> Designed for momentum</p>
+        <p className="admin-auth-story-footer">Built for ambitious teams <span>·</span> Designed for momentum</p>
       </section>
 
       <section className="admin-auth-panel">
-        <div className="admin-auth-form-wrap" ref={cardRef} onMouseMove={handleCardTilt} onMouseLeave={handleCardReset} style={{ transformStyle: 'preserve-3d' }}>
+        <div className="admin-auth-form-wrap">
           <div className="admin-auth-mobile-brand">
             <span className="admin-auth-brand-mark"><Sparkles size={16} /></span>
             <strong>LeadFlow</strong>
           </div>
-          <div className="admin-auth-heading" style={{ transform: 'translateZ(30px)' }}>
+          <div className="admin-auth-heading">
             <span className="admin-auth-eyebrow">YOUR WORKSPACE AWAITS</span>
             <h2>{mode === 'login' ? 'Welcome back' : 'Create your workspace'}</h2>
             <p>{mode === 'login' ? 'Sign in to access your sales dashboard.' : 'Start building a clearer, faster sales process.'}</p>
           </div>
 
-          <div className="admin-auth-mode-toggle" role="tablist" aria-label="Account access" style={{ transform: 'translateZ(20px)' }}>
+          <div className="admin-auth-mode-toggle" role="tablist" aria-label="Account access">
             <button type="button" role="tab" aria-selected={mode === 'login'} className={mode === 'login' ? 'active' : ''} onClick={() => changeMode('login')}>Sign in</button>
             <button type="button" role="tab" aria-selected={mode === 'signup'} className={mode === 'signup' ? 'active' : ''} onClick={() => changeMode('signup')}>Create account</button>
           </div>
 
-          <form onSubmit={handleSubmit} className="admin-auth-form" style={{ transform: 'translateZ(15px)' }}>
+          <form onSubmit={handleSubmit} className="admin-auth-form">
             {mode === 'signup' && (
               <label className="admin-auth-field">
                 <span>Full name</span>
@@ -221,7 +184,7 @@ export default function CrmLogin({ initialMode = 'login' }: { initialMode?: Mode
 
           <div className="admin-auth-divider"><span>or</span></div>
           <p className="admin-auth-switch">
-            {mode === 'login' ? "Don't have an account?" : 'Already have an account?'}{' '}
+            {mode === 'login' ? 'Don’t have an account?' : 'Already have an account?'}{' '}
             <button type="button" onClick={() => changeMode(mode === 'login' ? 'signup' : 'login')}>{mode === 'login' ? 'Sign up free' : 'Sign in'}</button>
           </p>
           <div className="admin-auth-trust"><span><ShieldCheck size={15} /> Secure access</span><span><Check size={14} /> Your data stays yours</span><span><UsersRound size={14} /> Team-ready</span></div>
