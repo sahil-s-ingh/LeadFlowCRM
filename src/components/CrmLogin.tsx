@@ -1,15 +1,38 @@
-import { useState, useRef, type FormEvent } from 'react';
+import { useState, type FormEvent } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Lock, Mail, ArrowRight, TrendingUp, Eye, EyeOff, UserPlus, Loader2, Sparkles, BarChart3, Users, Zap } from 'lucide-react';
+import {
+  ArrowRight,
+  BarChart3,
+  Check,
+  Eye,
+  EyeOff,
+  Loader2,
+  LockKeyhole,
+  Mail,
+  MessageSquare,
+  Phone,
+  ShieldCheck,
+  Sparkles,
+  UserRound,
+  UsersRound,
+  Workflow,
+} from 'lucide-react';
 
 type Mode = 'login' | 'signup';
 
-export default function CrmLogin({ initialMode = 'login' }: { initialMode?: 'login' | 'signup' }) {
+const benefits = [
+  { icon: BarChart3, title: 'Live sales dashboard', detail: 'See every opportunity in one clear view.' },
+  { icon: Workflow, title: 'Automated follow-ups', detail: 'Keep leads moving without manual reminders.' },
+  { icon: MessageSquare, title: 'Conversations that convert', detail: 'Bring your customer messages together.' },
+];
+
+export default function CrmLogin({ initialMode = 'login' }: { initialMode?: Mode }) {
   const [mode, setMode] = useState<Mode>(() => {
     const params = new URLSearchParams(window.location.search);
-    if (params.has('invite')) return 'signup';
-    return initialMode;
+    return params.has('invite') ? 'signup' : initialMode;
   });
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
   const [email, setEmail] = useState(() => {
     const params = new URLSearchParams(window.location.search);
     return params.get('invite') || '';
@@ -19,40 +42,29 @@ export default function CrmLogin({ initialMode = 'login' }: { initialMode?: 'log
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const cardRef = useRef<HTMLDivElement>(null);
-  const tiltRef = useRef({ x: 0, y: 0 });
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    const card = cardRef.current;
-    if (!card) return;
-    const rect = card.getBoundingClientRect();
-    const cx = rect.left + rect.width / 2;
-    const cy = rect.top + rect.height / 2;
-    const dx = (e.clientX - cx) / (rect.width / 2);
-    const dy = (e.clientY - cy) / (rect.height / 2);
-    tiltRef.current = { x: dy, y: dx };
-    card.style.transform = `perspective(1200px) rotateX(${-dy * 7}deg) rotateY(${dx * 7}deg) translateZ(10px)`;
+  const changeMode = (nextMode: Mode) => {
+    setMode(nextMode);
+    setError('');
   };
 
-  const handleMouseLeave = () => {
-    const card = cardRef.current;
-    if (!card) return;
-    tiltRef.current = { x: 0, y: 0 };
-    card.style.transform = 'perspective(1200px) rotateX(0deg) rotateY(0deg) translateZ(0px)';
-  };
-
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
     setLoading(true);
     setError('');
 
     if (mode === 'signup') {
-      const { error: signUpError } = await supabase.auth.signUp({ email, password });
+      const { error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { data: { full_name: name.trim(), ...(phone.trim() ? { phone: phone.trim() } : {}) } },
+      });
+
       if (signUpError) {
         setError(signUpError.message);
         setLoading(false);
         return;
       }
+
       const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
       if (signInError) {
         setError(signInError.message);
@@ -67,184 +79,118 @@ export default function CrmLogin({ initialMode = 'login' }: { initialMode?: 'log
         return;
       }
     }
+
     setLoading(false);
   };
 
   return (
-    <div className="crm3d-page">
-      {/* 3D Floating Shapes Background */}
-      <div className="crm3d-bg-shapes" aria-hidden="true">
-        <div className="crm3d-shape crm3d-cube crm3d-float-1" />
-        <div className="crm3d-shape crm3d-cube-small crm3d-float-2" />
-        <div className="crm3d-shape crm3d-sphere crm3d-float-3" />
-        <div className="crm3d-shape crm3d-pyramid crm3d-float-4" />
-        <div className="crm3d-shape crm3d-cube crm3d-float-5" />
-        <div className="crm3d-shape crm3d-ring crm3d-float-6" />
-        <div className="crm3d-shape crm3d-cube-small crm3d-float-1" />
-        <div className="crm3d-shape crm3d-sphere-small crm3d-float-3" />
-        <div className="crm3d-orb crm3d-glow-1" />
-        <div className="crm3d-orb crm3d-glow-2" />
-      </div>
+    <main className="admin-auth-page">
+      <section className="admin-auth-story" aria-label="LeadFlow CRM overview">
+        <div className="admin-auth-story-glow admin-auth-story-glow-one" />
+        <div className="admin-auth-story-glow admin-auth-story-glow-two" />
+        <div className="admin-auth-story-content">
+          <a href="#/" className="admin-auth-brand" aria-label="Back to LeadFlow CRM home">
+            <span className="admin-auth-brand-mark"><Sparkles size={17} strokeWidth={2.6} /></span>
+            <span>
+              <strong>LeadFlow</strong>
+              <small>ADMIN PORTAL</small>
+            </span>
+          </a>
 
-      {/* Grid Floor */}
-      <div className="crm3d-grid-floor" aria-hidden="true" />
-
-      {/* 3D Card */}
-      <div className="crm3d-card-outer">
-        <div
-          ref={cardRef}
-          className="crm3d-card"
-          onMouseMove={handleMouseMove}
-          onMouseLeave={handleMouseLeave}
-        >
-          {/* Card layers for 3D depth */}
-          <div className="crm3d-card-edge" />
-
-          {/* Shine effect */}
-          <div className="crm3d-card-shine" />
-
-          {/* Brand */}
-          <div className="crm3d-brand">
-            <div className="crm3d-logo">
-              <div className="crm3d-logo-inner">
-                <TrendingUp size={26} strokeWidth={2.5} />
-              </div>
-              <div className="crm3d-logo-shadow" />
-            </div>
-            <h1>LeadCentre CRM</h1>
-            <p>{mode === 'login' ? 'Sign in to manage your leads' : 'Create your admin account'}</p>
+          <div className="admin-auth-story-copy">
+            <span className="admin-auth-kicker"><span className="admin-auth-kicker-dot" /> PREMIUM SALES PLATFORM</span>
+            <h1>Turn every lead into your next <em>big win.</em></h1>
+            <p>One calm, powerful workspace for your team to capture leads, build relationships, and close more business.</p>
           </div>
 
-          {/* Mode Toggle — 3D segmented control */}
-          <div className="crm3d-toggle">
-            <div className={`crm3d-toggle-slider ${mode === 'signup' ? 'right' : ''}`} />
-            <button
-              type="button"
-              className={mode === 'login' ? 'active' : ''}
-              onClick={() => { setMode('login'); setError(''); }}
-            >
-              Sign In
-            </button>
-            <button
-              type="button"
-              className={mode === 'signup' ? 'active' : ''}
-              onClick={() => { setMode('signup'); setError(''); }}
-            >
-              Sign Up
-            </button>
+          <div className="admin-auth-benefits">
+            {benefits.map(({ icon: Icon, title, detail }) => (
+              <div className="admin-auth-benefit" key={title}>
+                <span className="admin-auth-benefit-icon"><Icon size={18} /></span>
+                <span><strong>{title}</strong><small>{detail}</small></span>
+              </div>
+            ))}
           </div>
 
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="crm3d-form">
-            <div className="crm3d-field">
-              <label htmlFor="crm-email">Email</label>
-              <div className="crm3d-input-3d">
-                <div className="crm3d-input-face">
-                  <Mail size={18} />
-                  <input
-                    id="crm-email"
-                    type="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="admin@example.com"
-                    autoComplete="email"
-                  />
-                  <div className="crm3d-input-glow" />
+          <div className="admin-auth-stats">
+            <div><strong>10K<span>+</span></strong><small>LEADS MANAGED</small></div>
+            <div><strong>42<span>%</span></strong><small>MORE CONVERSIONS</small></div>
+            <div><strong>24<span>/7</span></strong><small>TEAM VISIBILITY</small></div>
+          </div>
+        </div>
+        <p className="admin-auth-story-footer">Built for ambitious teams <span>·</span> Designed for momentum</p>
+      </section>
+
+      <section className="admin-auth-panel">
+        <div className="admin-auth-form-wrap">
+          <div className="admin-auth-mobile-brand">
+            <span className="admin-auth-brand-mark"><Sparkles size={16} /></span>
+            <strong>LeadFlow</strong>
+          </div>
+          <div className="admin-auth-heading">
+            <span className="admin-auth-eyebrow">YOUR WORKSPACE AWAITS</span>
+            <h2>{mode === 'login' ? 'Welcome back' : 'Create your workspace'}</h2>
+            <p>{mode === 'login' ? 'Sign in to access your sales dashboard.' : 'Start building a clearer, faster sales process.'}</p>
+          </div>
+
+          <div className="admin-auth-mode-toggle" role="tablist" aria-label="Account access">
+            <button type="button" role="tab" aria-selected={mode === 'login'} className={mode === 'login' ? 'active' : ''} onClick={() => changeMode('login')}>Sign in</button>
+            <button type="button" role="tab" aria-selected={mode === 'signup'} className={mode === 'signup' ? 'active' : ''} onClick={() => changeMode('signup')}>Create account</button>
+          </div>
+
+          <form onSubmit={handleSubmit} className="admin-auth-form">
+            {mode === 'signup' && (
+              <label className="admin-auth-field">
+                <span>Full name</span>
+                <div className="admin-auth-input-wrap">
+                  <UserRound size={18} />
+                  <input type="text" required value={name} onChange={(event) => setName(event.target.value)} placeholder="Your name" autoComplete="name" />
                 </div>
-              </div>
-            </div>
-
-            <div className="crm3d-field">
-              <label htmlFor="crm-password">Password</label>
-              <div className="crm3d-input-3d">
-                <div className="crm3d-input-face">
-                  <Lock size={18} />
-                  <input
-                    id="crm-password"
-                    type={showPassword ? 'text' : 'password'}
-                    required
-                    minLength={6}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder={mode === 'signup' ? 'Min 6 characters' : 'Enter your password'}
-                    autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-                  />
-                  <div className="crm3d-input-glow" />
-                  <button
-                    type="button"
-                    className="crm3d-password-toggle"
-                    onClick={() => setShowPassword(!showPassword)}
-                    aria-label="Toggle password visibility"
-                  >
-                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                  </button>
+              </label>
+            )}
+            {mode === 'signup' && (
+              <label className="admin-auth-field">
+                <span>Phone number <small>(optional)</small></span>
+                <div className="admin-auth-input-wrap">
+                  <Phone size={18} />
+                  <input type="tel" value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="+91 98765 43210" autoComplete="tel" inputMode="tel" />
                 </div>
+              </label>
+            )}
+            <label className="admin-auth-field">
+              <span>Email address</span>
+              <div className="admin-auth-input-wrap">
+                <Mail size={18} />
+                <input type="email" required value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@company.com" autoComplete="email" />
               </div>
-            </div>
+            </label>
+            <label className="admin-auth-field">
+              <span>Password</span>
+              <div className="admin-auth-input-wrap">
+                <LockKeyhole size={18} />
+                <input type={showPassword ? 'text' : 'password'} required minLength={6} value={password} onChange={(event) => setPassword(event.target.value)} placeholder="At least 6 characters" autoComplete={mode === 'login' ? 'current-password' : 'new-password'} />
+                <button type="button" className="admin-auth-password-toggle" onClick={() => setShowPassword((visible) => !visible)} aria-label={showPassword ? 'Hide password' : 'Show password'}>
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+            </label>
 
-            {error && <div className="crm3d-error">{error}</div>}
+            {error && <div className="admin-auth-error" role="alert">{error}</div>}
 
-            <button type="submit" className="crm3d-submit-btn" disabled={loading}>
-              <span className="crm3d-btn-text">
-                {loading ? (
-                  <Loader2 size={20} className="crm-spin" />
-                ) : (
-                  <>
-                    {mode === 'login' ? 'Sign In' : 'Create Account'}
-                    <ArrowRight size={20} />
-                  </>
-                )}
-              </span>
-              <span className="crm3d-btn-side" />
-              <span className="crm3d-btn-bottom" />
+            <button type="submit" className="admin-auth-submit" disabled={loading}>
+              {loading ? <Loader2 size={19} className="crm-spin" /> : <>{mode === 'login' ? 'Sign in to dashboard' : 'Create my account'}<ArrowRight size={19} /></>}
             </button>
           </form>
 
-          {/* Switch Mode */}
-          <div className="crm3d-switch">
-            {mode === 'login' ? (
-              <>
-                Don't have an account?{' '}
-                <button type="button" onClick={() => { setMode('signup'); setError(''); }}>
-                  <UserPlus size={14} /> Sign up
-                </button>
-              </>
-            ) : (
-              <>
-                Already have an account?{' '}
-                <button type="button" onClick={() => { setMode('login'); setError(''); }}>
-                  Sign in
-                </button>
-              </>
-            )}
-          </div>
-
-          <div className="crm3d-back">
-            <a href="#/">← Back to landing page</a>
-          </div>
+          <div className="admin-auth-divider"><span>or</span></div>
+          <p className="admin-auth-switch">
+            {mode === 'login' ? 'Don’t have an account?' : 'Already have an account?'}{' '}
+            <button type="button" onClick={() => changeMode(mode === 'login' ? 'signup' : 'login')}>{mode === 'login' ? 'Sign up free' : 'Sign in'}</button>
+          </p>
+          <div className="admin-auth-trust"><span><ShieldCheck size={15} /> Secure access</span><span><Check size={14} /> Your data stays yours</span><span><UsersRound size={14} /> Team-ready</span></div>
+          <a href="#/" className="admin-auth-back">Back to LeadFlow home</a>
         </div>
-      </div>
-
-      {/* 3D Feature badges */}
-      <div className="crm3d-features" aria-hidden="true">
-        <div className="crm3d-feature-badge">
-          <BarChart3 size={16} />
-          <span>Analytics</span>
-        </div>
-        <div className="crm3d-feature-badge">
-          <Users size={16} />
-          <span>Lead Tracking</span>
-        </div>
-        <div className="crm3d-feature-badge">
-          <Zap size={16} />
-          <span>Automation</span>
-        </div>
-        <div className="crm3d-feature-badge">
-          <Sparkles size={16} />
-          <span>AI Powered</span>
-        </div>
-      </div>
-    </div>
+      </section>
+    </main>
   );
 }

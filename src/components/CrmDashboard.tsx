@@ -19,7 +19,7 @@ import {
   Camera,
   Bell, CalendarClock, BellRing, Shuffle, ClipboardList, History, Droplets, MessageSquare, RotateCcw,
   BookOpen, Palette, MousePointerClick, EyeOff,
-  PanelLeft, Type, Signal, GitMerge, ShieldAlert, Activity,
+  PanelLeft, Type, Signal, GitMerge, ShieldAlert, Activity, Wallet,
   Building2, Trophy, Target, TrendingDown, GitBranch, Hash, Radar,
 
   Webhook, ArrowDownLeft, LayoutTemplate, Inbox as InboxIcon,
@@ -35,6 +35,7 @@ import WhatsAppBroadcast from '@/components/WhatsAppBroadcast';
 import EmailBroadcast from '@/components/EmailBroadcast';
 import TelegramBroadcast from '@/components/TelegramBroadcast';
 import BroadcastHub from '@/components/BroadcastHub';
+import WhatsAppCreditsPage from '@/components/WhatsAppCreditsPage';
 import EmailInbox from '@/components/EmailInbox';
 import InboxHub from '@/components/InboxHub';
 import DirectLinkGenerator from '@/components/DirectLinkGenerator';
@@ -52,6 +53,7 @@ import BrokerTrackerPage from '@/components/BrokerTrackerPage';
 import LeadTrackerPage from '@/components/LeadTrackerPage';
 import LeadSourceBadge from '@/components/LeadSourceBadge';
 import { SourceLogo } from '@/components/BrandLogos';
+import WhatsAppOnboarding from '@/components/WhatsAppOnboarding';
 
 type LeadStatus = 'new' | 'called_no_response' | 'called_responded' | 'interested' | 'not_interested' | 'converted';
 
@@ -98,7 +100,7 @@ const MOBILE_STAT_OPTIONS: { key: MobileStatKey; label: string }[] = [
 ];
 
 type DateFilterPreset = 'all' | 'today' | 'yesterday' | 'last_7_days' | 'this_week' | 'this_month' | 'this_year' | 'custom';
-type ActiveView = 'dashboard' | 'leads' | 'ib_leads' | 'inbox_hub' | 'inbox' | 'whatsapp' | 'email_inbox' | 'settings' | 'drip' | 'analytics_hub' | 'email_analytics' | 'message_templates' | 'broadcast_hub' | 'broadcast' | 'email_broadcast' | 'telegram_broadcast' | 'activity_timeline' | 'revenue_forecast' | 'direct_link' | 'followups' | 'leaderboard' | 'goals' | 'win_loss' | 'duplicates' | 'heatmap' | 'automations' | 'brokers' | 'lead_tracker';
+type ActiveView = 'dashboard' | 'leads' | 'ib_leads' | 'inbox_hub' | 'inbox' | 'whatsapp' | 'email_inbox' | 'settings' | 'drip' | 'analytics_hub' | 'email_analytics' | 'message_templates' | 'broadcast_hub' | 'broadcast' | 'email_broadcast' | 'telegram_broadcast' | 'activity_timeline' | 'revenue_forecast' | 'direct_link' | 'followups' | 'leaderboard' | 'goals' | 'win_loss' | 'duplicates' | 'heatmap' | 'automations' | 'brokers' | 'lead_tracker' | 'wa_credits';
 
 type UserRole = 'owner' | 'admin' | 'manager' | 'agent';
 
@@ -567,7 +569,7 @@ async function sendMetaConversionEvent(leadId: string, lead: Lead, newStatus: Le
   }
 }
 
-const VALID_VIEWS: ActiveView[] = ['dashboard', 'leads', 'ib_leads', 'inbox_hub', 'inbox', 'whatsapp', 'email_inbox', 'settings', 'drip', 'analytics_hub', 'email_analytics', 'message_templates', 'broadcast_hub', 'broadcast', 'email_broadcast', 'telegram_broadcast', 'activity_timeline', 'revenue_forecast', 'direct_link', 'followups', 'leaderboard', 'goals', 'win_loss', 'duplicates', 'heatmap', 'automations', 'brokers', 'lead_tracker'];
+const VALID_VIEWS: ActiveView[] = ['dashboard', 'leads', 'ib_leads', 'inbox_hub', 'inbox', 'whatsapp', 'email_inbox', 'settings', 'drip', 'analytics_hub', 'email_analytics', 'message_templates', 'broadcast_hub', 'broadcast', 'email_broadcast', 'telegram_broadcast', 'activity_timeline', 'revenue_forecast', 'direct_link', 'followups', 'leaderboard', 'goals', 'win_loss', 'duplicates', 'heatmap', 'automations', 'brokers', 'lead_tracker', 'wa_credits'];
 
 export default function CrmDashboard({ session, initialView }: { session: Session; initialView?: string }) {
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -2101,6 +2103,9 @@ export default function CrmDashboard({ session, initialView }: { session: Sessio
             <Send size={18} /> {!sidebarCollapsed && 'Broadcasts'}
           </a>
           )}
+          <a className={`crm-nav-item ${activeView === 'wa_credits' ? 'active' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`} onClick={() => { navigateToView('wa_credits'); setMobileSidebarOpen(false); setMobileNav('leads'); }} style={{ cursor: 'pointer' }} title={sidebarCollapsed ? 'WA Credits' : undefined}>
+            <Wallet size={18} /> {!sidebarCollapsed && 'WA Credits'}
+          </a>
         </div>
         )}
         {permissions.analytics && sidebarSections.analytics && (
@@ -2332,6 +2337,8 @@ export default function CrmDashboard({ session, initialView }: { session: Sessio
           <TemplatesHub session={session} onBack={() => navigateToView('dashboard')} />
         ) : activeView === 'broadcast_hub' ? (
           <BroadcastHub session={session} onBack={() => navigateToView('dashboard')} />
+        ) : activeView === 'wa_credits' ? (
+          <WhatsAppCreditsPage session={session} onBack={() => navigateToView('dashboard')} />
         ) : activeView === 'followups' ? (
           <FollowUpsPage session={session} onBack={() => navigateToView('dashboard')} onCall={(number) => { window.location.href = `tel:${number.replace(/[^+\d]/g, '')}`; }} />
         ) : activeView === 'ib_leads' ? (
@@ -7235,6 +7242,73 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
   const [waRegError, setWaRegError] = useState('');
   const [waRegSuccess, setWaRegSuccess] = useState(false);
 
+  // Webhook verification state
+  type WaWebhookStatus = {
+    webhook_registered: boolean;
+    can_check: boolean;
+    subscribed_apps?: Array<{ id: string; name: string }>;
+    message?: string;
+    error?: string;
+  } | null;
+  const [waWebhookStatus, setWaWebhookStatus] = useState<WaWebhookStatus>(null);
+  const [waWebhookChecking, setWaWebhookChecking] = useState(false);
+  const [waWebhookRegistering, setWaWebhookRegistering] = useState(false);
+  const [waWebhookError, setWaWebhookError] = useState('');
+  const [waWebhookSuccess, setWaWebhookSuccess] = useState(false);
+
+  const checkWaWebhook = async () => {
+    if (waNumbersList.length === 0) return;
+    setWaWebhookChecking(true);
+    setWaWebhookError('');
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (!token) { setWaWebhookError('Not authenticated'); setWaWebhookChecking(false); return; }
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/wa-embedded-signup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ action: 'get_webhook_status', wa_settings_id: waNumbersList[0].id }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        setWaWebhookError(data.error || 'Failed to check webhook status');
+      } else {
+        setWaWebhookStatus(data);
+      }
+    } catch {
+      setWaWebhookError('Failed to check webhook status');
+    }
+    setWaWebhookChecking(false);
+  };
+
+  const registerWaWebhook = async () => {
+    if (waNumbersList.length === 0) return;
+    setWaWebhookRegistering(true);
+    setWaWebhookError('');
+    setWaWebhookSuccess(false);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (!token) { setWaWebhookError('Not authenticated'); setWaWebhookRegistering(false); return; }
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/wa-embedded-signup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ action: 'register_webhook', wa_settings_id: waNumbersList[0].id }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        setWaWebhookError(data.error || 'Failed to register webhook');
+      } else {
+        setWaWebhookSuccess(true);
+        setTimeout(() => setWaWebhookSuccess(false), 4000);
+        checkWaWebhook();
+      }
+    } catch {
+      setWaWebhookError('Failed to register webhook');
+    }
+    setWaWebhookRegistering(false);
+  };
+
   const refreshWaStatus = async () => {
     setWaStatusLoading(true);
     setWaStatusError('');
@@ -9459,7 +9533,21 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                     )}
                   </div>
 
-                  {/* Add / Edit number form */}
+                  {/* Quick Onboarding (embedded signup + manual) — only when adding new, not editing */}
+                  {editingWaNumberId === null && (
+                    <div style={{ marginBottom: '20px' }}>
+                      <WhatsAppOnboarding
+                        session={session}
+                        onNumberAdded={async () => {
+                          const { data: refreshed } = await supabase.from('whatsapp_settings').select('*').order('created_at', { ascending: true });
+                          if (refreshed) setWaNumbersList(refreshed as WaNumberConfig[]);
+                        }}
+                      />
+                    </div>
+                  )}
+
+                  {/* Add / Edit number form — only show when editing an existing number */}
+                  {editingWaNumberId !== null && (
                   <div style={{ marginBottom: '20px', padding: '20px', background: 'var(--bg-card)', borderRadius: '10px', border: '1px solid var(--border-subtle)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
                       <Plus size={16} style={{ color: '#25D366' }} />
@@ -9527,6 +9615,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                       )}
                     </div>
                   </div>
+                  )}
 
                   {/* Phone Number Status & Quality Rating — only for first number */}
                   {waNumbersList.length > 0 && waNumbersList[0]?.phone_number_id && waNumbersList[0]?.access_token && (
@@ -9933,6 +10022,72 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                     <div style={{ padding: '10px 14px', background: 'rgba(37,211,102,0.08)', border: '1px solid rgba(37,211,102,0.25)', borderRadius: '8px', fontSize: '0.78rem', color: '#15803d', lineHeight: 1.5 }}>
                       <strong>Steps:</strong> 1. Save settings first. 2. Copy the Callback URL above. 3. In Meta, paste it as the Webhook URL and use your Verify Token. 4. Subscribe to the "messages" field.
                     </div>
+
+                    {/* Webhook Verification Check */}
+                    {waNumbersList.length > 0 && waNumbersList[0]?.phone_number_id && waNumbersList[0]?.access_token && waNumbersList[0]?.waba_id && (
+                      <div style={{ marginTop: '12px', padding: '14px 16px', borderRadius: '10px', background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <Activity size={16} style={{ color: '#25D366' }} />
+                            <strong style={{ fontSize: '0.82rem' }}>Webhook Status</strong>
+                          </div>
+                          <div style={{ display: 'flex', gap: '6px' }}>
+                            <button
+                              type="button"
+                              onClick={checkWaWebhook}
+                              disabled={waWebhookChecking}
+                              style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 10px', border: '1px solid var(--border-subtle)', borderRadius: '6px', background: 'var(--bg-card)', color: 'var(--text-muted)', fontSize: '0.72rem', fontWeight: 600, cursor: waWebhookChecking ? 'not-allowed' : 'pointer', opacity: waWebhookChecking ? 0.5 : 1 }}
+                            >
+                              {waWebhookChecking ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
+                              {waWebhookChecking ? 'Checking...' : 'Check Status'}
+                            </button>
+                            {waWebhookStatus && !waWebhookStatus.webhook_registered && waWebhookStatus.can_check && (
+                              <button
+                                type="button"
+                                onClick={registerWaWebhook}
+                                disabled={waWebhookRegistering}
+                                style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 10px', border: 'none', borderRadius: '6px', background: '#25D366', color: 'var(--bg-card)', fontSize: '0.72rem', fontWeight: 600, cursor: waWebhookRegistering ? 'not-allowed' : 'pointer', opacity: waWebhookRegistering ? 0.5 : 1 }}
+                              >
+                                {waWebhookRegistering ? <Loader2 size={12} className="animate-spin" /> : <Zap size={12} />}
+                                {waWebhookRegistering ? 'Registering...' : 'Re-register Webhook'}
+                              </button>
+                            )}
+                          </div>
+                        </div>
+
+                        {waWebhookError && (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 12px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '6px', color: '#dc2626', fontSize: '0.76rem', marginBottom: '8px' }}>
+                            <AlertTriangle size={14} /> {waWebhookError}
+                          </div>
+                        )}
+                        {waWebhookSuccess && (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 12px', background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)', borderRadius: '6px', color: '#15803d', fontSize: '0.76rem', marginBottom: '8px' }}>
+                            <CheckCircle2 size={14} /> Webhook registered successfully!
+                          </div>
+                        )}
+                        {waWebhookStatus && !waWebhookError && (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.78rem' }}>
+                            {waWebhookStatus.webhook_registered ? (
+                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', color: '#16a34a', fontWeight: 600 }}>
+                                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#16a34a', display: 'inline-block' }} />
+                                Webhook Active
+                              </span>
+                            ) : (
+                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', color: '#dc2626', fontWeight: 600 }}>
+                                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#dc2626', display: 'inline-block' }} />
+                                Webhook Not Registered
+                              </span>
+                            )}
+                            <span style={{ color: 'var(--text-dark)', fontSize: '0.74rem' }}>
+                              {waWebhookStatus.message}
+                            </span>
+                          </div>
+                        )}
+                        {!waWebhookStatus && !waWebhookError && !waWebhookChecking && (
+                          <div style={{ fontSize: '0.76rem', color: 'var(--text-dark)' }}>Click "Check Status" to verify your webhook is registered with Meta.</div>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   {/* Setup documentation */}

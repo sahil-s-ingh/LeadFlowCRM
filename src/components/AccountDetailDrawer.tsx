@@ -35,6 +35,7 @@ type AccountDetails = {
   user: {
     id: string;
     email: string;
+    phone: string | null;
     created_at: string;
     last_sign_in_at: string | null;
   };
@@ -278,7 +279,11 @@ export default function AccountDetailDrawer({
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                   {/* User Info */}
                   <div style={{ background: 'var(--bg-light)', borderRadius: '12px', padding: '16px' }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
+                      <div>
+                        <div style={{ fontSize: '0.72rem', color: 'var(--text-dark)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Phone</div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.85rem', color: 'var(--text-main)', fontWeight: 600, marginTop: '3px', wordBreak: 'break-word' }}><Phone size={13} /> {details.user.phone || 'Not provided'}</div>
+                      </div>
                       <div>
                         <div style={{ fontSize: '0.72rem', color: 'var(--text-dark)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Joined</div>
                         <div style={{ fontSize: '0.85rem', color: 'var(--text-main)', fontWeight: 600, marginTop: '3px' }}>{formatDate(details.user.created_at)}</div>

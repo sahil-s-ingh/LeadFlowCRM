@@ -5,7 +5,7 @@ import {
   Shield, Users, TrendingUp, MessageSquare, UserCog, LogOut, Loader2,
   Building2, Mail, Activity, AlertCircle, Search, RefreshCw, CircleDot,
   LogIn, Eye, UserCircle, CreditCard, ToggleLeft, FileText, BarChart3,
-  Server, LayoutDashboard, Menu, X, Wallet,
+  Server, LayoutDashboard, Menu, X, Wallet, Phone, Zap,
 } from 'lucide-react';
 import AccountDetailDrawer from './AccountDetailDrawer';
 import AdminProfilePage from './AdminProfilePage';
@@ -16,6 +16,8 @@ import SuperAdminUsage from './SuperAdminUsage';
 import SuperAdminSetupGuide from './SuperAdminSetupGuide';
 import SuperAdminEmailSettings from './SuperAdminEmailSettings';
 import SuperAdminPaymentSettings from './SuperAdminPaymentSettings';
+import SuperAdminWhatsAppPricing from './SuperAdminWhatsAppPricing';
+import SuperAdminWhatsAppOnboarding from './SuperAdminWhatsAppOnboarding';
 
 type Stats = {
   total_auth_users: number;
@@ -29,6 +31,7 @@ type Stats = {
 type Account = {
   owner_id: string;
   email: string;
+  phone: string | null;
   created_at: string;
   last_sign_in_at: string | null;
   team_count: number;
@@ -37,7 +40,7 @@ type Account = {
   conversation_count: number;
 };
 
-type NavKey = 'dashboard' | 'profile' | 'plans' | 'features' | 'legal' | 'usage' | 'setup' | 'email' | 'payments';
+type NavKey = 'dashboard' | 'profile' | 'plans' | 'features' | 'legal' | 'usage' | 'setup' | 'email' | 'payments' | 'wa_pricing' | 'wa_onboarding';
 
 const NAV_ITEMS: { key: NavKey; label: string; icon: React.ReactNode; group: string }[] = [
   { key: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard size={18} />, group: 'Overview' },
@@ -47,6 +50,8 @@ const NAV_ITEMS: { key: NavKey; label: string; icon: React.ReactNode; group: str
   { key: 'legal', label: 'Legal Pages', icon: <FileText size={18} />, group: 'Platform' },
   { key: 'email', label: 'Email Config', icon: <Mail size={18} />, group: 'Platform' },
   { key: 'payments', label: 'Payment Gateway', icon: <Wallet size={18} />, group: 'Platform' },
+  { key: 'wa_pricing', label: 'WhatsApp Credits', icon: <MessageSquare size={18} />, group: 'Platform' },
+  { key: 'wa_onboarding', label: 'WhatsApp Onboarding', icon: <Zap size={18} />, group: 'Platform' },
   { key: 'setup', label: 'Setup Guide', icon: <Server size={18} />, group: 'System' },
   { key: 'profile', label: 'My Profile', icon: <UserCircle size={18} />, group: 'Account' },
 ];
@@ -59,11 +64,13 @@ const PAGE_SUBTITLES: Record<NavKey, string> = {
   legal: 'Edit legal pages published on your site',
   email: 'Configure default SMTP for all accounts',
   payments: 'Configure Razorpay payment gateway for checkout',
+  wa_pricing: 'Set WhatsApp message pricing and credit packages',
+  wa_onboarding: 'Configure embedded signup for client WhatsApp onboarding',
   setup: 'Deploy your CRM on a VPS step by step',
   profile: 'Super admin account settings',
 };
 
-const VALID_NAV_KEYS: NavKey[] = ['dashboard', 'profile', 'plans', 'features', 'legal', 'usage', 'setup', 'email', 'payments'];
+const VALID_NAV_KEYS: NavKey[] = ['dashboard', 'profile', 'plans', 'features', 'legal', 'usage', 'setup', 'email', 'payments', 'wa_pricing', 'wa_onboarding'];
 
 export default function SuperAdminDashboard({ session, onSignOut, initialView }: { session: Session; onSignOut: () => void; initialView?: string }) {
   const [stats, setStats] = useState<Stats | null>(null);
@@ -150,7 +157,7 @@ export default function SuperAdminDashboard({ session, onSignOut, initialView }:
     .filter((a) => {
       if (!search.trim()) return true;
       const q = search.toLowerCase();
-      return a.email?.toLowerCase().includes(q) || a.owner_id.toLowerCase().includes(q);
+      return a.email?.toLowerCase().includes(q) || a.phone?.toLowerCase().includes(q) || a.owner_id.toLowerCase().includes(q);
     })
     .filter((a) => {
       if (statusFilter === 'all') return true;
@@ -223,6 +230,8 @@ export default function SuperAdminDashboard({ session, onSignOut, initialView }:
     if (view === 'setup') return <SuperAdminSetupGuide />;
     if (view === 'email') return <SuperAdminEmailSettings />;
     if (view === 'payments') return <SuperAdminPaymentSettings />;
+    if (view === 'wa_pricing') return <SuperAdminWhatsAppPricing />;
+    if (view === 'wa_onboarding') return <SuperAdminWhatsAppOnboarding />;
 
     // Dashboard view
     if (loading) {
@@ -340,7 +349,7 @@ export default function SuperAdminDashboard({ session, onSignOut, initialView }:
               <div style={{ position: 'relative' }}>
                 <Search size={16} style={{ position: 'absolute', left: '11px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dark)' }} />
                 <input
-                  type="text" placeholder="Search by email..." value={search}
+                  type="text" placeholder="Search by email or phone..." value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   style={{ padding: '9px 12px 9px 36px', border: '1px solid var(--border-subtle)', borderRadius: '10px', fontSize: '0.84rem', outline: 'none', width: '220px', background: 'var(--bg-light)', transition: 'border-color 0.15s, background 0.15s' }}
                   onFocus={(e) => { e.target.style.borderColor = '#0f766e'; e.target.style.background = 'var(--bg-card)'; }}
@@ -404,7 +413,7 @@ export default function SuperAdminDashboard({ session, onSignOut, initialView }:
                             </div>
                             <div style={{ minWidth: 0 }}>
                               <div style={{ fontWeight: 600, color: 'var(--text-main)', fontSize: '0.84rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '220px' }}>{account.email}</div>
-                              <div style={{ fontSize: '0.7rem', color: 'var(--text-dark)', marginTop: '1px' }}>ID: {account.owner_id.slice(0, 8)}...</div>
+                              {account.phone ? <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.7rem', color: 'var(--text-dark)', marginTop: '3px' }}><Phone size={11} /> {account.phone}</div> : <div style={{ fontSize: '0.7rem', color: 'var(--text-dark)', marginTop: '1px' }}>Phone not provided</div>}
                             </div>
                           </div>
                         </td>

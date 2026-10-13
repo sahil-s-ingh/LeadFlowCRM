@@ -105,3 +105,12 @@ verify_jwt = false
 
 [functions.razorpay-verify-payment]
 verify_jwt = false
+
+[functions.wa-credit-order]
+verify_jwt = true
+
+[functions.wa-credit-verify]
+verify_jwt = false
+
+[functions.wa-embedded-signup]
+verify_jwt = true

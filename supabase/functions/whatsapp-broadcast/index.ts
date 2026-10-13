@@ -42,6 +42,17 @@ Deno.serve(async (req: Request) => {
     const url = new URL(req.url);
     const action = url.searchParams.get("action") || "list";
 
+    // Helper: check if WhatsApp credit system is active
+    async function isCreditSystemActive(): Promise<boolean> {
+      const { data } = await adminSupabase
+        .from("wa_message_pricing")
+        .select("is_active")
+        .order("updated_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      return Boolean(data?.is_active);
+    }
+
     // ─── LIST: fetch campaigns ──────────────────────────────────────────
     if (action === "list" && req.method === "GET") {
       const { data, error } = await adminSupabase
@@ -209,6 +220,35 @@ Deno.serve(async (req: Request) => {
           JSON.stringify({ error: "No pending recipients to send to" }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
+      }
+
+      // ── Credit check: deduct credits before sending if system is active ──
+      const creditSystemOn = await isCreditSystemActive();
+      if (creditSystemOn) {
+        const { data: balData } = await userSupabase.rpc("get_wa_credit_balance");
+        const balance = typeof balData === "number" ? balData : 0;
+        if (balance < pendingRecipients.length) {
+          return new Response(
+            JSON.stringify({
+              error: `Insufficient WhatsApp credits. You need ${pendingRecipients.length} credits but have ${balance}. Please purchase credits in the WhatsApp Credits page.`,
+              insufficient_credits: true,
+              required: pendingRecipients.length,
+              balance,
+            }),
+            { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+          );
+        }
+        // Deduct credits via RPC (atomic, rejects overdraft)
+        const { error: deductErr } = await userSupabase.rpc("deduct_wa_credits", {
+          p_amount: pendingRecipients.length,
+          p_reference: `Broadcast ${campaign_id}`,
+        });
+        if (deductErr) {
+          return new Response(
+            JSON.stringify({ error: deductErr.message || "Failed to deduct credits" }),
+            { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+          );
+        }
       }
 
       await adminSupabase
