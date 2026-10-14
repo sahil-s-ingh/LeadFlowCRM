@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
-import { X, Shield, CheckCircle2, Loader2, CreditCard, Lock, AlertCircle } from 'lucide-react';
+import { X, Shield, CheckCircle2, Loader2, CreditCard, Lock, AlertCircle, Smartphone } from 'lucide-react';
 
 declare global {
   interface Window {
@@ -44,13 +44,16 @@ type DbPlan = {
 };
 
 const OPEN_SETUP_EVENT = 'open-mt5-setup';
+const PHONEPE_TXN_KEY = 'phonepe_merchant_txn_id';
+const PHONEPE_FORM_KEY = 'phonepe_checkout_form';
+const PHONEPE_PLAN_KEY = 'phonepe_checkout_plan';
 
 const INDIAN_STATES = [
   'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh',
   'Goa', 'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jharkhand',
   'Karnataka', 'Kerala', 'Madhya Pradesh', 'Maharashtra', 'Manipur',
   'Meghalaya', 'Mizoram', 'Nagaland', 'Odisha', 'Punjab',
-  'Rajasthan', 'Sikkam', 'Tamil Nadu', 'Telangana', 'Tripura',
+  'Rajasthan', 'Sikkim', 'Tamil Nadu', 'Telangana', 'Tripura',
   'Uttar Pradesh', 'Uttarakhand', 'West Bengal',
   'Andaman and Nicobar Islands', 'Chandigarh', 'Dadra and Nagar Haveli and Daman and Diu',
   'Delhi', 'Jammu and Kashmir', 'Ladakh', 'Lakshadweep', 'Puducherry',
@@ -84,6 +87,11 @@ function loadRazorpayScript(): Promise<void> {
 
 type Step = 'form' | 'processing' | 'success' | 'error';
 
+type GatewayInfo = {
+  active_gateway: string;
+  is_active: boolean;
+};
+
 export default function CheckoutDrawer() {
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState<Step>('form');
@@ -93,6 +101,7 @@ export default function CheckoutDrawer() {
   const [form, setForm] = useState({ fullName: '', mobileNumber: '', email: '', state: '' });
   const [errorMsg, setErrorMsg] = useState('');
   const [creatingOrder, setCreatingOrder] = useState(false);
+  const [gateway, setGateway] = useState<GatewayInfo | null>(null);
 
   const loadPlans = useCallback(async () => {
     const { data } = await supabase
@@ -110,6 +119,20 @@ export default function CheckoutDrawer() {
     }
   }, []);
 
+  const loadGateway = useCallback(async () => {
+    const { data } = await supabase
+      .from('platform_payment_settings')
+      .select('active_gateway, is_active')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (data) {
+      setGateway({ active_gateway: data.active_gateway || 'razorpay', is_active: data.is_active });
+    } else {
+      setGateway({ active_gateway: 'razorpay', is_active: true });
+    }
+  }, []);
+
   useEffect(() => {
     const openDrawer = () => {
       setOpen(true);
@@ -117,101 +140,205 @@ export default function CheckoutDrawer() {
       setErrorMsg('');
       setForm({ fullName: '', mobileNumber: '', email: '', state: '' });
       if (!plans) loadPlans();
+      if (!gateway) loadGateway();
     };
     window.addEventListener(OPEN_SETUP_EVENT, openDrawer);
     return () => window.removeEventListener(OPEN_SETUP_EVENT, openDrawer);
-  }, [plans, loadPlans]);
+  }, [plans, gateway, loadPlans, loadGateway]);
 
   useEffect(() => {
     document.body.style.overflow = open ? 'hidden' : '';
     return () => { document.body.style.overflow = ''; };
   }, [open]);
 
+  // Handle PhonePe redirect return
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const phonepeRedirect = params.get('phonepe_redirect');
+    const merchantTxnId = sessionStorage.getItem(PHONEPE_TXN_KEY);
+    const savedForm = sessionStorage.getItem(PHONEPE_FORM_KEY);
+    const savedPlan = sessionStorage.getItem(PHONEPE_PLAN_KEY);
+
+    if (phonepeRedirect === '1' && merchantTxnId) {
+      setOpen(true);
+      setStep('processing');
+      setErrorMsg('');
+
+      if (savedForm) {
+        try { setForm(JSON.parse(savedForm)); } catch { /* ignore */ }
+      }
+
+      const verifyPhonePe = async () => {
+        try {
+          const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/phonepe-verify-payment`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+            },
+            body: JSON.stringify({
+              merchantTxnId,
+              ...JSON.parse(savedForm || '{}'),
+              ...JSON.parse(savedPlan || '{}'),
+            }),
+          });
+          const result = await response.json();
+          if (!response.ok || !result.success) {
+            throw new Error(result.error || 'Payment verification failed.');
+          }
+          setStep('success');
+          sessionStorage.removeItem(PHONEPE_TXN_KEY);
+          sessionStorage.removeItem(PHONEPE_FORM_KEY);
+          sessionStorage.removeItem(PHONEPE_PLAN_KEY);
+        } catch (err) {
+          setStep('error');
+          setErrorMsg(err instanceof Error ? err.message : 'Payment verification failed.');
+        }
+      };
+      verifyPhonePe();
+
+      // Clean the URL
+      const cleanUrl = window.location.origin + window.location.pathname;
+      window.history.replaceState({}, document.title, cleanUrl);
+    }
+  }, []);
+
   const selectedPlan = plans?.find((p) => p.id === selectedPlanId) || plans?.[0] || FALLBACK_PLANS[0];
   const price = billingCycle === 'monthly' ? selectedPlan.monthly_price : selectedPlan.annual_price;
   const currencySymbol = (c: string) => c === 'INR' ? '\u20B9' : c === 'EUR' ? '\u20AC' : c === 'GBP' ? '\u00A3' : '$';
   const canSubmit = Boolean(form.fullName && form.mobileNumber && form.email && form.state && selectedPlanId);
+  const isPhonePe = gateway?.active_gateway === 'phonepe';
 
   const handlePay = async () => {
     if (!canSubmit) return;
     setCreatingOrder(true);
     setErrorMsg('');
     try {
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/razorpay-create-order`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-        },
-        body: JSON.stringify({
-          planId: selectedPlan.id,
-          planName: selectedPlan.name,
-          amount: price,
-          currency: selectedPlan.currency,
-          billingCycle,
+      if (isPhonePe) {
+        // PhonePe flow: create order, then redirect to PhonePe checkout
+        const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/phonepe-create-order`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({
+            planId: selectedPlan.id,
+            planName: selectedPlan.name,
+            amount: price,
+            currency: selectedPlan.currency,
+            billingCycle,
+            customerName: form.fullName,
+            customerEmail: form.email,
+            customerPhone: form.mobileNumber,
+            customerState: form.state,
+          }),
+        });
+        const result = await response.json();
+        if (!response.ok) {
+          throw new Error(result.error || 'Failed to create payment order. Please try again.');
+        }
+
+        // Save checkout context to sessionStorage for return after redirect
+        sessionStorage.setItem(PHONEPE_TXN_KEY, result.merchantTxnId);
+        sessionStorage.setItem(PHONEPE_FORM_KEY, JSON.stringify({
           customerName: form.fullName,
           customerEmail: form.email,
           customerPhone: form.mobileNumber,
           customerState: form.state,
-        }),
-      });
-      const result = await response.json();
-      if (!response.ok) {
-        throw new Error(result.error || 'Failed to create order. Please try again.');
-      }
-      setStep('processing');
+        }));
+        sessionStorage.setItem(PHONEPE_PLAN_KEY, JSON.stringify({
+          planId: selectedPlan.id,
+          planName: selectedPlan.name,
+          billingCycle,
+        }));
 
-      await loadRazorpayScript();
-      if (!window.Razorpay) throw new Error('Payment gateway failed to load.');
+        setStep('processing');
 
-      const rzp = new window.Razorpay({
-        key: result.keyId,
-        amount: result.amount,
-        currency: result.currency,
-        name: 'LeadFlow CRM',
-        description: `${selectedPlan.name} — ${billingCycle}`,
-        order_id: result.orderId,
-        prefill: { name: form.fullName, email: form.email, contact: form.mobileNumber },
-        theme: { color: '#EAB308' },
-        modal: {
-          ondismiss: () => {
-            setStep('form');
-            setErrorMsg('Payment cancelled. You can try again.');
+        // Redirect to PhonePe checkout page
+        if (result.paymentUrl) {
+          window.location.href = result.paymentUrl;
+        } else {
+          throw new Error('PhonePe did not return a payment URL. Please try again.');
+        }
+      } else {
+        // Razorpay flow: popup checkout widget
+        const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/razorpay-create-order`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
           },
-        },
-        handler: async (rzpResponse: RazorpayResponse) => {
-          try {
-            const verifyRes = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/razorpay-verify-payment`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-              },
-              body: JSON.stringify({
-                razorpayOrderId: rzpResponse.razorpay_order_id,
-                razorpayPaymentId: rzpResponse.razorpay_payment_id,
-                razorpaySignature: rzpResponse.razorpay_signature,
-                dbOrderId: result.dbOrderId,
-                customerName: form.fullName,
-                customerEmail: form.email,
-                customerPhone: form.mobileNumber,
-                customerState: form.state,
-                planName: selectedPlan.name,
-                planId: selectedPlan.id,
-              }),
-            });
-            const verifyResult = await verifyRes.json();
-            if (!verifyRes.ok) {
-              throw new Error(verifyResult.error || 'Payment verification failed.');
+          body: JSON.stringify({
+            planId: selectedPlan.id,
+            planName: selectedPlan.name,
+            amount: price,
+            currency: selectedPlan.currency,
+            billingCycle,
+            customerName: form.fullName,
+            customerEmail: form.email,
+            customerPhone: form.mobileNumber,
+            customerState: form.state,
+          }),
+        });
+        const result = await response.json();
+        if (!response.ok) {
+          throw new Error(result.error || 'Failed to create order. Please try again.');
+        }
+        setStep('processing');
+
+        await loadRazorpayScript();
+        if (!window.Razorpay) throw new Error('Payment gateway failed to load.');
+
+        const rzp = new window.Razorpay({
+          key: result.keyId,
+          amount: result.amount,
+          currency: result.currency,
+          name: 'LeadFlow CRM',
+          description: `${selectedPlan.name} — ${billingCycle}`,
+          order_id: result.orderId,
+          prefill: { name: form.fullName, email: form.email, contact: form.mobileNumber },
+          theme: { color: '#EAB308' },
+          modal: {
+            ondismiss: () => {
+              setStep('form');
+              setErrorMsg('Payment cancelled. You can try again.');
+            },
+          },
+          handler: async (rzpResponse: RazorpayResponse) => {
+            try {
+              const verifyRes = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/razorpay-verify-payment`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+                },
+                body: JSON.stringify({
+                  razorpayOrderId: rzpResponse.razorpay_order_id,
+                  razorpayPaymentId: rzpResponse.razorpay_payment_id,
+                  razorpaySignature: rzpResponse.razorpay_signature,
+                  dbOrderId: result.dbOrderId,
+                  customerName: form.fullName,
+                  customerEmail: form.email,
+                  customerPhone: form.mobileNumber,
+                  customerState: form.state,
+                  planName: selectedPlan.name,
+                  planId: selectedPlan.id,
+                }),
+              });
+              const verifyResult = await verifyRes.json();
+              if (!verifyRes.ok) {
+                throw new Error(verifyResult.error || 'Payment verification failed.');
+              }
+              setStep('success');
+            } catch (err) {
+              setStep('error');
+              setErrorMsg(err instanceof Error ? err.message : 'Payment verification failed.');
             }
-            setStep('success');
-          } catch (err) {
-            setStep('error');
-            setErrorMsg(err instanceof Error ? err.message : 'Payment verification failed.');
-          }
-        },
-      });
-      rzp.open();
+          },
+        });
+        rzp.open();
+      }
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
     }
@@ -267,18 +394,20 @@ export default function CheckoutDrawer() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <div style={{
               width: '38px', height: '38px', borderRadius: '10px',
-              background: 'linear-gradient(135deg, #FEF08A, #EAB308)',
+              background: isPhonePe
+                ? 'linear-gradient(135deg, #991B1B, #5B21B6)'
+                : 'linear-gradient(135deg, #FEF08A, #EAB308)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               flexShrink: 0,
             }}>
-              <CreditCard size={20} style={{ color: '#422006' }} />
+              {isPhonePe ? <Smartphone size={20} style={{ color: '#fff' }} /> : <CreditCard size={20} style={{ color: '#422006' }} />}
             </div>
             <div>
               <h2 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: '#0F172A', fontFamily: 'Outfit, sans-serif' }}>
                 {step === 'success' ? 'Payment Complete' : step === 'error' ? 'Payment Issue' : 'Checkout'}
               </h2>
               <p style={{ margin: 0, fontSize: '0.76rem', color: '#64748B' }}>
-                {step === 'success' ? 'Your trial is now active' : step === 'error' ? 'Please try again' : 'Complete your subscription'}
+                {step === 'success' ? 'Your trial is now active' : step === 'error' ? 'Please try again' : `Complete your subscription via ${isPhonePe ? 'PhonePe' : 'Razorpay'}`}
               </p>
             </div>
           </div>
@@ -357,12 +486,12 @@ export default function CheckoutDrawer() {
             </div>
           ) : step === 'processing' ? (
             <div style={{ textAlign: 'center', paddingTop: '60px' }}>
-              <Loader2 size={48} className="crm-spin" style={{ color: '#EAB308', margin: '0 auto 16px' }} />
+              <Loader2 size={48} className="crm-spin" style={{ color: isPhonePe ? '#5B21B6' : '#EAB308', margin: '0 auto 16px' }} />
               <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: '#0F172A', margin: '0 0 6px' }}>
-                Processing Payment...
+                {isPhonePe ? 'Redirecting to PhonePe...' : 'Processing Payment...'}
               </h3>
               <p style={{ fontSize: '0.82rem', color: '#64748B' }}>
-                Please don't close this window.
+                {isPhonePe ? 'You will be redirected to complete your payment.' : 'Please don\u2019t close this window.'}
               </p>
             </div>
           ) : (
@@ -559,9 +688,11 @@ export default function CheckoutDrawer() {
               style={{
                 width: '100%', padding: '14px', borderRadius: '12px', border: 'none',
                 background: canSubmit && !creatingOrder
-                  ? 'linear-gradient(135deg, #FEF08A 0%, #EAB308 100%)'
+                  ? (isPhonePe
+                    ? 'linear-gradient(135deg, #7C3AED 0%, #5B21B6 100%)'
+                    : 'linear-gradient(135deg, #FEF08A 0%, #EAB308 100%)')
                   : '#e2e8f0',
-                color: canSubmit && !creatingOrder ? '#422006' : '#94a3b8',
+                color: canSubmit && !creatingOrder ? (isPhonePe ? '#fff' : '#422006') : '#94a3b8',
                 fontSize: '0.92rem', fontWeight: 800, cursor: canSubmit && !creatingOrder ? 'pointer' : 'not-allowed',
                 fontFamily: 'Outfit, sans-serif',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
@@ -571,7 +702,7 @@ export default function CheckoutDrawer() {
               {creatingOrder ? (
                 <><Loader2 size={18} className="crm-spin" /> Preparing Checkout...</>
               ) : (
-                <><Lock size={16} /> Pay {currencySymbol(selectedPlan.currency)}{price.toLocaleString('en-IN')} & Start Trial</>
+                <>{isPhonePe ? <Smartphone size={16} /> : <Lock size={16} />} Pay {currencySymbol(selectedPlan.currency)}{price.toLocaleString('en-IN')} & Start Trial</>
               )}
             </button>
             <div style={{
@@ -580,7 +711,7 @@ export default function CheckoutDrawer() {
             }}>
               <Shield size={13} style={{ color: '#94a3b8' }} />
               <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>
-                Secured by Razorpay &middot; 14-day money-back guarantee
+                Secured by {isPhonePe ? 'PhonePe' : 'Razorpay'} &middot; 14-day money-back guarantee
               </span>
             </div>
           </div>

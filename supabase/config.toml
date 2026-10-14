@@ -102,3 +102,9 @@ verify_jwt = false
 
 [functions.wa-embedded-signup]
 verify_jwt = true
+
+[functions.phonepe-create-order]
+verify_jwt = false
+
+[functions.phonepe-verify-payment]
+verify_jwt = false
