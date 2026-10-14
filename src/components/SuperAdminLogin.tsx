@@ -1,6 +1,15 @@
 import { useState, type FormEvent } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Shield, Lock, Mail, ArrowRight, Eye, EyeOff, Loader2, TrendingUp } from 'lucide-react';
+import {
+  Shield, ShieldCheck, Lock, Mail, ArrowRight, Eye, EyeOff, Loader2,
+  Building2, Users, Server, Zap, ServerCog, Check,
+} from 'lucide-react';
+
+const platformFeatures = [
+  { icon: Building2, title: 'Multi-account oversight', detail: 'Manage every workspace from a single pane.' },
+  { icon: Zap, title: 'Feature toggles & plans', detail: 'Control what each account can access instantly.' },
+  { icon: Server, title: 'Platform infrastructure', detail: 'Email, payments, and WhatsApp — all configurable.' },
+];
 
 export default function SuperAdminLogin() {
   const [email, setEmail] = useState('');
@@ -22,146 +31,106 @@ export default function SuperAdminLogin() {
   };
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f766e 100%)',
-      padding: '20px',
-    }}>
-      <div style={{
-        width: '100%',
-        maxWidth: '440px',
-        background: 'var(--bg-card)',
-        borderRadius: '20px',
-        boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)',
-        overflow: 'hidden',
-      }}>
-        {/* Header */}
-        <div style={{
-          background: 'linear-gradient(135deg, #0f172a, #0f766e)',
-          padding: '32px 28px',
-          textAlign: 'center',
-          color: 'var(--bg-card)',
-        }}>
-          <div style={{
-            width: '56px',
-            height: '56px',
-            borderRadius: '14px',
-            background: 'rgba(255,255,255,0.15)',
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            marginBottom: '14px',
-            backdropFilter: 'blur(10px)',
-          }}>
-            <Shield size={28} strokeWidth={2.5} />
-          </div>
-          <h1 style={{ fontSize: '1.5rem', fontWeight: 800, margin: 0, letterSpacing: '-0.02em' }}>Super Admin Portal</h1>
-          <p style={{ fontSize: '0.85rem', opacity: 0.8, marginTop: '6px', marginBottom: 0 }}>
-            Sign in to manage your CRM platform
-          </p>
-        </div>
-
-        {/* Form */}
-        <form onSubmit={handleSubmit} style={{ padding: '28px' }}>
-          <div style={{ marginBottom: '16px' }}>
-            <label htmlFor="sa-email" style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '6px' }}>Email</label>
-            <div style={{ position: 'relative' }}>
-              <Mail size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dark)' }} />
-              <input
-                id="sa-email"
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@leadcentre.com"
-                autoComplete="email"
-                style={{
-                  width: '100%', padding: '12px 12px 12px 40px', border: '2px solid var(--border-subtle)',
-                  borderRadius: '10px', fontSize: '0.88rem', outline: 'none',
-                  transition: 'border-color 0.2s', boxSizing: 'border-box',
-                }}
-                onFocus={(e) => { e.target.style.borderColor = '#0f766e'; }}
-                onBlur={(e) => { e.target.style.borderColor = 'var(--border-subtle)'; }}
-              />
-            </div>
-          </div>
-
-          <div style={{ marginBottom: '16px' }}>
-            <label htmlFor="sa-password" style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '6px' }}>Password</label>
-            <div style={{ position: 'relative' }}>
-              <Lock size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dark)' }} />
-              <input
-                id="sa-password"
-                type={showPassword ? 'text' : 'password'}
-                required
-                minLength={6}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter your password"
-                autoComplete="current-password"
-                style={{
-                  width: '100%', padding: '12px 40px 12px 40px', border: '2px solid var(--border-subtle)',
-                  borderRadius: '10px', fontSize: '0.88rem', outline: 'none',
-                  transition: 'border-color 0.2s', boxSizing: 'border-box',
-                }}
-                onFocus={(e) => { e.target.style.borderColor = '#0f766e'; }}
-                onBlur={(e) => { e.target.style.borderColor = 'var(--border-subtle)'; }}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                style={{
-                  position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)',
-                  border: 'none', background: 'none', cursor: 'pointer', color: 'var(--text-dark)', padding: '4px',
-                }}
-                aria-label="Toggle password visibility"
-              >
-                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-              </button>
-            </div>
-          </div>
-
-          {error && (
-            <div style={{
-              padding: '12px 14px', background: 'var(--bg-card)', border: '1px solid #fecaca',
-              borderRadius: '10px', fontSize: '0.82rem', color: '#dc2626', marginBottom: '16px',
-            }}>
-              {error}
-            </div>
-          )}
-
-          <button
-            type="submit"
-            disabled={loading}
-            style={{
-              width: '100%', padding: '13px', border: 'none', borderRadius: '10px',
-              background: loading ? '#94a3b8' : '#0f766e', color: 'var(--bg-card)',
-              fontSize: '0.9rem', fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-              transition: 'background 0.2s',
-            }}
-          >
-            {loading ? (
-              <Loader2 size={20} className="crm-spin" />
-            ) : (
-              <>
-                Sign In
-                <ArrowRight size={20} />
-              </>
-            )}
-          </button>
-        </form>
-
-        <div style={{ textAlign: 'center', paddingBottom: '20px' }}>
-          <a href="#/" style={{ fontSize: '0.8rem', color: 'var(--text-dark)', textDecoration: 'none' }}>
-            <TrendingUp size={12} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'middle' }} />
-            Back to LeadCentre
+    <main className="sa-auth-page">
+      {/* Left — story panel */}
+      <section className="sa-auth-story" aria-label="Super Admin portal">
+        <div className="sa-auth-story-glow sa-auth-story-glow-one" />
+        <div className="sa-auth-story-glow sa-auth-story-glow-two" />
+        <div className="sa-auth-story-content">
+          <a href="#/" className="sa-auth-brand" aria-label="Back to LeadFlow CRM home">
+            <span className="sa-auth-brand-mark"><Shield size={17} strokeWidth={2.6} /></span>
+            <span>
+              <strong>LeadFlow</strong>
+              <small>SUPER ADMIN</small>
+            </span>
           </a>
+
+          <div className="sa-auth-story-copy">
+            <span className="sa-auth-kicker"><span className="sa-auth-kicker-dot" /> PLATFORM CONTROL CENTER</span>
+            <h1>Command every <em>workspace</em> from here.</h1>
+            <p>A unified control panel for managing accounts, billing, features, and infrastructure across your entire CRM platform.</p>
+          </div>
+
+          <div className="sa-auth-features">
+            {platformFeatures.map(({ icon: Icon, title, detail }) => (
+              <div className="sa-auth-feature" key={title}>
+                <span className="sa-auth-feature-icon"><Icon size={18} /></span>
+                <span><strong>{title}</strong><small>{detail}</small></span>
+              </div>
+            ))}
+          </div>
+
+          <div className="sa-auth-stats">
+            <div><strong>11<span>modules</span></strong><small>MANAGEMENT PANELS</small></div>
+            <div><strong>30<span>+</span></strong><small>EDGE FUNCTIONS</small></div>
+            <div><strong>40<span>+</span></strong><small>CRM FEATURES</small></div>
+          </div>
         </div>
-      </div>
-    </div>
+        <p className="sa-auth-story-footer">Platform administration <span>·</span> Authorized access only</p>
+      </section>
+
+      {/* Right — form panel */}
+      <section className="sa-auth-panel">
+        <div className="sa-auth-form-wrap">
+          <div className="sa-auth-mobile-brand">
+            <span className="sa-auth-brand-mark"><Shield size={16} /></span>
+            <strong>Super Admin</strong>
+          </div>
+          <div className="sa-auth-heading">
+            <span className="sa-auth-eyebrow">RESTRICTED ACCESS</span>
+            <h2>Super Admin Portal</h2>
+            <p>Sign in with your platform administrator credentials.</p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="sa-auth-form">
+            <label className="sa-auth-field">
+              <span>Email address</span>
+              <div className="sa-auth-input-wrap">
+                <Mail size={18} />
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="admin@leadflow.com"
+                  autoComplete="email"
+                />
+              </div>
+            </label>
+            <label className="sa-auth-field">
+              <span>Password</span>
+              <div className="sa-auth-input-wrap">
+                <Lock size={18} />
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  minLength={6}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter your password"
+                  autoComplete="current-password"
+                />
+                <button type="button" className="sa-auth-password-toggle" onClick={() => setShowPassword((v) => !v)} aria-label={showPassword ? 'Hide password' : 'Show password'}>
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+            </label>
+
+            {error && <div className="sa-auth-error" role="alert">{error}</div>}
+
+            <button type="submit" className="sa-auth-submit" disabled={loading}>
+              {loading ? <Loader2 size={19} className="crm-spin" /> : <>Sign in to dashboard<ArrowRight size={19} /></>}
+            </button>
+          </form>
+
+          <div className="sa-auth-trust">
+            <span><ShieldCheck size={15} /> Authorized only</span>
+            <span><ServerCog size={14} /> Platform-level</span>
+            <span><Check size={14} /> Audit logged</span>
+          </div>
+          <a href="#/" className="sa-auth-back">Back to LeadFlow home</a>
+        </div>
+      </section>
+    </main>
   );
 }
