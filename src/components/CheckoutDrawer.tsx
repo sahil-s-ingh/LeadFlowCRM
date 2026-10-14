@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
-import { X, Shield, CheckCircle2, Loader2, CreditCard, Lock, AlertCircle, Smartphone } from 'lucide-react';
+import { X, Shield, CheckCircle2, Loader2, CreditCard, Lock, AlertCircle, Smartphone, Globe } from 'lucide-react';
 
 declare global {
   interface Window {
@@ -47,6 +47,9 @@ const OPEN_SETUP_EVENT = 'open-mt5-setup';
 const PHONEPE_TXN_KEY = 'phonepe_merchant_txn_id';
 const PHONEPE_FORM_KEY = 'phonepe_checkout_form';
 const PHONEPE_PLAN_KEY = 'phonepe_checkout_plan';
+const PAYPAL_ORDER_KEY = 'paypal_order_id';
+const PAYPAL_FORM_KEY = 'paypal_checkout_form';
+const PAYPAL_PLAN_KEY = 'paypal_checkout_plan';
 
 const INDIAN_STATES = [
   'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh',
@@ -159,6 +162,55 @@ export default function CheckoutDrawer() {
     const savedForm = sessionStorage.getItem(PHONEPE_FORM_KEY);
     const savedPlan = sessionStorage.getItem(PHONEPE_PLAN_KEY);
 
+    // Handle PayPal redirect return
+    const paypalRedirect = params.get('paypal_redirect');
+    const paypalOrderId = sessionStorage.getItem(PAYPAL_ORDER_KEY);
+    const paypalForm = sessionStorage.getItem(PAYPAL_FORM_KEY);
+    const paypalPlan = sessionStorage.getItem(PAYPAL_PLAN_KEY);
+
+    if (paypalRedirect === '1' && paypalOrderId) {
+      setOpen(true);
+      setStep('processing');
+      setErrorMsg('');
+
+      if (paypalForm) {
+        try { setForm(JSON.parse(paypalForm)); } catch { /* ignore */ }
+      }
+
+      const verifyPayPal = async () => {
+        try {
+          const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/paypal-verify-payment`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+            },
+            body: JSON.stringify({
+              paypalOrderId,
+              ...JSON.parse(paypalForm || '{}'),
+              ...JSON.parse(paypalPlan || '{}'),
+            }),
+          });
+          const result = await response.json();
+          if (!response.ok || !result.success) {
+            throw new Error(result.error || 'PayPal payment verification failed.');
+          }
+          setStep('success');
+          sessionStorage.removeItem(PAYPAL_ORDER_KEY);
+          sessionStorage.removeItem(PAYPAL_FORM_KEY);
+          sessionStorage.removeItem(PAYPAL_PLAN_KEY);
+        } catch (err) {
+          setStep('error');
+          setErrorMsg(err instanceof Error ? err.message : 'PayPal payment verification failed.');
+        }
+      };
+      verifyPayPal();
+
+      const cleanUrl = window.location.origin + window.location.pathname;
+      window.history.replaceState({}, document.title, cleanUrl);
+      return;
+    }
+
     if (phonepeRedirect === '1' && merchantTxnId) {
       setOpen(true);
       setStep('processing');
@@ -208,13 +260,60 @@ export default function CheckoutDrawer() {
   const currencySymbol = (c: string) => c === 'INR' ? '\u20B9' : c === 'EUR' ? '\u20AC' : c === 'GBP' ? '\u00A3' : '$';
   const canSubmit = Boolean(form.fullName && form.mobileNumber && form.email && form.state && selectedPlanId);
   const isPhonePe = gateway?.active_gateway === 'phonepe';
+  const isPayPal = gateway?.active_gateway === 'paypal';
+  const gatewayName = isPhonePe ? 'PhonePe' : isPayPal ? 'PayPal' : 'Razorpay';
 
   const handlePay = async () => {
     if (!canSubmit) return;
     setCreatingOrder(true);
     setErrorMsg('');
     try {
-      if (isPhonePe) {
+      if (isPayPal) {
+        // PayPal flow: create order, then redirect to PayPal approval page
+        const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/paypal-create-order`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({
+            planId: selectedPlan.id,
+            planName: selectedPlan.name,
+            amount: price,
+            currency: selectedPlan.currency,
+            billingCycle,
+            customerName: form.fullName,
+            customerEmail: form.email,
+            customerPhone: form.mobileNumber,
+            customerState: form.state,
+          }),
+        });
+        const result = await response.json();
+        if (!response.ok) {
+          throw new Error(result.error || 'Failed to create PayPal order. Please try again.');
+        }
+
+        sessionStorage.setItem(PAYPAL_ORDER_KEY, result.paypalOrderId);
+        sessionStorage.setItem(PAYPAL_FORM_KEY, JSON.stringify({
+          customerName: form.fullName,
+          customerEmail: form.email,
+          customerPhone: form.mobileNumber,
+          customerState: form.state,
+        }));
+        sessionStorage.setItem(PAYPAL_PLAN_KEY, JSON.stringify({
+          planId: selectedPlan.id,
+          planName: selectedPlan.name,
+          billingCycle,
+        }));
+
+        setStep('processing');
+
+        if (result.approvalUrl) {
+          window.location.href = result.approvalUrl;
+        } else {
+          throw new Error('PayPal did not return an approval URL. Please try again.');
+        }
+      } else if (isPhonePe) {
         // PhonePe flow: create order, then redirect to PhonePe checkout
         const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/phonepe-create-order`, {
           method: 'POST',
@@ -394,20 +493,22 @@ export default function CheckoutDrawer() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <div style={{
               width: '38px', height: '38px', borderRadius: '10px',
-              background: isPhonePe
-                ? 'linear-gradient(135deg, #991B1B, #5B21B6)'
-                : 'linear-gradient(135deg, #FEF08A, #EAB308)',
+              background: isPayPal
+                ? 'linear-gradient(135deg, #1e3a8a, #1e40af)'
+                : isPhonePe
+                  ? 'linear-gradient(135deg, #991B1B, #5B21B6)'
+                  : 'linear-gradient(135deg, #FEF08A, #EAB308)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               flexShrink: 0,
             }}>
-              {isPhonePe ? <Smartphone size={20} style={{ color: '#fff' }} /> : <CreditCard size={20} style={{ color: '#422006' }} />}
+              {isPayPal ? <Globe size={20} style={{ color: '#fff' }} /> : isPhonePe ? <Smartphone size={20} style={{ color: '#fff' }} /> : <CreditCard size={20} style={{ color: '#422006' }} />}
             </div>
             <div>
               <h2 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: '#0F172A', fontFamily: 'Outfit, sans-serif' }}>
                 {step === 'success' ? 'Payment Complete' : step === 'error' ? 'Payment Issue' : 'Checkout'}
               </h2>
               <p style={{ margin: 0, fontSize: '0.76rem', color: '#64748B' }}>
-                {step === 'success' ? 'Your trial is now active' : step === 'error' ? 'Please try again' : `Complete your subscription via ${isPhonePe ? 'PhonePe' : 'Razorpay'}`}
+                {step === 'success' ? 'Your trial is now active' : step === 'error' ? 'Please try again' : `Complete your subscription via ${gatewayName}`}
               </p>
             </div>
           </div>
@@ -486,12 +587,12 @@ export default function CheckoutDrawer() {
             </div>
           ) : step === 'processing' ? (
             <div style={{ textAlign: 'center', paddingTop: '60px' }}>
-              <Loader2 size={48} className="crm-spin" style={{ color: isPhonePe ? '#5B21B6' : '#EAB308', margin: '0 auto 16px' }} />
+              <Loader2 size={48} className="crm-spin" style={{ color: isPayPal ? '#1e3a8a' : isPhonePe ? '#5B21B6' : '#EAB308', margin: '0 auto 16px' }} />
               <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: '#0F172A', margin: '0 0 6px' }}>
-                {isPhonePe ? 'Redirecting to PhonePe...' : 'Processing Payment...'}
+                {isPayPal || isPhonePe ? `Redirecting to ${gatewayName}...` : 'Processing Payment...'}
               </h3>
               <p style={{ fontSize: '0.82rem', color: '#64748B' }}>
-                {isPhonePe ? 'You will be redirected to complete your payment.' : 'Please don\u2019t close this window.'}
+                {isPayPal || isPhonePe ? 'You will be redirected to complete your payment.' : 'Please don\u2019t close this window.'}
               </p>
             </div>
           ) : (
@@ -688,11 +789,13 @@ export default function CheckoutDrawer() {
               style={{
                 width: '100%', padding: '14px', borderRadius: '12px', border: 'none',
                 background: canSubmit && !creatingOrder
-                  ? (isPhonePe
-                    ? 'linear-gradient(135deg, #7C3AED 0%, #5B21B6 100%)'
-                    : 'linear-gradient(135deg, #FEF08A 0%, #EAB308 100%)')
+                  ? (isPayPal
+                    ? 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%)'
+                    : isPhonePe
+                      ? 'linear-gradient(135deg, #7C3AED 0%, #5B21B6 100%)'
+                      : 'linear-gradient(135deg, #FEF08A 0%, #EAB308 100%)')
                   : '#e2e8f0',
-                color: canSubmit && !creatingOrder ? (isPhonePe ? '#fff' : '#422006') : '#94a3b8',
+                color: canSubmit && !creatingOrder ? (isPayPal || isPhonePe ? '#fff' : '#422006') : '#94a3b8',
                 fontSize: '0.92rem', fontWeight: 800, cursor: canSubmit && !creatingOrder ? 'pointer' : 'not-allowed',
                 fontFamily: 'Outfit, sans-serif',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
@@ -702,7 +805,7 @@ export default function CheckoutDrawer() {
               {creatingOrder ? (
                 <><Loader2 size={18} className="crm-spin" /> Preparing Checkout...</>
               ) : (
-                <>{isPhonePe ? <Smartphone size={16} /> : <Lock size={16} />} Pay {currencySymbol(selectedPlan.currency)}{price.toLocaleString('en-IN')} & Start Trial</>
+                <>{isPayPal ? <Globe size={16} /> : isPhonePe ? <Smartphone size={16} /> : <Lock size={16} />} Pay {currencySymbol(selectedPlan.currency)}{price.toLocaleString('en-IN')} & Start Trial</>
               )}
             </button>
             <div style={{
@@ -711,7 +814,7 @@ export default function CheckoutDrawer() {
             }}>
               <Shield size={13} style={{ color: '#94a3b8' }} />
               <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>
-                Secured by {isPhonePe ? 'PhonePe' : 'Razorpay'} &middot; 14-day money-back guarantee
+                Secured by {gatewayName} &middot; 14-day money-back guarantee
               </span>
             </div>
           </div>

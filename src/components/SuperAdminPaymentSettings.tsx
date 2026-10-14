@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import {
   Loader2, AlertCircle, CheckCircle2, Save, Wallet,
-  Shield, Eye, EyeOff, X, IndianRupee, Smartphone,
+  Shield, Eye, EyeOff, X, IndianRupee, Smartphone, Globe,
 } from 'lucide-react';
 
 type PaymentConfig = {
@@ -14,6 +14,9 @@ type PaymentConfig = {
   phonepe_salt_key: string | null;
   phonepe_salt_index: string | null;
   phonepe_environment: string | null;
+  paypal_client_id: string | null;
+  paypal_client_secret: string | null;
+  paypal_environment: string | null;
   is_active: boolean;
   currency: string | null;
   created_at: string;
@@ -28,6 +31,7 @@ export default function SuperAdminPaymentSettings() {
   const [success, setSuccess] = useState('');
   const [showRazorpaySecret, setShowRazorpaySecret] = useState(false);
   const [showPhonePeSalt, setShowPhonePeSalt] = useState(false);
+  const [showPayPalSecret, setShowPayPalSecret] = useState(false);
 
   const [form, setForm] = useState({
     active_gateway: 'razorpay',
@@ -37,6 +41,9 @@ export default function SuperAdminPaymentSettings() {
     phonepe_salt_key: '',
     phonepe_salt_index: '1',
     phonepe_environment: 'production',
+    paypal_client_id: '',
+    paypal_client_secret: '',
+    paypal_environment: 'production',
     currency: 'INR',
     is_active: true,
   });
@@ -63,6 +70,9 @@ export default function SuperAdminPaymentSettings() {
           phonepe_salt_key: cfg.phonepe_salt_key || '',
           phonepe_salt_index: cfg.phonepe_salt_index || '1',
           phonepe_environment: cfg.phonepe_environment || 'production',
+          paypal_client_id: cfg.paypal_client_id || '',
+          paypal_client_secret: cfg.paypal_client_secret || '',
+          paypal_environment: cfg.paypal_environment || 'production',
           currency: cfg.currency || 'INR',
           is_active: cfg.is_active,
         });
@@ -87,6 +97,10 @@ export default function SuperAdminPaymentSettings() {
       setError('PhonePe Merchant ID and Salt Key are both required when PhonePe is the active gateway.');
       return;
     }
+    if (form.active_gateway === 'paypal' && (!form.paypal_client_id.trim() || !form.paypal_client_secret.trim())) {
+      setError('PayPal Client ID and Client Secret are both required when PayPal is the active gateway.');
+      return;
+    }
     setSaving(true);
     setError('');
     setSuccess('');
@@ -99,6 +113,9 @@ export default function SuperAdminPaymentSettings() {
         phonepe_salt_key: form.phonepe_salt_key.trim() || null,
         phonepe_salt_index: form.phonepe_salt_index || '1',
         phonepe_environment: form.phonepe_environment,
+        paypal_client_id: form.paypal_client_id.trim() || null,
+        paypal_client_secret: form.paypal_client_secret.trim() || null,
+        paypal_environment: form.paypal_environment,
         currency: form.currency,
         is_active: form.is_active,
         updated_at: new Date().toISOString(),
@@ -149,7 +166,7 @@ export default function SuperAdminPaymentSettings() {
         <div>
           <h3 style={{ margin: '0 0 4px', fontSize: '0.88rem', fontWeight: 700, color: 'var(--text-main)' }}>How Multi-Gateway Payments Work</h3>
           <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-dark)', lineHeight: 1.5 }}>
-            Choose which payment gateway to use for your checkout. Razorpay opens a popup widget on your landing page. PhonePe redirects the visitor to PhonePe's checkout page (UPI, cards, wallets) and brings them back after payment. Both gateways verify payments server-side. You can keep credentials for both and switch anytime.
+            Choose which payment gateway to use for your checkout. Razorpay opens a popup widget on your landing page. PhonePe redirects the visitor to PhonePe's UPI checkout page. PayPal redirects to PayPal's global checkout page (cards, PayPal balance). All gateways verify payments server-side. You can keep credentials for all three and switch anytime.
           </p>
         </div>
       </div>
@@ -157,11 +174,11 @@ export default function SuperAdminPaymentSettings() {
       {/* Gateway selector */}
       <div style={{ background: 'var(--bg-card)', borderRadius: '16px', border: '1px solid var(--border-subtle)', padding: '24px', marginBottom: '20px' }}>
         <h2 style={{ margin: '0 0 16px', fontSize: '1rem', fontWeight: 700, color: 'var(--text-main)' }}>Active Payment Gateway</h2>
-        <div style={{ display: 'flex', gap: '12px' }}>
+        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
           <GatewayOption
             id="razorpay"
             label="Razorpay"
-            description="Popup checkout widget on your page"
+            description="Popup checkout widget"
             isActive={activeGateway === 'razorpay'}
             onClick={() => setForm({ ...form, active_gateway: 'razorpay' })}
             icon={<Wallet size={18} />}
@@ -169,10 +186,18 @@ export default function SuperAdminPaymentSettings() {
           <GatewayOption
             id="phonepe"
             label="PhonePe"
-            description="Redirect to PhonePe UPI checkout page"
+            description="Redirect to UPI checkout"
             isActive={activeGateway === 'phonepe'}
             onClick={() => setForm({ ...form, active_gateway: 'phonepe' })}
             icon={<Smartphone size={18} />}
+          />
+          <GatewayOption
+            id="paypal"
+            label="PayPal"
+            description="Redirect to PayPal global checkout"
+            isActive={activeGateway === 'paypal'}
+            onClick={() => setForm({ ...form, active_gateway: 'paypal' })}
+            icon={<Globe size={18} />}
           />
         </div>
       </div>
@@ -240,6 +265,39 @@ export default function SuperAdminPaymentSettings() {
         </div>
       </div>
 
+      {/* PayPal Configuration Form */}
+      <div style={{ background: 'var(--bg-card)', borderRadius: '16px', border: `1px solid ${activeGateway === 'paypal' ? 'rgba(37,99,235,0.3)' : 'var(--border-subtle)'}`, padding: '24px', marginBottom: '20px', opacity: activeGateway === 'paypal' ? 1 : 0.5 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
+          <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(37,99,235,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Globe size={18} style={{ color: '#2563eb' }} />
+          </div>
+          <h2 style={{ margin: 0, fontSize: '1rem', fontWeight: 700, color: 'var(--text-main)' }}>PayPal API Credentials</h2>
+          {activeGateway === 'paypal' && (
+            <span style={{ fontSize: '0.66rem', fontWeight: 800, padding: '2px 8px', borderRadius: '999px', background: 'rgba(37,99,235,0.1)', color: '#2563eb' }}>ACTIVE</span>
+          )}
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+          <Field label="PayPal Client ID">
+            <input type="text" value={form.paypal_client_id} onChange={(e) => setForm({ ...form, paypal_client_id: e.target.value })} placeholder="AY...your_client_id..." style={inputStyle} />
+          </Field>
+          <Field label="PayPal Client Secret">
+            <div style={{ position: 'relative' }}>
+              <input type={showPayPalSecret ? 'text' : 'password'} value={form.paypal_client_secret} onChange={(e) => setForm({ ...form, paypal_client_secret: e.target.value })} placeholder="••••••••••••••••" style={{ ...inputStyle, paddingRight: '38px' }} />
+              <button type="button" onClick={() => setShowPayPalSecret(!showPayPalSecret)} style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-dark)', padding: '4px' }}>
+                {showPayPalSecret ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
+          </Field>
+          <Field label="Environment" fullWidth>
+            <select value={form.paypal_environment} onChange={(e) => setForm({ ...form, paypal_environment: e.target.value })} style={inputStyle}>
+              <option value="production">Production (live payments)</option>
+              <option value="sandbox">Sandbox (test payments)</option>
+            </select>
+          </Field>
+        </div>
+      </div>
+
       {/* Common settings */}
       <div style={{ background: 'var(--bg-card)', borderRadius: '16px', border: '1px solid var(--border-subtle)', padding: '24px', marginBottom: '20px' }}>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
@@ -274,14 +332,14 @@ export default function SuperAdminPaymentSettings() {
           </div>
           <h2 style={{ margin: 0, fontSize: '1rem', fontWeight: 700, color: 'var(--text-main)' }}>How to Get Your API Keys</h2>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px' }}>
           <div>
             <h4 style={{ margin: '0 0 8px', fontSize: '0.82rem', fontWeight: 700, color: '#2563eb' }}>Razorpay</h4>
             <ol style={{ margin: 0, paddingLeft: '20px', fontSize: '0.78rem', color: 'var(--text-dark)', lineHeight: 1.8 }}>
               <li>Log in to your <a href="https://dashboard.razorpay.com" target="_blank" rel="noopener noreferrer" style={{ color: '#2563eb', textDecoration: 'none' }}>Razorpay Dashboard</a>.</li>
               <li>Go to <strong>Settings &rarr; API Keys &rarr; Generate Keys</strong>.</li>
               <li>Copy the <strong>Key ID</strong> and <strong>Key Secret</strong>.</li>
-              <li>Paste them above and select Razorpay as the active gateway.</li>
+              <li>Select Razorpay as the active gateway.</li>
             </ol>
           </div>
           <div>
@@ -290,8 +348,16 @@ export default function SuperAdminPaymentSettings() {
               <li>Log in to your <a href="https://business.phonepe.com" target="_blank" rel="noopener noreferrer" style={{ color: '#0f766e', textDecoration: 'none' }}>PhonePe Business Dashboard</a>.</li>
               <li>Go to <strong>Developers &rarr; API Keys</strong> and generate a new key.</li>
               <li>Copy the <strong>Merchant ID</strong>, <strong>Salt Key</strong>, and note the <strong>Salt Index</strong>.</li>
-              <li>Paste them above and select PhonePe as the active gateway.</li>
-              <li>Use <strong>Sandbox</strong> environment for testing, then switch to <strong>Production</strong>.</li>
+              <li>Use <strong>Sandbox</strong> for testing, then switch to <strong>Production</strong>.</li>
+            </ol>
+          </div>
+          <div>
+            <h4 style={{ margin: '0 0 8px', fontSize: '0.82rem', fontWeight: 700, color: '#1e3a8a' }}>PayPal</h4>
+            <ol style={{ margin: 0, paddingLeft: '20px', fontSize: '0.78rem', color: 'var(--text-dark)', lineHeight: 1.8 }}>
+              <li>Log in to your <a href="https://developer.paypal.com/dashboard/applications/live" target="_blank" rel="noopener noreferrer" style={{ color: '#1e3a8a', textDecoration: 'none' }}>PayPal Developer Dashboard</a>.</li>
+              <li>Go to <strong>My Apps &amp; Credentials</strong> and create a REST API app.</li>
+              <li>Copy the <strong>Client ID</strong> and <strong>Client Secret</strong>.</li>
+              <li>Use <strong>Sandbox</strong> credentials for testing, then switch to <strong>Production</strong>.</li>
             </ol>
           </div>
         </div>
@@ -312,7 +378,7 @@ export default function SuperAdminPaymentSettings() {
         <span style={{ fontSize: '0.84rem', fontWeight: 600, color: config?.is_active ? '#16a34a' : 'var(--text-dark)' }}>
           {config ? (
             config.is_active
-              ? `${config.active_gateway === 'phonepe' ? 'PhonePe' : 'Razorpay'} is active — checkout is live on your landing page`
+              ? `${config.active_gateway === 'phonepe' ? 'PhonePe' : config.active_gateway === 'paypal' ? 'PayPal' : 'Razorpay'} is active — checkout is live on your landing page`
               : 'Payments are disabled — visitors cannot complete checkout'
           ) : 'No payment settings configured yet'}
         </span>

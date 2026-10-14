@@ -108,3 +108,9 @@ verify_jwt = false
 
 [functions.phonepe-verify-payment]
 verify_jwt = false
+
+[functions.paypal-create-order]
+verify_jwt = false
+
+[functions.paypal-verify-payment]
+verify_jwt = false
