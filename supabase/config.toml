@@ -76,12 +76,6 @@ verify_jwt = false
 [functions.telegram-broadcast]
 verify_jwt = true
 
-[functions.meta-marketing-sync]
-verify_jwt = true
-
-[functions.meta-optimize-campaigns]
-verify_jwt = true
-
 [functions.impersonate]
 verify_jwt = true
 
