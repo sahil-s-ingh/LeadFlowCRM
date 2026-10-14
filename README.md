@@ -18,6 +18,7 @@ An all-in-one sales and lead management CRM built for Indian sales teams. Manage
 - [Auto-Deploy Setup](#auto-deploy-setup)
 - [Environment Variables](#environment-variables)
 - [Database & Migrations](#database--migrations)
+- [Edge Functions](#edge-functions)
 - [Architecture Assessment](#architecture-assessment)
 - [Troubleshooting](#troubleshooting)
 
@@ -35,177 +36,15 @@ LeadFlow CRM helps sales teams:
 
 ## Features
 
-### Lead Management
-- Visual sales pipeline with 6 stages (New, Called-No Response, Called-Responded, Interested, Not Interested, Converted)
-- Pipeline funnel board view and table view
-- Lead scoring, tags, notes, and custom fields
-- Lead source tracking (Meta Ads, Google Ads, YouTube Ads, Telegram, WhatsApp, Landing Page, Popup Form, Bulk Upload)
-- Duplicate lead detection
-- Recycle bin (soft delete with restore)
-- Lead activity timeline
-- Bulk lead import via Excel
-- Lead export to Excel/CSV
-- Broker tracker with partner codes and account types
-- Lead tracker for real-time engagement tracking
-- Lead notes
-
-### Communication — Shared Inbox
-- Telegram conversations (multi-bot support)
-- WhatsApp conversations (multi-number support)
-- Unified inbox hub across all channels
-- Send/receive text, photos, video, audio, voice, documents, stickers, locations
-- Typing indicators, conversation labels, internal notes
-- Profile pictures
-- WhatsApp virtual calling with call recording and transcription
-- Twilio/Plivo virtual calling with built-in dialer
-- Call logging (outgoing, missed, answered)
-
-### Broadcasts
-- WhatsApp bulk messaging with template support
-- Telegram bulk messaging
-- Email bulk messaging
-- Broadcast hub to manage all campaigns
-- Status tracking (pending, sending, completed, partially failed)
-
-### Automation
-- Visual automation builder
-- Drip campaigns
-- Follow-up scheduler with email reminders
-- Automated follow-up processor (cron-based)
-- Welcome email automation
-- Pipeline auto-assign rules
-- Lead distribution (round-robin assignment)
-- Automated workflow processing (trigger-based)
-
-### Analytics & Reporting
-- Dashboard overview (total leads, interested, converted, new today, total funds, setup cost)
-- Analytics hub
-- Email analytics (open rates, click tracking)
-- Revenue forecast
-- Win/Loss analysis
-- Agent leaderboard
-- Goal tracking
-- Lead follow-up heatmap
-- Lead activity timeline
-
-### Templates & Forms
-- Message templates for quick replies
-- WhatsApp template management (Meta-approved)
-- Templates hub across all channels
-- Popup form builder with advanced form features
-- Embeddable lead capture popup forms
-
-### Team Management
-- Team member invitations (owner, admin, manager, agent roles)
-- Role-based permissions (13 granular controls)
-- Team dashboard with activity tracking
-- Team chat widget
-- Presence tracking (online/offline)
-- Lead distribution panel
-- Pipeline auto-assign rules
-
-### Marketing Integrations
-- Meta/Facebook Ads (Conversion API, Marketing sync, Campaign optimizer)
-- Meta Pixel tracking on landing page
-- Custom SMTP email servers
-- Short link generation with click tracking
-- WhatsApp Credits system (credit balance, purchase via Razorpay, usage monitoring)
-
-### Settings (18 tabs)
-- Account settings
-- Email/SMTP configuration
-- Scheduled emails
-- Telegram bot setup (multi-bot)
-- WhatsApp API setup (multi-number)
-- Virtual calling (Twilio)
-- Team management
-- Team dashboard
-- Role management
-- Lead distribution
-- Pipeline auto-assign
-- Pipeline stage labels (customizable)
-- Lead assignment
-- Follow-up settings
-- Meta Ads integration
-- Section visibility toggles
-- Recycle bin
-- Account deletion
-
-### Landing Page
-- Marketing landing page with countdown timer
-- Social proof toast notifications
-- Customizable color palette (full theming)
-- Lead capture popup forms
-- Checkout drawer with Razorpay payments
-- Telegram signup integration
-- Meta Pixel tracking
-
-### Super Admin Platform
-- Dashboard — platform-wide overview of all accounts
-- Usage & Billing — track usage across all customers
-- Plans & Pricing — manage subscription plans
-- Feature Toggles — enable/disable features per account
-- Legal Pages — manage terms, privacy, and other legal content
-- Email Config — platform-level SMTP settings
-- Payment Gateway — Razorpay configuration
-- WhatsApp Credits — credit pricing management
-- WhatsApp Onboarding — embedded signup configuration
-- Setup Guide — system configuration
-- My Profile — admin account settings
-- Account impersonation (login as any customer)
-- Audit logs
-- Account management
-
-### Backend — 30+ Edge Functions
-Serverless functions deployed on Supabase's Deno runtime:
-
-| Function | Purpose |
-|----------|---------|
-| `send-whatsapp-message` | Send WhatsApp messages via Business API |
-| `whatsapp-broadcast` | Bulk WhatsApp messaging |
-| `whatsapp-webhook` | Receive WhatsApp incoming messages |
-| `whatsapp-call` / `whatsapp-call-signaling` | WhatsApp voice calling |
-| `whatsapp-file` / `whatsapp-profile-picture` | WhatsApp media handling |
-| `whatsapp-templates` | WhatsApp template management |
-| `send-email` | Send transactional emails |
-| `email-broadcast` | Bulk email sending |
-| `email-track` | Email open/click tracking |
-| `process-followups` | Cron: send scheduled follow-up reminders |
-| `process-automations` | Cron: execute automation rules |
-| `process-scheduled-emails` | Cron: send scheduled emails |
-| `meta-conversion-api` | Meta (Facebook) Conversion API |
-| `meta-marketing-sync` | Sync Meta Ads data |
-| `meta-optimize-campaigns` | Optimize Meta ad campaigns |
-| `twilio-call` / `plivo-answer` | Virtual calling via Twilio/Plivo |
-| `telegram-webhook` / `telegram-broadcast` / `send-telegram-message` / `telegram-file` | Telegram bot integration |
-| `send-welcome-email` | Automated welcome email on signup |
-| `send-team-invite` | Team member invitation emails |
-| `send-chat-notification` | Chat notification emails |
-| `impersonate` | Super admin impersonation |
-| `short-link` | Short URL redirect service |
-| `razorpay-create-order` / `razorpay-verify-payment` | Razorpay payment processing |
-| `wa-credit-order` / `wa-credit-verify` | WhatsApp credit purchase |
-| `wa-embedded-signup` | WhatsApp embedded onboarding |
-| `admin-manage-account` | Super admin account management |
-| `delete-account` | Account deletion |
-
-### Feature Summary
-
-| Category | Count |
-|----------|-------|
-| Lead Management | 12 features |
-| Communication & Inbox | 10 features |
-| Broadcasts | 5 features |
-| Automation | 8 features |
-| Analytics & Reporting | 9 features |
-| Templates & Forms | 5 features |
-| Team Management | 6 features |
-| Marketing Integrations | 6 features |
-| Settings tabs | 18 tabs |
-| Landing Page | 6 features |
-| Super Admin | 14 features |
-| Edge Functions | 30+ functions |
-| **Total** | **40+ distinct features** |
+| Category | Features |
+|----------|----------|
+| **Lead Management** | Visual pipeline, lead scoring, custom fields, duplicate detection, activity timeline, CSV/Sheets import |
+| **Communication** | WhatsApp broadcast & chat, Email broadcast & inbox, Telegram broadcast, virtual calling (Twilio) |
+| **Automation** | Follow-up scheduler, automation builder, drip campaigns, welcome emails, auto-assignment |
+| **Analytics** | Dashboard overview, revenue forecast, win/loss analysis, agent leaderboard, goal tracking, follow-up heatmap |
+| **Team** | Team chat, role-based permissions, lead distribution, presence tracking |
+| **Marketing** | Meta (Facebook) Ads integration, Conversion API, campaign optimizer, popup form builder, short links |
+| **Admin** | Super admin dashboard, account management, plan management, feature toggles, legal pages, usage monitoring |
 
 ## Tech Stack
 
@@ -499,6 +338,29 @@ Key tables:
 - `workspaces` - Multi-tenant workspace isolation
 
 All tables use Row Level Security (RLS) to ensure users can only access their own workspace data.
+
+## Edge Functions
+
+Serverless functions deployed on Supabase's Deno runtime:
+
+| Function | Purpose |
+|----------|---------|
+| `send-whatsapp-message` | Send WhatsApp messages via Business API |
+| `whatsapp-broadcast` | Bulk WhatsApp messaging |
+| `whatsapp-webhook` | Receive WhatsApp incoming messages |
+| `send-email` | Send transactional emails |
+| `email-broadcast` | Bulk email sending |
+| `email-inbox` | Receive and parse emails |
+| `process-followups` | Cron: send scheduled follow-up reminders |
+| `process-automations` | Cron: execute automation rules |
+| `process-scheduled-emails` | Cron: send scheduled emails |
+| `meta-conversion-api` | Meta (Facebook) Conversion API |
+| `meta-marketing-sync` | Sync Meta Ads data |
+| `twilio-call` | Virtual calling via Twilio |
+| `telegram-webhook` / `telegram-broadcast` | Telegram bot integration |
+| `google-sheets-sync` | Sync leads with Google Sheets |
+| `impersonate` | Super admin impersonation |
+| `short-link` | Short URL redirect service |
 
 ## Architecture Assessment
 
