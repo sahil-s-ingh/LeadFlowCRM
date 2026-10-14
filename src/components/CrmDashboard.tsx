@@ -7182,6 +7182,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [billingModeEnabled, setBillingModeEnabled] = useState(true);
 
   // Account state
   const [firstName, setFirstName] = useState('');
@@ -7972,6 +7973,13 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
       setAccountEmail(session.user.email || '');
       setProfilePicUrl(meta.profile_pic_url || null);
 
+      const { data: billingToggle } = await supabase
+        .from('feature_toggles')
+        .select('is_enabled')
+        .eq('key', 'platform_billing_mode')
+        .maybeSingle();
+      setBillingModeEnabled(billingToggle ? billingToggle.is_enabled : true);
+
       setLoading(false);
      } catch (err) {
        setError(err instanceof Error ? err.message : 'Failed to load settings. Please reload the page.');
@@ -8542,7 +8550,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
 
     { key: 'section_visibility', label: 'Section Visibility', icon: <Eye size={18} />, accent: 'section_visibility', show: permissions.settings },
     { key: 'recycle_bin', label: 'Recycle Bin', icon: <Trash2 size={18} />, accent: 'recycle_bin', show: permissions.deleteLeads },
-    { key: 'billing', label: 'Billing & Plans', icon: <CreditCard size={18} />, accent: 'billing', show: true },
+    { key: 'billing', label: 'Billing & Plans', icon: <CreditCard size={18} />, accent: 'billing', show: billingModeEnabled },
     { key: 'danger', label: 'Delete Account', icon: <Trash2 size={18} />, accent: 'danger', show: true },
   ];
 

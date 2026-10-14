@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Plus, Trash2, Edit3, Save, X, Star, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Plus, Trash2, Edit3, Save, X, Star, Loader2, AlertCircle, CheckCircle2, CheckSquare, Square } from 'lucide-react';
 
 export type Plan = {
   id: string;
@@ -19,6 +19,19 @@ export type Plan = {
   cta_label: string;
   created_at: string;
   updated_at: string;
+};
+
+type FeatureToggle = {
+  id: string;
+  key: string;
+  label: string;
+  category: string;
+  sort_order: number;
+};
+
+type PlanFeature = {
+  plan_id: string;
+  feature_key: string;
 };
 
 const emptyForm = {
@@ -47,19 +60,29 @@ export default function SuperAdminPlans() {
   const [form, setForm] = useState(emptyForm);
   const [featureInput, setFeatureInput] = useState('');
   const [saving, setSaving] = useState(false);
+  const [allFeatures, setAllFeatures] = useState<FeatureToggle[]>([]);
+  const [selectedFeatureKeys, setSelectedFeatureKeys] = useState<string[]>([]);
+  const [planFeatureMap, setPlanFeatureMap] = useState<Record<string, string[]>>({});
 
   const loadPlans = useCallback(async () => {
     setLoading(true);
     setError('');
-    const { data, error: err } = await supabase
-      .from('subscription_plans')
-      .select('*')
-      .order('sort_order', { ascending: true });
-    if (err) {
-      setError(err.message);
-    } else {
-      setPlans((data as Plan[]) || []);
+    const [plansRes, featuresRes, planFeaturesRes] = await Promise.all([
+      supabase.from('subscription_plans').select('*').order('sort_order', { ascending: true }),
+      supabase.from('feature_toggles').select('id, key, label, category, sort_order').neq('key', 'platform_billing_mode').order('sort_order', { ascending: true }),
+      supabase.from('plan_features').select('plan_id, feature_key'),
+    ]);
+    if (plansRes.error) { setError(plansRes.error.message); }
+    else {
+      setPlans((plansRes.data as Plan[]) || []);
+      const featMap: Record<string, string[]> = {};
+      ((planFeaturesRes.data as PlanFeature[]) || []).forEach((pf) => {
+        if (!featMap[pf.plan_id]) featMap[pf.plan_id] = [];
+        featMap[pf.plan_id].push(pf.feature_key);
+      });
+      setPlanFeatureMap(featMap);
     }
+    if (!featuresRes.error) setAllFeatures((featuresRes.data as FeatureToggle[]) || []);
     setLoading(false);
   }, []);
 
@@ -72,6 +95,7 @@ export default function SuperAdminPlans() {
     setEditingId(null);
     setForm(emptyForm);
     setFeatureInput('');
+    setSelectedFeatureKeys([]);
     setShowForm(true);
   };
 
@@ -93,6 +117,7 @@ export default function SuperAdminPlans() {
       cta_label: plan.cta_label,
     });
     setFeatureInput('');
+    setSelectedFeatureKeys(planFeatureMap[plan.id] || []);
     setShowForm(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -102,6 +127,7 @@ export default function SuperAdminPlans() {
     setEditingId(null);
     setForm(emptyForm);
     setFeatureInput('');
+    setSelectedFeatureKeys([]);
   };
 
   const addFeature = () => {
@@ -136,11 +162,23 @@ export default function SuperAdminPlans() {
       cta_label: form.cta_label.trim() || 'Get Started',
       updated_at: new Date().toISOString(),
     };
-    const { error: err } = editingId
-      ? await supabase.from('subscription_plans').update(payload).eq('id', editingId)
-      : await supabase.from('subscription_plans').insert(payload);
-    if (err) { setError(err.message); setSaving(false); return; }
-    setSuccess(editingId ? 'Plan updated.' : 'Plan created.');
+    let planId = editingId;
+    if (editingId) {
+      const { error: err } = await supabase.from('subscription_plans').update(payload).eq('id', editingId);
+      if (err) { setError(err.message); setSaving(false); return; }
+    } else {
+      const { data: inserted, error: err } = await supabase.from('subscription_plans').insert(payload).select('id').single();
+      if (err) { setError(err.message); setSaving(false); return; }
+      planId = inserted.id;
+    }
+    if (planId) {
+      await supabase.from('plan_features').delete().eq('plan_id', planId);
+      if (selectedFeatureKeys.length > 0) {
+        const rows = selectedFeatureKeys.map((key) => ({ plan_id: planId, feature_key: key }));
+        await supabase.from('plan_features').insert(rows);
+      }
+    }
+    setSuccess(editingId ? 'Plan updated with feature assignments.' : 'Plan created with feature assignments.');
     cancelForm();
     await loadPlans();
     setSaving(false);
@@ -165,6 +203,30 @@ export default function SuperAdminPlans() {
     if (err) { setError(err.message); return; }
     await loadPlans();
   };
+
+  const toggleFeature = (key: string) => {
+    setSelectedFeatureKeys((prev) =>
+      prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]
+    );
+  };
+
+  const toggleAllInCategory = (cat: string) => {
+    const catKeys = allFeatures.filter((f) => f.category === cat).map((f) => f.key);
+    const allSelected = catKeys.every((k) => selectedFeatureKeys.includes(k));
+    setSelectedFeatureKeys((prev) =>
+      allSelected
+        ? prev.filter((k) => !catKeys.includes(k))
+        : [...new Set([...prev, ...catKeys])]
+    );
+  };
+
+  const selectAllFeatures = () => setSelectedFeatureKeys(allFeatures.map((f) => f.key));
+  const clearAllFeatures = () => setSelectedFeatureKeys([]);
+
+  const featuresByCategory = allFeatures.reduce((acc, f) => {
+    (acc[f.category] = acc[f.category] || []).push(f);
+    return acc;
+  }, {} as Record<string, FeatureToggle[]>);
 
   return (
     <div>
@@ -244,6 +306,50 @@ export default function SuperAdminPlans() {
             </Field>
           </div>
 
+          {/* Platform Feature Assignment */}
+          <div style={{ marginTop: '20px', padding: '18px', borderRadius: '12px', border: '1px solid var(--border-subtle)', background: 'var(--bg-light)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '0.88rem', fontWeight: 700, color: 'var(--text-main)' }}>Platform Feature Assignment</h3>
+                <p style={{ margin: '2px 0 0', fontSize: '0.76rem', color: 'var(--text-dark)' }}>Select which platform features are included in this plan. Customers on this plan will only see the features you check here.</p>
+              </div>
+              <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+                <button type="button" onClick={selectAllFeatures} style={{ padding: '4px 10px', borderRadius: '6px', border: '1px solid var(--border-subtle)', background: 'var(--bg-card)', fontSize: '0.72rem', fontWeight: 600, color: '#0f766e', cursor: 'pointer' }}>Select All</button>
+                <button type="button" onClick={clearAllFeatures} style={{ padding: '4px 10px', borderRadius: '6px', border: '1px solid var(--border-subtle)', background: 'var(--bg-card)', fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-dark)', cursor: 'pointer' }}>Clear</button>
+              </div>
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '10px' }}>
+              <span style={{ fontSize: '0.74rem', fontWeight: 600, color: '#0f766e' }}>{selectedFeatureKeys.length} of {allFeatures.length} features selected</span>
+            </div>
+            {Object.entries(featuresByCategory).sort(([a], [b]) => a.localeCompare(b)).map(([cat, items]) => {
+              const catKeys = items.map((f) => f.key);
+              const allSel = catKeys.every((k) => selectedFeatureKeys.includes(k));
+              const catLabel = cat.charAt(0).toUpperCase() + cat.slice(1);
+              return (
+                <div key={cat} style={{ marginBottom: '14px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                    <button type="button" onClick={() => toggleAllInCategory(cat)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.76rem', fontWeight: 700, color: 'var(--text-main)' }}>
+                      {allSel ? <CheckSquare size={15} style={{ color: '#0f766e' }} /> : <Square size={15} style={{ color: 'var(--text-dark)' }} />}
+                      {catLabel}
+                    </button>
+                    <span style={{ fontSize: '0.7rem', color: 'var(--text-dark)' }}>({catKeys.filter((k) => selectedFeatureKeys.includes(k)).length}/{items.length})</span>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '6px', paddingLeft: '20px' }}>
+                    {items.map((f) => {
+                      const checked = selectedFeatureKeys.includes(f.key);
+                      return (
+                        <label key={f.key} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 8px', borderRadius: '6px', background: checked ? 'rgba(15,118,110,0.06)' : 'transparent', cursor: 'pointer', fontSize: '0.78rem', color: checked ? '#0f766e' : 'var(--text-muted)', fontWeight: checked ? 600 : 400, transition: 'all 0.15s' }}>
+                          <input type="checkbox" checked={checked} onChange={() => toggleFeature(f.key)} style={{ accentColor: '#0f766e' }} />
+                          {f.label}
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
           <div style={{ display: 'flex', gap: '14px', marginTop: '16px' }}>
             <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', color: 'var(--text-muted)', cursor: 'pointer' }}>
               <input type="checkbox" checked={form.is_active} onChange={(e) => setForm({ ...form, is_active: e.target.checked })} /> Active
@@ -303,7 +409,7 @@ export default function SuperAdminPlans() {
                 <span><strong style={{ color: 'var(--text-main)' }}>{plan.lead_limit.toLocaleString()}</strong> leads</span>
                 <span><strong style={{ color: 'var(--text-main)' }}>{plan.team_seats}</strong> seats</span>
               </div>
-              <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 18px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 8px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
                 {plan.features.slice(0, 5).map((f, i) => (
                   <li key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '6px', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
                     <CheckCircle2 size={14} style={{ color: '#0f766e', flexShrink: 0, marginTop: 2 }} /> {f}
@@ -311,6 +417,26 @@ export default function SuperAdminPlans() {
                 ))}
                 {plan.features.length > 5 && <li style={{ fontSize: '0.76rem', color: 'var(--text-dark)', paddingLeft: '20px' }}>+{plan.features.length - 5} more</li>}
               </ul>
+              {(planFeatureMap[plan.id] || []).length > 0 && (
+                <div style={{ marginBottom: '12px', padding: '10px', borderRadius: '8px', background: 'rgba(15,118,110,0.04)', border: '1px solid rgba(15,118,110,0.1)' }}>
+                  <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#0f766e', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '6px' }}>
+                    Platform Features ({(planFeatureMap[plan.id] || []).length})
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                    {(planFeatureMap[plan.id] || []).slice(0, 6).map((key) => {
+                      const ft = allFeatures.find((f) => f.key === key);
+                      return (
+                        <span key={key} style={{ padding: '2px 8px', borderRadius: '6px', background: 'rgba(15,118,110,0.08)', fontSize: '0.68rem', fontWeight: 600, color: '#0f766e' }}>
+                          {ft?.label || key}
+                        </span>
+                      );
+                    })}
+                    {(planFeatureMap[plan.id] || []).length > 6 && (
+                      <span style={{ padding: '2px 8px', fontSize: '0.68rem', color: 'var(--text-dark)' }}>+{(planFeatureMap[plan.id] || []).length - 6} more</span>
+                    )}
+                  </div>
+                </div>
+              )}
               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                 <button type="button" onClick={() => startEdit(plan)} style={btnIconStyle}><Edit3 size={14} /> Edit</button>
                 <button type="button" onClick={() => toggleFeatured(plan)} style={btnIconStyle}><Star size={14} /> {plan.is_featured ? 'Unfeature' : 'Feature'}</button>

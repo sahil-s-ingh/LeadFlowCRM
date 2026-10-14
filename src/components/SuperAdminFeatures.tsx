@@ -36,6 +36,8 @@ export default function SuperAdminFeatures() {
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
   const [filterCat, setFilterCat] = useState('all');
+  const [billingMode, setBillingMode] = useState(true);
+  const [billingModeLoading, setBillingModeLoading] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -45,7 +47,11 @@ export default function SuperAdminFeatures() {
       .select('*')
       .order('sort_order', { ascending: true });
     if (err) { setError(err.message); }
-    else { setToggles((data || []) as Toggle[]); }
+    else {
+      setToggles((data || []) as Toggle[]);
+      const billingToggle = (data || []).find((t: Toggle) => t.key === 'platform_billing_mode');
+      if (billingToggle) setBillingMode(billingToggle.is_enabled);
+    }
     setLoading(false);
   }, []);
 
@@ -92,6 +98,15 @@ export default function SuperAdminFeatures() {
   };
 
   const quickToggle = async (t: Toggle) => {
+    if (t.key === 'platform_billing_mode') {
+      setBillingModeLoading(true);
+      const { error: err } = await supabase.from('feature_toggles').update({ is_enabled: !t.is_enabled }).eq('id', t.id);
+      if (err) { setError(err.message); setBillingModeLoading(false); return; }
+      setSuccess(`Billing mode switched to ${!t.is_enabled ? 'Paid' : 'Free'}.`);
+      await load();
+      setBillingModeLoading(false);
+      return;
+    }
     const { error: err } = await supabase.from('feature_toggles').update({ is_enabled: !t.is_enabled }).eq('id', t.id);
     if (err) { setError(err.message); return; }
     await load();
@@ -106,6 +121,7 @@ export default function SuperAdminFeatures() {
   };
 
   const grouped = toggles
+    .filter((t) => t.key !== 'platform_billing_mode')
     .filter((t) => filterCat === 'all' || t.category === filterCat)
     .reduce((acc, t) => { (acc[t.category] = acc[t.category] || []).push(t); return acc; }, {} as Record<string, Toggle[]>);
 
@@ -121,6 +137,99 @@ export default function SuperAdminFeatures() {
 
       {error && <Banner type="error" message={error} onClose={() => setError('')} />}
       {success && <Banner type="success" message={success} onClose={() => setSuccess('')} />}
+
+      {/* Platform Billing Mode Switch */}
+      <div style={{
+        background: 'var(--bg-card)',
+        borderRadius: '16px',
+        border: `2px solid ${billingMode ? 'rgba(37,99,235,0.3)' : 'rgba(22,163,74,0.3)'}`,
+        padding: '24px',
+        marginBottom: '24px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: '20px',
+        flexWrap: 'wrap',
+      }}>
+        <div style={{ flex: '1', minWidth: '280px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+            <span style={{
+              fontSize: '1rem',
+              fontWeight: 800,
+              color: billingMode ? '#2563eb' : '#16a34a',
+            }}>
+              {billingModeLoading ? 'Switching...' : billingMode ? 'PAID MODE' : 'FREE MODE'}
+            </span>
+            <span style={{
+              padding: '3px 10px',
+              borderRadius: '20px',
+              fontSize: '0.68rem',
+              fontWeight: 700,
+              textTransform: 'uppercase',
+              letterSpacing: '0.04em',
+              background: billingMode ? 'rgba(37,99,235,0.1)' : 'rgba(22,163,74,0.1)',
+              color: billingMode ? '#2563eb' : '#16a34a',
+            }}>
+              {billingMode ? 'Plans Enforced' : 'Everything Unlimited'}
+            </span>
+          </div>
+          <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.5 }}>
+            {billingMode
+              ? 'Customers must purchase a plan to use the CRM. Lead limits, team seat limits, and billing are all active. The Billing & Plans tab is visible in customer settings.'
+              : 'Every customer gets full unlimited access — no plans, no lead limits, no team seat limits, no billing screen. The Billing & Plans tab is hidden from customer settings.'}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => {
+            const t = toggles.find((x) => x.key === 'platform_billing_mode');
+            if (t) quickToggle(t);
+          }}
+          disabled={billingModeLoading}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            padding: '12px 20px',
+            borderRadius: '12px',
+            border: 'none',
+            background: billingMode ? 'rgba(22,163,74,0.1)' : 'rgba(37,99,235,0.1)',
+            cursor: billingModeLoading ? 'not-allowed' : 'pointer',
+            transition: 'all 0.2s',
+            opacity: billingModeLoading ? 0.6 : 1,
+          }}
+        >
+          <span style={{
+            width: '48px',
+            height: '26px',
+            borderRadius: '13px',
+            background: billingMode ? '#2563eb' : '#16a34a',
+            position: 'relative',
+            transition: 'background 0.2s',
+            flexShrink: 0,
+          }}>
+            <span style={{
+              position: 'absolute',
+              top: '3px',
+              left: billingMode ? '25px' : '3px',
+              width: '20px',
+              height: '20px',
+              borderRadius: '50%',
+              background: '#fff',
+              transition: 'left 0.2s',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+            }} />
+          </span>
+          <span style={{
+            fontSize: '0.85rem',
+            fontWeight: 700,
+            color: billingMode ? '#2563eb' : '#16a34a',
+            whiteSpace: 'nowrap',
+          }}>
+            {billingMode ? 'Switch to Free' : 'Switch to Paid'}
+          </span>
+        </button>
+      </div>
 
       {showForm && (
         <div style={{ background: 'var(--bg-card)', borderRadius: '16px', border: '1px solid var(--border-subtle)', padding: '24px', marginBottom: '24px' }}>

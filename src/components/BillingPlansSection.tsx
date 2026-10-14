@@ -3,7 +3,7 @@ import { supabase } from '@/lib/supabase';
 import type { Session } from '@supabase/supabase-js';
 import {
   CreditCard, CheckCircle2, Loader2, Zap, Crown, Users, TrendingUp,
-  Sparkles, Calendar, AlertTriangle,
+  Sparkles, Calendar, AlertTriangle, Gift,
 } from 'lucide-react';
 
 type Plan = {
@@ -51,9 +51,18 @@ export default function BillingPlansSection({ session }: { session: Session }) {
   const [loading, setLoading] = useState(true);
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
   const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [isFreeMode, setIsFreeMode] = useState(false);
 
   const loadData = useCallback(async () => {
     setLoading(true);
+
+    const { data: billingToggle } = await supabase
+      .from('feature_toggles')
+      .select('is_enabled')
+      .eq('key', 'platform_billing_mode')
+      .maybeSingle();
+    setIsFreeMode(billingToggle ? !billingToggle.is_enabled : false);
+
     const { data: planData } = await supabase
       .from('subscription_plans')
       .select('*')
@@ -113,6 +122,61 @@ export default function BillingPlansSection({ session }: { session: Session }) {
       <div style={{ display: 'flex', justifyContent: 'center', padding: '80px' }}>
         <Loader2 size={28} className="crm-spin" style={{ color: '#0f766e' }} />
       </div>
+    );
+  }
+
+  if (isFreeMode) {
+    return (
+      <>
+        <div className="crm-settings-card-header">
+          <h2 className="crm-settings-card-title"><CreditCard size={20} style={{ color: '#16a34a' }} /> Billing & Plans</h2>
+          <p className="crm-settings-card-desc">Your plan details and usage.</p>
+        </div>
+
+        <div style={{
+          background: 'linear-gradient(135deg, rgba(22,163,74,0.08), rgba(15,118,110,0.05))',
+          border: '1px solid rgba(22,163,74,0.2)',
+          borderRadius: '12px',
+          padding: '32px',
+          textAlign: 'center',
+        }}>
+          <div style={{
+            width: '56px',
+            height: '56px',
+            borderRadius: '50%',
+            background: 'rgba(22,163,74,0.12)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            margin: '0 auto 16px',
+          }}>
+            <Gift size={28} style={{ color: '#16a34a' }} />
+          </div>
+          <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-main)', margin: '0 0 8px' }}>
+            You're on the Free Platform Plan
+          </h3>
+          <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)', maxWidth: '420px', margin: '0 auto', lineHeight: 1.6 }}>
+            The platform is currently in free mode. You have unlimited access to all features — no lead limits, no team seat restrictions, and no billing required. Enjoy!
+          </p>
+          <div style={{
+            display: 'flex',
+            justifyContent: 'center',
+            gap: '24px',
+            marginTop: '20px',
+            flexWrap: 'wrap',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', color: '#16a34a', fontWeight: 600 }}>
+              <CheckCircle2 size={16} /> Unlimited Leads
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', color: '#16a34a', fontWeight: 600 }}>
+              <CheckCircle2 size={16} /> Unlimited Team Seats
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', color: '#16a34a', fontWeight: 600 }}>
+              <CheckCircle2 size={16} /> All Features Unlocked
+            </div>
+          </div>
+        </div>
+      </>
     );
   }
 
