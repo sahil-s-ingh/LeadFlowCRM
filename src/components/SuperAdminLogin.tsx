@@ -1,167 +1,205 @@
-import { useState, type FormEvent } from 'react';
+import { useState, useRef, useCallback, type FormEvent } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Shield, Lock, Mail, ArrowRight, Eye, EyeOff, Loader2, TrendingUp } from 'lucide-react';
+import {
+  ArrowRight,
+  Check,
+  Eye,
+  EyeOff,
+  Loader2,
+  LockKeyhole,
+  Mail,
+  Shield,
+  ShieldCheck,
+  ServerCog,
+  UsersRound,
+  Globe2,
+  Gauge,
+} from 'lucide-react';
+
+type Mode = 'login' | 'signup';
+
+const features = [
+  { icon: UsersRound, title: 'Manage every account', detail: 'Onboard, suspend, and oversee all CRM users.' },
+  { icon: Gauge, title: 'Platform-wide analytics', detail: 'See usage, revenue, and growth at a glance.' },
+  { icon: ServerCog, title: 'Full system control', detail: 'Configure plans, features, and integrations.' },
+];
 
 export default function SuperAdminLogin() {
+  const [mode, setMode] = useState<Mode>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const storyRef = useRef<HTMLDivElement>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  const handleStoryTilt = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    const el = storyRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width - 0.5;
+    const y = (e.clientY - rect.top) / rect.height - 0.5;
+    el.style.transform = `perspective(1200px) rotateY(${x * 4}deg) rotateX(${-y * 4}deg)`;
+  }, []);
+
+  const handleStoryReset = useCallback(() => {
+    if (storyRef.current) storyRef.current.style.transform = 'perspective(1200px) rotateY(0deg) rotateX(0deg)';
+  }, []);
+
+  const handleCardTilt = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    const el = cardRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width - 0.5;
+    const y = (e.clientY - rect.top) / rect.height - 0.5;
+    el.style.transform = `perspective(1000px) rotateY(${x * 6}deg) rotateX(${-y * 6}deg) translateZ(0)`;
+  }, []);
+
+  const handleCardReset = useCallback(() => {
+    if (cardRef.current) cardRef.current.style.transform = 'perspective(1000px) rotateY(0deg) rotateX(0deg) translateZ(0)';
+  }, []);
+
+  const changeMode = (nextMode: Mode) => {
+    setMode(nextMode);
+    setError('');
+  };
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
     setLoading(true);
     setError('');
 
-    const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
-    if (signInError) {
-      setError(signInError.message);
-      setLoading(false);
+    if (mode === 'signup') {
+      const { error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { data: { full_name: 'Super Admin' } },
+      });
+
+      if (signUpError) {
+        setError(signUpError.message);
+        setLoading(false);
+        return;
+      }
+
+      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+      if (signInError) {
+        setError(signInError.message);
+        setLoading(false);
+        return;
+      }
+    } else {
+      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+      if (signInError) {
+        setError(signInError.message);
+        setLoading(false);
+        return;
+      }
     }
+
+    setLoading(false);
   };
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f766e 100%)',
-      padding: '20px',
-    }}>
-      <div style={{
-        width: '100%',
-        maxWidth: '440px',
-        background: 'var(--bg-card)',
-        borderRadius: '20px',
-        boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)',
-        overflow: 'hidden',
-      }}>
-        {/* Header */}
-        <div style={{
-          background: 'linear-gradient(135deg, #0f172a, #0f766e)',
-          padding: '32px 28px',
-          textAlign: 'center',
-          color: 'var(--bg-card)',
-        }}>
-          <div style={{
-            width: '56px',
-            height: '56px',
-            borderRadius: '14px',
-            background: 'rgba(255,255,255,0.15)',
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            marginBottom: '14px',
-            backdropFilter: 'blur(10px)',
-          }}>
-            <Shield size={28} strokeWidth={2.5} />
-          </div>
-          <h1 style={{ fontSize: '1.5rem', fontWeight: 800, margin: 0, letterSpacing: '-0.02em' }}>Super Admin Portal</h1>
-          <p style={{ fontSize: '0.85rem', opacity: 0.8, marginTop: '6px', marginBottom: 0 }}>
-            Sign in to manage your CRM platform
-          </p>
-        </div>
+    <main className="sa-auth-page">
+      <section className="sa-auth-story" aria-label="Super Admin portal overview">
+        <div className="sa-auth-story-glow sa-auth-story-glow-one" />
+        <div className="sa-auth-story-glow sa-auth-story-glow-two" />
+        <div className="sa-auth-story-glow sa-auth-story-glow-three" />
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} style={{ padding: '28px' }}>
-          <div style={{ marginBottom: '16px' }}>
-            <label htmlFor="sa-email" style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '6px' }}>Email</label>
-            <div style={{ position: 'relative' }}>
-              <Mail size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dark)' }} />
-              <input
-                id="sa-email"
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@leadcentre.com"
-                autoComplete="email"
-                style={{
-                  width: '100%', padding: '12px 12px 12px 40px', border: '2px solid var(--border-subtle)',
-                  borderRadius: '10px', fontSize: '0.88rem', outline: 'none',
-                  transition: 'border-color 0.2s', boxSizing: 'border-box',
-                }}
-                onFocus={(e) => { e.target.style.borderColor = '#0f766e'; }}
-                onBlur={(e) => { e.target.style.borderColor = 'var(--border-subtle)'; }}
-              />
-            </div>
-          </div>
+        {/* 3D floating shapes */}
+        <div className="sa-auth-shape sa-auth-shape-cube" />
+        <div className="sa-auth-shape sa-auth-shape-sphere" />
+        <div className="sa-auth-shape sa-auth-shape-ring" />
+        <div className="sa-auth-shape sa-auth-shape-bars" />
 
-          <div style={{ marginBottom: '16px' }}>
-            <label htmlFor="sa-password" style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '6px' }}>Password</label>
-            <div style={{ position: 'relative' }}>
-              <Lock size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dark)' }} />
-              <input
-                id="sa-password"
-                type={showPassword ? 'text' : 'password'}
-                required
-                minLength={6}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter your password"
-                autoComplete="current-password"
-                style={{
-                  width: '100%', padding: '12px 40px 12px 40px', border: '2px solid var(--border-subtle)',
-                  borderRadius: '10px', fontSize: '0.88rem', outline: 'none',
-                  transition: 'border-color 0.2s', boxSizing: 'border-box',
-                }}
-                onFocus={(e) => { e.target.style.borderColor = '#0f766e'; }}
-                onBlur={(e) => { e.target.style.borderColor = 'var(--border-subtle)'; }}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                style={{
-                  position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)',
-                  border: 'none', background: 'none', cursor: 'pointer', color: 'var(--text-dark)', padding: '4px',
-                }}
-                aria-label="Toggle password visibility"
-              >
-                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-              </button>
-            </div>
-          </div>
-
-          {error && (
-            <div style={{
-              padding: '12px 14px', background: 'var(--bg-card)', border: '1px solid #fecaca',
-              borderRadius: '10px', fontSize: '0.82rem', color: '#dc2626', marginBottom: '16px',
-            }}>
-              {error}
-            </div>
-          )}
-
-          <button
-            type="submit"
-            disabled={loading}
-            style={{
-              width: '100%', padding: '13px', border: 'none', borderRadius: '10px',
-              background: loading ? '#94a3b8' : '#0f766e', color: 'var(--bg-card)',
-              fontSize: '0.9rem', fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-              transition: 'background 0.2s',
-            }}
-          >
-            {loading ? (
-              <Loader2 size={20} className="crm-spin" />
-            ) : (
-              <>
-                Sign In
-                <ArrowRight size={20} />
-              </>
-            )}
-          </button>
-        </form>
-
-        <div style={{ textAlign: 'center', paddingBottom: '20px' }}>
-          <a href="#/" style={{ fontSize: '0.8rem', color: 'var(--text-dark)', textDecoration: 'none' }}>
-            <TrendingUp size={12} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'middle' }} />
-            Back to LeadCentre
+        <div className="sa-auth-story-content" ref={storyRef} onMouseMove={handleStoryTilt} onMouseLeave={handleStoryReset} style={{ transformStyle: 'preserve-3d' }}>
+          <a href="#/" className="sa-auth-brand" aria-label="Back to LeadFlow CRM home" style={{ transform: 'translateZ(40px)' }}>
+            <span className="sa-auth-brand-mark"><Shield size={17} strokeWidth={2.6} /></span>
+            <span>
+              <strong>LeadFlow</strong>
+              <small>SUPER ADMIN</small>
+            </span>
           </a>
+
+          <div className="sa-auth-story-copy" style={{ transform: 'translateZ(55px)' }}>
+            <span className="sa-auth-kicker"><span className="sa-auth-kicker-dot" /> PLATFORM CONTROL CENTER</span>
+            <h1>Command your entire <em>CRM platform.</em></h1>
+            <p>The unified control panel for managing accounts, monitoring usage, configuring features, and keeping your platform running flawlessly.</p>
+          </div>
+
+          <div className="sa-auth-benefits" style={{ transform: 'translateZ(30px)' }}>
+            {features.map(({ icon: Icon, title, detail }) => (
+              <div className="sa-auth-benefit" key={title}>
+                <span className="sa-auth-benefit-icon"><Icon size={18} /></span>
+                <span><strong>{title}</strong><small>{detail}</small></span>
+              </div>
+            ))}
+          </div>
+
+          <div className="sa-auth-stats" style={{ transform: 'translateZ(20px)' }}>
+            <div><strong>500<span>+</span></strong><small>ACCOUNTS MANAGED</small></div>
+            <div><strong>99.9<span>%</span></strong><small>UPTIME GUARANTEE</small></div>
+            <div><strong>24<span>/7</span></strong><small>MONITORING</small></div>
+          </div>
         </div>
-      </div>
-    </div>
+        <p className="sa-auth-story-footer">Total platform visibility <span>&middot;</span> Absolute control</p>
+      </section>
+
+      <section className="sa-auth-panel">
+        <div className="sa-auth-form-wrap" ref={cardRef} onMouseMove={handleCardTilt} onMouseLeave={handleCardReset} style={{ transformStyle: 'preserve-3d' }}>
+          <div className="sa-auth-mobile-brand">
+            <span className="sa-auth-brand-mark"><Shield size={16} /></span>
+            <strong>LeadFlow Super Admin</strong>
+          </div>
+          <div className="sa-auth-heading" style={{ transform: 'translateZ(30px)' }}>
+            <span className="sa-auth-eyebrow">ADMINISTRATIVE ACCESS</span>
+            <h2>{mode === 'login' ? 'Secure sign in' : 'Create admin account'}</h2>
+            <p>{mode === 'login' ? 'Access the platform control center.' : 'Set up a new super admin account.'}</p>
+          </div>
+
+          <div className="sa-auth-mode-toggle" role="tablist" aria-label="Admin access" style={{ transform: 'translateZ(20px)' }}>
+            <button type="button" role="tab" aria-selected={mode === 'login'} className={mode === 'login' ? 'active' : ''} onClick={() => changeMode('login')}>Sign in</button>
+            <button type="button" role="tab" aria-selected={mode === 'signup'} className={mode === 'signup' ? 'active' : ''} onClick={() => changeMode('signup')}>Create account</button>
+          </div>
+
+          <form onSubmit={handleSubmit} className="sa-auth-form" style={{ transform: 'translateZ(15px)' }}>
+            <label className="sa-auth-field">
+              <span>Email address</span>
+              <div className="sa-auth-input-wrap">
+                <Mail size={18} />
+                <input type="email" required value={email} onChange={(event) => setEmail(event.target.value)} placeholder="admin@leadcentre.com" autoComplete="email" />
+              </div>
+            </label>
+            <label className="sa-auth-field">
+              <span>Password</span>
+              <div className="sa-auth-input-wrap">
+                <LockKeyhole size={18} />
+                <input type={showPassword ? 'text' : 'password'} required minLength={6} value={password} onChange={(event) => setPassword(event.target.value)} placeholder="At least 6 characters" autoComplete={mode === 'login' ? 'current-password' : 'new-password'} />
+                <button type="button" className="sa-auth-password-toggle" onClick={() => setShowPassword((visible) => !visible)} aria-label={showPassword ? 'Hide password' : 'Show password'}>
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+            </label>
+
+            {error && <div className="sa-auth-error" role="alert">{error}</div>}
+
+            <button type="submit" className="sa-auth-submit" disabled={loading}>
+              {loading ? <Loader2 size={19} className="crm-spin" /> : <>{mode === 'login' ? 'Sign in to control center' : 'Create admin account'}<ArrowRight size={19} /></>}
+            </button>
+          </form>
+
+          <div className="sa-auth-divider"><span>or</span></div>
+          <p className="sa-auth-switch">
+            {mode === 'login' ? "Don't have an admin account?" : 'Already have an account?'}{' '}
+            <button type="button" onClick={() => changeMode(mode === 'login' ? 'signup' : 'login')}>{mode === 'login' ? 'Sign up' : 'Sign in'}</button>
+          </p>
+          <div className="sa-auth-trust"><span><ShieldCheck size={15} /> Admin-grade security</span><span><Check size={14} /> Full platform access</span><span><Globe2 size={14} /> Global control</span></div>
+          <a href="#/" className="sa-auth-back">Back to LeadFlow home</a>
+        </div>
+      </section>
+    </main>
   );
 }
