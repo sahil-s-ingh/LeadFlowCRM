@@ -51,6 +51,7 @@ import LeadTrackerPage from '@/components/LeadTrackerPage';
 import LeadSourceBadge from '@/components/LeadSourceBadge';
 import { SourceLogo } from '@/components/BrandLogos';
 import WhatsAppOnboarding from '@/components/WhatsAppOnboarding';
+import MetaAdsManager from '@/components/MetaAdsManager';
 
 type LeadStatus = 'new' | 'called_no_response' | 'called_responded' | 'interested' | 'not_interested' | 'converted';
 
@@ -97,7 +98,7 @@ const MOBILE_STAT_OPTIONS: { key: MobileStatKey; label: string }[] = [
 ];
 
 type DateFilterPreset = 'all' | 'today' | 'yesterday' | 'last_7_days' | 'this_week' | 'this_month' | 'this_year' | 'custom';
-type ActiveView = 'dashboard' | 'leads' | 'inbox_hub' | 'inbox' | 'whatsapp' | 'settings' | 'drip' | 'analytics_hub' | 'email_analytics' | 'message_templates' | 'broadcast_hub' | 'broadcast' | 'email_broadcast' | 'telegram_broadcast' | 'activity_timeline' | 'revenue_forecast' | 'followups' | 'leaderboard' | 'goals' | 'win_loss' | 'duplicates' | 'heatmap' | 'automations' | 'brokers' | 'lead_tracker' | 'wa_credits';
+type ActiveView = 'dashboard' | 'leads' | 'inbox_hub' | 'inbox' | 'whatsapp' | 'settings' | 'drip' | 'analytics_hub' | 'email_analytics' | 'message_templates' | 'broadcast_hub' | 'broadcast' | 'email_broadcast' | 'telegram_broadcast' | 'activity_timeline' | 'revenue_forecast' | 'followups' | 'leaderboard' | 'goals' | 'win_loss' | 'duplicates' | 'heatmap' | 'automations' | 'brokers' | 'lead_tracker' | 'wa_credits' | 'meta_ads';
 
 type UserRole = 'owner' | 'admin' | 'manager' | 'agent';
 
@@ -2031,6 +2032,9 @@ export default function CrmDashboard({ session, initialView }: { session: Sessio
             <Radar size={18} /> {!sidebarCollapsed && 'Lead Tracker'}
           </a>
           )}
+          <a className={`crm-nav-item ${activeView === 'meta_ads' ? 'active' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`} onClick={() => { navigateToView('meta_ads'); setMobileSidebarOpen(false); setMobileNav('leads'); }} style={{ cursor: 'pointer' }} title={sidebarCollapsed ? 'Meta Ads Manager' : undefined}>
+            <TrendingUp size={18} /> {!sidebarCollapsed && 'Meta Ads Manager'}
+          </a>
         </div>
         )}
         {(permissions.broadcasts || permissions.followUps) && sidebarSections.tools && (
@@ -2263,6 +2267,8 @@ export default function CrmDashboard({ session, initialView }: { session: Sessio
           <BrokerTrackerPage session={session} onBack={() => navigateToView('dashboard')} />
         ) : activeView === 'lead_tracker' ? (
           <LeadTrackerPage leads={leads} onBack={() => navigateToView('dashboard')} />
+        ) : activeView === 'meta_ads' ? (
+          <MetaAdsManager session={session} />
         ) : activeView === 'heatmap' ? (
           <div className="dash-overview">
             <div className="dash-page-header">

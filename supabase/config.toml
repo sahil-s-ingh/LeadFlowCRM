@@ -76,6 +76,9 @@ verify_jwt = false
 [functions.telegram-broadcast]
 verify_jwt = true
 
+[functions.meta-ads-manager]
+verify_jwt = true
+
 [functions.impersonate]
 verify_jwt = true
 
