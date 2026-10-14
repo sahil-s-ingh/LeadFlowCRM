@@ -24,6 +24,7 @@ import {
 
   LayoutTemplate, Inbox as InboxIcon,
   HelpCircle, Sun, Moon,
+  CreditCard,
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import DashboardOverview from '@/components/DashboardOverview';
@@ -51,6 +52,8 @@ import LeadSourceBadge from '@/components/LeadSourceBadge';
 import { SourceLogo } from '@/components/BrandLogos';
 import WhatsAppOnboarding from '@/components/WhatsAppOnboarding';
 import MetaAdsManager from '@/components/MetaAdsManager';
+import BillingPlansSection from '@/components/BillingPlansSection';
+import CheckoutDrawer from '@/components/CheckoutDrawer';
 
 type LeadStatus = 'new' | 'called_no_response' | 'called_responded' | 'interested' | 'not_interested' | 'converted';
 
@@ -7173,7 +7176,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
   sectionVisibility?: Record<string, boolean>;
   onSectionVisibilityChange?: (key: string, visible: boolean) => void;
 }) {
-  const [activeTab, setActiveTab] = useState<'account' | 'email' | 'scheduled_emails' | 'telegram' | 'whatsapp' | 'twilio' | 'team' | 'team_dashboard' | 'role_management' | 'lead_distribution' | 'pipeline_autoassign' | 'pipeline_stages' | 'followup' | 'meta' | 'assignment' | 'recycle_bin' | 'section_visibility' | 'danger'>('account');
+  const [activeTab, setActiveTab] = useState<'account' | 'email' | 'scheduled_emails' | 'telegram' | 'whatsapp' | 'twilio' | 'team' | 'team_dashboard' | 'role_management' | 'lead_distribution' | 'pipeline_autoassign' | 'pipeline_stages' | 'followup' | 'meta' | 'assignment' | 'recycle_bin' | 'section_visibility' | 'billing' | 'danger'>('account');
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -8539,10 +8542,12 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
 
     { key: 'section_visibility', label: 'Section Visibility', icon: <Eye size={18} />, accent: 'section_visibility', show: permissions.settings },
     { key: 'recycle_bin', label: 'Recycle Bin', icon: <Trash2 size={18} />, accent: 'recycle_bin', show: permissions.deleteLeads },
+    { key: 'billing', label: 'Billing & Plans', icon: <CreditCard size={18} />, accent: 'billing', show: true },
     { key: 'danger', label: 'Delete Account', icon: <Trash2 size={18} />, accent: 'danger', show: true },
   ];
 
   return (
+    <>
     <div className="crm-settings-page">
       <div className="crm-settings-header">
         <div className="crm-settings-header-left">
@@ -11451,6 +11456,8 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                     </button>
                   </div>
                 </>
+              ) : activeTab === 'billing' ? (
+                <BillingPlansSection session={session} />
               ) : activeTab === 'danger' ? (
                 <DeleteAccountPanel session={session} onSignOut={onSignOut} />
               ) : null}
@@ -11484,6 +11491,8 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
           )}
         </div>
       </div>
+      <CheckoutDrawer />
+    </>
   );
 }
 

@@ -170,7 +170,7 @@ export default function MetaAdsAttribution({ session, callApi }: MetaAdsAttribut
                     </td>
                     <td style={td}>{attr.campaign_name || attr.meta_campaign_id || '—'}</td>
                     <td style={td}>{attr.lead_source || 'Meta Ads'}</td>
-                    <td style={td, fontWeight: 700, color: '#16a34a' }}>${(attr.attributed_revenue || 0).toFixed(2)}</td>
+                    <td style={{ ...td, fontWeight: 700, color: '#16a34a' }}>${(attr.attributed_revenue || 0).toFixed(2)}</td>
                     <td style={td}>{new Date(attr.attributed_at).toLocaleDateString()}</td>
                   </tr>
                 ))}

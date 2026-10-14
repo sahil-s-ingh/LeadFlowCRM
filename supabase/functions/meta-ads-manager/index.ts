@@ -1,5 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2.45.4";
-// Meta Ads Manager edge function with OAuth flow and click-to-WhatsApp ad creation
+// Meta Ads Manager edge function with OAuth, click-to-WhatsApp ads, custom audiences, lead forms, attribution, and ad scheduling
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -969,7 +969,7 @@ Deno.serve(async (req: Request) => {
         description: description || null,
         audience_id: audienceId,
         audience_type: "CUSTOM",
-        estimated_size: BigInt(usersData.length),
+        estimated_size: Number(usersData.length),
         status: "ACTIVE",
         last_synced_at: new Date().toISOString(),
       }).select().single();
@@ -1009,7 +1009,7 @@ Deno.serve(async (req: Request) => {
           description: aud.description,
           audience_id: aud.id,
           audience_type: aud.subtype || "CUSTOM",
-          estimated_size: BigInt(aud.approximate_count || 0),
+          estimated_size: Number(aud.approximate_count || 0),
           status: aud.operation_status || "ACTIVE",
           last_synced_at: new Date().toISOString(),
         }, { onConflict: "user_id,audience_id" });
@@ -1212,8 +1212,11 @@ Deno.serve(async (req: Request) => {
       if (!leadRow) {
         return new Response(JSON.stringify({ error: "Lead not found" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
-      const fieldData = leadRow.field_data as Array<Record<string, string>> || [];
-      const getField = (name: string) => fieldData.find((f) => f.name?.toLowerCase() === name.toLowerCase())?.values?.[0] || "";
+      const fieldData = (leadRow.field_data || []) as Array<{ name: string; values: string[] }>;
+      const getField = (name: string) => {
+        const field = fieldData.find((f) => f.name?.toLowerCase() === name.toLowerCase());
+        return field?.values?.[0] || "";
+      };
 
       const { data: existing } = await adminClient.from("submissions")
         .select("id").eq("user_id", userId).eq("email", getField("email")).maybeSingle();
@@ -1224,7 +1227,7 @@ Deno.serve(async (req: Request) => {
 
       const { data: newLead } = await adminClient.from("submissions").insert({
         user_id: userId,
-        full_name: getField("full_name") || getField("first_name") + " " + getField("last_name"),
+        full_name: getField("full_name") || [getField("first_name"), getField("last_name")].filter(Boolean).join(" ").trim() || "Unknown",
         email: getField("email"),
         mobile_number: getField("phone_number") || getField("phone"),
         state: "",

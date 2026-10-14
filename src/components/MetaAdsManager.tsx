@@ -1511,3 +1511,183 @@ function Clock({ size, style }: { size: number; style?: React.CSSProperties }) {
     </svg>
   );
 }
+
+// ─── Ad Scheduling View ──────────────────────────────────
+interface AdSet {
+  id: string;
+  name: string;
+  status: string;
+  daily_budget?: string;
+  lifetime_budget?: string;
+  pacing_type?: string;
+  adset_schedule?: Array<Record<string, unknown>>;
+}
+
+function MetaAdsScheduleView({ callApi, campaigns }: { callApi: (action: string, extra?: Record<string, unknown>) => Promise<Record<string, unknown>>; campaigns: Array<{ id: string; name: string; meta_campaign_id: string | null }> }) {
+  const [adsets, setAdsets] = useState<AdSet[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [selectedCampaign, setSelectedCampaign] = useState('');
+  const [scheduleGrid, setScheduleGrid] = useState<Record<string, boolean[]>>({});
+
+  const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+  useEffect(() => {
+    const grid: Record<string, boolean[]> = {};
+    for (const day of DAYS) {
+      grid[day] = new Array(24).fill(false);
+    }
+    // Default: 9 AM to 9 PM
+    for (const day of ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']) {
+      for (let h = 9; h < 21; h++) grid[day][h] = true;
+    }
+    setScheduleGrid(grid);
+  }, []);
+
+  const fetchAdsets = async (campaignId?: string) => {
+    setLoading(true);
+    setError('');
+    try {
+      const result = await callApi('list_adsets', { campaign_id: campaignId || undefined });
+      setAdsets((result.adsets as AdSet[]) || []);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch ad sets');
+    }
+    setLoading(false);
+  };
+
+  const toggleHour = (day: string, hour: number) => {
+    setScheduleGrid(prev => ({
+      ...prev,
+      [day]: prev[day].map((v, i) => i === hour ? !v : v),
+    }));
+  };
+
+  const buildSchedule = () => {
+    const schedule = [];
+    for (let dayIdx = 0; dayIdx < 7; dayIdx++) {
+      const day = DAYS[dayIdx];
+      const activeHours = scheduleGrid[day]?.map((on, h) => on ? h : -1).filter(h => h >= 0) || [];
+      if (activeHours.length > 0) {
+        const startMinute = activeHours[0] * 60;
+        const endMinute = (activeHours[activeHours.length - 1] + 1) * 60;
+        schedule.push({
+          days: [dayIdx],
+          start_minute: startMinute,
+          end_minute: endMinute,
+        });
+      }
+    }
+    return schedule;
+  };
+
+  const handleApplySchedule = async (adsetId: string) => {
+    setLoading(true);
+    setError('');
+    setSuccess('');
+    try {
+      const schedule = buildSchedule();
+      if (schedule.length === 0) {
+        setError('Select at least one time slot');
+        setLoading(false);
+        return;
+      }
+      await callApi('set_ad_schedule', { adset_id: adsetId, schedule });
+      setSuccess('Ad schedule applied successfully');
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to apply schedule');
+    }
+    setLoading(false);
+  };
+
+  const inputStyle: React.CSSProperties = { width: '100%', padding: '10px 12px', border: '1px solid var(--border-subtle)', borderRadius: '8px', background: 'var(--bg-card)', color: 'var(--text-main)', fontSize: '0.85rem', outline: 'none' };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+      <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 700, color: 'var(--text-main)' }}>Ad Scheduling (Day-Parting)</h3>
+
+      <div style={{ background: 'rgba(24,119,242,0.06)', border: '1px solid rgba(24,119,242,0.2)', borderRadius: '10px', padding: '14px 16px' }}>
+        <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>
+          Schedule your ads to run only during specific hours. This avoids spending budget at times when no one is available to follow up with leads.
+        </div>
+      </div>
+
+      {error && <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '10px', padding: '12px 16px', color: '#dc2626', fontSize: '0.85rem', fontWeight: 600 }}>{error}</div>}
+      {success && <div style={{ background: 'rgba(22,163,74,0.1)', border: '1px solid rgba(22,163,74,0.3)', borderRadius: '10px', padding: '12px 16px', color: '#16a34a', fontSize: '0.85rem', fontWeight: 600 }}>{success}</div>}
+
+      {/* Campaign selector */}
+      <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+        <select value={selectedCampaign} onChange={(e) => { setSelectedCampaign(e.target.value); fetchAdsets(e.target.value); }} style={{ ...inputStyle, maxWidth: '400px' }}>
+          <option value="">Select a campaign to load ad sets...</option>
+          {campaigns.filter(c => c.meta_campaign_id).map(c => <option key={c.id} value={c.meta_campaign_id!}>{c.name}</option>)}
+        </select>
+        <button onClick={() => fetchAdsets(selectedCampaign || undefined)} disabled={loading} style={{ padding: '10px 16px', borderRadius: '8px', border: '1px solid var(--border-subtle)', background: 'var(--bg-card)', color: 'var(--text-main)', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
+          {loading ? <Loader2 size={15} className="crm-spin" /> : <RefreshCw size={15} />} Load
+        </button>
+      </div>
+
+      {/* Schedule grid */}
+      <div style={{ background: 'var(--bg-card)', borderRadius: '12px', border: '1px solid var(--border-subtle)', padding: '24px', overflowX: 'auto' }}>
+        <h4 style={{ margin: '0 0 6px', fontSize: '0.88rem', fontWeight: 700, color: 'var(--text-main)' }}>Weekly Schedule</h4>
+        <p style={{ margin: '0 0 16px', fontSize: '0.78rem', color: 'var(--text-muted)' }}>Click hour cells to toggle. Blue = active, grey = inactive. Times are in your ad account timezone.</p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          {/* Hour labels header */}
+          <div style={{ display: 'flex', gap: '2px', marginBottom: '4px' }}>
+            <div style={{ width: '80px', flexShrink: 0 }} />
+            {Array.from({ length: 24 }, (_, h) => (
+              <div key={h} style={{ width: '28px', textAlign: 'center', fontSize: '0.58rem', color: 'var(--text-dark)', fontWeight: 600 }}>
+                {h % 3 === 0 ? `${h}h` : ''}
+              </div>
+            ))}
+          </div>
+          {DAYS.map(day => (
+            <div key={day} style={{ display: 'flex', gap: '2px', alignItems: 'center' }}>
+              <div style={{ width: '80px', flexShrink: 0, fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-main)' }}>{day.slice(0, 3)}</div>
+              {scheduleGrid[day]?.map((on, hour) => (
+                <button
+                  key={hour}
+                  onClick={() => toggleHour(day, hour)}
+                  style={{
+                    width: '28px', height: '28px', borderRadius: '4px', border: 'none', cursor: 'pointer',
+                    background: on ? '#1877F2' : 'var(--bg-light)',
+                    transition: 'all 0.15s',
+                  }}
+                  title={`${day} ${hour}:00 - ${hour + 1}:00`}
+                />
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Ad sets to apply schedule to */}
+      {adsets.length > 0 && (
+        <div style={{ background: 'var(--bg-card)', borderRadius: '12px', border: '1px solid var(--border-subtle)', padding: '20px' }}>
+          <h4 style={{ margin: '0 0 12px', fontSize: '0.88rem', fontWeight: 700, color: 'var(--text-main)' }}>Apply Schedule to Ad Sets</h4>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {adsets.map(adset => (
+              <div key={adset.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderRadius: '8px', border: '1px solid var(--border-subtle)', background: 'var(--bg-light)' }}>
+                <div>
+                  <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-main)' }}>{adset.name}</div>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-dark)' }}>{adset.status} {adset.pacing_type ? `· ${adset.pacing_type}` : ''}</div>
+                </div>
+                <button onClick={() => handleApplySchedule(adset.id)} disabled={loading} style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', background: '#1877F2', color: '#fff', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer' }}>
+                  Apply Schedule
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {adsets.length === 0 && !loading && selectedCampaign && (
+        <div style={{ textAlign: 'center', padding: '40px 20px', background: 'var(--bg-card)', borderRadius: '12px', border: '1px solid var(--border-subtle)' }}>
+          <Calendar size={36} style={{ color: 'var(--text-dark)', margin: '0 auto 10px' }} />
+          <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>No ad sets found. Select a campaign and click "Load" to fetch ad sets.</p>
+        </div>
+      )}
+    </div>
+  );
+}
