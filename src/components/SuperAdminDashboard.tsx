@@ -16,8 +16,8 @@ import SuperAdminUsage from './SuperAdminUsage';
 import SuperAdminSetupGuide from './SuperAdminSetupGuide';
 import SuperAdminEmailSettings from './SuperAdminEmailSettings';
 import SuperAdminPaymentSettings from './SuperAdminPaymentSettings';
-import SuperAdminWhatsAppPricing from './SuperAdminWhatsAppPricing';
 import SuperAdminWhatsAppOnboarding from './SuperAdminWhatsAppOnboarding';
+import SuperAdminMetaAdsSettings from './SuperAdminMetaAdsSettings';
 
 type Stats = {
   total_auth_users: number;
@@ -40,7 +40,7 @@ type Account = {
   conversation_count: number;
 };
 
-type NavKey = 'dashboard' | 'profile' | 'plans' | 'features' | 'legal' | 'usage' | 'setup' | 'email' | 'payments' | 'wa_pricing' | 'wa_onboarding';
+type NavKey = 'dashboard' | 'profile' | 'plans' | 'features' | 'legal' | 'usage' | 'setup' | 'email' | 'payments' | 'wa_onboarding' | 'meta_ads';
 
 const NAV_ITEMS: { key: NavKey; label: string; icon: React.ReactNode; group: string }[] = [
   { key: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard size={18} />, group: 'Overview' },
@@ -50,8 +50,8 @@ const NAV_ITEMS: { key: NavKey; label: string; icon: React.ReactNode; group: str
   { key: 'legal', label: 'Legal Pages', icon: <FileText size={18} />, group: 'Platform' },
   { key: 'email', label: 'Email Config', icon: <Mail size={18} />, group: 'Platform' },
   { key: 'payments', label: 'Payment Gateway', icon: <Wallet size={18} />, group: 'Platform' },
-  { key: 'wa_pricing', label: 'WhatsApp Credits', icon: <MessageSquare size={18} />, group: 'Platform' },
   { key: 'wa_onboarding', label: 'WhatsApp Onboarding', icon: <Zap size={18} />, group: 'Platform' },
+  { key: 'meta_ads', label: 'Meta Marketing API', icon: <TrendingUp size={18} />, group: 'Platform' },
   { key: 'setup', label: 'Setup Guide', icon: <Server size={18} />, group: 'System' },
   { key: 'profile', label: 'My Profile', icon: <UserCircle size={18} />, group: 'Account' },
 ];
@@ -64,13 +64,13 @@ const PAGE_SUBTITLES: Record<NavKey, string> = {
   legal: 'Edit legal pages published on your site',
   email: 'Configure default SMTP for all accounts',
   payments: 'Configure Razorpay payment gateway for checkout',
-  wa_pricing: 'Set WhatsApp message pricing and credit packages',
   wa_onboarding: 'Configure embedded signup for client WhatsApp onboarding',
+  meta_ads: 'Configure Facebook Marketing API for the Ads Manager OAuth flow',
   setup: 'Deploy your CRM on a VPS step by step',
   profile: 'Super admin account settings',
 };
 
-const VALID_NAV_KEYS: NavKey[] = ['dashboard', 'profile', 'plans', 'features', 'legal', 'usage', 'setup', 'email', 'payments', 'wa_pricing', 'wa_onboarding'];
+const VALID_NAV_KEYS: NavKey[] = ['dashboard', 'profile', 'plans', 'features', 'legal', 'usage', 'setup', 'email', 'payments', 'wa_onboarding', 'meta_ads'];
 
 export default function SuperAdminDashboard({ session, onSignOut, initialView }: { session: Session; onSignOut: () => void; initialView?: string }) {
   const [stats, setStats] = useState<Stats | null>(null);
@@ -230,8 +230,8 @@ export default function SuperAdminDashboard({ session, onSignOut, initialView }:
     if (view === 'setup') return <SuperAdminSetupGuide />;
     if (view === 'email') return <SuperAdminEmailSettings />;
     if (view === 'payments') return <SuperAdminPaymentSettings />;
-    if (view === 'wa_pricing') return <SuperAdminWhatsAppPricing />;
     if (view === 'wa_onboarding') return <SuperAdminWhatsAppOnboarding />;
+    if (view === 'meta_ads') return <SuperAdminMetaAdsSettings />;
 
     // Dashboard view
     if (loading) {

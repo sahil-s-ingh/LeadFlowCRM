@@ -19,7 +19,7 @@ import {
   Camera,
   Bell, CalendarClock, BellRing, Shuffle, ClipboardList, History, Droplets, MessageSquare, RotateCcw,
   BookOpen, MousePointerClick, EyeOff, FileSpreadsheet,
-  PanelLeft, Type, Signal, GitMerge, ShieldAlert, Activity, Wallet,
+  PanelLeft, Type, Signal, GitMerge, ShieldAlert, Activity,
   Building2, Trophy, Target, TrendingDown, GitBranch, Hash, Radar,
 
   LayoutTemplate, Inbox as InboxIcon,
@@ -35,7 +35,6 @@ import WhatsAppBroadcast from '@/components/WhatsAppBroadcast';
 import EmailBroadcast from '@/components/EmailBroadcast';
 import TelegramBroadcast from '@/components/TelegramBroadcast';
 import BroadcastHub from '@/components/BroadcastHub';
-import WhatsAppCreditsPage from '@/components/WhatsAppCreditsPage';
 import InboxHub from '@/components/InboxHub';
 import FollowUpsPage from '@/components/FollowUpsPage';
 import TeamDashboardPanel from '@/components/TeamDashboardPanel';
@@ -98,7 +97,7 @@ const MOBILE_STAT_OPTIONS: { key: MobileStatKey; label: string }[] = [
 ];
 
 type DateFilterPreset = 'all' | 'today' | 'yesterday' | 'last_7_days' | 'this_week' | 'this_month' | 'this_year' | 'custom';
-type ActiveView = 'dashboard' | 'leads' | 'inbox_hub' | 'inbox' | 'whatsapp' | 'settings' | 'drip' | 'analytics_hub' | 'email_analytics' | 'message_templates' | 'broadcast_hub' | 'broadcast' | 'email_broadcast' | 'telegram_broadcast' | 'activity_timeline' | 'revenue_forecast' | 'followups' | 'leaderboard' | 'goals' | 'win_loss' | 'duplicates' | 'heatmap' | 'automations' | 'brokers' | 'lead_tracker' | 'wa_credits' | 'meta_ads';
+type ActiveView = 'dashboard' | 'leads' | 'inbox_hub' | 'inbox' | 'whatsapp' | 'settings' | 'drip' | 'analytics_hub' | 'email_analytics' | 'message_templates' | 'broadcast_hub' | 'broadcast' | 'email_broadcast' | 'telegram_broadcast' | 'activity_timeline' | 'revenue_forecast' | 'followups' | 'leaderboard' | 'goals' | 'win_loss' | 'duplicates' | 'heatmap' | 'automations' | 'brokers' | 'lead_tracker' | 'meta_ads';
 
 type UserRole = 'owner' | 'admin' | 'manager' | 'agent';
 
@@ -512,7 +511,7 @@ async function sendMetaConversionEvent(leadId: string, lead: Lead, newStatus: Le
   }
 }
 
-const VALID_VIEWS: ActiveView[] = ['dashboard', 'leads', 'inbox_hub', 'inbox', 'whatsapp', 'settings', 'drip', 'analytics_hub', 'email_analytics', 'message_templates', 'broadcast_hub', 'broadcast', 'email_broadcast', 'telegram_broadcast', 'activity_timeline', 'revenue_forecast', 'followups', 'leaderboard', 'goals', 'win_loss', 'duplicates', 'heatmap', 'automations', 'brokers', 'lead_tracker', 'wa_credits'];
+const VALID_VIEWS: ActiveView[] = ['dashboard', 'leads', 'inbox_hub', 'inbox', 'whatsapp', 'settings', 'drip', 'analytics_hub', 'email_analytics', 'message_templates', 'broadcast_hub', 'broadcast', 'email_broadcast', 'telegram_broadcast', 'activity_timeline', 'revenue_forecast', 'followups', 'leaderboard', 'goals', 'win_loss', 'duplicates', 'heatmap', 'automations', 'brokers', 'lead_tracker', 'meta_ads'];
 
 export default function CrmDashboard({ session, initialView }: { session: Session; initialView?: string }) {
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -2014,9 +2013,6 @@ export default function CrmDashboard({ session, initialView }: { session: Sessio
             <Send size={18} /> {!sidebarCollapsed && 'Broadcasts'}
           </a>
           )}
-          <a className={`crm-nav-item ${activeView === 'wa_credits' ? 'active' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`} onClick={() => { navigateToView('wa_credits'); setMobileSidebarOpen(false); setMobileNav('leads'); }} style={{ cursor: 'pointer' }} title={sidebarCollapsed ? 'WA Credits' : undefined}>
-            <Wallet size={18} /> {!sidebarCollapsed && 'WA Credits'}
-          </a>
         </div>
         )}
         {permissions.analytics && sidebarSections.analytics && (
@@ -2249,8 +2245,6 @@ export default function CrmDashboard({ session, initialView }: { session: Sessio
           <TemplatesHub session={session} onBack={() => navigateToView('dashboard')} />
         ) : activeView === 'broadcast_hub' ? (
           <BroadcastHub session={session} onBack={() => navigateToView('dashboard')} />
-        ) : activeView === 'wa_credits' ? (
-          <WhatsAppCreditsPage session={session} onBack={() => navigateToView('dashboard')} />
         ) : activeView === 'followups' ? (
           <FollowUpsPage session={session} onBack={() => navigateToView('dashboard')} onCall={(number) => { window.location.href = `tel:${number.replace(/[^+\d]/g, '')}`; }} />
         ) : activeView === 'leaderboard' ? (

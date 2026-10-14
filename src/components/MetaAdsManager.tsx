@@ -1,10 +1,16 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import {
-  TrendingUp, Plus, RefreshCw, Play, Pause, Trash2, Eye, EyeOff,
+  TrendingUp, Plus, RefreshCw, Play, Pause, Trash2, Eye,
   CheckCircle2, AlertCircle, Loader2, Globe, Target, DollarSign,
   BarChart3, Settings as SettingsIcon, Zap, ExternalLink, ChevronDown,
+  Facebook, LogOut, Link2, MessageCircle, Upload, Users, FileText, Calendar,
 } from 'lucide-react';
+import MetaAdsWorkspaceFeatures from '@/components/MetaAdsWorkspaceFeatures';
+import MetaAdsPerformance from '@/components/MetaAdsPerformance';
+import MetaAdsAudiences from '@/components/MetaAdsAudiences';
+import MetaAdsLeadForms from '@/components/MetaAdsLeadForms';
+import MetaAdsAttribution from '@/components/MetaAdsAttribution';
 
 interface MetaAdsManagerProps {
   session: { user: { id: string; email?: string } };
@@ -13,10 +19,13 @@ interface MetaAdsManagerProps {
 interface AdsSettings {
   id?: string;
   app_id: string | null;
-  app_secret: string | null;
   access_token: string | null;
   ad_account_id: string | null;
   is_connected: boolean;
+  fb_user_id: string | null;
+  fb_user_name: string | null;
+  token_expires_at: string | null;
+  connected_via: string;
 }
 
 interface Campaign {
@@ -37,9 +46,26 @@ interface Campaign {
   ctr: number | null;
   last_synced_at: string | null;
   created_at: string;
+  is_click_to_whatsapp?: boolean;
+  whatsapp_greeting?: string | null;
 }
 
-type View = 'overview' | 'settings' | 'campaigns' | 'create';
+interface AdsSettings {
+  id?: string;
+  app_id: string | null;
+  access_token: string | null;
+  ad_account_id: string | null;
+  is_connected: boolean;
+  fb_user_id: string | null;
+  fb_user_name: string | null;
+  token_expires_at: string | null;
+  connected_via: string;
+  page_id?: string | null;
+  page_name?: string | null;
+  whatsapp_phone_number?: string | null;
+}
+
+type View = 'overview' | 'settings' | 'campaigns' | 'create' | 'workspace' | 'c2w' | 'performance' | 'audiences' | 'leadforms' | 'attribution' | 'schedule';
 
 const OBJECTIVES = [
   { value: 'OUTCOME_TRAFFIC', label: 'Traffic — Send people to a website' },
@@ -50,10 +76,7 @@ const OBJECTIVES = [
   { value: 'OUTCOME_APP_PROMOTION', label: 'App Promotion — Get app installs' },
 ];
 
-const CALL_TO_ACTIONS = [
-  'LEARN_MORE', 'SIGN_UP', 'SUBSCRIBE', 'CONTACT_US', 'SHOP_NOW',
-  'BOOK_NOW', 'GET_QUOTE', 'DOWNLOAD', 'APPLY_NOW', 'REGISTER_NOW',
-];
+const GRAPH_VERSION = 'v21.0';
 
 export default function MetaAdsManager({ session }: MetaAdsManagerProps) {
   const [view, setView] = useState<View>('overview');
@@ -61,18 +84,13 @@ export default function MetaAdsManager({ session }: MetaAdsManagerProps) {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
+  const [oauthLoading, setOauthLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [showSecret, setShowSecret] = useState(false);
-  const [showToken, setShowToken] = useState(false);
   const [adAccounts, setAdAccounts] = useState<Array<{ id: string; name: string; currency: string; account_status: number }>>([]);
   const [verifyResult, setVerifyResult] = useState<{ name: string; currency: string; amount_spent: string; balance: string } | null>(null);
-
-  // Settings form state
-  const [appId, setAppId] = useState('');
-  const [appSecret, setAppSecret] = useState('');
-  const [accessToken, setAccessToken] = useState('');
-  const [adAccountId, setAdAccountId] = useState('');
+  const [platformAppId, setPlatformAppId] = useState<string | null>(null);
+  const [oauthError, setOauthError] = useState('');
 
   // Create campaign form state
   const [campName, setCampName] = useState('');
@@ -88,6 +106,26 @@ export default function MetaAdsManager({ session }: MetaAdsManagerProps) {
   const [insightsLoading, setInsightsLoading] = useState(false);
   const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState('last_7d');
+
+  // Click-to-WhatsApp state
+  const [fbPages, setFbPages] = useState<Array<{ id: string; name: string }>>([]);
+  const [c2wName, setC2wName] = useState('');
+  const [c2wObjective, setC2wObjective] = useState('OUTCOME_ENGAGEMENT');
+  const [c2wDailyBudget, setC2wDailyBudget] = useState('');
+  const [c2wCurrency, setC2wCurrency] = useState('USD');
+  const [c2wPageId, setC2wPageId] = useState('');
+  const [c2wWaNumber, setC2wWaNumber] = useState('');
+  const [c2wGreeting, setC2wGreeting] = useState('');
+  const [c2wHeadline, setC2wHeadline] = useState('');
+  const [c2wPrimaryText, setC2wPrimaryText] = useState('');
+  const [c2wDescription, setC2wDescription] = useState('');
+  const [c2wImageUrl, setC2wImageUrl] = useState('');
+  const [c2wCountries, setC2wCountries] = useState('US');
+  const [c2wAgeMin, setC2wAgeMin] = useState('18');
+  const [c2wAgeMax, setC2wAgeMax] = useState('65');
+  const [c2wAdName, setC2wAdName] = useState('');
+  const [c2wImageHash, setC2wImageHash] = useState('');
+  const [c2wUploading, setC2wUploading] = useState(false);
 
   const callApi = useCallback(async (action: string, extra: Record<string, unknown> = {}) => {
     const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/meta-ads-manager`, {
@@ -117,10 +155,6 @@ export default function MetaAdsManager({ session }: MetaAdsManagerProps) {
 
       if (settingsData) {
         setSettings(settingsData as AdsSettings);
-        setAppId(settingsData.app_id || '');
-        setAppSecret(settingsData.app_secret || '');
-        setAccessToken(settingsData.access_token || '');
-        setAdAccountId(settingsData.ad_account_id || '');
       }
 
       const { data: campData } = await supabase
@@ -130,39 +164,163 @@ export default function MetaAdsManager({ session }: MetaAdsManagerProps) {
         .order('created_at', { ascending: false });
 
       if (campData) setCampaigns(campData as Campaign[]);
+
+      // Fetch platform app ID for OAuth
+      try {
+        const result = await callApi('get_oauth_config');
+        setPlatformAppId(result.app_id);
+      } catch {
+        setPlatformAppId(null);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load data');
     }
     setLoading(false);
-  }, [session.user.id]);
+  }, [session.user.id, callApi]);
 
   useEffect(() => {
     loadData();
   }, [loadData]);
 
-  const handleSaveSettings = async () => {
+  // ─── OAuth: Connect with Facebook ─────────────────────────
+  const handleConnectFacebook = async () => {
+    setOauthError('');
+    setOauthLoading(true);
+
+    try {
+      if (!platformAppId) {
+        throw new Error('Meta Marketing API is not configured. Please contact your platform administrator.');
+      }
+
+      const redirectUri = `${window.location.origin}${window.location.pathname}`;
+      const scope = 'ads_management,ads_read,business_management';
+      const state = `meta_ads_${session.user.id}_${Date.now()}`;
+      const authUrl = `https://www.facebook.com/${GRAPH_VERSION}/dialog/oauth?client_id=${platformAppId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}&state=${state}&response_type=code`;
+
+      const popup = window.open(authUrl, 'facebook_oauth', 'width=600,height=700,scrollbars=yes');
+
+      if (!popup) {
+        throw new Error('Popup was blocked. Please allow popups for this site and try again.');
+      }
+
+      // Poll for popup closure or redirect
+      const pollInterval = setInterval(() => {
+        if (popup.closed) {
+          clearInterval(pollInterval);
+          setOauthLoading(false);
+        }
+      }, 500);
+
+      // Listen for the OAuth redirect (code in URL params)
+      const handleOAuthMessage = async (event: MessageEvent) => {
+        if (event.origin !== window.location.origin) return;
+
+        if (event.data?.type === 'meta_ads_oauth' && event.data?.code) {
+          clearInterval(pollInterval);
+          window.removeEventListener('message', handleOAuthMessage);
+          popup.close();
+
+          try {
+            const result = await callApi('exchange_code', { code: event.data.code });
+            setSuccess(`Connected as ${result.user_name}. Select an ad account to start managing campaigns.`);
+            setAdAccounts(result.ad_accounts || []);
+            await loadData();
+            setTimeout(() => setSuccess(''), 5000);
+          } catch (err) {
+            setOauthError(err instanceof Error ? err.message : 'Failed to connect Facebook account');
+          }
+          setOauthLoading(false);
+        }
+      };
+      window.addEventListener('message', handleOAuthMessage);
+
+      // Also check URL params if redirect happens in same window
+      const urlCheckInterval = setInterval(() => {
+        try {
+          const popupUrl = popup.location;
+          const urlParams = new URLSearchParams(popupUrl.search);
+          const code = urlParams.get('code');
+          if (code) {
+            clearInterval(urlCheckInterval);
+            clearInterval(pollInterval);
+            popup.close();
+            window.removeEventListener('message', handleOAuthMessage);
+
+            callApi('exchange_code', { code })
+              .then((result) => {
+                setSuccess(`Connected as ${result.user_name}. Select an ad account to start managing campaigns.`);
+                setAdAccounts(result.ad_accounts || []);
+                loadData();
+                setTimeout(() => setSuccess(''), 5000);
+              })
+              .catch((err) => {
+                setOauthError(err instanceof Error ? err.message : 'Failed to connect Facebook account');
+              })
+              .finally(() => setOauthLoading(false));
+          }
+        } catch {
+          // Cross-origin — popup is still on Facebook domain, keep waiting
+        }
+      }, 500);
+    } catch (err) {
+      setOauthError(err instanceof Error ? err.message : 'Failed to start OAuth flow');
+      setOauthLoading(false);
+    }
+  };
+
+  // Check URL for OAuth callback on mount (in case redirect happened in same tab)
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get('code');
+    const state = urlParams.get('state');
+
+    if (code && state?.startsWith('meta_ads_')) {
+      // Clean the URL
+      const cleanUrl = window.location.pathname + window.location.hash;
+      window.history.replaceState({}, document.title, cleanUrl);
+
+      setOauthLoading(true);
+      callApi('exchange_code', { code })
+        .then((result) => {
+          setSuccess(`Connected as ${result.user_name}. Select an ad account to start managing campaigns.`);
+          setAdAccounts(result.ad_accounts || []);
+          loadData();
+          setTimeout(() => setSuccess(''), 5000);
+        })
+        .catch((err) => {
+          setOauthError(err instanceof Error ? err.message : 'Failed to connect Facebook account');
+        })
+        .finally(() => setOauthLoading(false));
+    }
+  }, [callApi, loadData]);
+
+  const handleDisconnect = async () => {
+    if (!confirm('Disconnect your Facebook account? You will need to reconnect to manage ads.')) return;
     setActionLoading(true);
     setError('');
-    setSuccess('');
-    setVerifyResult(null);
     try {
-      await callApi('save_settings', {
-        app_id: appId,
-        app_secret: appSecret,
-        access_token: accessToken,
-        ad_account_id: adAccountId,
-      });
-      setSuccess('Settings saved successfully.');
-      setSettings({
-        app_id: appId || null,
-        app_secret: appSecret || null,
-        access_token: accessToken || null,
-        ad_account_id: adAccountId.replace(/^act_/, '') || null,
-        is_connected: !!(accessToken && adAccountId),
-      });
+      await callApi('disconnect');
+      setSettings(null);
+      setAdAccounts([]);
+      setVerifyResult(null);
+      setSuccess('Facebook account disconnected.');
       setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save settings');
+      setError(err instanceof Error ? err.message : 'Failed to disconnect');
+    }
+    setActionLoading(false);
+  };
+
+  const handleSaveAdAccount = async (accountId: string) => {
+    setActionLoading(true);
+    setError('');
+    try {
+      await callApi('save_ad_account', { ad_account_id: accountId });
+      setSuccess('Ad account selected. You can now create and manage campaigns.');
+      await loadData();
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to save ad account');
     }
     setActionLoading(false);
   };
@@ -294,7 +452,96 @@ export default function MetaAdsManager({ session }: MetaAdsManagerProps) {
     setInsightsLoading(false);
   };
 
+  // ─── Click-to-WhatsApp handlers ───────────────────────────
+  const handleFetchPages = async () => {
+    setActionLoading(true);
+    setError('');
+    try {
+      const result = await callApi('get_pages');
+      setFbPages(result.pages || []);
+      if (settings?.page_id && !result.pages?.some((p: { id: string }) => p.id === settings.page_id)) {
+        // keep existing page_id even if not in fresh list
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch Facebook Pages');
+    }
+    setActionLoading(false);
+  };
+
+  const handleSavePage = async () => {
+    if (!c2wPageId) { setError('Select a Facebook Page first'); return; }
+    setActionLoading(true);
+    setError('');
+    try {
+      const page = fbPages.find(p => p.id === c2wPageId);
+      await callApi('save_page', {
+        page_id: c2wPageId,
+        page_name: page?.name || null,
+        whatsapp_phone_number: c2wWaNumber || null,
+      });
+      setSuccess('Facebook Page and WhatsApp number saved for click-to-WhatsApp ads.');
+      await loadData();
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to save Page settings');
+    }
+    setActionLoading(false);
+  };
+
+  const handleUploadImage = async () => {
+    if (!c2wImageUrl.trim()) { setError('Enter an image URL first'); return; }
+    setC2wUploading(true);
+    setError('');
+    try {
+      const result = await callApi('upload_ad_image', { image_url: c2wImageUrl.trim() });
+      setC2wImageHash(result.hash || '');
+      setSuccess('Image uploaded to Meta. You can now create the ad.');
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to upload image');
+    }
+    setC2wUploading(false);
+  };
+
+  const handleCreateC2WAd = async () => {
+    if (!c2wName.trim()) { setError('Campaign name is required'); return; }
+    if (!c2wPageId && !settings?.page_id) { setError('Select a Facebook Page first'); return; }
+    setActionLoading(true);
+    setError('');
+    setSuccess('');
+    try {
+      const result = await callApi('create_c2w_ad', {
+        campaign_name: c2wName.trim(),
+        objective: c2wObjective,
+        daily_budget: c2wDailyBudget || null,
+        currency: c2wCurrency,
+        page_id: c2wPageId || settings?.page_id,
+        whatsapp_phone_number: c2wWaNumber || settings?.whatsapp_phone_number || null,
+        whatsapp_greeting: c2wGreeting || null,
+        ad_name: c2wAdName || null,
+        headline: c2wHeadline || null,
+        primary_text: c2wPrimaryText || null,
+        description: c2wDescription || null,
+        image_hash: c2wImageHash || null,
+        image_url: c2wImageUrl || null,
+        countries: c2wCountries.split(',').map(s => s.trim()).filter(Boolean),
+        age_min: Number(c2wAgeMin),
+        age_max: Number(c2wAgeMax),
+      });
+      setSuccess(`Click-to-WhatsApp ad created (Campaign ID: ${result.campaign_id}). It starts paused — review it in Facebook Ads Manager before activating.`);
+      setC2wName(''); setC2wHeadline(''); setC2wPrimaryText(''); setC2wDescription('');
+      setC2wImageUrl(''); setC2wImageHash(''); setC2wGreeting(''); setC2wAdName('');
+      await loadData();
+      setView('campaigns');
+      setTimeout(() => setSuccess(''), 6000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create click-to-WhatsApp ad');
+    }
+    setActionLoading(false);
+  };
+
   const isConnected = settings?.is_connected;
+  const hasAdAccount = !!settings?.ad_account_id;
 
   const inputStyle: React.CSSProperties = {
     width: '100%',
@@ -327,8 +574,12 @@ export default function MetaAdsManager({ session }: MetaAdsManagerProps) {
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: 'linear-gradient(135deg, #1877F2, #0d5fc3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <TrendingUp size={24} style={{ color: '#fff' }} />
+          <div style={{ width: '76px', height: '44px', borderRadius: '12px', background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '6px 8px', overflow: 'hidden' }}>
+            <img
+              src="/assets/images/meta-logo.webp"
+              alt="Meta"
+              style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+            />
           </div>
           <div>
             <h2 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-main)' }}>Meta Ads Manager</h2>
@@ -343,17 +594,38 @@ export default function MetaAdsManager({ session }: MetaAdsManagerProps) {
             <Target size={16} /> Campaigns
           </button>
           <button onClick={() => setView('settings')} style={{ ...tabBtnStyle, background: view === 'settings' ? '#1877F2' : 'var(--bg-card)', color: view === 'settings' ? '#fff' : 'var(--text-main)' }}>
-            <SettingsIcon size={16} /> Settings
+            <SettingsIcon size={16} /> Connection
+          </button>
+          <button onClick={() => setView('c2w')} style={{ ...tabBtnStyle, background: view === 'c2w' ? '#1877F2' : 'var(--bg-card)', color: view === 'c2w' ? '#fff' : 'var(--text-main)' }}>
+            <MessageCircle size={16} /> WhatsApp Ads
+          </button>
+          <button onClick={() => setView('workspace')} style={{ ...tabBtnStyle, background: view === 'workspace' ? '#1877F2' : 'var(--bg-card)', color: view === 'workspace' ? '#fff' : 'var(--text-main)' }}>
+            <Zap size={16} /> Workspace
+          </button>
+          <button onClick={() => setView('performance')} style={{ ...tabBtnStyle, background: view === 'performance' ? '#1877F2' : 'var(--bg-card)', color: view === 'performance' ? '#fff' : 'var(--text-main)' }}>
+            <BarChart3 size={16} /> Performance
+          </button>
+          <button onClick={() => setView('audiences')} style={{ ...tabBtnStyle, background: view === 'audiences' ? '#1877F2' : 'var(--bg-card)', color: view === 'audiences' ? '#fff' : 'var(--text-main)' }}>
+            <Users size={16} /> Audiences
+          </button>
+          <button onClick={() => setView('leadforms')} style={{ ...tabBtnStyle, background: view === 'leadforms' ? '#1877F2' : 'var(--bg-card)', color: view === 'leadforms' ? '#fff' : 'var(--text-main)' }}>
+            <FileText size={16} /> Lead Forms
+          </button>
+          <button onClick={() => setView('attribution')} style={{ ...tabBtnStyle, background: view === 'attribution' ? '#1877F2' : 'var(--bg-card)', color: view === 'attribution' ? '#fff' : 'var(--text-main)' }}>
+            <TrendingUp size={16} /> Attribution
+          </button>
+          <button onClick={() => setView('schedule')} style={{ ...tabBtnStyle, background: view === 'schedule' ? '#1877F2' : 'var(--bg-card)', color: view === 'schedule' ? '#fff' : 'var(--text-main)' }}>
+            <Calendar size={16} /> Schedule
           </button>
         </div>
       </div>
 
       {/* Status banner */}
-      {!isConnected && view !== 'settings' && (
+      {(!isConnected || !hasAdAccount) && view !== 'settings' && (
         <div style={{ background: 'rgba(234,179,8,0.08)', border: '1px solid rgba(234,179,8,0.3)', borderRadius: '10px', padding: '14px 16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
           <AlertCircle size={20} style={{ color: '#eab308', flexShrink: 0 }} />
           <div style={{ flex: 1, fontSize: '0.85rem', color: '#854d0e' }}>
-            <strong>Meta Ads not connected.</strong> Go to Settings to enter your Meta Marketing API credentials.
+            <strong>{!isConnected ? 'Facebook account not connected.' : 'No ad account selected.'}</strong> {!isConnected ? 'Click "Connect with Facebook" to link your ad account.' : 'Go to Connection settings to select your ad account.'}
           </div>
           <button onClick={() => setView('settings')} style={{ padding: '8px 14px', borderRadius: '8px', border: '1px solid rgba(234,179,8,0.4)', background: 'rgba(234,179,8,0.1)', color: '#854d0e', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer' }}>
             Configure
@@ -378,6 +650,39 @@ export default function MetaAdsManager({ session }: MetaAdsManagerProps) {
         </div>
       ) : (
         <>
+          {/* ─── WORKSPACE VIEW ─── */}
+          {view === 'workspace' && (
+            <MetaAdsWorkspaceFeatures
+              session={session}
+              campaigns={campaigns.map(campaign => ({ id: campaign.id, name: campaign.name }))}
+            />
+          )}
+
+          {/* ─── PERFORMANCE VIEW ─── */}
+          {view === 'performance' && (
+            <MetaAdsPerformance callApi={callApi} />
+          )}
+
+          {/* ─── AUDIENCES VIEW ─── */}
+          {view === 'audiences' && (
+            <MetaAdsAudiences session={session} callApi={callApi} />
+          )}
+
+          {/* ─── LEAD FORMS VIEW ─── */}
+          {view === 'leadforms' && (
+            <MetaAdsLeadForms session={session} callApi={callApi} />
+          )}
+
+          {/* ─── ATTRIBUTION VIEW ─── */}
+          {view === 'attribution' && (
+            <MetaAdsAttribution session={session} callApi={callApi} />
+          )}
+
+          {/* ─── AD SCHEDULE VIEW ─── */}
+          {view === 'schedule' && (
+            <MetaAdsScheduleView callApi={callApi} campaigns={campaigns} />
+          )}
+
           {/* ─── OVERVIEW VIEW ─── */}
           {view === 'overview' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -400,6 +705,13 @@ export default function MetaAdsManager({ session }: MetaAdsManagerProps) {
                   color="#1877F2"
                 />
                 <ActionCard
+                  icon={<MessageCircle size={20} />}
+                  title="Click-to-WhatsApp Ad"
+                  desc="Create an ad that opens a WhatsApp chat with your business"
+                  onClick={() => setView('c2w')}
+                  color="#25D366"
+                />
+                <ActionCard
                   icon={<RefreshCw size={20} />}
                   title="Sync Campaign Stats"
                   desc="Pull latest spend and performance data from Meta"
@@ -411,8 +723,36 @@ export default function MetaAdsManager({ session }: MetaAdsManagerProps) {
                   icon={<BarChart3 size={20} />}
                   title="View Performance Insights"
                   desc="See detailed breakdown of spend, clicks, and CPL"
-                  onClick={() => { setView('campaigns'); setSelectedCampaignId(null); handleFetchInsights(); }}
+                  onClick={() => { setView('performance'); }}
                   color="#8B5CF6"
+                />
+                <ActionCard
+                  icon={<Users size={20} />}
+                  title="Custom Audiences"
+                  desc="Push CRM leads to Facebook for retargeting"
+                  onClick={() => setView('audiences')}
+                  color="#0d9488"
+                />
+                <ActionCard
+                  icon={<FileText size={20} />}
+                  title="Lead Form Ads"
+                  desc="Collect leads natively on Facebook & Instagram"
+                  onClick={() => setView('leadforms')}
+                  color="#F59E0B"
+                />
+                <ActionCard
+                  icon={<TrendingUp size={20} />}
+                  title="Lead Attribution"
+                  desc="Track which ads generate paying customers"
+                  onClick={() => setView('attribution')}
+                  color="#16A34A"
+                />
+                <ActionCard
+                  icon={<Calendar size={20} />}
+                  title="Ad Scheduling"
+                  desc="Schedule ads to run only during peak hours"
+                  onClick={() => setView('schedule')}
+                  color="#6366f1"
                 />
               </div>
 
@@ -448,9 +788,7 @@ export default function MetaAdsManager({ session }: MetaAdsManagerProps) {
                   <Globe size={20} style={{ color: '#1877F2', flexShrink: 0, marginTop: '2px' }} />
                   <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>
                     <strong style={{ color: '#1877F2' }}>About Meta Ads Manager</strong><br />
-                    Create and manage Facebook &amp; Instagram ad campaigns without leaving your CRM. Track spend, impressions, clicks, and cost-per-lead across all your campaigns. Campaigns are created in a <strong>paused</strong> state — review them in Facebook Ads Manager before activating to go live.
-                    <br /><br />
-                    <strong>Prerequisites:</strong> A Meta Business Manager account, a Facebook App with Marketing API access, and a valid long-lived access token. Visit <a href="https://developers.facebook.com/docs/marketing-api" target="_blank" rel="noopener noreferrer" style={{ color: '#1877F2', textDecoration: 'none' }}>developers.facebook.com/docs/marketing-api</a> to get started.
+                    Create and manage Facebook &amp; Instagram ad campaigns without leaving your CRM. Click "Connect with Facebook" to link your ad account — no API keys needed. Track spend, impressions, clicks, and cost-per-lead across all your campaigns. Campaigns are created in a <strong>paused</strong> state — review them in Facebook Ads Manager before activating to go live.
                   </div>
                 </div>
               </div>
@@ -548,6 +886,11 @@ export default function MetaAdsManager({ session }: MetaAdsManagerProps) {
                           <div style={{ flex: 1, minWidth: '200px' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
                               <span style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-main)' }}>{camp.name}</span>
+                              {camp.is_click_to_whatsapp && (
+                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', fontSize: '0.62rem', fontWeight: 700, padding: '2px 7px', borderRadius: '999px', background: 'rgba(37,211,102,0.1)', color: '#25D366' }}>
+                                  <MessageCircle size={10} /> WhatsApp
+                                </span>
+                              )}
                               <StatusBadge status={camp.status} />
                             </div>
                             <div style={{ fontSize: '0.76rem', color: 'var(--text-dark)' }}>
@@ -609,6 +952,177 @@ export default function MetaAdsManager({ session }: MetaAdsManagerProps) {
                   </div>
                 </>
               )}
+            </div>
+          )}
+
+          {/* ─── CLICK-TO-WHATSAPP AD VIEW ─── */}
+          {view === 'c2w' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {/* Info banner */}
+              <div style={{ background: 'rgba(37,211,102,0.06)', border: '1px solid rgba(37,211,102,0.2)', borderRadius: '10px', padding: '14px 16px', display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                <MessageCircle size={20} style={{ color: '#25D366', flexShrink: 0, marginTop: '2px' }} />
+                <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>
+                  <strong style={{ color: '#25D366' }}>Click-to-WhatsApp Ads</strong><br />
+                  Create Facebook &amp; Instagram ads that open a WhatsApp chat with your business when tapped. The full flow — campaign, ad set, creative, and ad — is created in one step and starts paused for your review.
+                </div>
+              </div>
+
+              {/* Step 1: Facebook Page setup */}
+              <div style={{ background: 'var(--bg-card)', borderRadius: '12px', border: '1px solid var(--border-subtle)', padding: '24px' }}>
+                <h3 style={{ margin: '0 0 6px', fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-main)' }}>1. Facebook Page &amp; WhatsApp Number</h3>
+                <p style={{ margin: '0 0 16px', fontSize: '0.82rem', color: 'var(--text-muted)' }}>Select the Facebook Page linked to your WhatsApp Business number.</p>
+
+                {settings?.page_id && (
+                  <div style={{ padding: '10px 14px', background: 'rgba(22,163,74,0.08)', border: '1px solid rgba(22,163,74,0.3)', borderRadius: '8px', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <CheckCircle2 size={16} style={{ color: '#16a34a' }} />
+                    <span style={{ fontSize: '0.82rem', color: 'var(--text-main)' }}>Current Page: <strong>{settings.page_name || settings.page_id}</strong>{settings.whatsapp_phone_number && ` · WhatsApp: ${settings.whatsapp_phone_number}`}</span>
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', gap: '10px', marginBottom: '14px' }}>
+                  <button onClick={handleFetchPages} disabled={actionLoading} style={{ ...tabBtnStyle }}>
+                    {actionLoading ? <Loader2 size={15} className="crm-spin" /> : <RefreshCw size={15} />} Load Pages
+                  </button>
+                </div>
+
+                {fbPages.length > 0 && (
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
+                    <div>
+                      <label style={labelStyle}>Facebook Page</label>
+                      <select value={c2wPageId} onChange={(e) => setC2wPageId(e.target.value)} style={inputStyle}>
+                        <option value="">Select a Page...</option>
+                        {fbPages.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label style={labelStyle}>WhatsApp Number (with country code)</label>
+                      <input type="text" value={c2wWaNumber} onChange={(e) => setC2wWaNumber(e.target.value)} placeholder="e.g. 919876543210" style={inputStyle} />
+                    </div>
+                  </div>
+                )}
+
+                {fbPages.length > 0 && (
+                  <button onClick={handleSavePage} disabled={actionLoading || !c2wPageId} style={{ ...tabBtnStyle, background: '#1877F2', color: '#fff', border: 'none' }}>
+                    {actionLoading ? <Loader2 size={15} className="crm-spin" /> : <CheckCircle2 size={15} />} Save Page Settings
+                  </button>
+                )}
+
+                {fbPages.length === 0 && !actionLoading && (
+                  <div style={{ padding: '16px', textAlign: 'center', color: 'var(--text-dark)', fontSize: '0.82rem', background: 'var(--bg-light)', borderRadius: '8px' }}>
+                    Click "Load Pages" to fetch your Facebook Pages.
+                  </div>
+                )}
+              </div>
+
+              {/* Step 2: Campaign details */}
+              <div style={{ background: 'var(--bg-card)', borderRadius: '12px', border: '1px solid var(--border-subtle)', padding: '24px' }}>
+                <h3 style={{ margin: '0 0 6px', fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-main)' }}>2. Campaign Details</h3>
+                <p style={{ margin: '0 0 16px', fontSize: '0.82rem', color: 'var(--text-muted)' }}>Set the campaign name, objective, and budget.</p>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                  <div style={{ gridColumn: '1 / -1' }}>
+                    <label style={labelStyle}>Campaign Name <em style={{ color: '#dc2626' }}>*</em></label>
+                    <input type="text" value={c2wName} onChange={(e) => setC2wName(e.target.value)} placeholder="e.g. WhatsApp Lead Campaign — Q4" style={inputStyle} />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Objective</label>
+                    <select value={c2wObjective} onChange={(e) => setC2wObjective(e.target.value)} style={inputStyle}>
+                      <option value="OUTCOME_ENGAGEMENT">Engagement — Get WhatsApp messages</option>
+                      <option value="OUTCOME_LEADS">Leads — Collect leads via WhatsApp</option>
+                      <option value="OUTCOME_TRAFFIC">Traffic — Send people to WhatsApp</option>
+                      <option value="OUTCOME_SALES">Sales — Drive sales via WhatsApp</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Currency</label>
+                    <select value={c2wCurrency} onChange={(e) => setC2wCurrency(e.target.value)} style={inputStyle}>
+                      <option value="USD">USD</option><option value="INR">INR</option><option value="EUR">EUR</option>
+                      <option value="GBP">GBP</option><option value="AED">AED</option><option value="SGD">SGD</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Daily Budget</label>
+                    <input type="number" min="1" step="0.01" value={c2wDailyBudget} onChange={(e) => setC2wDailyBudget(e.target.value)} placeholder="e.g. 50.00" style={inputStyle} />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Target Countries</label>
+                    <input type="text" value={c2wCountries} onChange={(e) => setC2wCountries(e.target.value)} placeholder="US, IN, AE" style={inputStyle} />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Age Min</label>
+                    <input type="number" min="13" max="65" value={c2wAgeMin} onChange={(e) => setC2wAgeMin(e.target.value)} style={inputStyle} />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Age Max</label>
+                    <input type="number" min="13" max="65" value={c2wAgeMax} onChange={(e) => setC2wAgeMax(e.target.value)} style={inputStyle} />
+                  </div>
+                </div>
+              </div>
+
+              {/* Step 3: Ad creative */}
+              <div style={{ background: 'var(--bg-card)', borderRadius: '12px', border: '1px solid var(--border-subtle)', padding: '24px' }}>
+                <h3 style={{ margin: '0 0 6px', fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-main)' }}>3. Ad Creative</h3>
+                <p style={{ margin: '0 0 16px', fontSize: '0.82rem', color: 'var(--text-muted)' }}>Write the ad copy and upload an image. The call-to-action is automatically set to "Send WhatsApp Message".</p>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                  <div style={{ gridColumn: '1 / -1' }}>
+                    <label style={labelStyle}>Ad Name (optional)</label>
+                    <input type="text" value={c2wAdName} onChange={(e) => setC2wAdName(e.target.value)} placeholder="e.g. WhatsApp Ad — Version A" style={inputStyle} />
+                  </div>
+                  <div style={{ gridColumn: '1 / -1' }}>
+                    <label style={labelStyle}>Headline</label>
+                    <input type="text" value={c2wHeadline} onChange={(e) => setC2wHeadline(e.target.value)} placeholder="e.g. Start your trading journey today" style={inputStyle} />
+                  </div>
+                  <div style={{ gridColumn: '1 / -1' }}>
+                    <label style={labelStyle}>Primary Text</label>
+                    <textarea value={c2wPrimaryText} onChange={(e) => setC2wPrimaryText(e.target.value)} rows={3} placeholder="Write the main ad copy that appears above the image..." style={{ ...inputStyle, resize: 'vertical' }} />
+                  </div>
+                  <div style={{ gridColumn: '1 / -1' }}>
+                    <label style={labelStyle}>Description (optional)</label>
+                    <input type="text" value={c2wDescription} onChange={(e) => setC2wDescription(e.target.value)} placeholder="Short description under the headline" style={inputStyle} />
+                  </div>
+                  <div style={{ gridColumn: '1 / -1' }}>
+                    <label style={labelStyle}>Image URL</label>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <input type="text" value={c2wImageUrl} onChange={(e) => { setC2wImageUrl(e.target.value); setC2wImageHash(''); }} placeholder="https://example.com/ad-image.jpg" style={inputStyle} />
+                      <button onClick={handleUploadImage} disabled={c2wUploading || !c2wImageUrl.trim()} style={{ ...tabBtnStyle, flexShrink: 0, whiteSpace: 'nowrap' }}>
+                        {c2wUploading ? <Loader2 size={15} className="crm-spin" /> : <Upload size={15} />} Upload
+                      </button>
+                    </div>
+                    {c2wImageHash && (
+                      <small style={{ fontSize: '0.74rem', color: '#16a34a', marginTop: '4px', display: 'block' }}>
+                        <CheckCircle2 size={12} style={{ display: 'inline', verticalAlign: 'middle' }} /> Image uploaded — hash: {c2wImageHash.substring(0, 16)}...
+                      </small>
+                    )}
+                  </div>
+                  <div style={{ gridColumn: '1 / -1' }}>
+                    <label style={labelStyle}>WhatsApp Greeting Message (optional)</label>
+                    <textarea value={c2wGreeting} onChange={(e) => setC2wGreeting(e.target.value)} rows={2} placeholder="Hi! Thanks for your interest. How can we help you today?" style={{ ...inputStyle, resize: 'vertical' }} />
+                    <small style={{ fontSize: '0.74rem', color: 'var(--text-dark)', marginTop: '4px', display: 'block' }}>This message is shown automatically when someone opens the WhatsApp chat from your ad.</small>
+                  </div>
+                </div>
+              </div>
+
+              {/* Create button */}
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button
+                  onClick={handleCreateC2WAd}
+                  disabled={!c2wName.trim() || actionLoading || (!c2wPageId && !settings?.page_id)}
+                  style={{
+                    padding: '12px 24px', borderRadius: '10px', border: 'none',
+                    background: c2wName.trim() && !actionLoading && (c2wPageId || settings?.page_id) ? '#25D366' : '#cbd5e1',
+                    color: '#fff', fontSize: '0.88rem', fontWeight: 700, cursor: 'pointer',
+                    display: 'inline-flex', alignItems: 'center', gap: '8px',
+                    boxShadow: c2wName.trim() && !actionLoading ? '0 4px 12px rgba(37,211,102,0.3)' : 'none',
+                  }}
+                >
+                  {actionLoading ? <Loader2 size={18} className="crm-spin" /> : <MessageCircle size={18} />}
+                  Create Click-to-WhatsApp Ad
+                </button>
+                <button onClick={() => setView('campaigns')} style={{ padding: '12px 24px', borderRadius: '10px', border: '1px solid var(--border-subtle)', background: 'var(--bg-card)', color: 'var(--text-main)', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer' }}>
+                  Cancel
+                </button>
+              </div>
             </div>
           )}
 
@@ -689,127 +1203,180 @@ export default function MetaAdsManager({ session }: MetaAdsManagerProps) {
             </div>
           )}
 
-          {/* ─── SETTINGS VIEW ─── */}
+          {/* ─── CONNECTION / SETTINGS VIEW ─── */}
           {view === 'settings' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div style={{ background: 'var(--bg-card)', borderRadius: '12px', border: '1px solid var(--border-subtle)', padding: '24px' }}>
-                <h3 style={{ margin: '0 0 6px', fontSize: '1rem', fontWeight: 700, color: 'var(--text-main)' }}>Meta Marketing API Credentials</h3>
-                <p style={{ margin: '0 0 20px', fontSize: '0.82rem', color: 'var(--text-muted)' }}>Connect your Meta Business Manager account to create and manage ads.</p>
+              {/* Not connected state */}
+              {!isConnected ? (
+                <div style={{ background: 'var(--bg-card)', borderRadius: '12px', border: '1px solid var(--border-subtle)', padding: '40px 24px', textAlign: 'center' }}>
+                  <div style={{ width: '64px', height: '64px', borderRadius: '16px', background: 'linear-gradient(135deg, #1877F2, #0d5fc3)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
+                    <Facebook size={32} style={{ color: '#fff' }} />
+                  </div>
+                  <h3 style={{ margin: '0 0 8px', fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-main)' }}>Connect Your Facebook Account</h3>
+                  <p style={{ margin: '0 0 24px', fontSize: '0.85rem', color: 'var(--text-muted)', maxWidth: '420px', marginLeft: 'auto', marginRight: 'auto', lineHeight: 1.6 }}>
+                    Link your Facebook ad account with one click. No API keys or developer tools needed — just click the button below and log in to Facebook to grant permission.
+                  </p>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                  <div>
-                    <label style={labelStyle}>App ID</label>
-                    <input type="text" value={appId} onChange={(e) => setAppId(e.target.value)} placeholder="1234567890123456" style={{ ...inputStyle, fontFamily: 'monospace', fontSize: '0.82rem' }} />
-                  </div>
-                  <div>
-                    <label style={labelStyle}>App Secret</label>
-                    <div style={{ position: 'relative' }}>
-                      <input type={showSecret ? 'text' : 'password'} value={appSecret} onChange={(e) => setAppSecret(e.target.value)} placeholder="••••••••••••••••" style={{ ...inputStyle, paddingRight: '38px', fontFamily: 'monospace', fontSize: '0.82rem' }} />
-                      <button type="button" onClick={() => setShowSecret(!showSecret)} style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-dark)', padding: '4px' }}>
-                        {showSecret ? <EyeOff size={16} /> : <Eye size={16} />}
-                      </button>
+                  {oauthError && (
+                    <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '10px', padding: '10px 16px', color: '#dc2626', fontSize: '0.82rem', fontWeight: 600, marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center' }}>
+                      <AlertCircle size={16} /> {oauthError}
                     </div>
-                  </div>
-                  <div style={{ gridColumn: '1 / -1' }}>
-                    <label style={labelStyle}>Access Token <em style={{ color: '#dc2626' }}>*</em></label>
-                    <div style={{ position: 'relative' }}>
-                      <input type={showToken ? 'text' : 'password'} value={accessToken} onChange={(e) => setAccessToken(e.target.value)} placeholder="EAAGxxxxxxxxxxxxxxxxx..." style={{ ...inputStyle, paddingRight: '38px', fontFamily: 'monospace', fontSize: '0.82rem' }} />
-                      <button type="button" onClick={() => setShowToken(!showToken)} style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-dark)', padding: '4px' }}>
-                        {showToken ? <EyeOff size={16} /> : <Eye size={16} />}
-                      </button>
+                  )}
+
+                  <button
+                    onClick={handleConnectFacebook}
+                    disabled={oauthLoading || !platformAppId}
+                    style={{
+                      padding: '14px 32px', borderRadius: '10px', border: 'none',
+                      background: oauthLoading || !platformAppId ? '#94a3b8' : '#1877F2',
+                      color: '#fff', fontSize: '0.95rem', fontWeight: 700, cursor: oauthLoading || !platformAppId ? 'not-allowed' : 'pointer',
+                      display: 'inline-flex', alignItems: 'center', gap: '10px',
+                      transition: 'all 0.15s', boxShadow: oauthLoading ? 'none' : '0 4px 12px rgba(24,119,242,0.3)',
+                    }}
+                  >
+                    {oauthLoading ? <Loader2 size={20} className="crm-spin" /> : <Facebook size={20} />}
+                    {oauthLoading ? 'Connecting...' : 'Connect with Facebook'}
+                  </button>
+
+                  {!platformAppId && (
+                    <p style={{ margin: '16px 0 0', fontSize: '0.78rem', color: '#854d0e' }}>
+                      <AlertCircle size={14} style={{ display: 'inline', verticalAlign: 'middle' }} /> Meta Marketing API is not configured yet. Please contact your platform administrator.
+                    </p>
+                  )}
+
+                  {/* OAuth flow explanation */}
+                  <div style={{ marginTop: '32px', padding: '16px', background: 'var(--bg-light)', borderRadius: '10px', textAlign: 'left' }}>
+                    <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: 1.7 }}>
+                      <strong style={{ color: 'var(--text-main)', display: 'block', marginBottom: '6px' }}>How it works:</strong>
+                      1. Click "Connect with Facebook" above<br />
+                      2. A Facebook login popup will appear<br />
+                      3. Log in and grant permission to manage your ads<br />
+                      4. Select which ad account you want to use<br />
+                      5. Start creating and managing campaigns from your CRM
                     </div>
-                    <small style={{ fontSize: '0.74rem', color: 'var(--text-dark)', marginTop: '4px', display: 'block' }}>
-                      Generate a long-lived access token in <a href="https://developers.facebook.com/tools/explorer/" target="_blank" rel="noopener noreferrer" style={{ color: '#1877F2' }}>Graph API Explorer</a> with the ads_management permission.
-                    </small>
-                  </div>
-                  <div>
-                    <label style={labelStyle}>Ad Account ID <em style={{ color: '#dc2626' }}>*</em></label>
-                    <input type="text" value={adAccountId} onChange={(e) => setAdAccountId(e.target.value)} placeholder="1234567890" style={{ ...inputStyle, fontFamily: 'monospace', fontSize: '0.82rem' }} />
-                    <small style={{ fontSize: '0.74rem', color: 'var(--text-dark)', marginTop: '4px', display: 'block' }}>Found in Facebook Ads Manager. Without the "act_" prefix.</small>
                   </div>
                 </div>
-
-                <div style={{ marginTop: '20px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                  <button onClick={handleSaveSettings} disabled={actionLoading} style={{ padding: '10px 20px', borderRadius: '8px', border: 'none', background: '#1877F2', color: '#fff', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                    {actionLoading ? <Loader2 size={16} className="crm-spin" /> : <CheckCircle2 size={16} />} Save Settings
-                  </button>
-                  <button onClick={handleVerify} disabled={actionLoading || (!accessToken && !settings?.access_token)} style={{ padding: '10px 20px', borderRadius: '8px', border: '1px solid var(--border-subtle)', background: 'var(--bg-card)', color: 'var(--text-main)', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                    {actionLoading ? <Loader2 size={16} className="crm-spin" /> : <Globe size={16} />} Verify Connection
-                  </button>
-                  <button onClick={handleFetchAdAccounts} disabled={actionLoading || (!accessToken && !settings?.access_token)} style={{ padding: '10px 20px', borderRadius: '8px', border: '1px solid var(--border-subtle)', background: 'var(--bg-card)', color: 'var(--text-main)', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                    <Target size={16} /> List Ad Accounts
-                  </button>
-                </div>
-
-                {verifyResult && (
-                  <div style={{ marginTop: '16px', padding: '14px 16px', background: 'rgba(22,163,74,0.08)', border: '1px solid rgba(22,163,74,0.3)', borderRadius: '10px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                      <CheckCircle2 size={18} style={{ color: '#16a34a' }} />
-                      <strong style={{ fontSize: '0.85rem', color: '#16a34a' }}>Connection verified!</strong>
+              ) : (
+                <>
+                  {/* Connected state */}
+                  <div style={{ background: 'var(--bg-card)', borderRadius: '12px', border: '1px solid var(--border-subtle)', padding: '24px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                        <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'linear-gradient(135deg, #1877F2, #0d5fc3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <Facebook size={24} style={{ color: '#fff' }} />
+                        </div>
+                        <div>
+                          <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-main)' }}>
+                            {settings?.fb_user_name || 'Facebook Account'}
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
+                            <CheckCircle2 size={14} style={{ color: '#16a34a' }} />
+                            <span style={{ fontSize: '0.78rem', color: '#16a34a', fontWeight: 600 }}>Connected via Facebook Login</span>
+                          </div>
+                        </div>
+                      </div>
+                      <button
+                        onClick={handleDisconnect}
+                        disabled={actionLoading}
+                        style={{
+                          padding: '8px 16px', borderRadius: '8px', border: '1px solid rgba(239,68,68,0.3)',
+                          background: 'rgba(239,68,68,0.08)', color: '#dc2626',
+                          fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer',
+                          display: 'inline-flex', alignItems: 'center', gap: '6px',
+                        }}
+                      >
+                        {actionLoading ? <Loader2 size={14} className="crm-spin" /> : <LogOut size={14} />} Disconnect
+                      </button>
                     </div>
-                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 20px' }}>
-                      <span><strong>Account:</strong> {verifyResult.name}</span>
-                      <span><strong>Currency:</strong> {verifyResult.currency}</span>
-                      <span><strong>Amount Spent:</strong> ${(parseFloat(verifyResult.amount_spent) / 100).toFixed(2)}</span>
-                      <span><strong>Balance:</strong> ${(parseFloat(verifyResult.balance) / 100).toFixed(2)}</span>
-                    </div>
+
+                    {settings?.token_expires_at && (
+                      <div style={{ marginTop: '12px', padding: '10px 14px', background: 'var(--bg-light)', borderRadius: '8px', fontSize: '0.76rem', color: 'var(--text-dark)' }}>
+                        <Clock size={12} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '4px' }} />
+                        Token expires: {new Date(settings.token_expires_at).toLocaleDateString()} at {new Date(settings.token_expires_at).toLocaleTimeString()}
+                      </div>
+                    )}
                   </div>
-                )}
 
-                {adAccounts.length > 0 && (
-                  <div style={{ marginTop: '16px' }}>
-                    <h4 style={{ margin: '0 0 8px', fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-main)' }}>Your Ad Accounts</h4>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                      {adAccounts.map(acct => (
-                        <button
-                          key={acct.id}
-                          onClick={() => setAdAccountId(acct.id.replace(/^act_/, ''))}
-                          style={{ padding: '10px 14px', borderRadius: '8px', border: adAccountId === acct.id.replace(/^act_/, '') ? '2px solid #1877F2' : '1px solid var(--border-subtle)', background: adAccountId === acct.id.replace(/^act_/, '') ? 'rgba(24,119,242,0.08)' : 'var(--bg-light)', cursor: 'pointer', textAlign: 'left', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
-                        >
-                          <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-main)' }}>{acct.name}</span>
-                          <span style={{ fontSize: '0.76rem', color: 'var(--text-dark)' }}>{acct.id.replace(/^act_/, '')} &middot; {acct.currency}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
+                  {/* Ad account selection */}
+                  <div style={{ background: 'var(--bg-card)', borderRadius: '12px', border: '1px solid var(--border-subtle)', padding: '24px' }}>
+                    <h3 style={{ margin: '0 0 6px', fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-main)' }}>Ad Account</h3>
+                    <p style={{ margin: '0 0 16px', fontSize: '0.82rem', color: 'var(--text-muted)' }}>Select which Facebook ad account you want to manage campaigns from.</p>
 
-              {/* Setup guide */}
-              <div style={{ background: 'var(--bg-light)', borderRadius: '12px', border: '1px solid var(--border-subtle)', overflow: 'hidden' }}>
-                <details>
-                  <summary style={{ padding: '14px 20px', cursor: 'pointer', fontWeight: 700, fontSize: '0.85rem', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px', listStyle: 'none', userSelect: 'none' }}>
-                    <ChevronDown size={18} style={{ color: '#1877F2' }} />
-                    Setup Guide: How to get Meta Marketing API credentials
-                  </summary>
-                  <div style={{ padding: '0 20px 16px', fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: 1.7 }}>
-                    <h4 style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--text-main)', margin: '12px 0 8px' }}>Step 1 — Create a Meta App</h4>
-                    <ol style={{ margin: '0 0 12px', paddingLeft: '20px' }}>
-                      <li>Go to <a href="https://developers.facebook.com/apps/" target="_blank" rel="noopener noreferrer" style={{ color: '#1877F2' }}>developers.facebook.com/apps</a> and click "Create App".</li>
-                      <li>Choose "Business" as the app type and give it a name.</li>
-                      <li>In your app dashboard, add the "Marketing API" product.</li>
-                      <li>Copy your <strong>App ID</strong> and <strong>App Secret</strong> from Settings &rarr; Basic.</li>
-                    </ol>
-                    <h4 style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--text-main)', margin: '12px 0 8px' }}>Step 2 — Generate an Access Token</h4>
-                    <ol style={{ margin: '0 0 12px', paddingLeft: '20px' }}>
-                      <li>Go to the <a href="https://developers.facebook.com/tools/explorer/" target="_blank" rel="noopener noreferrer" style={{ color: '#1877F2' }}>Graph API Explorer</a>.</li>
-                      <li>Select your app from the dropdown.</li>
-                      <li>Click "Generate Access Token" and select the <strong>ads_management</strong> permission.</li>
-                      <li>Copy the generated token.</li>
-                      <li>For a long-lived token, use the <a href="https://developers.facebook.com/docs/facebook-login/guides/access-tokens/get-long-lived" target="_blank" rel="noopener noreferrer" style={{ color: '#1877F2' }}>long-lived token guide</a>.</li>
-                    </ol>
-                    <h4 style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--text-main)', margin: '12px 0 8px' }}>Step 3 — Find your Ad Account ID</h4>
-                    <ol style={{ margin: '0 0 12px', paddingLeft: '20px' }}>
-                      <li>Open <a href="https://www.facebook.com/adsmanager" target="_blank" rel="noopener noreferrer" style={{ color: '#1877F2' }}>Facebook Ads Manager</a>.</li>
-                      <li>Your Ad Account ID is in the URL or Account Settings (a number like <span style={{ fontFamily: 'monospace' }}>1234567890</span>).</li>
-                      <li>Enter it without the "act_" prefix.</li>
-                    </ol>
-                    <div style={{ padding: '10px 14px', background: 'rgba(234,179,8,0.08)', border: '1px solid rgba(234,179,8,0.2)', borderRadius: '8px', fontSize: '0.78rem', color: '#854d0e' }}>
-                      <strong>App Review:</strong> To create ads on behalf of other users, your Meta app needs to pass App Review for the <code>ads_management</code> permission. For personal use with your own access token, you can start immediately. Visit <a href="https://developers.facebook.com/docs/app-review" target="_blank" rel="noopener noreferrer" style={{ color: '#854d0e' }}>developers.facebook.com/docs/app-review</a> for details.
+                    {hasAdAccount && (
+                      <div style={{ padding: '12px 16px', background: 'rgba(22,163,74,0.08)', border: '1px solid rgba(22,163,74,0.3)', borderRadius: '10px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <CheckCircle2 size={18} style={{ color: '#16a34a' }} />
+                        <div>
+                          <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-main)' }}>Active Ad Account: {settings?.ad_account_id}</div>
+                          <div style={{ fontSize: '0.74rem', color: 'var(--text-dark)' }}>Click "Verify" to check the connection or select a different account below.</div>
+                        </div>
+                      </div>
+                    )}
+
+                    <div style={{ display: 'flex', gap: '10px', marginBottom: '16px', flexWrap: 'wrap' }}>
+                      <button onClick={handleFetchAdAccounts} disabled={actionLoading} style={{ padding: '10px 18px', borderRadius: '8px', border: '1px solid var(--border-subtle)', background: 'var(--bg-card)', color: 'var(--text-main)', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                        {actionLoading ? <Loader2 size={16} className="crm-spin" /> : <RefreshCw size={16} />} Load Ad Accounts
+                      </button>
+                      <button onClick={handleVerify} disabled={actionLoading} style={{ padding: '10px 18px', borderRadius: '8px', border: '1px solid var(--border-subtle)', background: 'var(--bg-card)', color: 'var(--text-main)', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                        {actionLoading ? <Loader2 size={16} className="crm-spin" /> : <Globe size={16} />} Verify Connection
+                      </button>
                     </div>
+
+                    {verifyResult && (
+                      <div style={{ marginBottom: '16px', padding: '14px 16px', background: 'rgba(22,163,74,0.08)', border: '1px solid rgba(22,163,74,0.3)', borderRadius: '10px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                          <CheckCircle2 size={18} style={{ color: '#16a34a' }} />
+                          <strong style={{ fontSize: '0.85rem', color: '#16a34a' }}>Connection verified!</strong>
+                        </div>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 20px' }}>
+                          <span><strong>Account:</strong> {verifyResult.name}</span>
+                          <span><strong>Currency:</strong> {verifyResult.currency}</span>
+                          <span><strong>Amount Spent:</strong> ${(parseFloat(verifyResult.amount_spent) / 100).toFixed(2)}</span>
+                          <span><strong>Balance:</strong> ${(parseFloat(verifyResult.balance) / 100).toFixed(2)}</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {adAccounts.length > 0 && (
+                      <div>
+                        <h4 style={{ margin: '0 0 8px', fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-main)' }}>Your Ad Accounts</h4>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                          {adAccounts.map(acct => {
+                            const cleanId = acct.id.replace(/^act_/, '');
+                            const isSelected = settings?.ad_account_id === cleanId;
+                            return (
+                              <button
+                                key={acct.id}
+                                onClick={() => handleSaveAdAccount(cleanId)}
+                                disabled={actionLoading}
+                                style={{
+                                  padding: '12px 16px', borderRadius: '8px',
+                                  border: isSelected ? '2px solid #1877F2' : '1px solid var(--border-subtle)',
+                                  background: isSelected ? 'rgba(24,119,242,0.08)' : 'var(--bg-light)',
+                                  cursor: 'pointer', textAlign: 'left',
+                                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                }}
+                              >
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                  {isSelected && <CheckCircle2 size={16} style={{ color: '#1877F2' }} />}
+                                  <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-main)' }}>{acct.name}</span>
+                                </div>
+                                <span style={{ fontSize: '0.76rem', color: 'var(--text-dark)' }}>{cleanId} &middot; {acct.currency}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {adAccounts.length === 0 && !actionLoading && (
+                      <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-dark)', fontSize: '0.82rem', background: 'var(--bg-light)', borderRadius: '8px' }}>
+                        <Link2 size={24} style={{ color: 'var(--text-dark)', margin: '0 auto 8px' }} />
+                        Click "Load Ad Accounts" to fetch your available ad accounts from Facebook.
+                      </div>
+                    )}
                   </div>
-                </details>
-              </div>
+                </>
+              )}
             </div>
           )}
         </>
@@ -933,5 +1500,14 @@ function MiniStat({ label, value }: { label: string; value: string }) {
       <div style={{ fontSize: '0.68rem', color: 'var(--text-dark)', textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 600 }}>{label}</div>
       <div style={{ fontSize: '0.86rem', fontWeight: 700, color: 'var(--text-main)' }}>{value}</div>
     </div>
+  );
+}
+
+function Clock({ size, style }: { size: number; style?: React.CSSProperties }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={style}>
+      <circle cx="12" cy="12" r="10" />
+      <polyline points="12 6 12 12 16 14" />
+    </svg>
   );
 }
