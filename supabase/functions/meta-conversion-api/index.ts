@@ -139,8 +139,11 @@ Deno.serve(async (req: Request) => {
     }
 
     // Build custom data
+    // Meta CRM Lead Status Integration requires event_source="crm" and lead_event_source (CRM name)
     const custom_data: Record<string, unknown> = {
       status: status || "unknown",
+      event_source: "crm",
+      lead_event_source: (settings as Record<string, unknown>).lead_event_source as string || "SahilExchange CRM",
     };
 
     if (event_name === "Purchase") {

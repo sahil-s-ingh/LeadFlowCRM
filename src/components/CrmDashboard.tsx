@@ -7725,6 +7725,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
   const [metaEnabled, setMetaEnabled] = useState(true);
   const [metaCurrency, setMetaCurrency] = useState('USD');
   const [metaDefaultValue, setMetaDefaultValue] = useState('');
+  const [metaLeadEventSource, setMetaLeadEventSource] = useState('SahilExchange CRM');
   const [showMetaToken, setShowMetaToken] = useState(false);
   const [metaConversionLog, setMetaConversionLog] = useState<{ id: string; event_name: string; success: boolean; error_message: string | null; created_at: string }[]>([]);
   const [eventMapping, setEventMapping] = useState<Record<LeadStatus, string>>({ ...DEFAULT_STAGE_EVENTS });
@@ -7850,6 +7851,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
         setMetaEnabled(metaRes.data.is_enabled !== false);
         setMetaCurrency((metaRes.data as Record<string, unknown>).currency as string || 'USD');
         setMetaDefaultValue((metaRes.data as Record<string, unknown>).default_purchase_value != null ? String((metaRes.data as Record<string, unknown>).default_purchase_value) : '');
+        setMetaLeadEventSource((metaRes.data as Record<string, unknown>).lead_event_source as string || 'SahilExchange CRM');
         const m = metaRes.data as Record<string, unknown>;
         setEventMapping({
           new: (m.event_new as string) || DEFAULT_STAGE_EVENTS.new,
@@ -8099,6 +8101,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
         is_enabled: metaEnabled,
         currency: metaCurrency.trim() || 'USD',
         default_purchase_value: metaDefaultValue.trim() ? parseFloat(metaDefaultValue) : null,
+        lead_event_source: metaLeadEventSource.trim() || 'SahilExchange CRM',
         event_new: eventMapping.new,
         event_called_no_response: eventMapping.called_no_response,
         event_called_responded: eventMapping.called_responded,
@@ -11003,6 +11006,13 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                     <label className="crm-add-lead-field" style={{ flexDirection: 'row', alignItems: 'center', gap: '10px' }}>
                       <input type="checkbox" checked={metaEnabled} onChange={(e) => setMetaEnabled(e.target.checked)} style={{ width: '18px', height: '18px', accentColor: '#1877F2' }} />
                       <span style={{ fontSize: '0.88rem', fontWeight: 500 }}>Enable conversion event sending</span>
+                    </label>
+                    <label className="crm-add-lead-field" style={{ gridColumn: '1 / -1' }}>
+                      <span>CRM Name (Lead Event Source)</span>
+                      <input type="text" value={metaLeadEventSource} onChange={(e) => setMetaLeadEventSource(e.target.value)} placeholder="SahilExchange CRM" style={{ fontSize: '0.85rem', fontWeight: 600 }} />
+                      <small style={{ color: 'var(--text-dark)', fontSize: '0.74rem', marginTop: '4px', display: 'block' }}>
+                        Sent to Meta as <code>lead_event_source</code> in every event. Meta uses this to identify your CRM in their CRM Lead Status Integration.
+                      </small>
                     </label>
                   </div>
 
