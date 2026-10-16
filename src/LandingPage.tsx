@@ -2496,66 +2496,6 @@ function HelpWidget() {
   );
 }
 
-// ===================== Geographic Coverage =====================
-function GeographicCoverage() {
-  const cities = [
-    { name: 'Delhi', x: 32, y: 22, size: 14 },
-    { name: 'Mumbai', x: 20, y: 55, size: 16 },
-    { name: 'Bengaluru', x: 35, y: 78, size: 13 },
-    { name: 'Jaipur', x: 30, y: 33, size: 10 },
-    { name: 'Pune', x: 24, y: 58, size: 11 },
-    { name: 'Hyderabad', x: 40, y: 62, size: 11 },
-    { name: 'Chennai', x: 48, y: 72, size: 10 },
-    { name: 'Kolkata', x: 55, y: 38, size: 12 },
-    { name: 'Ahmedabad', x: 22, y: 40, size: 10 },
-    { name: 'Chandigarh', x: 33, y: 17, size: 8 },
-    { name: 'Lucknow', x: 42, y: 28, size: 9 },
-    { name: 'Indore', x: 30, y: 45, size: 8 },
-  ];
-  return (
-    <section style={{ paddingBottom: 50 }}>
-      <div style={{ maxWidth: 960, margin: '0 auto', padding: '0 16px' }}>
-        <SectionHeader pill="PAN-INDIA PRESENCE" title={<>TRUSTED ACROSS <span className="text-gold-gradient">120+ CITIES</span></>} desc="From metros to tier-2 towns, businesses everywhere grow sales with LeadFlow." />
-        <div style={{ background: 'var(--bg-card)', borderRadius: 18, border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 6px 24px rgba(0,0,0,0.04)', padding: '24px 18px' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }} className="geo-grid">
-            {/* Map */}
-            <div style={{ position: 'relative', height: 340, background: 'linear-gradient(135deg, #F8FAFC, #F1F5F9)', borderRadius: 14, border: '1px solid rgba(0,0,0,0.06)', overflow: 'hidden' }} className="geo-map">
-              {/* Simplified India outline */}
-              <svg viewBox="0 0 100 100" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0.15 }}>
-                <path d="M35 8 L42 8 L50 12 L55 18 L58 25 L60 30 L65 32 L62 38 L58 42 L55 48 L52 55 L48 60 L42 68 L38 75 L35 82 L32 88 L30 82 L28 72 L25 62 L22 55 L20 48 L18 40 L20 32 L22 25 L28 18 L32 12 Z" fill="#EAB308" stroke="#CA8A04" strokeWidth="0.3" />
-              </svg>
-              {/* City pins */}
-              {cities.map((c) => (
-                <div key={c.name} style={{ position: 'absolute', left: `${c.x}%`, top: `${c.y}%`, transform: 'translate(-50%, -50%)' }}>
-                  <div style={{ position: 'relative' }}>
-                    <div style={{ width: c.size, height: c.size, borderRadius: '50%', background: 'linear-gradient(135deg, #FEF08A, #EAB308)', border: '2px solid #CA8A04', boxShadow: '0 2px 8px rgba(234, 179, 8, 0.4)', animation: 'pulse-dot 2s infinite' }} />
-                    <span style={{ position: 'absolute', left: '50%', top: c.size + 4, transform: 'translateX(-50%)', fontSize: '0.62rem', fontWeight: 800, color: 'var(--text-main)', whiteSpace: 'nowrap', textShadow: '0 1px 2px rgba(255,255,255,0.8)' }}>{c.name}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-            {/* Stats */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
-              <div style={{ textAlign: 'center', padding: '14px 8px', background: 'var(--bg-light)', borderRadius: 12, border: '1px solid rgba(0,0,0,0.06)' }}>
-                <div style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1.5rem', fontWeight: 900, color: '#CA8A04' }}>120+</div>
-                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 600 }}>Cities</div>
-              </div>
-              <div style={{ textAlign: 'center', padding: '14px 8px', background: 'var(--bg-light)', borderRadius: 12, border: '1px solid rgba(0,0,0,0.06)' }}>
-                <div style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1.5rem', fontWeight: 900, color: '#CA8A04' }}>28</div>
-                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 600 }}>States</div>
-              </div>
-              <div style={{ textAlign: 'center', padding: '14px 8px', background: 'var(--bg-light)', borderRadius: 12, border: '1px solid rgba(0,0,0,0.06)' }}>
-                <div style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1.5rem', fontWeight: 900, color: '#CA8A04' }}>5K+</div>
-                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 600 }}>Businesses</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
 // ===================== Logo Cloud =====================
 function LogoCloud() {
   const logos = [
@@ -3575,7 +3515,6 @@ function LandingPage() {
       <GiftStack />
       <TimeSavingsCalculator />
       <SuccessMetrics />
-      <GeographicCoverage />
       <LiveActivityFeed />
       <MobilePreview />
       <TrustGuarantee />
