@@ -295,166 +295,188 @@ function Header() {
 
 // ===================== Hero =====================
 function Hero() {
-  const telegramLink = useTelegramLink();
   return (
-    <section style={{ paddingTop: 24, paddingBottom: 32, textAlign: 'center', position: 'relative' }}>
-      <div
-        style={{
-          maxWidth: 720,
-          margin: '0 auto',
-          padding: '0 16px',
-        }}
-      >
-        <div
-          style={{
-            background: 'rgba(255, 255, 255, 0.7)',
-            backdropFilter: 'blur(12px)',
-            WebkitBackdropFilter: 'blur(12px)',
-            border: '1px solid rgba(234, 179, 8, 0.25)',
-            borderRadius: 20,
-            padding: '24px 18px',
-            boxShadow: '0 12px 35px rgba(234, 179, 8, 0.08), 0 1px 3px rgba(0, 0, 0, 0.02)',
-            position: 'relative',
-          }}
-        >
-          {/* Badge */}
-          <div style={{ marginBottom: 12 }}>
-            <span
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 7,
-                padding: '6px 14px',
-                background: `linear-gradient(135deg, var(--landing-primary-light, #FEF08A) 0%, var(--landing-primary, #EAB308) 100%)`,
-                color: '#000000',
-                border: `1px solid var(--landing-primary, rgba(234, 179, 8, 0.6))`,
-                borderRadius: '9999px',
-                fontSize: '0.78rem',
-                fontWeight: 900,
-                boxShadow: '0 3px 12px rgba(234, 179, 8, 0.3)',
-              }}
-            >
-              <span className="live-dot-pulse" />
-              <span>14-Day Free Trial &bull; 5,000+ Teams Onboard</span>
+    <section className="hero-section" style={{ paddingTop: 28, paddingBottom: 40, textAlign: 'center' }}>
+      {/* Animated mesh background */}
+      <div className="hero-mesh-bg" />
+      <div className="hero-grid-overlay" />
+      {/* Glowing orbs */}
+      <div className="hero-glow-orb hero-glow-1" />
+      <div className="hero-glow-orb hero-glow-2" />
+      <div className="hero-glow-orb hero-glow-3" />
+
+      <div className="hero-content-wrap">
+        {/* Badge */}
+        <span className="hero-badge-pill">
+          <span className="live-dot-pulse" />
+          <span>14-Day Free Trial &bull; 5,000+ Teams Onboard</span>
+        </span>
+
+        {/* Title */}
+        <h1 className="hero-title">
+          Close More Deals With <span className="text-gold-gradient">LeadFlow CRM</span>
+        </h1>
+
+        {/* Subtitle */}
+        <p className="hero-subtitle">
+          Turn scattered leads into closed deals. Manage your pipeline, automate follow-ups, blast WhatsApp &amp; Email campaigns, and track revenue — all from one CRM built for sales teams that move fast.
+        </p>
+
+        {/* CTA */}
+        <div className="hero-cta-row">
+          <a href="#signup" onClick={(event) => { event.preventDefault(); window.location.hash = 'signup'; }} className="gold-cta">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+              <circle cx="9" cy="7" r="4" />
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+              <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+            </svg>
+            <span>ACTIVATE MY CRM TRIAL</span>
+          </a>
+          <span style={{ fontSize: '0.75rem', color: 'var(--text-dark)', display: 'flex', alignItems: 'center', gap: 5 }}>
+            Instant Access &bull; Zero Credit Card Needed
+          </span>
+        </div>
+
+        {/* Trust chips */}
+        <div className="hero-trust-row">
+          {[
+            { icon: 'bot', label: 'Lead Pipeline Management' },
+            { icon: 'video', label: 'WhatsApp & Email Broadcast' },
+            { icon: 'shield', label: 'Smart Automated Follow-ups' },
+          ].map((b) => (
+            <span key={b.label} className="hero-trust-chip">
+              <BadgeIconSvg type={b.icon} />
+              {b.label}
             </span>
-          </div>
+          ))}
+        </div>
 
-          {/* Title */}
-          <h1
-            style={{
-              fontFamily: 'Outfit, sans-serif',
-              fontSize: '1.95rem',
-              fontWeight: 900,
-              letterSpacing: '-0.2px',
-              marginBottom: 12,
-              lineHeight: 1.35,
-              color: 'var(--landing-text, #0F172A)',
-            }}
-          >
-            Close More Deals With <span className="text-gold-gradient">LeadFlow CRM</span>
-          </h1>
-
-          {/* Description */}
-          <p
-            style={{
-              fontSize: '0.92rem',
-              color: 'var(--landing-text-muted, #475569)',
-              marginBottom: 18,
-              lineHeight: 1.55,
-              maxWidth: 620,
-              marginLeft: 'auto',
-              marginRight: 'auto',
-            }}
-          >
-            Turn scattered leads into closed deals. Manage your pipeline, automate follow-ups, blast WhatsApp &amp; Email campaigns, and track revenue — all from one CRM built for sales teams that move fast.
-          </p>
-
-          {/* Seat Progress */}
-          <div
-            style={{
-              background: 'var(--bg-card)',
-              border: '1.5px solid rgba(234, 179, 8, 0.4)',
-              borderRadius: 14,
-              padding: '10px 14px',
-              maxWidth: 440,
-              margin: '0 auto 20px auto',
-              textAlign: 'left',
-              boxShadow: '0 4px 14px rgba(234, 179, 8, 0.08)',
-            }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.75rem', fontWeight: 800, marginBottom: 6 }}>
-              <span style={{ color: '#854D0E', display: 'flex', alignItems: 'center', gap: 5 }}>
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" style={{ color: '#D97706' }}>
-                  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-                </svg>
-                Free CRM Trial Slots
-              </span>
-              <span style={{ color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: 4 }}>
-                481/500 Claimed
-              </span>
-            </div>
-            <div style={{ width: '100%', height: 8, background: 'rgba(0, 0, 0, 0.06)', borderRadius: '9999px', overflow: 'hidden', position: 'relative' }}>
-              <div
-                className="progress-fill-anim"
-                style={{
-                  height: '100%',
-                  width: '96%',
-                  background: 'linear-gradient(90deg, #EAB308 0%, #F59E0B 50%, #CA8A04 100%)',
-                  borderRadius: '9999px',
-                  boxShadow: '0 1px 4px rgba(234, 179, 8, 0.4)',
-                  position: 'relative',
-                  overflow: 'hidden',
-                }}
-              />
-            </div>
-            <div style={{ textAlign: 'right', marginTop: 4, fontSize: '0.72rem', fontWeight: 800, color: '#D97706' }}>
-              96% Full
+        {/* Dashboard mockup */}
+        <div className="hero-mockup-wrap">
+          {/* Floating notification card 1 */}
+          <div className="hero-float-card hero-float-card-1">
+            <div className="hero-float-card-inner">
+              <div className="hero-float-card-icon" style={{ background: 'linear-gradient(135deg, #DCFCE8, #22C55E)' }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="3"><polyline points="20 6 9 17 4 12" /></svg>
+              </div>
+              <div style={{ textAlign: 'left' }}>
+                <div className="hero-float-card-text">Deal Closed!</div>
+                <div className="hero-float-card-sub">+&#8377;85,000</div>
+              </div>
             </div>
           </div>
 
-          {/* CTA */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'center', maxWidth: 460, margin: '0 auto' }}>
-            <a href="#signup" onClick={(event) => { event.preventDefault(); window.location.hash = 'signup'; }} className="gold-cta">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                <circle cx="9" cy="7" r="4" />
-                <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-              </svg>
-              <span>ACTIVATE MY CRM TRIAL</span>
-            </a>
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-dark)', display: 'flex', alignItems: 'center', gap: 5 }}>
-              Instant Access &bull; Zero Credit Card Needed
-            </span>
+          {/* Floating notification card 2 */}
+          <div className="hero-float-card hero-float-card-2">
+            <div className="hero-float-card-inner">
+              <div className="hero-float-card-icon" style={{ background: 'linear-gradient(135deg, #FEF08A, #EAB308)' }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#422006" strokeWidth="2.5"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" /></svg>
+              </div>
+              <div style={{ textAlign: 'left' }}>
+                <div className="hero-float-card-text">2,847 leads reached</div>
+                <div className="hero-float-card-sub">WhatsApp broadcast</div>
+              </div>
+            </div>
           </div>
 
-          {/* Hero Badges */}
-          <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 8, marginTop: 16 }}>
-            {[
-              { icon: 'bot', label: 'Lead Pipeline Management' },
-              { icon: 'video', label: 'WhatsApp & Email Broadcast' },
-              { icon: 'shield', label: 'Smart Automated Follow-ups' },
-            ].map((b) => (
-              <span
-                key={b.label}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 5,
-                  background: 'var(--bg-card)',
-                  border: '1px solid rgba(0, 0, 0, 0.08)',
-                  padding: '5px 11px',
-                  borderRadius: '9999px',
-                  fontSize: '0.78rem',
-                  fontWeight: 700,
-                  color: 'var(--text-main)',
-                  boxShadow: '0 2px 4px rgba(0, 0, 0, 0.02)',
-                }}
-              >
-                <BadgeIconSvg type={b.icon} />
-                {b.label}
-              </span>
-            ))}
+          {/* Main dashboard mockup */}
+          <div className="hero-mockup-card">
+            {/* Window bar */}
+            <div className="hero-mockup-bar">
+              <div className="hero-mockup-bar-dot" style={{ background: '#EF4444' }} />
+              <div className="hero-mockup-bar-dot" style={{ background: '#F59E0B' }} />
+              <div className="hero-mockup-bar-dot" style={{ background: '#22C55E' }} />
+              <div className="hero-mockup-url">app.leadflowcrm.com/pipeline</div>
+            </div>
+
+            {/* Dashboard body */}
+            <div className="hero-mockup-body">
+              {/* Sidebar */}
+              <div className="hero-mockup-sidebar">
+                <div className="hero-mockup-nav-item active">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><rect x="3" y="3" width="6" height="18" rx="1" /><rect x="15" y="3" width="6" height="12" rx="1" /></svg>
+                  Pipeline
+                </div>
+                <div className="hero-mockup-nav-item">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="8.5" cy="7" r="4" /></svg>
+                  Leads
+                </div>
+                <div className="hero-mockup-nav-item">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" /></svg>
+                  Inbox
+                </div>
+                <div className="hero-mockup-nav-item">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 3v18h18" /><path d="M7 14l4-4 3 3 5-6" /></svg>
+                  Reports
+                </div>
+                <div className="hero-mockup-nav-item">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" /></svg>
+                  Auto
+                </div>
+              </div>
+
+              {/* Main content */}
+              <div className="hero-mockup-main">
+                {/* Stat cards */}
+                <div className="hero-mockup-stat-row">
+                  {[
+                    { label: 'Revenue', val: '\u20B94.2L', color: '#FACC15' },
+                    { label: 'Win Rate', val: '62%', color: '#22C55E' },
+                    { label: 'New Leads', val: '847', color: '#38BDF8' },
+                  ].map((s) => (
+                    <div key={s.label} className="hero-mockup-stat">
+                      <div className="hero-mockup-stat-label">{s.label}</div>
+                      <div className="hero-mockup-stat-val" style={{ color: s.color }}>{s.val}</div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Pipeline columns */}
+                <div className="hero-mockup-pipeline">
+                  {[
+                    { stage: 'New', count: 12, color: '#38BDF8' },
+                    { stage: 'Hot', count: 6, color: '#F59E0B' },
+                    { stage: 'Won', count: 3, color: '#22C55E' },
+                  ].map((col) => (
+                    <div key={col.stage} className="hero-mockup-stage">
+                      <div className="hero-mockup-stage-header" style={{ color: col.color }}>
+                        {col.stage} ({col.count})
+                      </div>
+                      {Array.from({ length: Math.min(col.count, 3) }).map((_, i) => (
+                        <div key={i} className="hero-mockup-lead-card">
+                          <div className="hero-mockup-lead-bar" style={{ width: '70%', background: 'rgba(255,255,255,0.15)' }} />
+                          <div className="hero-mockup-lead-bar-2" style={{ background: 'rgba(255,255,255,0.1)' }} />
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Mini chart bar */}
+                <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, height: 36, padding: '6px 4px 0 4px' }}>
+                  {[40, 65, 50, 80, 55, 90, 70].map((h, i) => (
+                    <div
+                      key={i}
+                      style={{
+                        flex: 1,
+                        height: `${h}%`,
+                        background: `linear-gradient(180deg, #EAB308, #CA8A04)`,
+                        borderRadius: '3px 3px 0 0',
+                        opacity: i === 5 ? 1 : 0.5,
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Live ticker */}
+          <div className="hero-live-ticker">
+            <span className="live-dot" />
+            <span>481 of 500 trial slots claimed</span>
+            <span style={{ color: '#D97706', fontWeight: 900 }}>&bull; 96% full</span>
           </div>
         </div>
       </div>
