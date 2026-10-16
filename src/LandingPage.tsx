@@ -159,12 +159,12 @@ function useOfferReveal() {
 
 // ===================== Social Proof Toast Hook =====================
 const joiners = [
-  { name: 'Rahul S.', city: 'Delhi', time: '1 min ago', action: 'started a 14-day CRM free trial!' },
-  { name: 'Priya K.', city: 'Jaipur', time: 'Just now', action: 'imported 500 leads into LeadFlow CRM!' },
-  { name: 'Siddharth V.', city: 'Mumbai', time: '2 mins ago', action: 'closed 3 deals using the sales pipeline!' },
-  { name: 'Amit B.', city: 'Bengaluru', time: 'Just now', action: 'automated follow-ups with LeadFlow CRM!' },
-  { name: 'Neha Sharma', city: 'Chandigarh', time: '3 mins ago', action: 'unlocked WhatsApp broadcast feature!' },
-  { name: 'Karan Verma', city: 'Pune', time: 'Just now', action: 'claimed free CRM dashboard access!' },
+  { name: 'Arjun R.', city: 'Mumbai', time: '1 min ago', action: 'just activated their CRM dashboard!' },
+  { name: 'Sneha P.', city: 'Pune', time: 'Just now', action: 'synced 1,200 leads into LeadFlow!' },
+  { name: 'Vikram J.', city: 'Hyderabad', time: '2 mins ago', action: 'closed 5 deals this week using pipeline!' },
+  { name: 'Divya K.', city: 'Bengaluru', time: 'Just now', action: 'launched a WhatsApp broadcast to 3,000 leads!' },
+  { name: 'Rohan Gupta', city: 'Ahmedabad', time: '3 mins ago', action: 'set up automated follow-up sequences!' },
+  { name: 'Ananya S.', city: 'Jaipur', time: 'Just now', action: 'started their 14-day free trial!' },
 ];
 
 function useSocialToast() {
@@ -221,7 +221,7 @@ function TopUrgencyBar() {
       <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" style={{ color: '#D97706', display: 'inline-block', verticalAlign: '-1px' }}>
         <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
       </svg>
-      <span>Free CRM Trial Closes In</span>
+      <span>Your Free CRM Access Ends In</span>
       <div
         style={{
           background: '#78350F',
@@ -237,7 +237,7 @@ function TopUrgencyBar() {
         {countdown}
       </div>
       <span style={{ display: 'inline-block', width: 4, height: 4, backgroundColor: '#D97706', borderRadius: '50%' }} />
-      <span>Limited Trial Spots</span>
+      <span>Only 19 Trial Slots Left</span>
     </div>
   );
 }
@@ -268,7 +268,7 @@ function Header() {
           </div>
           <div style={{ display: 'flex', flexDirection: 'column' }}>
             <span style={{ fontWeight: 900, lineHeight: 1.1, fontSize: '1.05rem' }}>LeadFlow CRM</span>
-            <span style={{ fontSize: '0.65rem', color: '#CA8A04', fontWeight: 800, letterSpacing: '0.4px' }}>SALES &amp; LEAD MANAGEMENT</span>
+            <span style={{ fontSize: '0.65rem', color: '#CA8A04', fontWeight: 800, letterSpacing: '0.4px' }}>CLOSE FASTER. SELL SMARTER.</span>
           </div>
         </a>
         <div
@@ -286,7 +286,7 @@ function Header() {
           }}
         >
           <span className="live-dot" />
-          <span>14-DAY FREE TRIAL</span>
+          <span>14 DAYS FREE &bull; NO CARD NEEDED</span>
         </div>
       </div>
     </header>
@@ -335,7 +335,7 @@ function Hero() {
               }}
             >
               <span className="live-dot-pulse" />
-              <span>14-Day Free Trial &bull; 5,000+ Businesses</span>
+              <span>14-Day Free Trial &bull; 5,000+ Teams Onboard</span>
             </span>
           </div>
 
@@ -366,7 +366,7 @@ function Hero() {
               marginRight: 'auto',
             }}
           >
-            Manage leads, automate follow-ups, broadcast on WhatsApp &amp; Email, and track your entire sales pipeline — all from one powerful CRM dashboard built for growing sales teams.
+            Turn scattered leads into closed deals. Manage your pipeline, automate follow-ups, blast WhatsApp &amp; Email campaigns, and track revenue — all from one CRM built for sales teams that move fast.
           </p>
 
           {/* Seat Progress */}
@@ -387,7 +387,7 @@ function Hero() {
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" style={{ color: '#D97706' }}>
                   <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
                 </svg>
-                Free CRM Trial Spots
+                Free CRM Trial Slots
               </span>
               <span style={{ color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: 4 }}>
                 481/500 Claimed
@@ -421,10 +421,10 @@ function Hero() {
                 <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
                 <path d="M16 3.13a4 4 0 0 1 0 7.75" />
               </svg>
-              <span>START FREE TRIAL &amp; GET CRM ACCESS</span>
+              <span>ACTIVATE MY CRM TRIAL</span>
             </a>
             <span style={{ fontSize: '0.75rem', color: 'var(--text-dark)', display: 'flex', alignItems: 'center', gap: 5 }}>
-              Instant Access &bull; No Credit Card Required
+              Instant Access &bull; Zero Credit Card Needed
             </span>
           </div>
 
@@ -432,8 +432,8 @@ function Hero() {
           <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 8, marginTop: 16 }}>
             {[
               { icon: 'bot', label: 'Lead Pipeline Management' },
-              { icon: 'video', label: 'WhatsApp &amp; Email Broadcast' },
-              { icon: 'shield', label: 'Automated Follow-ups' },
+              { icon: 'video', label: 'WhatsApp & Email Broadcast' },
+              { icon: 'shield', label: 'Smart Automated Follow-ups' },
             ].map((b) => (
               <span
                 key={b.label}
@@ -556,10 +556,10 @@ function StatsBar() {
   const leadsDaily = useCountUp(50000, 2200, visible);
 
   const stats = [
-    { num: visible ? `${businesses.toLocaleString('en-IN')}+` : '5,000+', label: 'Businesses Onboard' },
-    { num: '14 Days', label: 'Free CRM Trial' },
-    { num: visible ? `${leadsDaily.toLocaleString('en-IN')}+` : '50K+', label: 'Leads Managed Daily' },
-    { num: '24/7', label: 'Automation & Support' },
+    { num: visible ? `${businesses.toLocaleString('en-IN')}+` : '5,000+', label: 'Teams Growing With Us' },
+    { num: '14 Days', label: 'Full Access, Zero Cost' },
+    { num: visible ? `${leadsDaily.toLocaleString('en-IN')}+` : '50K+', label: 'Leads Processed Daily' },
+    { num: '24/7', label: 'Always-On Automation' },
   ];
 
   return (
@@ -719,31 +719,31 @@ function GiftStack() {
   const gifts = [
     {
       iconType: 'bot',
-      title: "Full Lead Pipeline Management",
+      title: "Complete Lead Pipeline Management",
       subtitle: '(Drag-and-drop Sales Stages)',
       price: '\u20B950,000',
-      desc: "Track every lead from first contact to closed deal with a visual pipeline. Drag leads between stages, assign to team members, and never lose track of a deal again.",
+      desc: "Follow every lead from first hello to signed deal on a visual pipeline. Drag cards between stages, assign reps, and never let a deal slip through the cracks again.",
       delay: '0.1s',
     },
     {
       iconType: 'video',
-      title: 'WhatsApp &amp; Email Broadcast',
+      title: 'WhatsApp & Email Broadcast',
       price: '\u20B94,999',
-      desc: 'Send bulk WhatsApp messages and email campaigns directly from your CRM. Reach thousands of leads with personalized messages in one click.',
+      desc: 'Blast personalized WhatsApp messages and email campaigns straight from your CRM. Reach thousands of leads with a single click and track every response.',
       delay: '0.2s',
     },
     {
       iconType: 'book',
       title: 'Automated Follow-up Scheduler',
       price: '\u20B92,999',
-      desc: 'Set automatic follow-up reminders for every lead. The CRM notifies your team when it&apos;s time to follow up, so no lead ever slips through the cracks.',
+      desc: 'Set smart follow-up reminders for every lead. LeadFlow pings your team at exactly the right moment, so no opportunity ever goes cold.',
       delay: '0.3s',
     },
     {
       iconType: 'users',
-      title: 'Team Collaboration &amp; Chat',
+      title: 'Team Collaboration & Chat',
       price: '\u20B93,999',
-      desc: 'Built-in team chat, lead assignment, role-based permissions, and a shared dashboard so your entire sales team stays aligned and productive.',
+      desc: 'Built-in team chat, lead assignment, role-based permissions, and a shared dashboard keep your entire sales squad aligned and firing on all cylinders.',
       delay: '0.4s',
     },
   ];
@@ -751,7 +751,7 @@ function GiftStack() {
   return (
     <section id="gifts" style={{ paddingBottom: 55 }}>
       <div style={{ maxWidth: 960, margin: '0 auto', padding: '0 16px' }}>
-        <SectionHeader pill="WHAT YOU GET" title={<>YOUR CRM <span className="text-gold-gradient">FEATURE STACK</span></>} desc="Here is everything included when you start your LeadFlow CRM free trial today:" />
+        <SectionHeader pill="WHAT YOU GET" title={<>YOUR CRM <span className="text-gold-gradient">FEATURE STACK</span></>} desc="Everything that comes with your LeadFlow free trial, unlocked from day one:" />
 
         <div
           style={{
@@ -824,7 +824,7 @@ function GiftStack() {
             <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: 2 }}>
               Total Value: <span style={{ textDecoration: 'line-through', color: '#EF4444', fontWeight: 700 }}>{'₹'}61,997</span>
             </div>
-            <div className="offer-free-price">YOUR PRICE: 14 DAYS FREE</div>
+            <div className="offer-free-price">YOU PAY: NOTHING FOR 14 DAYS</div>
           </div>
 
           {/* CTA */}
@@ -836,7 +836,7 @@ function GiftStack() {
                 <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
                 <path d="M16 3.13a4 4 0 0 1 0 7.75" />
               </svg>
-              <span>START FREE TRIAL &amp; GET CRM ACCESS</span>
+              <span>ACTIVATE MY CRM TRIAL</span>
             </a>
           </div>
         </div>
@@ -1414,19 +1414,19 @@ function FAQ() {
     { id: 'security', label: 'Security & Data' },
   ];
   const faqs = [
-    { cat: 'general', q: 'What makes LeadFlow CRM different from other CRMs?', a: 'LeadFlow CRM is built specifically for sales teams that manage leads across WhatsApp, Email, and phone. Unlike generic CRMs, it combines lead pipeline management, automated follow-ups, WhatsApp & Email broadcasts, and team collaboration in one simple dashboard.' },
-    { cat: 'general', q: 'How does the 14-day free trial work?', a: 'Just sign up with your details — no credit card required. You get full access to all CRM features for 14 days. No hidden charges, no auto-charges. You decide if you want to continue after the trial.' },
-    { cat: 'general', q: 'How long does setup take?', a: 'Most teams are up and running in under 5 minutes. Import your leads via CSV or Google Sheets, connect your WhatsApp number, and your pipeline is ready. No technical knowledge required.' },
-    { cat: 'features', q: 'Can I import my existing leads into the CRM?', a: 'Yes! You can bulk import leads via CSV upload, connect Google Sheets for auto-sync, or capture leads directly from your website using customizable popup forms. Everything is ready in minutes.' },
-    { cat: 'features', q: 'Does it support WhatsApp bulk messaging?', a: 'Absolutely. Connect your WhatsApp Business number and send personalized bulk messages to thousands of leads in one click. Track delivery, read receipts, and replies — all from the CRM dashboard.' },
-    { cat: 'features', q: 'Can I assign leads to different team members?', a: 'Yes. LeadFlow supports round-robin auto-assignment, manual assignment, and role-based permissions. Each team member sees only their leads and can collaborate via built-in team chat.' },
-    { cat: 'features', q: 'What integrations are available?', a: 'LeadFlow integrates with WhatsApp, Email SMTP, Google Sheets, Meta Ads, Telegram, Twilio for calling, and webhooks. You can also use our API for custom integrations.' },
-    { cat: 'pricing', q: 'Do I need a credit card to start the trial?', a: 'No. The 14-day free trial requires no credit card. You only provide payment when you choose a paid plan after the trial ends.' },
-    { cat: 'pricing', q: 'Can I change or cancel my plan anytime?', a: 'Yes. You can upgrade, downgrade, or cancel your subscription at any time from the CRM settings. No lock-in contracts or cancellation fees.' },
-    { cat: 'pricing', q: 'Is there a discount for annual billing?', a: 'Yes! Annual billing saves you 20% compared to monthly billing. You can switch between monthly and yearly at any time.' },
-    { cat: 'security', q: 'Is my lead data secure?', a: 'Absolutely. All data is encrypted and stored securely with enterprise-grade security. We never share or sell your data. Regular backups ensure your business information is always safe.' },
-    { cat: 'security', q: 'Who owns my data?', a: 'You do. Your lead data belongs to you 100%. You can export it anytime and delete your account permanently from the settings. We never use your data for advertising or share it with third parties.' },
-    { cat: 'security', q: 'What happens to my data if I cancel?', a: 'You can export all your data before cancellation. After account deletion, your data is permanently removed from our servers within 30 days.' },
+    { cat: 'general', q: 'What sets LeadFlow apart from other CRMs?', a: 'LeadFlow is purpose-built for sales teams that juggle leads across WhatsApp, Email, and phone. Instead of a generic CRM, you get pipeline management, auto-follow-ups, WhatsApp and Email blasts, and team chat — all in one clean dashboard.' },
+    { cat: 'general', q: 'How does the 14-day free trial work?', a: 'Sign up with your details and that is it — no card required. You get the full feature set for 14 days. No hidden charges, no auto-billing. You decide whether to continue after the trial ends.' },
+    { cat: 'general', q: 'How fast can I get set up?', a: 'Most teams are live in under 5 minutes. Import leads from CSV or Google Sheets, link your WhatsApp number, and your pipeline is ready to go. Zero technical knowledge needed.' },
+    { cat: 'features', q: 'Can I bring my existing leads into the CRM?', a: 'Yes. Bulk-import via CSV, auto-sync from Google Sheets, or capture leads straight from your website with customizable popup forms. Everything lands in your pipeline in minutes.' },
+    { cat: 'features', q: 'Does it handle WhatsApp bulk messaging?', a: 'Absolutely. Connect your WhatsApp Business number and blast personalized messages to thousands of leads in one click. Delivery, read receipts, and replies all show up right in your CRM dashboard.' },
+    { cat: 'features', q: 'Can I assign leads to different reps?', a: 'Yes. LeadFlow supports round-robin auto-assignment, manual hand-offs, and role-based permissions. Each rep sees only their leads and can collaborate through built-in team chat.' },
+    { cat: 'features', q: 'Which tools does LeadFlow integrate with?', a: 'WhatsApp, Email SMTP, Google Sheets, Meta Ads, Telegram, Twilio for calls, and webhooks. You can also tap our API for anything custom.' },
+    { cat: 'pricing', q: 'Do I need a credit card to start the trial?', a: 'Nope. The 14-day trial is completely free with no card on file. You only enter payment details when you pick a paid plan after the trial.' },
+    { cat: 'pricing', q: 'Can I switch or cancel my plan anytime?', a: 'Yes. Upgrade, downgrade, or cancel from your dashboard whenever you want. No lock-in contracts, no cancellation fees.' },
+    { cat: 'pricing', q: 'Is there an annual billing discount?', a: 'Yes. Annual billing saves you 20% versus monthly. You can flip between monthly and yearly at any point.' },
+    { cat: 'security', q: 'Is my lead data safe?', a: 'Completely. All data is encrypted at rest and in transit with enterprise-grade security. We never share or sell your data, and regular backups keep your business information protected.' },
+    { cat: 'security', q: 'Who owns my data?', a: 'You do, 100%. Export it anytime, delete your account permanently from settings. We never use your data for ads or pass it to third parties.' },
+    { cat: 'security', q: 'What happens to my data if I cancel?', a: 'Export everything before you leave. After account deletion, your data is permanently wiped from our servers within 30 days.' },
   ];
   const [activeCat, setActiveCat] = useState('general');
   const [openIdx, setOpenIdx] = useState<number | null>(0);
@@ -1435,7 +1435,7 @@ function FAQ() {
   return (
     <section id="faq" style={{ paddingBottom: 55 }}>
       <div style={{ maxWidth: 960, margin: '0 auto', padding: '0 16px' }}>
-        <SectionHeader pill="QUESTIONS & ANSWERS" title={<>FREQUENTLY ASKED <span className="text-gold-gradient">QUESTIONS</span></>} desc="Everything you need to know about LeadFlow CRM." />
+        <SectionHeader pill="QUESTIONS & ANSWERS" title={<>FREQUENTLY ASKED <span className="text-gold-gradient">QUESTIONS</span></>} desc="Everything you might want to know before starting." />
 
         {/* Category tabs */}
         <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 8, marginBottom: 24 }}>
@@ -1723,14 +1723,14 @@ function ProductMockup({ type, accent }: { type: 'pipeline' | 'broadcast' | 'ana
 // ===================== How It Works =====================
 function HowItWorks() {
   const steps = [
-    { num: '1', title: 'Sign Up & Import Leads', desc: 'Create your free account and import leads via CSV, Google Sheets, or connect your website popup forms. Setup takes under 5 minutes.', icon: 'signup', color: '#EAB308' },
-    { num: '2', title: 'Automate Your Pipeline', desc: 'Set up follow-up schedules, lead scoring, and WhatsApp/email automations. Assign leads to team members automatically.', icon: 'automate', color: '#16A34A' },
-    { num: '3', title: 'Close More Deals', desc: 'Track every lead through your pipeline, monitor team performance with real-time analytics, and watch your close rate soar.', icon: 'close', color: '#0EA5E9' },
+    { num: '1', title: 'Set Up in Minutes', desc: 'Create your free account, import leads from CSV or Google Sheets, and connect your website forms. You will be ready to sell in under 5 minutes.', icon: 'signup', color: '#EAB308' },
+    { num: '2', title: 'Put Follow-ups on Autopilot', desc: 'Build automated sequences for follow-ups, lead scoring, and WhatsApp or email campaigns. Leads get assigned to the right rep automatically.', icon: 'automate', color: '#16A34A' },
+    { num: '3', title: 'Watch Your Revenue Climb', desc: 'Follow every lead through your pipeline, spot bottlenecks with real-time dashboards, and see your conversion rate jump in weeks.', icon: 'close', color: '#0EA5E9' },
   ];
   return (
     <section id="how-it-works" style={{ paddingBottom: 55 }}>
       <div style={{ maxWidth: 960, margin: '0 auto', padding: '0 16px' }}>
-        <SectionHeader pill="GET STARTED FAST" title={<>HOW IT <span className="text-gold-gradient">WORKS</span></>} desc="From signup to closing deals in 3 simple steps." />
+        <SectionHeader pill="GET STARTED FAST" title={<>HOW IT <span className="text-gold-gradient">WORKS</span></>} desc="Three steps from signup to your first closed deal." />
         <div style={{ display: 'flex', flexDirection: 'column', gap: 0, position: 'relative' }} className="how-it-works-list">
           {steps.map((step, i) => (
             <div key={i} style={{ display: 'flex', gap: 16, position: 'relative', paddingBottom: i < steps.length - 1 ? 32 : 0 }}>
@@ -1757,7 +1757,7 @@ function HowItWorks() {
         <div style={{ textAlign: 'center', marginTop: 24 }}>
           <a href="#signup" onClick={(e) => { e.preventDefault(); window.location.hash = 'signup'; }} className="gold-cta">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14" /><path d="M12 5l7 7-7 7" /></svg>
-            <span>GET STARTED FREE</span>
+            <span>ACTIVATE MY FREE TRIAL</span>
           </a>
         </div>
       </div>
@@ -1784,7 +1784,7 @@ function ComparisonTable() {
   return (
     <section id="comparison" style={{ paddingBottom: 55 }}>
       <div style={{ maxWidth: 960, margin: '0 auto', padding: '0 16px' }}>
-        <SectionHeader pill="WHY LEADFLOW" title={<>LEADFLOW CRM vs <span className="text-gold-gradient">THE REST</span></>} desc="See why thousands of teams switch from spreadsheets and generic CRMs to LeadFlow." />
+        <SectionHeader pill="WHY LEADFLOW" title={<>LEADFLOW CRM vs <span className="text-gold-gradient">THE REST</span></>} desc="Why thousands of teams ditch spreadsheets and bloated CRMs for LeadFlow." />
         <div style={{ background: 'var(--bg-card)', borderRadius: 16, overflow: 'hidden', border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 4px 20px rgba(0,0,0,0.04)' }} className="comparison-table-wrap">
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
             <thead>
@@ -1858,7 +1858,7 @@ function IntegrationsStrip() {
     <section style={{ paddingBottom: 40 }}>
       <div style={{ maxWidth: 960, margin: '0 auto', padding: '0 16px' }}>
         <p style={{ textAlign: 'center', fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-dark)', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: 18 }}>
-          Works With Your Favorite Tools
+          Plugs Into the Tools You Already Use
         </p>
         <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 10 }} className="integrations-strip">
           {integrations.map((int) => (
@@ -2129,10 +2129,10 @@ function LiveActivityFeed() {
   return (
     <section style={{ paddingBottom: 40 }}>
       <div style={{ maxWidth: 960, margin: '0 auto', padding: '0 16px' }}>
-        <SectionHeader pill="LIVE FEED" title={<>REAL <span className="text-gold-gradient">SIGNUPS</span></>} desc="See who is joining LeadFlow CRM right now." />
+        <SectionHeader pill="LIVE FEED" title={<>REAL <span className="text-gold-gradient">SIGNUPS</span></>} desc="Watch teams across India go live with LeadFlow in real time." />
         <div style={{ background: 'var(--bg-card)', borderRadius: 14, border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 4px 16px rgba(0,0,0,0.03)', overflow: 'hidden', maxHeight: 340, overflowY: 'auto' }}>
           {loading ? (
-            <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-dark)', fontSize: '0.82rem' }}>Loading recent activity...</div>
+            <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-dark)', fontSize: '0.82rem' }}>Fetching latest activity...</div>
           ) : (
             activities.map((a, i) => (
               <div
@@ -2166,17 +2166,17 @@ function LiveActivityFeed() {
 // ===================== Industry Use Cases =====================
 function IndustryUseCases() {
   const industries = [
-    { name: 'Real Estate', icon: 'home', color: '#0EA5E9', desc: 'Track property inquiries, schedule site visits, and close deals faster with automated follow-ups.' },
-    { name: 'Insurance', icon: 'shield', color: '#16A34A', desc: 'Manage policy leads, send renewal reminders, and broadcast new offers via WhatsApp and Email.' },
-    { name: 'Education', icon: 'book', color: '#A855F7', desc: 'Capture student inquiries, automate course follow-ups, and track enrollment conversions.' },
-    { name: 'Fintech', icon: 'wallet', color: '#F59E0B', desc: 'Onboard clients, manage KYC pipelines, and send compliance updates in bulk.' },
-    { name: 'Healthcare', icon: 'heart', color: '#EF4444', desc: 'Manage patient inquiries, appointment scheduling, and health campaign broadcasts.' },
-    { name: 'Retail & D2C', icon: 'shopping', color: '#EAB308', desc: 'Capture leads from website popups, run promotional broadcasts, and track customer journeys.' },
+    { name: 'Real Estate', icon: 'home', color: '#0EA5E9', desc: 'Track property inquiries, auto-schedule site visits, and chase every lead until keys change hands.' },
+    { name: 'Insurance', icon: 'shield', color: '#16A34A', desc: 'Organize policy leads, fire off renewal reminders, and blast new offers on WhatsApp in seconds.' },
+    { name: 'Education', icon: 'book', color: '#A855F7', desc: 'Capture student inquiries, nurture them with automated course follow-ups, and watch enrollment climb.' },
+    { name: 'Fintech', icon: 'wallet', color: '#F59E0B', desc: 'Streamline client onboarding, manage KYC pipelines, and push compliance updates in bulk.' },
+    { name: 'Healthcare', icon: 'heart', color: '#EF4444', desc: 'Handle patient inquiries, automate appointment scheduling, and run health awareness campaigns.' },
+    { name: 'Retail & D2C', icon: 'shopping', color: '#EAB308', desc: 'Grab leads from website popups, launch promo broadcasts, and follow every customer journey end-to-end.' },
   ];
   return (
     <section id="industries" style={{ paddingBottom: 55 }}>
       <div style={{ maxWidth: 960, margin: '0 auto', padding: '0 16px' }}>
-        <SectionHeader pill="INDUSTRY USE CASES" title={<>BUILT FOR <span className="text-gold-gradient">YOUR INDUSTRY</span></>} desc="LeadFlow CRM adapts to how your team works — no matter what you sell." />
+        <SectionHeader pill="INDUSTRY USE CASES" title={<>BUILT FOR <span className="text-gold-gradient">YOUR INDUSTRY</span></>} desc="LeadFlex molds to your workflow, whether you sell homes, policies, courses, or anything in between." />
         <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 14 }} className="industry-grid">
           {industries.map((ind) => (
             <div
@@ -2219,23 +2219,23 @@ function IndustryUseCases() {
 // ===================== Before vs After LeadFlow =====================
 function BeforeAfter() {
   const beforeItems = [
-    { text: 'Leads scattered across Excel sheets and WhatsApp chats', icon: 'x' },
-    { text: 'No follow-up tracking — deals slip through the cracks', icon: 'x' },
-    { text: 'Manual WhatsApp messages one-by-one', icon: 'x' },
-    { text: 'No idea which team member is working on which lead', icon: 'x' },
-    { text: 'Guesswork instead of data-driven sales decisions', icon: 'x' },
+    { text: 'Leads spread across messy spreadsheets and WhatsApp chats', icon: 'x' },
+    { text: 'No follow-up system, so deals quietly slip away', icon: 'x' },
+    { text: 'Sending WhatsApp messages one at a time', icon: 'x' },
+    { text: 'No clue which rep is handling which lead', icon: 'x' },
+    { text: 'Sales decisions based on gut feeling, not data', icon: 'x' },
   ];
   const afterItems = [
-    { text: 'All leads in one visual pipeline dashboard', icon: 'check' },
-    { text: 'Automatic follow-up reminders — never miss a deal', icon: 'check' },
-    { text: 'Bulk WhatsApp & Email broadcasts in one click', icon: 'check' },
-    { text: 'Clear lead assignment and team performance tracking', icon: 'check' },
-    { text: 'Real-time analytics, revenue forecast, and conversion rates', icon: 'check' },
+    { text: 'Every lead lives in one clean, visual pipeline', icon: 'check' },
+    { text: 'Auto-reminders fire at the perfect moment, every time', icon: 'check' },
+    { text: 'Blast personalized WhatsApp and email campaigns in one click', icon: 'check' },
+    { text: 'Crystal-clear lead ownership and team performance at a glance', icon: 'check' },
+    { text: 'Live dashboards for conversion rates, revenue forecast, and win/loss', icon: 'check' },
   ];
   return (
     <section style={{ paddingBottom: 55 }}>
       <div style={{ maxWidth: 960, margin: '0 auto', padding: '0 16px' }}>
-        <SectionHeader pill="THE TRANSFORMATION" title={<>BEFORE vs <span className="text-gold-gradient">AFTER LEADFLOW</span></>} desc="See the difference LeadFlow CRM makes for your sales team." />
+        <SectionHeader pill="THE TRANSFORMATION" title={<>BEFORE vs <span className="text-gold-gradient">AFTER LEADFLOW</span></>} desc="See exactly what changes when your team switches to LeadFlow." />
         <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 14 }} className="before-after-grid">
           {/* Before */}
           <div style={{ background: '#FEF2F2', border: '1.5px solid #FECACA', borderRadius: 16, padding: '20px 18px' }}>
@@ -2243,7 +2243,7 @@ function BeforeAfter() {
               <div style={{ width: 36, height: 36, borderRadius: 10, background: '#EF4444', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="3"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
               </div>
-              <h4 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1.05rem', fontWeight: 900, color: '#991B1B' }}>Without LeadFlow</h4>
+              <h4 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1.05rem', fontWeight: 900, color: '#991B1B' }}>The Old Way</h4>
             </div>
             {beforeItems.map((item, i) => (
               <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 10 }}>
@@ -2259,7 +2259,7 @@ function BeforeAfter() {
               <div style={{ width: 36, height: 36, borderRadius: 10, background: 'linear-gradient(135deg, #FEF08A, #EAB308)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#422006" strokeWidth="3"><polyline points="20 6 9 17 4 12" /></svg>
               </div>
-              <h4 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1.05rem', fontWeight: 900, color: '#15803D' }}>With LeadFlow CRM</h4>
+              <h4 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1.05rem', fontWeight: 900, color: '#15803D' }}>The LeadFlow Way</h4>
             </div>
             {afterItems.map((item, i) => (
               <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 10 }}>
@@ -2277,10 +2277,10 @@ function BeforeAfter() {
 // ===================== Trust / Guarantee Section =====================
 function TrustGuarantee() {
   const badges = [
-    { icon: 'shield', title: 'No Credit Card Required', desc: 'Start your 14-day trial with zero payment. No hidden charges.' },
-    { icon: 'lock', title: 'Bank-Grade Encryption', desc: 'Your data is encrypted at rest and in transit. We never sell your data.' },
-    { icon: 'refresh', title: 'Cancel Anytime', desc: 'No lock-in contracts. Upgrade, downgrade, or cancel from your dashboard.' },
-    { icon: 'headset', title: '24/7 Support', desc: 'Our team is available round the clock via chat, email, and phone.' },
+    { icon: 'shield', title: 'Zero Upfront Cost', desc: 'Start your 14-day trial without entering a single card detail. No hidden fees, ever.' },
+    { icon: 'lock', title: 'Bank-Grade Security', desc: 'Data encrypted at rest and in transit. We never sell or share your information.' },
+    { icon: 'refresh', title: 'No Lock-In Contract', desc: 'Upgrade, downgrade, or cancel anytime from your dashboard. No questions asked.' },
+    { icon: 'headset', title: 'Round-the-Clock Support', desc: 'Our team is one chat, email, or phone call away, 24 hours a day, 7 days a week.' },
   ];
   return (
     <section style={{ paddingBottom: 50 }}>
@@ -2291,7 +2291,7 @@ function TrustGuarantee() {
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>
               <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#15803D', textTransform: 'uppercase', letterSpacing: '0.5px' }}>100% Risk-Free</span>
             </div>
-            <h3 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1.3rem', fontWeight: 900, color: 'var(--text-main)' }}>Your Business Is In Safe Hands</h3>
+            <h3 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1.3rem', fontWeight: 900, color: 'var(--text-main)' }}>Your Data, Your Revenue, Fully Protected</h3>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 14 }} className="trust-grid">
             {badges.map((b) => (
@@ -2376,12 +2376,12 @@ function ExitIntentPopup() {
         <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'linear-gradient(135deg, #FEF08A, #EAB308)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px auto', boxShadow: '0 6px 20px rgba(234, 179, 8, 0.35)' }}>
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#422006" strokeWidth="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" /></svg>
         </div>
-        <h3 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1.4rem', fontWeight: 900, color: 'var(--text-main)', marginBottom: 8 }}>Wait! Get 30 Days Free</h3>
+        <h3 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1.4rem', fontWeight: 900, color: 'var(--text-main)', marginBottom: 8 }}>Wait! Grab 30 Days Free</h3>
         <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)', lineHeight: 1.5, marginBottom: 16 }}>
-          Don&apos;t leave yet! Use code <strong style={{ color: '#CA8A04', fontFamily: 'monospace', fontSize: '0.92rem' }}>DOUBLE30</strong> to get <strong style={{ color: 'var(--text-main)' }}>30 days free</strong> instead of 14. Limited to the next 50 signups.
+          Don&apos;t miss out! Use code <strong style={{ color: '#CA8A04', fontFamily: 'monospace', fontSize: '0.92rem' }}>DOUBLE30</strong> to unlock <strong style={{ color: 'var(--text-main)' }}>30 days free</strong> instead of 14. Only for the next 50 signups.
         </p>
         <div style={{ background: '#FEF2F2', borderRadius: 10, padding: '8px 14px', marginBottom: 16, border: '1px solid #FECACA' }}>
-          <span style={{ fontSize: '0.78rem', fontWeight: 800, color: '#DC2626' }}>Only 17 bonus spots remaining!</span>
+          <span style={{ fontSize: '0.78rem', fontWeight: 800, color: '#DC2626' }}>Only 17 bonus slots left!</span>
         </div>
         <a
           href="#signup"
@@ -2446,26 +2446,26 @@ function HelpWidget() {
           }}
         >
           <div style={{ background: 'linear-gradient(135deg, #FEF08A, #EAB308)', padding: '16px 18px' }}>
-            <div style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1rem', fontWeight: 900, color: '#422006' }}>How can we help?</div>
-            <div style={{ fontSize: '0.72rem', color: '#78350F', marginTop: 2 }}>Typically replies in minutes</div>
+            <div style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1rem', fontWeight: 900, color: '#422006' }}>Need a hand?</div>
+            <div style={{ fontSize: '0.72rem', color: '#78350F', marginTop: 2 }}>We usually reply within minutes</div>
           </div>
           <div style={{ padding: '16px 18px' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               <a href="#signup" onClick={(e) => { e.preventDefault(); setOpen(false); window.location.hash = 'signup'; }} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 10, background: 'var(--bg-light)', border: '1px solid rgba(0,0,0,0.06)', textDecoration: 'none', cursor: 'pointer' }}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2"><polyline points="20 6 9 17 4 12" /></svg>
-                <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-main)' }}>Start free trial</span>
+                <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-main)' }}>Activate free trial</span>
               </a>
               <a href="#pricing" onClick={(e) => { e.preventDefault(); setOpen(false); document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' }); }} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 10, background: 'var(--bg-light)', border: '1px solid rgba(0,0,0,0.06)', textDecoration: 'none', cursor: 'pointer' }}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#CA8A04" strokeWidth="2"><line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg>
-                <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-main)' }}>View pricing plans</span>
+                <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-main)' }}>See pricing</span>
               </a>
               <a href="#faq" onClick={(e) => { e.preventDefault(); setOpen(false); document.getElementById('faq')?.scrollIntoView({ behavior: 'smooth' }); }} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 10, background: 'var(--bg-light)', border: '1px solid rgba(0,0,0,0.06)', textDecoration: 'none', cursor: 'pointer' }}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0EA5E9" strokeWidth="2"><circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>
-                <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-main)' }}>Read FAQs</span>
+                <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-main)' }}>Browse FAQs</span>
               </a>
             </div>
             <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid rgba(0,0,0,0.06)', fontSize: '0.72rem', color: 'var(--text-dark)', textAlign: 'center' }}>
-              Need more help? Email us at hello@leadflowcrm.com
+              Still stuck? Drop us a line at hello@leadflowcrm.com
             </div>
           </div>
         </div>
@@ -2493,7 +2493,7 @@ function GeographicCoverage() {
   return (
     <section style={{ paddingBottom: 50 }}>
       <div style={{ maxWidth: 960, margin: '0 auto', padding: '0 16px' }}>
-        <SectionHeader pill="PAN-INDIA PRESENCE" title={<>TRUSTED ACROSS <span className="text-gold-gradient">120+ CITIES</span></>} desc="Businesses from every corner of India use LeadFlow CRM to grow their sales." />
+        <SectionHeader pill="PAN-INDIA PRESENCE" title={<>TRUSTED ACROSS <span className="text-gold-gradient">120+ CITIES</span></>} desc="From metros to tier-2 towns, businesses everywhere grow sales with LeadFlow." />
         <div style={{ background: 'var(--bg-card)', borderRadius: 18, border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 6px 24px rgba(0,0,0,0.04)', padding: '24px 18px' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }} className="geo-grid">
             {/* Map */}
@@ -2550,7 +2550,7 @@ function LogoCloud() {
     <section style={{ paddingBottom: 40 }}>
       <div style={{ maxWidth: 960, margin: '0 auto', padding: '0 16px' }}>
         <p style={{ textAlign: 'center', fontSize: '0.76rem', fontWeight: 800, color: 'var(--text-dark)', textTransform: 'uppercase', letterSpacing: '1.2px', marginBottom: 18 }}>
-          Trusted by 5,000+ businesses across India
+          Trusted by 5,000+ growing businesses across India
         </p>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }} className="logo-cloud-grid">
           {logos.map((logo) => (
@@ -2577,11 +2577,11 @@ function LogoCloud() {
 // ===================== Onboarding Checklist =====================
 function OnboardingChecklist() {
   const steps = [
-    { num: 1, title: 'Import Your Leads', desc: 'Upload a CSV or connect Google Sheets to import all your leads in one go.', time: '2 min' },
-    { num: 2, title: 'Connect WhatsApp', desc: 'Link your WhatsApp Business number to start sending bulk messages.', time: '1 min' },
-    { num: 3, title: 'Set Pipeline Stages', desc: 'Customize your sales pipeline stages to match your team\'s workflow.', time: '1 min' },
-    { num: 4, title: 'Invite Your Team', desc: 'Add team members with role-based permissions and lead assignment.', time: '30 sec' },
-    { num: 5, title: 'Start Automating', desc: 'Set up follow-up schedules and broadcast campaigns. You\'re live!', time: '30 sec' },
+    { num: 1, title: 'Bring Your Leads In', desc: 'Upload a CSV or sync Google Sheets to pull all your leads into one place instantly.', time: '2 min' },
+    { num: 2, title: 'Link WhatsApp', desc: 'Connect your WhatsApp Business number to start blasting personalized messages.', time: '1 min' },
+    { num: 3, title: 'Shape Your Pipeline', desc: 'Tailor your sales stages to fit exactly how your team sells.', time: '1 min' },
+    { num: 4, title: 'Pull Your Team In', desc: 'Invite reps, set roles, and auto-assign leads so nobody steps on toes.', time: '30 sec' },
+    { num: 5, title: 'Switch on Automations', desc: 'Turn on follow-up sequences and broadcast campaigns. You are live!', time: '30 sec' },
   ];
   const [checked, setChecked] = useState<Set<number>>(new Set([1, 2]));
 
@@ -2595,7 +2595,7 @@ function OnboardingChecklist() {
   return (
     <section style={{ paddingBottom: 55 }}>
       <div style={{ maxWidth: 960, margin: '0 auto', padding: '0 16px' }}>
-        <SectionHeader pill="QUICK SETUP" title={<>LIVE IN <span className="text-gold-gradient">5 MINUTES</span></>} desc="No technical knowledge required. Here's your setup checklist." />
+        <SectionHeader pill="QUICK SETUP" title={<>LIVE IN <span className="text-gold-gradient">5 MINUTES</span></>} desc="Zero technical know-how needed. Just follow this checklist." />
         <div style={{ background: 'var(--bg-card)', borderRadius: 18, border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 6px 24px rgba(0,0,0,0.04)', padding: '20px 18px' }}>
           {steps.map((step, i) => {
             const isChecked = checked.has(step.num);
@@ -2649,10 +2649,10 @@ function OnboardingChecklist() {
 function SuccessMetrics() {
   const [active, setActive] = useState(0);
   const stories = [
-    { company: 'Sharma Real Estate', location: 'New Delhi', metric: '+40%', label: 'Close rate increase', desc: 'After implementing LeadFlow\'s pipeline and automated follow-ups, our agents close 40% more deals in the first 60 days.', person: 'Vikram Sharma', role: 'Sales Director' },
-    { company: 'Patel Insurance Group', location: 'Mumbai', metric: '10 hrs', label: 'Saved per week', desc: 'WhatsApp broadcast eliminated manual messaging. Our team now spends that time actually talking to hot leads instead of typing messages.', person: 'Ananya Patel', role: 'Operations Head' },
-    { company: 'EduFirst Academy', location: 'Pune', metric: '3x', label: 'Lead response speed', desc: 'Automated lead assignment and instant notifications cut our response time from 2 hours to under 15 minutes. Enrollment jumped 3x.', person: 'Rajesh Kumar', role: 'Admissions Lead' },
-    { company: 'FinEdge Capital', location: 'Bengaluru', metric: '₹2.4Cr', label: 'Additional revenue tracked', desc: 'The analytics dashboard helped us identify which lead sources actually convert. We reallocated our ad spend and tracked ₹2.4Cr in new revenue.', person: 'Priya Nair', role: 'VP Sales' },
+    { company: 'Sharma Real Estate', location: 'New Delhi', metric: '+40%', label: 'More deals closed', desc: 'LeadFlow\'s pipeline and auto-follow-ups helped our agents close 40% more deals within the first 60 days.', person: 'Vikram Sharma', role: 'Sales Director' },
+    { company: 'Patel Insurance Group', location: 'Mumbai', metric: '10 hrs', label: 'Saved every week', desc: 'WhatsApp broadcast replaced manual messaging. Our team now spends that time talking to hot leads instead of typing.', person: 'Ananya Patel', role: 'Operations Head' },
+    { company: 'EduFirst Academy', location: 'Pune', metric: '3x', label: 'Faster lead response', desc: 'Auto-assignment and instant alerts cut our response time from 2 hours to under 15 minutes. Enrollment tripled.', person: 'Rajesh Kumar', role: 'Admissions Lead' },
+    { company: 'FinEdge Capital', location: 'Bengaluru', metric: '₹2.4Cr', label: 'New revenue tracked', desc: 'The analytics dashboard revealed which lead sources actually convert. We reallocated ad spend and tracked ₹2.4Cr in new revenue.', person: 'Priya Nair', role: 'VP Sales' },
   ];
 
   useEffect(() => {
@@ -2665,7 +2665,7 @@ function SuccessMetrics() {
   return (
     <section style={{ paddingBottom: 55 }}>
       <div style={{ maxWidth: 960, margin: '0 auto', padding: '0 16px' }}>
-        <SectionHeader pill="SUCCESS STORIES" title={<>REAL <span className="text-gold-gradient">RESULTS</span></>} desc="See how businesses across India are growing with LeadFlow CRM." />
+        <SectionHeader pill="SUCCESS STORIES" title={<>REAL <span className="text-gold-gradient">RESULTS</span></>} desc="Teams across India are hitting new revenue milestones with LeadFlow." />
         <div style={{ background: 'linear-gradient(135deg, #FFFDF5 0%, #FEF9C3 100%)', borderRadius: 18, border: '1.5px solid rgba(234,179,8,0.3)', padding: '24px 20px', boxShadow: '0 8px 30px rgba(234,179,8,0.08)' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16, alignItems: 'center', textAlign: 'center' }} className="success-metric-layout">
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
@@ -2740,8 +2740,8 @@ function CountdownTimer() {
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
               Limited Time Offer
             </span>
-            <h3 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1.2rem', fontWeight: 900, color: 'var(--bg-light)', marginBottom: 4 }}>Extended Trial Ends Soon</h3>
-            <p style={{ fontSize: '0.78rem', color: 'var(--text-dark)' }}>Get 30 days free instead of 14. Offer expires in:</p>
+            <h3 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1.2rem', fontWeight: 900, color: 'var(--bg-light)', marginBottom: 4 }}>Extended Trial Winds Down Soon</h3>
+            <p style={{ fontSize: '0.78rem', color: 'var(--text-dark)' }}>Lock in 30 days free instead of 14. Clock is ticking:</p>
           </div>
           <div style={{ display: 'flex', gap: 10 }}>
             {[
@@ -2757,7 +2757,7 @@ function CountdownTimer() {
           </div>
           <a href="#signup" onClick={(e) => { e.preventDefault(); window.location.hash = 'signup'; }} className="gold-cta" style={{ marginTop: 2 }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" /></svg>
-            <span>CLAIM 30 DAYS FREE</span>
+            <span>LOCK IN 30 DAYS FREE</span>
           </a>
         </div>
       </div>
@@ -2771,29 +2771,29 @@ function FeatureDeepDive() {
     {
       name: 'Pipeline Management',
       icon: 'kanban',
-      headline: 'Visual drag-and-drop pipeline',
-      desc: 'Track every lead from first contact to closed deal. Drag leads between stages, assign to team members, and see your entire sales funnel at a glance.',
-      points: ['Customizable pipeline stages', 'Drag-and-drop lead cards', 'Auto-assignment rules', 'Stage-based automations'],
+      headline: 'A pipeline you can see at a glance',
+      desc: 'Follow every lead from first hello to signed deal. Drag cards between stages, assign reps in a click, and watch your entire funnel light up in real time.',
+      points: ['Custom pipeline stages', 'Drag-and-drop lead cards', 'Auto-assignment rules', 'Stage-based automations'],
     },
     {
       name: 'WhatsApp Broadcast',
       icon: 'whatsapp',
-      headline: 'Bulk WhatsApp in one click',
-      desc: 'Connect your WhatsApp Business number and send personalized bulk messages to thousands of leads instantly. Track delivery and read receipts.',
+      headline: 'Reach thousands on WhatsApp instantly',
+      desc: 'Connect your WhatsApp Business number and fire personalized bulk messages to thousands of leads in one click. Track delivery and read receipts in real time.',
       points: ['Personalized merge fields', 'Template message support', 'Delivery & read tracking', 'Multi-number support'],
     },
     {
       name: 'Automation Builder',
       icon: 'automation',
-      headline: 'Automate your entire workflow',
-      desc: 'Build custom automation rules without code. Trigger actions on lead stage changes, new lead creation, or scheduled timers.',
+      headline: 'Put your workflow on autopilot',
+      desc: 'Build automation rules visually, no code needed. Trigger actions on stage changes, new leads, or timers, and let LeadFlow do the busywork.',
       points: ['Visual rule builder', 'Conditional triggers', 'Multi-step sequences', 'Webhook integrations'],
     },
     {
       name: 'Analytics & Reports',
       icon: 'chart',
-      headline: 'Data-driven sales decisions',
-      desc: 'Real-time dashboards show conversion rates, revenue forecasts, agent performance, and win/loss analysis. Export reports in one click.',
+      headline: 'Numbers that tell you exactly what to do next',
+      desc: 'Live dashboards reveal conversion rates, revenue forecasts, agent performance, and win/loss trends. Export polished reports in a single click.',
       points: ['Revenue forecasting', 'Agent leaderboard', 'Win/loss analysis', 'Custom date ranges'],
     },
   ];
@@ -2803,7 +2803,7 @@ function FeatureDeepDive() {
   return (
     <section id="features" style={{ paddingBottom: 55 }}>
       <div style={{ maxWidth: 960, margin: '0 auto', padding: '0 16px' }}>
-        <SectionHeader pill="DEEP DIVE" title={<>EXPLORE THE <span className="text-gold-gradient">FEATURES</span></>} desc="Click a tab to see how each feature works." />
+        <SectionHeader pill="DEEP DIVE" title={<>EXPLORE THE <span className="text-gold-gradient">FEATURES</span></>} desc="Tap a tab to see exactly how each tool works." />
         {/* Tabs */}
         <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 8, marginBottom: 20 }}>
           {features.map((feat, i) => (
@@ -2915,7 +2915,7 @@ function MobilePreview() {
   return (
     <section style={{ paddingBottom: 55 }}>
       <div style={{ maxWidth: 960, margin: '0 auto', padding: '0 16px' }}>
-        <SectionHeader pill="WORKS EVERYWHERE" title={<>YOUR CRM ON <span className="text-gold-gradient">EVERY DEVICE</span></>} desc="Manage leads from your desk or on the go. LeadFlow works seamlessly across desktop, tablet, and mobile." />
+        <SectionHeader pill="WORKS EVERYWHERE" title={<>YOUR CRM ON <span className="text-gold-gradient">EVERY DEVICE</span></>} desc="Run your sales from a desk or your pocket. LeadFlow syncs across desktop, tablet, and phone instantly." />
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20, alignItems: 'center' }} className="mobile-preview-layout">
           {/* Desktop mockup */}
           <div style={{ width: '100%', maxWidth: 560, background: 'var(--bg-card)', borderRadius: 12, border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 10px 30px rgba(0,0,0,0.06)', padding: 12, overflow: 'hidden' }} className="desktop-mockup">
@@ -3038,7 +3038,7 @@ function CompetitorComparison() {
   return (
     <section style={{ paddingBottom: 55 }}>
       <div style={{ maxWidth: 960, margin: '0 auto', padding: '0 16px' }}>
-        <SectionHeader pill="HOW WE COMPARE" title={<>LEADFLOW vs <span className="text-gold-gradient">THE COMPETITION</span></>} desc="See why thousands of businesses choose LeadFlow over expensive, complex CRMs." />
+        <SectionHeader pill="HOW WE COMPARE" title={<>LEADFLOW vs <span className="text-gold-gradient">THE COMPETITION</span></>} desc="Why thousands of businesses pick LeadFlow over pricier, harder-to-use CRMs." />
         <div style={{ overflowX: 'auto', borderRadius: 16, border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 6px 24px rgba(0,0,0,0.04)' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 600, background: 'var(--bg-card)' }}>
             <thead>
@@ -3063,7 +3063,7 @@ function CompetitorComparison() {
             </tbody>
           </table>
         </div>
-        <p style={{ fontSize: '0.68rem', color: 'var(--text-dark)', textAlign: 'center', marginTop: 8 }}>Pricing and features based on publicly available information as of Oct 2026. *HubSpot free tier has limited features.</p>
+        <p style={{ fontSize: '0.68rem', color: 'var(--text-dark)', textAlign: 'center', marginTop: 8 }}>Pricing and features reflect publicly available data as of Oct 2026. *HubSpot free tier has limited features.</p>
       </div>
     </section>
   );
@@ -3086,25 +3086,25 @@ function NewsletterCapture() {
           <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(234,179,8,0.1)', border: '1px solid rgba(234,179,8,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 12 }}>
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#CA8A04" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" /></svg>
           </div>
-          <h3 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1.15rem', fontWeight: 900, color: 'var(--text-main)', marginBottom: 6 }}>Get Sales Tips in Your Inbox</h3>
-          <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: 1.5, marginBottom: 16, maxWidth: 400 }}>Join 8,000+ sales professionals receiving weekly tips on lead conversion, WhatsApp marketing, and CRM automation. No spam, unsubscribe anytime.</p>
+          <h3 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1.15rem', fontWeight: 900, color: 'var(--text-main)', marginBottom: 6 }}>Sales Tips, Straight to Your Inbox</h3>
+          <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: 1.5, marginBottom: 16, maxWidth: 400 }}>Join 8,000+ sales pros getting weekly playbooks on lead conversion, WhatsApp marketing, and CRM automation. Zero spam, one-click unsubscribe.</p>
           {status === 'success' ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 18px', background: '#F0FDF4', border: '1px solid rgba(22,163,74,0.3)', borderRadius: 10 }}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2.5"><polyline points="20 6 9 17 4 12" /></svg>
-              <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#15803D' }}>You're subscribed! Check your inbox.</span>
+              <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#15803D' }}>You\'re in! Check your inbox for a confirmation.</span>
             </div>
           ) : (
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%', maxWidth: 400 }} className="newsletter-form">
               <input
                 type="email"
-                placeholder="Enter your email address"
+                placeholder="Type your email address"
                 value={email}
                 onChange={(e) => { setEmail(e.target.value); setStatus('idle'); }}
                 style={{ padding: '11px 14px', borderRadius: 10, border: status === 'error' ? '1.5px solid #EF4444' : '1px solid rgba(0,0,0,0.12)', fontSize: '0.84rem', fontFamily: 'inherit', outline: 'none', background: 'var(--bg-light)', width: '100%' }}
               />
               {status === 'error' && <span style={{ fontSize: '0.72rem', color: '#EF4444', fontWeight: 600 }}>Please enter a valid email address.</span>}
               <button type="submit" disabled={status === 'loading'} className="gold-cta" style={{ width: '100%', maxWidth: '100%', padding: '11px 20px', fontSize: '0.82rem', opacity: status === 'loading' ? 0.7 : 1 }}>
-                {status === 'loading' ? 'SUBSCRIBING...' : 'SUBSCRIBE FREE'}
+                {status === 'loading' ? 'SUBSCRIBING...' : 'GET WEEKLY TIPS'}
                 {status !== 'loading' && <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14" /><path d="M12 5l7 7-7 7" /></svg>}
               </button>
             </form>
@@ -3149,11 +3149,11 @@ function TimeSavingsCalculator() {
   return (
     <section style={{ paddingBottom: 55 }}>
       <div style={{ maxWidth: 960, margin: '0 auto', padding: '0 16px' }}>
-        <SectionHeader pill="TIME SAVINGS" title={<>HOW MANY HOURS WILL <span className="text-gold-gradient">LEADFLOW SAVE YOU?</span></>} desc="Slide to see how much time your team saves every week with LeadFlow automation." />
+        <SectionHeader pill="TIME SAVINGS" title={<>HOW MANY HOURS WILL <span className="text-gold-gradient">LEADFLOW SAVE YOU?</span></>} desc="Drag the slider to see how much time automations give back to your team every week." />
         <div style={{ background: 'var(--bg-card)', borderRadius: 18, border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 6px 24px rgba(0,0,0,0.04)', padding: '24px 20px' }}>
           <div style={{ marginBottom: 20 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-              <label style={{ fontSize: '0.84rem', fontWeight: 800, color: 'var(--text-main)' }}>Leads managed daily</label>
+              <label style={{ fontSize: '0.84rem', fontWeight: 800, color: 'var(--text-main)' }}>Leads you handle daily</label>
               <span style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1.3rem', fontWeight: 900, color: '#CA8A04' }}>{leads}</span>
             </div>
             <input
@@ -3186,9 +3186,9 @@ function TimeSavingsCalculator() {
             </div>
           </div>
           <div style={{ marginTop: 16, padding: '14px 16px', background: '#0F172A', borderRadius: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
-            <span style={{ fontSize: '0.82rem', color: 'var(--text-dark)', fontWeight: 600 }}>You save <strong style={{ color: '#FACC15', fontSize: '0.92rem' }}>{savedPerWeek.toFixed(0)} hrs/week</strong> and <strong style={{ color: '#FACC15', fontSize: '0.92rem' }}>{savedPerMonth.toFixed(0)} hrs/month</strong></span>
+            <span style={{ fontSize: '0.82rem', color: 'var(--text-dark)', fontWeight: 600 }}>That is <strong style={{ color: '#FACC15', fontSize: '0.92rem' }}>{savedPerWeek.toFixed(0)} hrs/week</strong> and <strong style={{ color: '#FACC15', fontSize: '0.92rem' }}>{savedPerMonth.toFixed(0)} hrs/month</strong> back in your team\'s day</span>
             <a href="#signup" onClick={(e) => { e.preventDefault(); window.location.hash = 'signup'; }} className="gold-cta" style={{ padding: '8px 16px', fontSize: '0.74rem', maxWidth: 'fit-content' }}>
-              <span>START SAVING</span>
+              <span>START SAVING TIME</span>
             </a>
           </div>
         </div>
@@ -3234,10 +3234,10 @@ function AwardsStrip() {
 function FinalCTA() {
   const telegramLink = useTelegramLink();
   const badges = [
-    '\u2713 Built for Sales Teams',
-    '\u2713 14-Day Free CRM Trial',
-    '\u2713 WhatsApp & Email Broadcast',
-    '\u2713 No Credit Card Required',
+    '\u2713 Purpose-Built for Sales Teams',
+    '\u2713 14 Days Full Access, Free',
+    '\u2713 WhatsApp & Email Broadcasts',
+    '\u2713 No Credit Card Needed',
   ];
 
   return (
@@ -3254,10 +3254,10 @@ function FinalCTA() {
           }}
         >
           <h2 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1.7rem', fontWeight: 900, marginBottom: 8, letterSpacing: '-0.3px', color: 'var(--landing-text, #0F172A)' }} className="final-cta-title">
-            START YOUR <span className="text-gold-gradient">14-DAY FREE TRIAL</span>
+            YOUR <span className="text-gold-gradient">14-DAY FREE TRIAL</span> AWAITS
           </h2>
           <p style={{ fontSize: '0.86rem', color: 'var(--landing-text-muted, #475569)', margin: '0 auto 20px auto', maxWidth: 480, lineHeight: 1.55 }}>
-            Start your LeadFlow CRM free trial today. Get full access to lead management, automated follow-ups, WhatsApp &amp; Email broadcasts, and sales analytics — no credit card required!
+            Spin up LeadFlow today and get the full toolkit — pipeline management, automated follow-ups, WhatsApp &amp; Email blasts, and live sales analytics. No credit card, no catch.
           </p>
           <a href="#signup" onClick={(event) => { event.preventDefault(); window.location.hash = 'signup'; }} className="gold-cta" style={{ margin: '0 auto' }}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -3266,7 +3266,7 @@ function FinalCTA() {
               <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
               <path d="M16 3.13a4 4 0 0 1 0 7.75" />
             </svg>
-            <span>START FREE TRIAL &amp; GET CRM ACCESS</span>
+            <span>ACTIVATE MY CRM TRIAL</span>
           </a>
           <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: 6, marginTop: 16 }}>
             {badges.map((b) => (
@@ -3321,7 +3321,7 @@ function Footer() {
             </div>
             <div>
               <div style={{ fontFamily: 'Outfit, sans-serif', fontWeight: 900, fontSize: '0.92rem', color: 'var(--bg-light)', letterSpacing: '0.3px' }}>LeadFlow CRM</div>
-              <div style={{ fontSize: '0.68rem', color: 'var(--text-dark)', marginTop: 1 }}>All-in-One Sales &amp; Lead Management Platform</div>
+              <div style={{ fontSize: '0.68rem', color: 'var(--text-dark)', marginTop: 1 }}>Your All-in-One Sales Growth Engine</div>
             </div>
           </div>
           <a
@@ -3408,7 +3408,7 @@ function Footer() {
 
         {/* Copyright bar */}
         <div className="copyright-row" style={{ display: 'flex', flexDirection: 'column', gap: 6, textAlign: 'center', borderTop: '1px solid rgba(255,255,255,0.06)', marginTop: 24, padding: '18px 0 20px 0', color: 'var(--text-dark)', fontSize: '0.73rem' }}>
-          <div>&copy; 2026 LeadFlow CRM. All Rights Reserved.</div>
+          <div>&copy; 2026 LeadFlow CRM. All rights reserved.</div>
           <div>
             <a href="#signup" onClick={(event) => { event.preventDefault(); window.location.hash = 'signup'; }} style={{ color: 'var(--text-dark)', textDecoration: 'none', transition: 'color 0.2s ease', cursor: 'pointer' }}>
               Powered by <span style={{ color: '#FACC15', fontWeight: 700 }}>LeadFlow CRM Platform</span>
@@ -3449,7 +3449,7 @@ function MobileStickyCTA() {
           LEADFLOW CRM
         </span>
         <span style={{ fontSize: '0.7rem', color: '#FACC15', fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-          14-Day Free Trial (No Card Required)
+          14 Days Free • No Card Needed
         </span>
       </div>
       <a
