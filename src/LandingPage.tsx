@@ -643,29 +643,33 @@ function StatsBar() {
 }
 
 // ===================== Section Header =====================
-function SectionHeader({ pill, title, desc }: { pill: string; title: React.ReactNode; desc?: string }) {
+function SectionHeader({ pill, title, desc }: { pill?: string; title?: React.ReactNode; desc?: string }) {
   return (
     <div style={{ textAlign: 'center', maxWidth: 650, margin: '0 auto 32px auto', padding: '0 16px' }}>
-      <span
-        style={{
-          display: 'inline-block',
-          padding: '3px 10px',
-          background: 'rgba(234, 179, 8, 0.15)',
-          border: '1px solid rgba(234, 179, 8, 0.4)',
-          color: '#854D0E',
-          borderRadius: '9999px',
-          fontSize: '0.72rem',
-          fontWeight: 800,
-          textTransform: 'uppercase',
-          letterSpacing: '0.8px',
-          marginBottom: 8,
-        }}
-      >
-        {pill}
-      </span>
-      <h2 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1.75rem', fontWeight: 900, marginBottom: 10, lineHeight: 1.35, letterSpacing: '-0.2px', color: 'var(--text-main)' }}>
-        {title}
-      </h2>
+      {pill && (
+        <span
+          style={{
+            display: 'inline-block',
+            padding: '3px 10px',
+            background: 'rgba(234, 179, 8, 0.15)',
+            border: '1px solid rgba(234, 179, 8, 0.4)',
+            color: '#854D0E',
+            borderRadius: '9999px',
+            fontSize: '0.72rem',
+            fontWeight: 800,
+            textTransform: 'uppercase',
+            letterSpacing: '0.8px',
+            marginBottom: 8,
+          }}
+        >
+          {pill}
+        </span>
+      )}
+      {title && (
+        <h2 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1.75rem', fontWeight: 900, marginBottom: 10, lineHeight: 1.35, letterSpacing: '-0.2px', color: 'var(--text-main)' }}>
+          {title}
+        </h2>
+      )}
       {desc && <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', lineHeight: 1.55 }}>{desc}</p>}
     </div>
   );
@@ -807,7 +811,7 @@ function GiftStack() {
   return (
     <section id="gifts" style={{ paddingBottom: 55 }}>
       <div style={{ maxWidth: 960, margin: '0 auto', padding: '0 16px' }}>
-        <SectionHeader pill="WHAT YOU GET" desc="Everything that comes with your LeadFlow free trial, unlocked from day one:" />
+        <SectionHeader />
 
         <div
           style={{
