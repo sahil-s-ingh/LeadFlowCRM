@@ -1076,6 +1076,24 @@ body {
 }
 
 /* ==========================================
+   LANDING PAGE V2 RESPONSIVE
+   ========================================== */
+@media (max-width: 768px) {
+  .lp-nav-desktop { display: none !important; }
+  .lp-nav-toggle { display: block !important; }
+  .lp-showcase-grid { grid-template-columns: 1fr !important; }
+  .lp-step-connector { display: none !important; }
+}
+
+@media (max-width: 768px) {
+  .lp-mobile-cta { display: flex !important; }
+}
+
+@media (min-width: 769px) {
+  .lp-nav-mobile { display: none !important; }
+}
+
+/* ==========================================
    MOBILE RESPONSIVE TWEAKS (MAX 480PX)
    ========================================== */
 @media (max-width: 480px) {
