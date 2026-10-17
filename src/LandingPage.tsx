@@ -3462,63 +3462,7 @@ function Footer() {
 
       {/* Main content */}
       <div style={{ maxWidth: 960, margin: '0 auto', padding: '28px 16px 0 16px' }}>
-        <div className="footer-grid" style={{ display: 'grid', gap: 24 }}>
-          {/* Quick links */}
-          <div className="footer-col">
-            <h4 className="footer-heading" style={{ fontFamily: 'Outfit, sans-serif', fontWeight: 800, fontSize: '0.78rem', color: '#E2E8F0', marginBottom: 12, letterSpacing: '0.4px', textTransform: 'uppercase' }}>Quick Links</h4>
-            <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <li><a href="#features" style={{ color: 'var(--text-dark)', textDecoration: 'none', fontSize: '0.76rem', transition: 'color 0.2s' }}>Features</a></li>
-              <li><a href="#testimonials" style={{ color: 'var(--text-dark)', textDecoration: 'none', fontSize: '0.76rem', transition: 'color 0.2s' }}>Testimonials</a></li>
-              <li><a href="#about" onClick={(e) => { e.preventDefault(); window.location.hash = 'about'; }} style={{ color: 'var(--text-dark)', textDecoration: 'none', fontSize: '0.76rem', transition: 'color 0.2s', cursor: 'pointer' }}>About Us</a></li>
-              <li><a href="#careers" onClick={(e) => { e.preventDefault(); window.location.hash = 'careers'; }} style={{ color: 'var(--text-dark)', textDecoration: 'none', fontSize: '0.76rem', transition: 'color 0.2s', cursor: 'pointer' }}>Careers</a></li>
-              <li><a href="#security" onClick={(e) => { e.preventDefault(); window.location.hash = 'security'; }} style={{ color: 'var(--text-dark)', textDecoration: 'none', fontSize: '0.76rem', transition: 'color 0.2s', cursor: 'pointer' }}>Security</a></li>
-              <li><a href="#brand-assets" onClick={(e) => { e.preventDefault(); window.location.hash = 'brand-assets'; }} style={{ color: 'var(--text-dark)', textDecoration: 'none', fontSize: '0.76rem', transition: 'color 0.2s', cursor: 'pointer' }}>Brand Assets</a></li>
-              <li><a href="#report-abuse" onClick={(e) => { e.preventDefault(); window.location.hash = 'report-abuse'; }} style={{ color: 'var(--text-dark)', textDecoration: 'none', fontSize: '0.76rem', transition: 'color 0.2s', cursor: 'pointer' }}>Report Abuse</a></li>
-              <li><a href="#sitemap" onClick={(e) => { e.preventDefault(); window.location.hash = 'sitemap'; }} style={{ color: 'var(--text-dark)', textDecoration: 'none', fontSize: '0.76rem', transition: 'color 0.2s', cursor: 'pointer' }}>Sitemap</a></li>
-            </ul>
-          </div>
-
-          {/* Collapsible disclaimers */}
-          <div className="footer-col">
-            <button
-              onClick={() => { window.location.hash = 'privacy'; }}
-              className="footer-collapse-btn"
-              style={{
-                width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)',
-                borderRadius: 10, padding: '11px 14px', cursor: 'pointer',
-                color: '#E2E8F0', fontWeight: 700, fontSize: '0.78rem',
-                fontFamily: 'inherit', textAlign: 'left',
-              }}
-            >
-              <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#EAB308" strokeWidth="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-                Privacy Policy
-              </span>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ flexShrink: 0 }}><path d="M5 12h14" /><path d="M12 5l7 7-7 7" /></svg>
-            </button>
-          </div>
-
-          <div className="footer-col">
-            <button
-              onClick={() => { window.location.hash = 'terms'; }}
-              className="footer-collapse-btn"
-              style={{
-                width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)',
-                borderRadius: 10, padding: '11px 14px', cursor: 'pointer',
-                color: '#E2E8F0', fontWeight: 700, fontSize: '0.78rem',
-                fontFamily: 'inherit', textAlign: 'left',
-              }}
-            >
-              <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#EAB308" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-                Terms & Conditions
-              </span>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ flexShrink: 0 }}><path d="M5 12h14" /><path d="M12 5l7 7-7 7" /></svg>
-            </button>
-          </div>
-        </div>
+        <div className="footer-grid" style={{ display: 'grid', gap: 24 }} />
 
         {/* Copyright bar */}
         <div className="copyright-row" style={{ display: 'flex', flexDirection: 'column', gap: 6, textAlign: 'center', borderTop: '1px solid rgba(255,255,255,0.06)', marginTop: 24, padding: '18px 0 20px 0', color: 'var(--text-dark)', fontSize: '0.73rem' }}>
