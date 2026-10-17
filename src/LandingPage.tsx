@@ -3652,15 +3652,10 @@ function LandingPage() {
       <Header />
       <ScrollProgressBar />
       <GiftStack />
-      <TimeSavingsCalculator />
-      <SuccessMetrics />
-      <LiveActivityFeed />
-      <MobilePreview />
       <TrustGuarantee />
       <CountdownTimer />
       <NewsletterCapture />
       <FAQ />
-      <FinalCTA />
       <Footer />
       <MobileStickyCTA />
       <SocialToast />
