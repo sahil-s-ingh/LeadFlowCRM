@@ -3650,17 +3650,7 @@ function LandingPage() {
     <div style={{ minHeight: '100vh', backgroundColor: 'var(--landing-bg, #F8FAFC)', fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
       <TopUrgencyBar />
       <Header />
-      <StatsBar />
       <ScrollProgressBar />
-      <LogoCloud />
-      <FeatureDeepDive />
-      <Pricing />
-      <IntegrationsStrip />
-      <HowItWorks />
-      <OnboardingChecklist />
-      <ComparisonTable />
-      <CompetitorComparison />
-      <BeforeAfter />
       <GiftStack />
       <TimeSavingsCalculator />
       <SuccessMetrics />
