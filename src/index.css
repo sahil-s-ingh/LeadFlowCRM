@@ -101,6 +101,16 @@ body {
   50% { transform: translateY(-7px) rotate(-0.5deg); }
 }
 
+@keyframes hero-float-card-3 {
+  0%, 100% { transform: translateY(0) rotate(-1deg); }
+  50% { transform: translateY(-8px) rotate(0.8deg); }
+}
+
+@keyframes hero-ticker-fill {
+  from { width: 0; }
+  to { width: 96%; }
+}
+
 @keyframes hero-glow-pulse {
   0%, 100% { opacity: 0.35; transform: scale(1); }
   50% { opacity: 0.55; transform: scale(1.08); }
@@ -448,6 +458,13 @@ body {
   animation: hero-float-card-2 6s ease-in-out infinite;
 }
 
+.hero-float-card-3 {
+  top: 40%;
+  left: -10px;
+  animation: hero-float-card-3 7s ease-in-out infinite;
+  animation-delay: 1.5s;
+}
+
 .hero-float-card-inner {
   display: flex;
   align-items: center;
@@ -480,7 +497,7 @@ body {
 .hero-live-ticker {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   margin-top: 14px;
   padding: 6px 14px;
   background: rgba(255, 255, 255, 0.7);
@@ -491,6 +508,60 @@ body {
   font-size: 0.72rem;
   font-weight: 700;
   color: #475569;
+}
+
+.hero-ticker-progress {
+  flex: 1;
+  height: 6px;
+  background: rgba(234, 179, 8, 0.15);
+  border-radius: 9999px;
+  overflow: hidden;
+  max-width: 120px;
+}
+
+.hero-ticker-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #FACC15, #EAB308, #CA8A04);
+  border-radius: 9999px;
+  animation: hero-ticker-fill 1.5s ease-out both;
+}
+
+.hero-quick-metrics {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 14px;
+  animation: hero-bounce-in 0.7s ease 0.35s both;
+}
+
+.hero-quick-metric {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+}
+
+.hero-quick-metric-val {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 900;
+  color: #CA8A04;
+  line-height: 1;
+}
+
+.hero-quick-metric-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--text-muted, #64748B);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.hero-quick-metric-divider {
+  width: 1px;
+  height: 24px;
+  background: rgba(234, 179, 8, 0.25);
 }
 
 @media (min-width: 768px) {
@@ -508,6 +579,13 @@ body {
   .hero-float-card-2 {
     bottom: -20px;
     right: -24px;
+  }
+  .hero-float-card-3 {
+    top: 38%;
+    left: -28px;
+  }
+  .hero-quick-metric-val {
+    font-size: 1.3rem;
   }
 }
 
@@ -1073,24 +1151,6 @@ body {
   height: 100%;
   background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent);
   animation: progress-shimmer 2.2s infinite ease-in-out;
-}
-
-/* ==========================================
-   LANDING PAGE V2 RESPONSIVE
-   ========================================== */
-@media (max-width: 768px) {
-  .lp-nav-desktop { display: none !important; }
-  .lp-nav-toggle { display: block !important; }
-  .lp-showcase-grid { grid-template-columns: 1fr !important; }
-  .lp-step-connector { display: none !important; }
-}
-
-@media (max-width: 768px) {
-  .lp-mobile-cta { display: flex !important; }
-}
-
-@media (min-width: 769px) {
-  .lp-nav-mobile { display: none !important; }
 }
 
 /* ==========================================
