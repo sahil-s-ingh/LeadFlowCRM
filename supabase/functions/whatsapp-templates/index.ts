@@ -6,7 +6,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
 };
 
-const GRAPH_API_VERSION = "v20.0";
+const GRAPH_API_VERSION = "v21.0";
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
@@ -415,6 +415,166 @@ Deno.serve(async (req: Request) => {
 
       return new Response(
         JSON.stringify({ success: true }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    // ─── MEDIA UPLOAD: upload file to Meta and return handle ──────────
+    if (action === 'media_upload' && req.method === 'POST') {
+      const body = await req.json();
+      const { type, url: fileUrl } = body;
+
+      if (!type || !fileUrl) {
+        return new Response(
+          JSON.stringify({ error: "type and url are required" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      // Fetch the file from the provided URL
+      const fileRes = await fetch(fileUrl);
+      if (!fileRes.ok) {
+        return new Response(
+          JSON.stringify({ error: "Failed to download file from URL" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+      const fileBlob = await fileRes.blob();
+      const formData = new FormData();
+      formData.append("type", type);
+      formData.append("file", fileBlob, fileUrl.split('/').pop() || 'file');
+
+      const uploadRes = await fetch(
+        `https://graph.facebook.com/${GRAPH_API_VERSION}/${wabaId}/whatsapp_business_media`,
+        {
+          method: "POST",
+          headers: { Authorization: `Bearer ${accessToken}` },
+          body: formData,
+        },
+      );
+      const uploadData = await uploadRes.json();
+
+      if (uploadData.error) {
+        return new Response(
+          JSON.stringify({ error: uploadData.error.message || "Failed to upload media to Meta" }),
+          { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      return new Response(
+        JSON.stringify({ handle: uploadData.h, id: uploadData.id }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    // ─── TEST SEND: send a test message to a phone number ─────────────
+    if (action === 'test_send' && req.method === 'POST') {
+      const body = await req.json();
+      const { template_name, language, phone_number, components } = body;
+
+      if (!template_name || !phone_number) {
+        return new Response(
+          JSON.stringify({ error: "template_name and phone_number are required" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      // Get the phone number ID
+      const { data: phoneSettings } = await adminSupabase
+        .from("whatsapp_settings")
+        .select("phone_number_id")
+        .eq("user_id", userData.user.id)
+        .order("created_at", { ascending: true })
+        .limit(1)
+        .maybeSingle();
+
+      if (!phoneSettings?.phone_number_id) {
+        return new Response(
+          JSON.stringify({ error: "Phone number ID not configured. Connect a WhatsApp number first." }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      const payload: any = {
+        messaging_product: "whatsapp",
+        to: phone_number,
+        type: "template",
+        template: {
+          name: template_name,
+          language: { code: language || 'en_US' },
+        },
+      };
+
+      if (components && components.length > 0) {
+        payload.template.components = components;
+      }
+
+      const sendRes = await fetch(
+        `https://graph.facebook.com/${GRAPH_API_VERSION}/${phoneSettings.phone_number_id}/messages`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify(payload),
+        },
+      );
+      const sendData = await sendRes.json();
+
+      if (sendData.error) {
+        return new Response(
+          JSON.stringify({ error: sendData.error.message || "Failed to send test message" }),
+          { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      return new Response(
+        JSON.stringify({ success: true, message_id: sendData.messages?.[0]?.id }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    // ─── ANALYTICS: fetch template analytics from Meta ────────────────
+    if (action === 'analytics' && req.method === 'GET') {
+      const templateName = url.searchParams.get('name');
+      if (!templateName) {
+        return new Response(
+          JSON.stringify({ error: "name query parameter is required" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      // Fetch template analytics from Meta's insights API
+      const startTs = url.searchParams.get('start') || String(Math.floor(Date.now() / 1000) - 7 * 86400);
+      const endTs = url.searchParams.get('end') || String(Math.floor(Date.now() / 1000));
+
+      const analyticsRes = await fetch(
+        `https://graph.facebook.com/${GRAPH_API_VERSION}/${wabaId}/template_analytics?` +
+        `template_name=${encodeURIComponent(templateName)}&` +
+        `start=${startTs}&end=${endTs}&granularity=DAILY&metric_types=CLICKS,DELIVERED,READ,SENT`,
+        { headers: { Authorization: `Bearer ${accessToken}` } },
+      );
+      const analyticsData = await analyticsRes.json();
+
+      if (analyticsData.error) {
+        return new Response(
+          JSON.stringify({ error: analyticsData.error.message || "Failed to fetch analytics" }),
+          { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      const dataPoints = analyticsData.analytics?.data?.category?.[0]?.data_points || [];
+      const totals = dataPoints.reduce((acc: any, dp: any) => {
+        acc.sent = (acc.sent || 0) + (dp.sent || 0);
+        acc.delivered = (acc.delivered || 0) + (dp.delivered || 0);
+        acc.read = (acc.read || 0) + (dp.read || 0);
+        acc.clicked = (acc.clicked || 0) + (dp.clicked || 0);
+        return acc;
+      }, {});
+
+      return new Response(
+        JSON.stringify({ analytics: totals, dataPoints }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }

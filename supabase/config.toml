@@ -105,3 +105,6 @@ verify_jwt = false
 
 [functions.paypal-verify-payment]
 verify_jwt = false
+
+[functions.process-scheduled-broadcasts]
+verify_jwt = false
