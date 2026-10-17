@@ -807,7 +807,7 @@ function GiftStack() {
   return (
     <section id="gifts" style={{ paddingBottom: 55 }}>
       <div style={{ maxWidth: 960, margin: '0 auto', padding: '0 16px' }}>
-        <SectionHeader pill="WHAT YOU GET" title={<>YOUR CRM <span className="text-gold-gradient">FEATURE STACK</span></>} desc="Everything that comes with your LeadFlow free trial, unlocked from day one:" />
+        <SectionHeader pill="WHAT YOU GET" desc="Everything that comes with your LeadFlow free trial, unlocked from day one:" />
 
         <div
           style={{
@@ -3652,10 +3652,6 @@ function LandingPage() {
       <Header />
       <ScrollProgressBar />
       <GiftStack />
-      <TrustGuarantee />
-      <CountdownTimer />
-      <NewsletterCapture />
-      <FAQ />
       <Footer />
       <MobileStickyCTA />
       <SocialToast />
