@@ -3,23 +3,14 @@ import { supabase } from '@/lib/supabase';
 import type { Session } from '@supabase/supabase-js';
 import {
   Shield, Users, TrendingUp, MessageSquare, UserCog, LogOut, Loader2,
-  Building2, Mail, Activity, AlertCircle, Search, RefreshCw, CircleDot,
-  LogIn, Eye, UserCircle, CreditCard, ToggleLeft, FileText, BarChart3,
-  Server, LayoutDashboard, Menu, X, Wallet, Phone, Zap,
+  Building2, Activity, AlertCircle, Search, RefreshCw, CircleDot,
+  LogIn, Eye, UserCircle, BarChart3,
+  Server, LayoutDashboard, Menu, X, Phone, Settings,
 } from 'lucide-react';
 import AccountDetailDrawer from './AccountDetailDrawer';
 import AdminProfilePage from './AdminProfilePage';
-import SuperAdminPlans from './SuperAdminPlans';
-import SuperAdminFeatures from './SuperAdminFeatures';
-import SuperAdminLegal from './SuperAdminLegal';
 import SuperAdminUsage from './SuperAdminUsage';
 import SuperAdminSetupGuide from './SuperAdminSetupGuide';
-import SuperAdminEmailSettings from './SuperAdminEmailSettings';
-import SuperAdminPaymentSettings from './SuperAdminPaymentSettings';
-import SuperAdminWhatsAppOnboarding from './SuperAdminWhatsAppOnboarding';
-import SuperAdminWhatsAppConfig from './SuperAdminWhatsAppConfig';
-import SuperAdminMetaAdsSettings from './SuperAdminMetaAdsSettings';
-import SuperAdminSocialAuthSettings from './SuperAdminSocialAuthSettings';
 import SuperAdminSettings from './SuperAdminSettings';
 
 type Stats = {
@@ -48,7 +39,7 @@ type NavKey = 'dashboard' | 'usage' | 'settings' | 'setup' | 'profile';
 const NAV_ITEMS: { key: NavKey; label: string; icon: React.ReactNode; group: string }[] = [
   { key: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard size={18} />, group: 'Overview' },
   { key: 'usage', label: 'Usage & Billing', icon: <BarChart3 size={18} />, group: 'Overview' },
-  { key: 'settings', label: 'Settings', icon: <Settings as SettingsIcon size={18} />, group: 'Platform' },
+  { key: 'settings', label: 'Settings', icon: <Settings size={18} />, group: 'Platform' },
   { key: 'setup', label: 'Setup Guide', icon: <Server size={18} />, group: 'System' },
   { key: 'profile', label: 'My Profile', icon: <UserCircle size={18} />, group: 'Account' },
 ];

@@ -5,7 +5,6 @@ import {
   Wallet, MessageSquare, Zap, TrendingUp, LogIn,
   ChevronRight,
 } from 'lucide-react';
-import AdminProfilePage from './AdminProfilePage';
 import SuperAdminPlans from './SuperAdminPlans';
 import SuperAdminFeatures from './SuperAdminFeatures';
 import SuperAdminLegal from './SuperAdminLegal';
