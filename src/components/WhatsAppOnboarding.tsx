@@ -27,6 +27,12 @@ type EmbeddedConfig = {
   enabled: boolean;
 };
 
+type PlatformFlags = {
+  cloud_api_enabled: boolean;
+  embedded_signup_enabled: boolean;
+  coex_enabled: boolean;
+};
+
 // Facebook SDK type declarations
 declare global {
   interface Window {
@@ -59,6 +65,7 @@ export default function WhatsAppOnboarding({
 }) {
   const [loading, setLoading] = useState(true);
   const [embedConfig, setEmbedConfig] = useState<EmbeddedConfig | null>(null);
+  const [platformFlags, setPlatformFlags] = useState<PlatformFlags | null>(null);
   const [mode, setMode] = useState<'choose' | 'embedded' | 'manual'>('choose');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -78,8 +85,13 @@ export default function WhatsAppOnboarding({
   const loadConfig = useCallback(async () => {
     setLoading(true);
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData.session?.access_token;
+      const [flagsRes, sessionData] = await Promise.all([
+        supabase.from('public_whatsapp_flags').select('*').maybeSingle(),
+        supabase.auth.getSession(),
+      ]);
+      if (flagsRes.data) setPlatformFlags(flagsRes.data as PlatformFlags);
+
+      const token = sessionData.data?.session?.access_token;
       if (!token) { setLoading(false); return; }
 
       const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/wa-embedded-signup`, {
@@ -261,10 +273,21 @@ export default function WhatsAppOnboarding({
     );
   }
 
-  const embeddedAvailable = embedConfig?.enabled && embedConfig?.meta_app_id && embedConfig?.config_id;
+  const cloudApiDisabled = platformFlags ? !platformFlags.cloud_api_enabled : false;
+  const embeddedAvailable = embedConfig?.enabled && embedConfig?.meta_app_id && embedConfig?.config_id && (platformFlags?.embedded_signup_enabled ?? false);
 
   return (
     <div>
+      {cloudApiDisabled && (
+        <div style={{
+          marginBottom: '14px', padding: '14px 16px',
+          background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)',
+          borderRadius: '10px', color: '#dc2626', fontSize: '0.84rem',
+          display: 'flex', alignItems: 'center', gap: '8px', lineHeight: 1.5,
+        }}>
+          <AlertCircle size={16} /> WhatsApp Cloud API is currently disabled by the platform administrator. You cannot connect new numbers or send messages until it is re-enabled.
+        </div>
+      )}
       {error && (
         <div style={{
           marginBottom: '14px', padding: '10px 14px',
@@ -287,7 +310,7 @@ export default function WhatsAppOnboarding({
       )}
 
       {/* Choose mode */}
-      {mode === 'choose' && (
+      {mode === 'choose' && !cloudApiDisabled && (
         <div style={{
           padding: '24px', background: 'var(--bg-card)', borderRadius: '14px',
           border: '1px solid var(--border-subtle)',
@@ -375,7 +398,7 @@ export default function WhatsAppOnboarding({
       )}
 
       {/* Embedded signup mode */}
-      {mode === 'embedded' && (
+      {mode === 'embedded' && !cloudApiDisabled && (
         <div style={{
           padding: '24px', background: 'var(--bg-card)', borderRadius: '14px',
           border: '1px solid var(--border-subtle)',
@@ -418,7 +441,7 @@ export default function WhatsAppOnboarding({
       )}
 
       {/* Manual setup mode */}
-      {mode === 'manual' && (
+      {mode === 'manual' && !cloudApiDisabled && (
         <div style={{
           padding: '24px', background: 'var(--bg-card)', borderRadius: '14px',
           border: '1px solid var(--border-subtle)',
