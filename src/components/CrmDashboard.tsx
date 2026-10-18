@@ -50,6 +50,7 @@ import BrokerTrackerPage from '@/components/BrokerTrackerPage';
 import LeadTrackerPage from '@/components/LeadTrackerPage';
 import LeadSourceBadge from '@/components/LeadSourceBadge';
 import LeadWhatsAppDrawer from '@/components/LeadWhatsAppDrawer';
+import WhatsAppChatbotBuilder from '@/components/WhatsAppChatbotBuilder';
 import { SourceLogo } from '@/components/BrandLogos';
 import WhatsAppOnboarding from '@/components/WhatsAppOnboarding';
 import MetaAdsManager from '@/components/MetaAdsManager';
@@ -101,7 +102,7 @@ const MOBILE_STAT_OPTIONS: { key: MobileStatKey; label: string }[] = [
 ];
 
 type DateFilterPreset = 'all' | 'today' | 'yesterday' | 'last_7_days' | 'this_week' | 'this_month' | 'this_year' | 'custom';
-type ActiveView = 'dashboard' | 'leads' | 'inbox_hub' | 'inbox' | 'whatsapp' | 'settings' | 'drip' | 'analytics_hub' | 'email_analytics' | 'message_templates' | 'broadcast_hub' | 'broadcast' | 'email_broadcast' | 'telegram_broadcast' | 'activity_timeline' | 'revenue_forecast' | 'followups' | 'leaderboard' | 'goals' | 'win_loss' | 'duplicates' | 'heatmap' | 'automations' | 'brokers' | 'lead_tracker' | 'meta_ads';
+type ActiveView = 'dashboard' | 'leads' | 'inbox_hub' | 'inbox' | 'whatsapp' | 'settings' | 'drip' | 'analytics_hub' | 'email_analytics' | 'message_templates' | 'broadcast_hub' | 'broadcast' | 'email_broadcast' | 'telegram_broadcast' | 'activity_timeline' | 'revenue_forecast' | 'followups' | 'leaderboard' | 'goals' | 'win_loss' | 'duplicates' | 'heatmap' | 'automations' | 'brokers' | 'lead_tracker' | 'meta_ads' | 'wa_chatbot';
 
 type UserRole = 'owner' | 'admin' | 'manager' | 'agent';
 
@@ -516,7 +517,7 @@ async function sendMetaConversionEvent(leadId: string, lead: Lead, newStatus: Le
   }
 }
 
-const VALID_VIEWS: ActiveView[] = ['dashboard', 'leads', 'inbox_hub', 'inbox', 'whatsapp', 'settings', 'drip', 'analytics_hub', 'email_analytics', 'message_templates', 'broadcast_hub', 'broadcast', 'email_broadcast', 'telegram_broadcast', 'activity_timeline', 'revenue_forecast', 'followups', 'leaderboard', 'goals', 'win_loss', 'duplicates', 'heatmap', 'automations', 'brokers', 'lead_tracker', 'meta_ads'];
+const VALID_VIEWS: ActiveView[] = ['dashboard', 'leads', 'inbox_hub', 'inbox', 'whatsapp', 'settings', 'drip', 'analytics_hub', 'email_analytics', 'message_templates', 'broadcast_hub', 'broadcast', 'email_broadcast', 'telegram_broadcast', 'activity_timeline', 'revenue_forecast', 'followups', 'leaderboard', 'goals', 'win_loss', 'duplicates', 'heatmap', 'automations', 'brokers', 'lead_tracker', 'meta_ads', 'wa_chatbot'];
 
 export default function CrmDashboard({ session, initialView }: { session: Session; initialView?: string }) {
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -2065,6 +2066,9 @@ export default function CrmDashboard({ session, initialView }: { session: Sessio
             <Zap size={18} /> {!sidebarCollapsed && 'Automations'}
           </a>
           )}
+          <a className={`crm-nav-item ${activeView === 'wa_chatbot' ? 'active' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`} onClick={() => { navigateToView('wa_chatbot'); setMobileSidebarOpen(false); setMobileNav('leads'); }} style={{ cursor: 'pointer' }} title={sidebarCollapsed ? 'WhatsApp Chatbot' : undefined}>
+            <Bot size={18} /> {!sidebarCollapsed && 'Chatbot'}
+          </a>
         </div>
         )}
         {!sidebarCollapsed && sidebarSections.pipeline && sectionVisibility.pipeline && (
@@ -2263,6 +2267,8 @@ export default function CrmDashboard({ session, initialView }: { session: Sessio
           <DuplicateDetectionView leads={leads} onBack={() => navigateToView('dashboard')} onMerge={mergeDuplicates} assigneeMap={assigneeMap} />
         ) : activeView === 'automations' ? (
           <AutomationBuilder session={session} onBack={() => navigateToView('dashboard')} stages={pipelineStages} />
+        ) : activeView === 'wa_chatbot' ? (
+          <WhatsAppChatbotBuilder session={session} onBack={() => navigateToView('dashboard')} />
         ) : activeView === 'brokers' ? (
           <BrokerTrackerPage session={session} onBack={() => navigateToView('dashboard')} />
         ) : activeView === 'lead_tracker' ? (

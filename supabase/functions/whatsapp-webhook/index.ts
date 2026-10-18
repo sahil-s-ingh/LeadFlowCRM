@@ -323,8 +323,29 @@ Deno.serve(async (req: Request) => {
           const previewText = getPreviewText(msg);
           await sendChatNotificationEmail(supabase, adminUserId, senderDisplayName, previewText, "WhatsApp");
 
+          // ─── Chatbot rule evaluation ───
+          // After persisting the inbound message, check for a matching chatbot
+          // rule owned by this admin. The first active rule (by priority) whose
+          // keywords match the inbound text wins. If found, send the configured
+          // reply (text / buttons / list), log the hit, and skip the default
+          // welcome message below.
+          let chatbotHandled = false;
+          if (msg.type === "text") {
+            try {
+              chatbotHandled = await evaluateChatbotRules(
+                supabase,
+                adminUserId,
+                settings,
+                conversation,
+                phoneFromWaId,
+                getTextContent(msg) || "",
+              );
+            } catch { /* best effort — don't block inbound processing */ }
+          }
+
           // Send welcome message if this is a new conversation and it's a text "hi"/"hello"
-          if (settings.welcome_message && msg.type === "text") {
+          // (skipped when a chatbot rule already replied)
+          if (!chatbotHandled && settings.welcome_message && msg.type === "text") {
             const text = (msg.text?.body || "").toLowerCase().trim();
             if (["hi", "hello", "hey", "start", "menu"].includes(text)) {
               await sendWhatsAppMessage(
@@ -437,6 +458,141 @@ async function sendWhatsAppMessage(
       text: { body: text },
     }),
   });
+}
+
+// ─── WhatsApp Chatbot rule evaluation ───
+// Loads active rules for the admin (ordered by priority desc), checks each
+// against the inbound text, and sends the first matching rule's reply.
+// Returns true when a rule fired (so the caller can skip the default welcome).
+async function evaluateChatbotRules(
+  supabase: ReturnType<typeof createClient>,
+  adminUserId: string,
+  settings: any,
+  conversation: any,
+  phoneFromWaId: string,
+  inboundText: string,
+): Promise<boolean> {
+  if (!inboundText) return false;
+
+  const { data: rules } = await supabase
+    .from("wa_chatbot_rules")
+    .select("*")
+    .eq("user_id", adminUserId)
+    .eq("is_active", true)
+    .order("priority", { ascending: false });
+
+  if (!rules || rules.length === 0) return false;
+
+  const lower = inboundText.toLowerCase().trim();
+  const words = lower.split(/\s+/);
+
+  for (const rule of rules) {
+    const kws = (rule.keywords || []).map((k: string) => k.toLowerCase().trim()).filter(Boolean);
+    if (kws.length === 0) continue;
+
+    let matchedKeyword: string | null = null;
+    const mode = rule.match_mode || "any";
+
+    if (mode === "exact") {
+      const hit = kws.find((k: string) => k === lower);
+      if (hit) matchedKeyword = hit;
+    } else if (mode === "starts_with") {
+      const hit = kws.find((k: string) => lower.startsWith(k));
+      if (hit) matchedKeyword = hit;
+    } else {
+      // "any" — whole-word match against any keyword
+      const hit = kws.find((k: string) => words.includes(k));
+      if (hit) matchedKeyword = hit;
+    }
+
+    if (!matchedKeyword) continue;
+
+    // Send the reply via the appropriate Meta API payload
+    const toNum = phoneFromWaId.replace(/^\+/, "");
+    const apiUrl = `https://graph.facebook.com/v20.0/${settings.phone_number_id}/messages`;
+    const body: Record<string, unknown> = {
+      messaging_product: "whatsapp",
+      to: toNum,
+    };
+
+    if (rule.reply_type === "buttons" && Array.isArray(rule.buttons) && rule.buttons.length > 0) {
+      body.type = "interactive";
+      body.interactive = {
+        type: "button",
+        body: { text: rule.reply_text || "Please choose an option:" },
+        action: {
+          buttons: (rule.buttons as any[]).slice(0, 3).map((b) => ({
+            type: "reply",
+            reply: { id: b.id || b.title, title: b.title },
+          })),
+        },
+      };
+    } else if (rule.reply_type === "list" && Array.isArray(rule.list_options) && rule.list_options.length > 0) {
+      body.type = "interactive";
+      body.interactive = {
+        type: "list",
+        header: { type: "text", text: rule.list_title || "Options" },
+        body: { text: rule.reply_text || "Please choose an option:" },
+        action: {
+          button: "Options",
+          sections: [
+            {
+              title: "Choose",
+              rows: (rule.list_options as any[]).slice(0, 10).map((o) => ({
+                id: o.id || o.title,
+                title: o.title,
+                description: o.description || "",
+              })),
+            },
+          ],
+        },
+      };
+    } else {
+      body.type = "text";
+      body.text = { body: rule.reply_text || "" };
+    }
+
+    try {
+      await fetch(apiUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${settings.access_token}` },
+        body: JSON.stringify(body),
+      });
+    } catch { /* best effort */ }
+
+    // Record the outbound chatbot message in the conversation
+    try {
+      await supabase.from("wa_messages").insert({
+        conversation_id: conversation.id,
+        sender: "admin",
+        message_type: rule.reply_type === "text" ? "text" : "interactive",
+        text_content: rule.reply_text || "",
+      });
+    } catch { /* best effort */ }
+
+    // Increment hit count
+    try {
+      await supabase.from("wa_chatbot_rules")
+        .update({ hit_count: (rule.hit_count || 0) + 1, updated_at: new Date().toISOString() })
+        .eq("id", rule.id);
+    } catch { /* best effort */ }
+
+    // Log the hit
+    try {
+      await supabase.from("wa_chatbot_logs").insert({
+        user_id: adminUserId,
+        rule_id: rule.id,
+        conversation_id: conversation.id,
+        trigger_message: inboundText.slice(0, 500),
+        matched_keyword: matchedKeyword,
+        reply_type: rule.reply_type,
+      });
+    } catch { /* best effort */ }
+
+    return true;
+  }
+
+  return false;
 }
 
 
