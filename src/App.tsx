@@ -152,9 +152,10 @@ function App() {
 
   // Check super admin status when on superadmin route
   useEffect(() => {
-    if (hash !== 'superadmin' && hash !== '/superadmin') return;
+    if (!hash.startsWith('superadmin') && !hash.startsWith('/superadmin')) return;
     if (!session) {
       setSuperAdminChecked(true);
+      setIsSuperAdmin(false);
       return;
     }
 
