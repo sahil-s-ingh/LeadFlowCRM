@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { X, Send, MessageCircle, AlertCircle, Image as ImageIcon, Paperclip, FileText, Sparkles, ChevronRight, Check, CheckCheck, Clock, StickyNote, Plus, Trash2, Phone, Mail, CalendarClock, Tag, Zap, ChevronDown } from 'lucide-react';
+import { X, Send, MessageCircle, AlertCircle, Image as ImageIcon, Paperclip, FileText, Sparkles, ChevronRight, Check, CheckCheck, Clock, StickyNote, Plus, Trash2, Phone, Mail, CalendarClock, Tag, Zap, ChevronDown, KeyRound } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { Session } from '@supabase/supabase-js';
 
@@ -155,6 +155,7 @@ const LeadWhatsAppDrawer: React.FC<Props> = ({ open, lead, session, onClose }) =
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [errorType, setErrorType] = useState<'auth' | 'api' | null>(null);
   const [conversation, setConversation] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<WaMessage[]>([]);
   const [draft, setDraft] = useState('');
@@ -191,7 +192,7 @@ const LeadWhatsAppDrawer: React.FC<Props> = ({ open, lead, session, onClose }) =
   const loadConversation = useCallback(async () => {
     if (!lead || !phone || !session) return;
     setLoading(true);
-    setError(null);
+    setError(null); setErrorType(null);
     setConversation(null);
     setMessages([]);
     setShowTemplatePicker(false);
@@ -355,7 +356,7 @@ const LeadWhatsAppDrawer: React.FC<Props> = ({ open, lead, session, onClose }) =
     const text = draft.trim();
     setDraft('');
     setSending(true);
-    setError(null);
+    setError(null); setErrorType(null);
     try {
       const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-whatsapp-message`, {
         method: 'POST',
@@ -363,7 +364,7 @@ const LeadWhatsAppDrawer: React.FC<Props> = ({ open, lead, session, onClose }) =
         body: JSON.stringify({ conversationId: conversation.id, text }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to send message');
+      if (!res.ok) { setErrorType(data.errorType || null); throw new Error(data.error || 'Failed to send message'); }
       if (data.message) setMessages((prev) => [...prev, data.message as WaMessage]);
     } catch (e: any) {
       setError(e.message || 'Failed to send');
@@ -376,7 +377,7 @@ const LeadWhatsAppDrawer: React.FC<Props> = ({ open, lead, session, onClose }) =
   const handleFile = async (file: File) => {
     if (!conversation || sending) return;
     setSending(true);
-    setError(null);
+    setError(null); setErrorType(null);
     try {
       const formData = new FormData();
       formData.append('conversationId', conversation.id);
@@ -388,7 +389,7 @@ const LeadWhatsAppDrawer: React.FC<Props> = ({ open, lead, session, onClose }) =
         body: formData,
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to upload');
+      if (!res.ok) { setErrorType(data.errorType || null); throw new Error(data.error || 'Failed to upload'); }
       if (data.message) setMessages((prev) => [...prev, data.message as WaMessage]);
     } catch (e: any) {
       setError(e.message || 'Failed to upload file');
@@ -427,7 +428,7 @@ const LeadWhatsAppDrawer: React.FC<Props> = ({ open, lead, session, onClose }) =
   const handleSendTemplate = async (tpl: Template, params: string[]) => {
     if (!session || sending) return;
     setSending(true);
-    setError(null);
+    setError(null); setErrorType(null);
     try {
       const conv = await ensureConversation();
       if (!conv) { setSending(false); return; }
@@ -440,7 +441,7 @@ const LeadWhatsAppDrawer: React.FC<Props> = ({ open, lead, session, onClose }) =
         body: JSON.stringify({ conversationId: conv.id, templateName: tpl.name, templateLanguage: tpl.language, templateComponents }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to send template');
+      if (!res.ok) { setErrorType(data.errorType || null); throw new Error(data.error || 'Failed to send template'); }
       if (data.message) setMessages((prev) => [...prev, data.message as WaMessage]);
       setActiveTemplate(null); setParamValues([]); setShowTemplatePicker(false);
       await loadConversation();
@@ -859,11 +860,19 @@ const LeadWhatsAppDrawer: React.FC<Props> = ({ open, lead, session, onClose }) =
               )}
 
               {!loading && !showStarterTemplatePicker && error && (
-                <div className="lead-wa-state lead-wa-state-error">
-                  <AlertCircle size={32} />
-                  <p className="lead-wa-state-title">Something went wrong</p>
+                <div className={`lead-wa-state ${errorType === 'auth' ? 'lead-wa-state-auth-error' : 'lead-wa-state-error'}`}>
+                  {errorType === 'auth' ? <KeyRound size={32} /> : <AlertCircle size={32} />}
+                  <p className="lead-wa-state-title">
+                    {errorType === 'auth' ? 'WhatsApp connection expired' : 'Something went wrong'}
+                  </p>
                   <p className="lead-wa-state-desc">{error}</p>
-                  <button className="lead-wa-retry" onClick={loadConversation}>Try again</button>
+                  {errorType === 'auth' ? (
+                    <p className="lead-wa-state-hint">
+                      Open WhatsApp Settings from the sidebar, then re-enter your Phone Number ID and generate a new access token in Meta Business Manager.
+                    </p>
+                  ) : (
+                    <button className="lead-wa-retry" onClick={loadConversation}>Try again</button>
+                  )}
                 </div>
               )}
 

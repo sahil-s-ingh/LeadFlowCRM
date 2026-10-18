@@ -329,8 +329,18 @@ Deno.serve(async (req: Request) => {
       const tplData = await tplResponse.json();
       if (tplData.error) {
         const errMsg = tplData.error.error_data?.details || tplData.error.message || "Unknown";
+        const errCode = tplData.error.code;
+        const errType = tplData.error.type || "";
+        const isAuthError =
+          errCode === 190 ||
+          errCode === 200 ||
+          errCode === 401 ||
+          /authentic|access token|oauth|invalid credential|session|permission/i.test(errMsg + " " + errType);
+        const friendlyMsg = isAuthError
+          ? `Your WhatsApp Business access token is invalid or expired (Meta error: ${errMsg}). Please go to WhatsApp Settings and reconnect your number — re-enter your Phone Number ID and a valid access token from Meta Business Manager.`
+          : `WhatsApp API error: ${errMsg}`;
         return new Response(
-          JSON.stringify({ error: `WhatsApp API error: ${errMsg}` }),
+          JSON.stringify({ error: friendlyMsg, errorType: isAuthError ? "auth" : "api", metaError: errMsg, metaCode: errCode }),
           { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }
@@ -402,11 +412,19 @@ Deno.serve(async (req: Request) => {
     if (waData.error) {
       const errMsg = waData.error.error_data?.details || waData.error.message || "Unknown";
       const errCode = waData.error.code;
-      const friendlyMsg = errCode === 131037
-        ? "Your WhatsApp Business number's display name has not been approved by Meta yet. Until approval is granted, you cannot send outgoing messages. Please visit Meta Business Manager to submit or check the status of your display name approval."
-        : `WhatsApp API error: ${errMsg}`;
+      const errType = waData.error.type || "";
+      const isAuthError =
+        errCode === 190 ||
+        errCode === 200 ||
+        errCode === 401 ||
+        /authentic|access token|oauth|invalid credential|session|permission/i.test(errMsg + " " + errType);
+      const friendlyMsg = isAuthError
+        ? `Your WhatsApp Business access token is invalid or expired (Meta error: ${errMsg}). Please go to WhatsApp Settings and reconnect your number — re-enter your Phone Number ID and a valid access token from Meta Business Manager.`
+        : errCode === 131037
+          ? "Your WhatsApp Business number's display name has not been approved by Meta yet. Until approval is granted, you cannot send outgoing messages. Please visit Meta Business Manager to submit or check the status of your display name approval."
+          : `WhatsApp API error: ${errMsg}`;
       return new Response(
-        JSON.stringify({ error: friendlyMsg }),
+        JSON.stringify({ error: friendlyMsg, errorType: isAuthError ? "auth" : "api", metaError: errMsg, metaCode: errCode }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }

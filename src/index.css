@@ -28289,4 +28289,16 @@ html.crm-dark .lead-wa-snippet-item:hover { background: #243450; }
 html.crm-dark .lead-wa-snippet-title { color: #e2e8f0; }
 html.crm-dark .lead-wa-snippet-preview { color: #94a3b8; }
 
+/* Auth-specific error state */
+.lead-wa-state-auth-error { background: #FEF2F2; }
+.lead-wa-state-auth-error svg { color: #DC2626; }
+.lead-wa-state-hint {
+  font-size: 0.76rem; color: #7F1D1D; line-height: 1.5;
+  max-width: 360px; margin: 8px 0 0; padding: 10px 14px;
+  background: rgba(239,68,68,0.08); border-radius: 8px;
+  border: 1px solid rgba(239,68,68,0.15);
+}
+html.crm-dark .lead-wa-state-auth-error { background: rgba(239,68,68,0.08); }
+html.crm-dark .lead-wa-state-hint { color: #fca5a5; background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.2); }
+
 
