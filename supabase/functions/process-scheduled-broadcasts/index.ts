@@ -90,13 +90,32 @@ Deno.serve(async (req: Request) => {
         const templateName = campaign.template_name;
         const templateLanguage = campaign.template_language;
 
+        // Count the {{N}} placeholders expected by the template body so we
+        // always send the correct number of parameters. WhatsApp rejects a
+        // mismatch with "number of localizable_params (0) does not match..."
+        const storedComponents: any[] = Array.isArray(campaign.template_components) ? campaign.template_components : [];
+        const bodyComponent = storedComponents.find((c) => (c?.type || "").toUpperCase() === "BODY");
+        const bodyText: string = bodyComponent?.text || "";
+        const placeholderMatches = bodyText.match(/\{\{(\d+)\}\}/g) || [];
+        const expectedParamCount = placeholderMatches.length;
+
         for (const recipient of pendingRecipients) {
           try {
             const components: { type: string; parameters: { type: string; text: string }[] }[] = [];
-            const varValues = recipient.variable_values || {};
-            if (varValues && Object.keys(varValues).length > 0) {
+            const varValues: Record<string, string> = recipient.variable_values || {};
+
+            if (expectedParamCount > 0) {
+              const params: { type: string; text: string }[] = [];
+              for (let i = 1; i <= expectedParamCount; i++) {
+                const key = String(i);
+                const rawVal = varValues[key];
+                const val = rawVal !== undefined && rawVal !== null && String(rawVal).trim() !== "" ? String(rawVal) : " ";
+                params.push({ type: "text", text: val });
+              }
+              components.push({ type: "body", parameters: params });
+            } else if (varValues && Object.keys(varValues).length > 0) {
               const sortedKeys = Object.keys(varValues).sort((a, b) => parseInt(a) - parseInt(b));
-              components.push({ type: "body", parameters: sortedKeys.map((k) => ({ type: "text", text: varValues[k] })) });
+              components.push({ type: "body", parameters: sortedKeys.map((k) => ({ type: "text", text: varValues[k] || " " })) });
             }
 
             const templatePayload: Record<string, unknown> = { name: templateName, language: { code: templateLanguage } };

@@ -1,7 +1,9 @@
 import React, { useMemo, useState } from 'react';
-import { ArrowLeft, Users, TrendingUp, Percent, DollarSign, Calendar, Filter, Search, CheckCircle2, Clock, Star } from 'lucide-react';
+import { ArrowLeft, Users, TrendingUp, Percent, DollarSign, Calendar, Filter, Search, CheckCircle2, Clock, Star, MessageCircle } from 'lucide-react';
+import { Session } from '@supabase/supabase-js';
 import { SourceLogo, SOURCE_META, SOURCE_ORDER } from '@/components/BrandLogos';
 import LeadSourceBadge from '@/components/LeadSourceBadge';
+import LeadWhatsAppDrawer from '@/components/LeadWhatsAppDrawer';
 
 type Lead = {
   id: string;
@@ -19,6 +21,7 @@ type Lead = {
 type Props = {
   leads: Lead[];
   onBack: () => void;
+  session: Session;
 };
 
 const STAGE_LABELS: Record<string, string> = {
@@ -30,11 +33,18 @@ const STAGE_LABELS: Record<string, string> = {
   not_interested: 'Not Interested',
 };
 
-const LeadTrackerPage: React.FC<Props> = ({ leads, onBack }) => {
+const LeadTrackerPage: React.FC<Props> = ({ leads, onBack, session }) => {
   const [selectedSource, setSelectedSource] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [dateFilter, setDateFilter] = useState('all');
+  const [chatLead, setChatLead] = useState<Lead | null>(null);
+  const [chatOpen, setChatOpen] = useState(false);
+
+  const openChat = (lead: Lead) => {
+    setChatLead(lead);
+    setChatOpen(true);
+  };
 
   const sourceStats = useMemo(() => {
     const map: Record<string, { count: number; converted: number; interested: number; revenue: number; funds: number }> = {};
@@ -259,6 +269,7 @@ const LeadTrackerPage: React.FC<Props> = ({ leads, onBack }) => {
                     <th className="crm-th" style={{ padding: '10px 16px', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-dark)', textAlign: 'left' }}>Source</th>
                     <th className="crm-th" style={{ padding: '10px 16px', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-dark)', textAlign: 'left' }}>Fund</th>
                     <th className="crm-th" style={{ padding: '10px 16px', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-dark)', textAlign: 'left' }}>Date</th>
+                    <th className="crm-th" style={{ padding: '10px 16px', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-dark)', textAlign: 'right' }}>Chat</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -287,6 +298,17 @@ const LeadTrackerPage: React.FC<Props> = ({ leads, onBack }) => {
                       <td style={{ padding: '12px 16px', fontSize: '0.75rem', color: 'var(--text-dark)', display: 'flex', alignItems: 'center', gap: 4 }}>
                         <Calendar size={12} /> {formatDate(lead.created_at)}
                       </td>
+                      <td style={{ padding: '12px 16px', textAlign: 'right' }}>
+                        <button
+                          className="lead-wa-row-btn"
+                          onClick={(e) => { e.stopPropagation(); openChat(lead); }}
+                          disabled={!lead.mobile_number}
+                          title={lead.mobile_number ? 'Open WhatsApp chat' : 'No phone number'}
+                          aria-label="Open WhatsApp chat"
+                        >
+                          <MessageCircle size={16} />
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -295,6 +317,13 @@ const LeadTrackerPage: React.FC<Props> = ({ leads, onBack }) => {
           </div>
         </div>
       )}
+
+      <LeadWhatsAppDrawer
+        open={chatOpen}
+        lead={chatLead}
+        session={session}
+        onClose={() => setChatOpen(false)}
+      />
     </div>
   );
 };

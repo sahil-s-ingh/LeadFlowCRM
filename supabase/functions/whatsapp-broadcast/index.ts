@@ -18,8 +18,56 @@ Deno.serve(async (req: Request) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const url = new URL(req.url);
+    const action = url.searchParams.get("action") || "list";
 
     const authHeader = req.headers.get("Authorization");
+    const bearerToken = authHeader?.replace(/^Bearer\s+/i, "").trim();
+    const isServiceRoleCall = bearerToken && bearerToken === supabaseKey;
+
+    // update_status is a server-to-server callback from the webhook (uses the
+    // service role key, not a user JWT). Allow it through without user auth.
+    if (action === "update_status" && req.method === "POST") {
+      if (!isServiceRoleCall) {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      const adminSupabase = createClient(supabaseUrl, supabaseKey);
+      const body = await req.json();
+      // Support two shapes:
+      //   (a) { wa_message_id, status }            — legacy single update
+      //   (b) { statuses: [{ id, status, ... }] }  — forwarded Meta webhook payload
+      const statuses: any[] = Array.isArray(body.statuses) ? body.statuses : (body.wa_message_id ? [{ id: body.wa_message_id, status: body.status }] : []);
+      if (statuses.length === 0) return new Response(JSON.stringify({ error: "wa_message_id/status or statuses array is required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+
+      const affectedCampaigns = new Set<string>();
+
+      for (const s of statuses) {
+        const waMessageId = s.id || s.wa_message_id;
+        const newStatus = (s.status || "").toLowerCase();
+        if (!waMessageId || !newStatus) continue;
+
+        const updateData: Record<string, unknown> = { status: newStatus };
+        if (newStatus === "delivered") updateData.delivered_at = new Date().toISOString();
+        if (newStatus === "read") { updateData.delivered_at = new Date().toISOString(); updateData.read_at = new Date().toISOString(); }
+
+        const { data: recipient } = await adminSupabase.from("wa_broadcast_recipients").update(updateData).eq("wa_message_id", waMessageId).select("campaign_id").maybeSingle();
+        if (recipient?.campaign_id) affectedCampaigns.add(recipient.campaign_id);
+      }
+
+      // Recalculate aggregate stats for every affected campaign
+      for (const campaignId of affectedCampaigns) {
+        const { data: stats } = await adminSupabase.from("wa_broadcast_recipients").select("status").eq("campaign_id", campaignId);
+        if (!stats) continue;
+        const delivered = stats.filter((st: { status: string }) => st.status === "delivered" || st.status === "read").length;
+        const read = stats.filter((st: { status: string }) => st.status === "read").length;
+        const sent = stats.filter((st: { status: string }) => ["sent", "delivered", "read"].includes(st.status)).length;
+        const failed = stats.filter((st: { status: string }) => st.status === "failed").length;
+        await adminSupabase.from("wa_broadcast_campaigns").update({ delivered_count: delivered, read_count: read, sent_count: sent, failed_count: failed }).eq("id", campaignId);
+      }
+
+      return new Response(JSON.stringify({ success: true, updated: statuses.length }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
     if (!authHeader) {
       return new Response(
         JSON.stringify({ error: "Missing authorization header" }),
@@ -40,8 +88,6 @@ Deno.serve(async (req: Request) => {
     }
 
     const adminSupabase = createClient(supabaseUrl, supabaseKey);
-    const url = new URL(req.url);
-    const action = url.searchParams.get("action") || "list";
 
     // ─── LIST ───────────────────────────────────────────────────────────
     if (action === "list" && req.method === "GET") {
@@ -190,16 +236,36 @@ Deno.serve(async (req: Request) => {
       const templateName = campaign.template_name;
       const templateLanguage = campaign.template_language;
 
+      // Count the {{N}} placeholders expected by the template body so we always
+      // send the correct number of parameters, even when a recipient has no
+      // mapped variable values. WhatsApp rejects mismatches with:
+      // "number of localizable_params (0) does not match the expected number of params (N)"
+      const storedComponents: any[] = Array.isArray(campaign.template_components) ? campaign.template_components : [];
+      const bodyComponent = storedComponents.find((c) => (c?.type || "").toUpperCase() === "BODY");
+      const bodyText: string = bodyComponent?.text || "";
+      const placeholderMatches = bodyText.match(/\{\{(\d+)\}\}/g) || [];
+      const expectedParamCount = placeholderMatches.length;
+
       let sentCount = campaign.sent_count || 0;
       let failedCount = retry_only ? 0 : (campaign.failed_count || 0);
 
       for (const recipient of targets) {
         try {
+          const varValues: Record<string, string> = recipient.variable_values || {};
           const components: { type: string; parameters: { type: string; text: string }[] }[] = [];
-          const varValues = recipient.variable_values || {};
-          if (varValues && Object.keys(varValues).length > 0) {
+
+          if (expectedParamCount > 0) {
+            const params: { type: string; text: string }[] = [];
+            for (let i = 1; i <= expectedParamCount; i++) {
+              const key = String(i);
+              const rawVal = varValues[key];
+              const val = rawVal !== undefined && rawVal !== null && String(rawVal).trim() !== "" ? String(rawVal) : " ";
+              params.push({ type: "text", text: val });
+            }
+            components.push({ type: "body", parameters: params });
+          } else if (varValues && Object.keys(varValues).length > 0) {
             const sortedKeys = Object.keys(varValues).sort((a, b) => parseInt(a) - parseInt(b));
-            components.push({ type: "body", parameters: sortedKeys.map((k) => ({ type: "text", text: varValues[k] })) });
+            components.push({ type: "body", parameters: sortedKeys.map((k) => ({ type: "text", text: varValues[k] || " " })) });
           }
 
           const templatePayload: Record<string, unknown> = { name: templateName, language: { code: templateLanguage } };
@@ -243,28 +309,6 @@ Deno.serve(async (req: Request) => {
       await adminSupabase.from("wa_broadcast_campaigns").update({ status: finalStatus, sent_count: realSent, failed_count: realFailed, delivered_count: realDelivered, read_count: realRead, updated_at: new Date().toISOString() }).eq("id", campaign_id);
 
       return new Response(JSON.stringify({ success: true, sent: realSent, failed: realFailed, status: finalStatus }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    }
-
-    // ─── UPDATE_STATUS (webhook callback) ───────────────────────────────
-    if (action === "update_status" && req.method === "POST") {
-      const body = await req.json();
-      const { wa_message_id, status: newStatus } = body;
-      if (!wa_message_id || !newStatus) return new Response(JSON.stringify({ error: "wa_message_id and status are required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-
-      const updateData: Record<string, unknown> = { status: newStatus };
-      if (newStatus === "delivered") updateData.delivered_at = new Date().toISOString();
-      if (newStatus === "read") updateData.read_at = new Date().toISOString();
-
-      const { data: recipient } = await adminSupabase.from("wa_broadcast_recipients").update(updateData).eq("wa_message_id", wa_message_id).select("campaign_id").maybeSingle();
-      if (recipient?.campaign_id) {
-        const { data: stats } = await adminSupabase.from("wa_broadcast_recipients").select("status").eq("campaign_id", recipient.campaign_id);
-        if (stats) {
-          const delivered = stats.filter((s: { status: string }) => s.status === "delivered" || s.status === "read").length;
-          const read = stats.filter((s: { status: string }) => s.status === "read").length;
-          await adminSupabase.from("wa_broadcast_campaigns").update({ delivered_count: delivered, read_count: read }).eq("id", recipient.campaign_id);
-        }
-      }
-      return new Response(JSON.stringify({ success: true }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     // ─── CANCEL ─────────────────────────────────────────────────────────

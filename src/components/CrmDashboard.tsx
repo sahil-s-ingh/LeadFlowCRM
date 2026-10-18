@@ -49,6 +49,7 @@ import AutomationBuilder from '@/components/AutomationBuilder';
 import BrokerTrackerPage from '@/components/BrokerTrackerPage';
 import LeadTrackerPage from '@/components/LeadTrackerPage';
 import LeadSourceBadge from '@/components/LeadSourceBadge';
+import LeadWhatsAppDrawer from '@/components/LeadWhatsAppDrawer';
 import { SourceLogo } from '@/components/BrandLogos';
 import WhatsAppOnboarding from '@/components/WhatsAppOnboarding';
 import MetaAdsManager from '@/components/MetaAdsManager';
@@ -668,6 +669,7 @@ export default function CrmDashboard({ session, initialView }: { session: Sessio
   const [assigneeMap, setAssigneeMap] = useState<Record<string, string>>({});
   const [showNotifPanel, setShowNotifPanel] = useState(false);
   const [mergeTarget, setMergeTarget] = useState<Lead | null>(null);
+  const [waDrawerLead, setWaDrawerLead] = useState<Lead | null>(null);
   const [showBulkMerge, setShowBulkMerge] = useState(false);
   const [incomingCall, setIncomingCall] = useState<{ callId: string; phoneNumber: string; sdpOffer: string } | null>(null);
   const [activeCall, setActiveCall] = useState<{ callId: string; phoneNumber: string } | null>(null);
@@ -2263,7 +2265,7 @@ export default function CrmDashboard({ session, initialView }: { session: Sessio
         ) : activeView === 'brokers' ? (
           <BrokerTrackerPage session={session} onBack={() => navigateToView('dashboard')} />
         ) : activeView === 'lead_tracker' ? (
-          <LeadTrackerPage leads={leads} onBack={() => navigateToView('dashboard')} />
+          <LeadTrackerPage leads={leads} session={session} onBack={() => navigateToView('dashboard')} />
         ) : activeView === 'meta_ads' ? (
           <MetaAdsManager session={session} />
         ) : activeView === 'heatmap' ? (
@@ -2767,11 +2769,20 @@ export default function CrmDashboard({ session, initialView }: { session: Sessio
                             onClick={() => setEmailTarget(lead)}
                             aria-label={`Email ${lead.full_name}`}
                             title="Send Email"
-                            style={{ border: 'none', background: 'rgba(37,99,235,0.1)', color: '#2563eb', borderRadius: '8px', padding: '7px 10px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px', fontWeight: 600, fontSize: '0.8rem', transition: 'all 0.15s' }}
+                            style={{ border: 'none', background: 'rgba(37,99,235,0.1)', color: '#2563eb', borderRadius: '8px', padding: '7px 10px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px', fontWeight: 600, fontSize: '0.8rem', transition: 'all 0.15s', marginRight: '6px' }}
                             onMouseEnter={(e) => { e.currentTarget.style.background = '#2563eb'; e.currentTarget.style.color = '#fff'; }}
                             onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(37,99,235,0.1)'; e.currentTarget.style.color = '#2563eb'; }}
                           >
                             <Send size={14} /> Email
+                          </button>
+                          <button
+                            className="lead-wa-row-btn"
+                            onClick={(e) => { e.stopPropagation(); setWaDrawerLead(lead); }}
+                            disabled={!lead.mobile_number}
+                            title={lead.mobile_number ? 'WhatsApp Quick-Chat' : 'No phone number'}
+                            aria-label={`WhatsApp ${lead.full_name}`}
+                          >
+                            <MessageCircle size={14} />
                           </button>
                         </td>
                       </tr>
@@ -3015,6 +3026,15 @@ export default function CrmDashboard({ session, initialView }: { session: Sessio
                           <GitMerge size={13} /> Merge
                         </button>
                       )}
+                      <button
+                        className="lead-wa-row-btn"
+                        onClick={(e) => { e.stopPropagation(); setWaDrawerLead(lead); }}
+                        disabled={!lead.mobile_number}
+                        title={lead.mobile_number ? 'WhatsApp Quick-Chat' : 'No phone number'}
+                        aria-label={`WhatsApp ${lead.full_name}`}
+                      >
+                        <MessageCircle size={16} />
+                      </button>
                       <span className="crm-mobile-card-date">{formatDate(lead.created_at)}</span>
                     </div>
                   </div>
@@ -3038,6 +3058,13 @@ export default function CrmDashboard({ session, initialView }: { session: Sessio
         </>
       )}
       </main>
+
+      <LeadWhatsAppDrawer
+        open={!!waDrawerLead}
+        lead={waDrawerLead ? { id: waDrawerLead.id, full_name: waDrawerLead.full_name, email: waDrawerLead.email, mobile_number: waDrawerLead.mobile_number } : null}
+        session={session}
+        onClose={() => setWaDrawerLead(null)}
+      />
 
       {selectedLead && (
         <LeadDetailDrawer
@@ -7293,6 +7320,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
   const [waConnectedNumber, setWaConnectedNumber] = useState('');
   const [showWaToken, setShowWaToken] = useState(false);
   const [waWebhookCopied, setWaWebhookCopied] = useState(false);
+  const [waTokenCopied, setWaTokenCopied] = useState(false);
   const [waMetaAppId, setWaMetaAppId] = useState('');
   const [waProfilePicUrl, setWaProfilePicUrl] = useState<string | null>(null);
   const [waProfilePicUploading, setWaProfilePicUploading] = useState(false);
@@ -7463,11 +7491,17 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
       setWaNumSaving(false);
       return;
     }
+    const cleanToken = waAccessToken.trim().replace(/^["'`]|["'`]$/g, '');
+    if (cleanToken.length < 20 || !/^[A-Za-z0-9]+$/.test(cleanToken)) {
+      setWaNumError('The Access Token looks invalid. Meta access tokens are a long string of letters and numbers (usually starting with "EA"). Make sure you copied only the token — no quotes, spaces, or extra text.');
+      setWaNumSaving(false);
+      return;
+    }
     const payload = {
       user_id: session.user.id,
       label: waLabel.trim() || null,
       phone_number_id: waPhoneNumberId.trim(),
-      access_token: waAccessToken.trim(),
+      access_token: cleanToken,
       verify_token: waVerifyToken.trim() || 'leadcentre_verify_' + Date.now(),
       waba_id: waWabaId.trim() || null,
       welcome_message: waWelcomeMessage.trim(),
@@ -7883,11 +7917,15 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
       if (waRes.data) {
         setWaPhoneNumberId(waRes.data.phone_number_id || '');
         setWaAccessToken(waRes.data.access_token || '');
-        setWaVerifyToken(waRes.data.verify_token || '');
+        setWaVerifyToken(waRes.data.verify_token || `leadcentre_verify_${Date.now()}`);
         setWaWabaId(waRes.data.waba_id || '');
         setWaWelcomeMessage(waRes.data.welcome_message || '');
         setWaConnectedNumber(waRes.data.connected_phone_number || '');
         setWaMetaAppId(waRes.data.meta_app_id || '');
+      } else {
+        // First-time setup: pre-generate a verify token so the user can copy
+        // it into Meta's webhook config and verify before saving.
+        setWaVerifyToken(`leadcentre_verify_${Date.now()}`);
       }
 
       // Fetch all WhatsApp numbers for multi-number UI
@@ -9867,8 +9905,33 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                         {waWebhookCopied ? 'Copied' : 'Copy'}
                       </button>
                     </div>
+                    {/* Verify Token copy row */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                        <span style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)' }}>Verify Token</span>
+                        <input
+                          type="text"
+                          readOnly
+                          value={waVerifyToken || 'Save settings to generate a token'}
+                          style={{ padding: '8px 12px', border: '1px solid var(--border-subtle)', borderRadius: '6px', fontSize: '0.78rem', fontFamily: 'monospace', background: 'var(--bg-card)', color: waVerifyToken ? 'var(--text-muted)' : 'var(--text-dark)' }}
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        disabled={!waVerifyToken}
+                        onClick={() => {
+                          navigator.clipboard?.writeText(waVerifyToken);
+                          setWaTokenCopied(true);
+                          setTimeout(() => setWaTokenCopied(false), 2000);
+                        }}
+                        style={{ padding: '8px 14px', border: 'none', borderRadius: '6px', background: waVerifyToken ? '#25D366' : 'var(--border-subtle)', color: 'var(--bg-card)', fontSize: '0.78rem', fontWeight: 600, cursor: waVerifyToken ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap', alignSelf: 'flex-end' }}
+                      >
+                        {waTokenCopied ? <CheckCircle2 size={14} /> : <Copy size={14} />}
+                        {waTokenCopied ? 'Copied' : 'Copy'}
+                      </button>
+                    </div>
                     <div style={{ padding: '10px 14px', background: 'rgba(37,211,102,0.08)', border: '1px solid rgba(37,211,102,0.25)', borderRadius: '8px', fontSize: '0.78rem', color: '#15803d', lineHeight: 1.5 }}>
-                      <strong>Steps:</strong> 1. Save settings first. 2. Copy the Callback URL above. 3. In Meta, paste it as the Webhook URL and use your Verify Token. 4. Subscribe to the "messages" field.
+                      <strong>Steps:</strong> 1. Save settings first. 2. Copy the Callback URL above. 3. Copy the Verify Token above. 4. In Meta, paste the Callback URL as the Webhook URL and paste the Verify Token into the Verify Token field. 5. Click Verify and Save. 6. Subscribe to the "messages" field.
                     </div>
 
                     {/* Webhook Verification Check */}

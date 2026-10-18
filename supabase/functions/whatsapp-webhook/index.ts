@@ -157,7 +157,22 @@ Deno.serve(async (req: Request) => {
         }
 
         const value = change.value;
-        if (!value || !value.messages || !Array.isArray(value.messages)) continue;
+        if (!value) continue;
+
+        // ─── Handle delivery/read status callbacks for outbound messages ───
+        // Meta sends these when messages you sent transition to sent/delivered/read.
+        // We forward them to the broadcast function to update recipient + campaign stats.
+        if (Array.isArray(value.statuses) && value.statuses.length > 0) {
+          try {
+            await fetch(`${supabaseUrl}/functions/v1/whatsapp-broadcast?action=update_status`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json", "Authorization": `Bearer ${supabaseKey}` },
+              body: JSON.stringify({ statuses: value.statuses }),
+            });
+          } catch { /* best effort — don't block incoming message handling */ }
+        }
+
+        if (!value.messages || !Array.isArray(value.messages)) continue;
 
         const phoneNumberId = value.metadata?.phone_number_id;
 

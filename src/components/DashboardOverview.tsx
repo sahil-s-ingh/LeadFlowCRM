@@ -1,14 +1,15 @@
-import { useMemo, useRef, useCallback } from 'react';
+import { useMemo, useRef, useCallback, useState } from 'react';
 import {
   ArrowUpRight, Users, Star, CheckCircle2, Clock, DollarSign,
   TrendingUp, Bell, MessageCircle, Send, Plus,
   PhoneMissed, PhoneCall, XCircle, BarChart3, Filter,
   ArrowRight, Calendar, Sparkles, Zap, Target, CheckSquare, Flame,
   Radio, FileText, Upload, Webhook, UserPlus, Globe,
-  Timer, Banknote, UserX, AlertTriangle,
+  Timer, Banknote, UserX, AlertTriangle, MessageSquare,
 } from 'lucide-react';
 import { SourceLogo, SOURCE_META as BRAND_SOURCE_META, SOURCE_ORDER } from '@/components/BrandLogos';
 import SalesInsightsSection from '@/components/SalesInsightsSection';
+import LeadWhatsAppDrawer from '@/components/LeadWhatsAppDrawer';
 import type { Session } from '@supabase/supabase-js';
 
 type LeadStatus = 'new' | 'called_no_response' | 'called_responded' | 'interested' | 'not_interested' | 'converted';
@@ -240,6 +241,12 @@ export default function DashboardOverview({
 
   const userInitial = session.user.email?.[0]?.toUpperCase() || 'U';
 
+  const [waDrawerLead, setWaDrawerLead] = useState<{ id: string; full_name: string; email?: string; mobile_number: string } | null>(null);
+  const openWaDrawer = useCallback((lead: { id: string; full_name: string; email?: string; mobile_number?: string }) => {
+    setWaDrawerLead({ id: lead.id, full_name: lead.full_name, email: lead.email, mobile_number: lead.mobile_number || '' });
+  }, []);
+  const closeWaDrawer = useCallback(() => setWaDrawerLead(null), []);
+
   // 3D tilt tracking
   const heroRef = useRef<HTMLDivElement>(null);
 
@@ -312,6 +319,57 @@ export default function DashboardOverview({
           {/* Floating decorative orbs */}
           <div className="dash3d-orb dash3d-orb-1" style={{ transform: 'translateZ(15px)' }} />
           <div className="dash3d-orb dash3d-orb-2" style={{ transform: 'translateZ(10px)' }} />
+        </div>
+      </div>
+
+      {/* Quick Actions Bar — always visible at top */}
+      <div className="dash3d-actionbar" onMouseMove={handleTilt} onMouseLeave={handleTiltReset}>
+        <div className="dash3d-actionbar-inner">
+          <div className="dash3d-actionbar-label">
+            <Zap size={14} />
+            <span>Quick Actions</span>
+          </div>
+          <div className="dash3d-actionbar-chips">
+            {onGoToAddLead && (
+              <button className="dash3d-actionbar-chip dash3d-chip-blue" onClick={onGoToAddLead} style={{ transform: 'translateZ(20px)' }}>
+                <Plus size={16} />
+                <span>Add Lead</span>
+              </button>
+            )}
+            <button className="dash3d-actionbar-chip dash3d-chip-cyan" onClick={onGoToInbox} style={{ transform: 'translateZ(18px)' }}>
+              <MessageCircle size={16} />
+              <span>Inbox</span>
+              {todayTasks.newLeadsToContact > 0 && <span className="dash3d-chip-badge">{todayTasks.newLeadsToContact}</span>}
+            </button>
+            {onGoToFollowUps && (
+              <button className="dash3d-actionbar-chip dash3d-chip-amber" onClick={onGoToFollowUps} style={{ transform: 'translateZ(16px)' }}>
+                <Bell size={16} />
+                <span>Follow-Ups</span>
+                {todayTasks.overdueFollowUps > 0 && <span className="dash3d-chip-badge dash3d-chip-badge-red">{todayTasks.overdueFollowUps}</span>}
+              </button>
+            )}
+            {onGoToBroadcast && (
+              <button className="dash3d-actionbar-chip dash3d-chip-violet" onClick={onGoToBroadcast} style={{ transform: 'translateZ(14px)' }}>
+                <Send size={16} />
+                <span>Broadcast</span>
+              </button>
+            )}
+            <button className="dash3d-actionbar-chip dash3d-chip-orange" onClick={onGoToLeads} style={{ transform: 'translateZ(12px)' }}>
+              <AlertTriangle size={16} />
+              <span>Stale Leads</span>
+              {staleLeadsList.length > 0 && <span className="dash3d-chip-badge dash3d-chip-badge-orange">{staleLeadsList.length}</span>}
+            </button>
+            {onGoToAnalytics && (
+              <button className="dash3d-actionbar-chip dash3d-chip-green" onClick={onGoToAnalytics} style={{ transform: 'translateZ(10px)' }}>
+                <BarChart3 size={16} />
+                <span>Analytics</span>
+              </button>
+            )}
+            <button className="dash3d-actionbar-chip dash3d-chip-blue" onClick={onGoToLeads} style={{ transform: 'translateZ(8px)' }}>
+              <Filter size={16} />
+              <span>Manage Leads</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -416,7 +474,7 @@ export default function DashboardOverview({
         </div>
       )}
 
-      {/* 3D Pipeline + Quick Actions + Calculator */}
+      {/* Pipeline + Quick Actions side by side */}
       <div className="dash3d-three-col">
         {/* Pipeline Funnel */}
         <div className="dash3d-card-scene" onMouseMove={handleTilt} onMouseLeave={handleTiltReset}>
@@ -462,51 +520,49 @@ export default function DashboardOverview({
           </div>
         </div>
 
-
-      </div>
-
-      {/* Quick Actions row */}
-      <div className="dash3d-card-scene" style={{ marginBottom: 22 }} onMouseMove={handleTilt} onMouseLeave={handleTiltReset}>
-        <div className="dash3d-card">
-          <div className="dash3d-card-header">
-            <div className="dash3d-card-title">
-              <div className="dash3d-card-icon dash3d-card-icon-cyan"><Zap size={18} /></div>
-              <h2>Quick Actions</h2>
+        {/* Quick Actions */}
+        <div className="dash3d-card-scene" onMouseMove={handleTilt} onMouseLeave={handleTiltReset}>
+          <div className="dash3d-card">
+            <div className="dash3d-card-header">
+              <div className="dash3d-card-title">
+                <div className="dash3d-card-icon dash3d-card-icon-cyan"><Zap size={18} /></div>
+                <h2>Quick Actions</h2>
+              </div>
             </div>
-          </div>
-          <div className="dash3d-quick-actions">
-            {onGoToAddLead && (
-              <button className="dash3d-quick-btn" onClick={onGoToAddLead}>
-                <div className="dash3d-quick-icon dash3d-quick-blue"><Plus size={18} /></div>
-                <span>Add Lead</span>
+            <div className="dash3d-quick-actions">
+              {onGoToAddLead && (
+                <button className="dash3d-quick-btn" onClick={onGoToAddLead}>
+                  <div className="dash3d-quick-icon dash3d-quick-blue"><Plus size={18} /></div>
+                  <span>Add Lead</span>
+                </button>
+              )}
+              <button className="dash3d-quick-btn" onClick={onGoToInbox}>
+                <div className="dash3d-quick-icon dash3d-quick-cyan"><MessageCircle size={18} /></div>
+                <span>Inbox</span>
               </button>
-            )}
-            <button className="dash3d-quick-btn" onClick={onGoToInbox}>
-              <div className="dash3d-quick-icon dash3d-quick-cyan"><MessageCircle size={18} /></div>
-              <span>Inbox</span>
-            </button>
-            {onGoToBroadcast && (
-              <button className="dash3d-quick-btn" onClick={onGoToBroadcast}>
-                <div className="dash3d-quick-icon dash3d-quick-violet"><Send size={18} /></div>
-                <span>Broadcast</span>
+              {onGoToBroadcast && (
+                <button className="dash3d-quick-btn" onClick={onGoToBroadcast}>
+                  <div className="dash3d-quick-icon dash3d-quick-violet"><Send size={18} /></div>
+                  <span>Broadcast</span>
+                </button>
+              )}
+              {onGoToFollowUps && (
+                <button className="dash3d-quick-btn" onClick={onGoToFollowUps}>
+                  <div className="dash3d-quick-icon dash3d-quick-amber"><Bell size={18} /></div>
+                  <span>Follow-Ups</span>
+                </button>
+              )}
+              {onGoToAnalytics && (
+                <button className="dash3d-quick-btn" onClick={onGoToAnalytics}>
+                  <div className="dash3d-quick-icon dash3d-quick-green"><BarChart3 size={18} /></div>
+                  <span>Analytics</span>
+                </button>
+              )}
+              <button className="dash3d-quick-btn" onClick={onGoToLeads}>
+                <div className="dash3d-quick-icon dash3d-quick-blue"><Filter size={18} /></div>
+                <span>Manage Leads</span>
               </button>
-            )}
-            {onGoToFollowUps && (
-              <button className="dash3d-quick-btn" onClick={onGoToFollowUps}>
-                <div className="dash3d-quick-icon dash3d-quick-amber"><Bell size={18} /></div>
-                <span>Follow-Ups</span>
-              </button>
-            )}
-            {onGoToAnalytics && (
-              <button className="dash3d-quick-btn" onClick={onGoToAnalytics}>
-                <div className="dash3d-quick-icon dash3d-quick-green"><BarChart3 size={18} /></div>
-                <span>Analytics</span>
-              </button>
-            )}
-            <button className="dash3d-quick-btn" onClick={onGoToLeads}>
-              <div className="dash3d-quick-icon dash3d-quick-blue"><Filter size={18} /></div>
-              <span>Manage Leads</span>
-            </button>
+            </div>
           </div>
         </div>
       </div>
@@ -658,6 +714,14 @@ export default function DashboardOverview({
                         </div>
                       </div>
                       <div className="dash3d-recent-right">
+                        <button
+                          className="lead-wa-row-btn"
+                          title={lead.mobile_number ? 'WhatsApp Quick-Chat' : 'No phone number on file'}
+                          disabled={!lead.mobile_number}
+                          onClick={(e) => { e.stopPropagation(); openWaDrawer(lead); }}
+                        >
+                          <MessageSquare size={15} />
+                        </button>
                         <span className="dash3d-recent-status" style={{ background: stage?.bg, color: stage?.color }}>
                           {stage?.label}
                         </span>
@@ -729,6 +793,13 @@ export default function DashboardOverview({
           onGoToDuplicates={onGoToDuplicates}
         />
       )}
+
+      <LeadWhatsAppDrawer
+        open={!!waDrawerLead}
+        lead={waDrawerLead}
+        session={session}
+        onClose={closeWaDrawer}
+      />
     </div>
   );
 }
