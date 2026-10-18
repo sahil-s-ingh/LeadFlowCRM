@@ -427,15 +427,24 @@ export default function WhatsAppOnboarding({
             onClick={handleEmbeddedSignup}
             disabled={saving}
             style={{
-              display: 'inline-flex', alignItems: 'center', gap: '10px',
-              padding: '12px 28px', border: 'none', borderRadius: '12px',
-              background: saving ? '#94a3b8' : 'linear-gradient(135deg, #1877F2, #25D366)',
-              color: '#fff', fontSize: '0.88rem', fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer',
-              transition: 'all 0.15s', boxShadow: saving ? 'none' : '0 4px 14px -4px rgba(37,211,102,0.4)',
+              display: 'inline-flex', alignItems: 'center', gap: '12px',
+              padding: '12px 24px', border: 'none', borderRadius: '10px',
+              background: saving ? '#94a3b8' : '#1877F2',
+              color: '#fff', fontSize: '0.9rem', fontWeight: 600,
+              fontFamily: 'inherit',
+              cursor: saving ? 'not-allowed' : 'pointer',
+              transition: 'all 0.15s',
+              boxShadow: saving ? 'none' : '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.08)',
             }}
+            onMouseEnter={(e) => { if (!saving) e.currentTarget.style.background = '#0f6bd6'; }}
+            onMouseLeave={(e) => { if (!saving) e.currentTarget.style.background = '#1877F2'; }}
           >
-            {saving ? <Loader2 size={18} className="crm-spin" /> : <Facebook size={18} />}
-            {saving ? 'Connecting...' : 'Connect WhatsApp Number'}
+            {saving ? <Loader2 size={18} className="crm-spin" /> : (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="#fff" aria-hidden="true">
+                <path d="M24 12.07C24 5.4 18.63 0 12 0S0 5.4 0 12.07C0 18.1 4.39 23.1 10.13 24v-8.44H7.08v-3.49h3.05V9.41c0-3.02 1.79-4.69 4.53-4.69 1.31 0 2.68.24 2.68.24v2.97h-1.51c-1.49 0-1.96.93-1.96 1.89v2.25h3.33l-.53 3.49h-2.8V24C19.61 23.1 24 18.1 24 12.07z"/>
+              </svg>
+            )}
+            {saving ? 'Connecting...' : 'Continue with Facebook'}
           </button>
         </div>
       )}
