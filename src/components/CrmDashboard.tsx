@@ -24,7 +24,7 @@ import {
 
   LayoutTemplate, Inbox as InboxIcon,
   HelpCircle, Sun, Moon,
-  CreditCard,
+  CreditCard, Smartphone,
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import DashboardOverview from '@/components/DashboardOverview';
@@ -248,6 +248,7 @@ type WaNumberConfig = {
   connected_phone_number: string | null;
   meta_app_id: string | null;
   is_active: boolean;
+  coex_enabled: boolean | null;
   created_at: string;
 };
 
@@ -7319,6 +7320,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
   const [waWelcomeMessage, setWaWelcomeMessage] = useState('');
   const [waConnectedNumber, setWaConnectedNumber] = useState('');
   const [showWaToken, setShowWaToken] = useState(false);
+  const [waCoexEnabled, setWaCoexEnabled] = useState(false);
   const [waWebhookCopied, setWaWebhookCopied] = useState(false);
   const [waTokenCopied, setWaTokenCopied] = useState(false);
   const [waMetaAppId, setWaMetaAppId] = useState('');
@@ -7486,6 +7488,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
     setWaWelcomeMessage('');
     setWaConnectedNumber('');
     setWaMetaAppId('');
+    setWaCoexEnabled(false);
     setWaNumError('');
     setWaNumSuccess(false);
   };
@@ -7500,6 +7503,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
     setWaWelcomeMessage(n.welcome_message || '');
     setWaConnectedNumber(n.connected_phone_number || '');
     setWaMetaAppId(n.meta_app_id || '');
+    setWaCoexEnabled(n.coex_enabled === true);
     setWaNumError('');
     setWaNumSuccess(false);
   };
@@ -7529,6 +7533,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
       welcome_message: waWelcomeMessage.trim(),
       connected_phone_number: waConnectedNumber.trim() || null,
       meta_app_id: waMetaAppId.trim() || null,
+      coex_enabled: waCoexEnabled,
       updated_at: new Date().toISOString(),
     };
     if (editingWaNumberId) {
@@ -9421,6 +9426,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                                 <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                                   {n.label || n.connected_phone_number || n.phone_number_id}
                                   {idx === 0 && <span style={{ fontSize: '0.62rem', fontWeight: 700, padding: '1px 6px', borderRadius: '4px', background: 'rgba(37,211,102,0.15)', color: '#15803d' }}>PRIMARY</span>}
+                                  {n.coex_enabled && <span style={{ fontSize: '0.62rem', fontWeight: 700, padding: '1px 6px', borderRadius: '4px', background: 'rgba(59,130,246,0.15)', color: '#2563EB', display: 'inline-flex', alignItems: 'center', gap: '3px' }}><Smartphone size={9} /> APP SYNC</span>}
                                 </div>
                                 <div style={{ fontSize: '0.72rem', color: 'var(--text-dark)', fontFamily: 'monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                   {n.connected_phone_number ? `${n.connected_phone_number} · ` : ''}ID: {n.phone_number_id}
@@ -9521,6 +9527,26 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                         <span>Welcome Message</span>
                         <textarea value={waWelcomeMessage} onChange={(e) => setWaWelcomeMessage(e.target.value)} rows={2} placeholder="Hi! Thanks for reaching out." style={{ fontFamily: 'inherit', resize: 'vertical' }} />
                       </label>
+                    </div>
+                    <div style={{ marginTop: '12px', padding: '12px 16px', background: waCoexEnabled ? 'rgba(59,130,246,0.06)' : 'var(--bg-light)', borderRadius: '8px', border: `1px solid ${waCoexEnabled ? 'rgba(59,130,246,0.2)' : 'var(--border-subtle)'}` }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+                          <Smartphone size={16} style={{ color: waCoexEnabled ? '#2563EB' : 'var(--text-muted)' }} />
+                          <div>
+                            <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-main)' }}>WhatsApp App Sync (Coexistence)</div>
+                            <div style={{ fontSize: '0.72rem', color: 'var(--text-dark)', marginTop: '2px' }}>Use the WhatsApp Business App and CRM API on the same number simultaneously</div>
+                          </div>
+                        </div>
+                        <button type="button" onClick={() => setWaCoexEnabled(!waCoexEnabled)} style={{ width: '44px', height: '24px', borderRadius: '12px', border: 'none', background: waCoexEnabled ? '#2563EB' : 'var(--border-subtle)', cursor: 'pointer', position: 'relative', flexShrink: 0, transition: 'background 0.2s' }}>
+                          <span style={{ position: 'absolute', top: '2px', left: waCoexEnabled ? '22px' : '2px', width: '20px', height: '20px', borderRadius: '50%', background: 'white', transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }} />
+                        </button>
+                      </div>
+                      {waCoexEnabled && (
+                        <div style={{ marginTop: '10px', padding: '10px 12px', background: 'rgba(234,179,8,0.08)', borderRadius: '6px', border: '1px solid rgba(234,179,8,0.2)', fontSize: '0.74rem', color: '#a16207', lineHeight: 1.5, display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
+                          <AlertTriangle size={14} style={{ flexShrink: 0, marginTop: '1px' }} />
+                          <span>Conversations started from the phone app cannot be replied to from the CRM (and vice versa). Enable this only if your team uses the WhatsApp Business App alongside the CRM on the same number. You must also enable CoEx in Meta Business Manager for this number.</span>
+                        </div>
+                      )}
                     </div>
                     <div style={{ marginTop: '14px', display: 'flex', gap: '8px' }}>
                       <button type="button" onClick={handleSaveWaNumber} disabled={waNumSaving} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 20px', border: 'none', borderRadius: '8px', background: waNumSaving ? '#94a3b8' : '#25D366', color: 'var(--bg-card)', fontSize: '0.82rem', fontWeight: 600, cursor: waNumSaving ? 'not-allowed' : 'pointer' }}>
