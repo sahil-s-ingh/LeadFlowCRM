@@ -7331,6 +7331,28 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
   const [waNumError, setWaNumError] = useState('');
   const [waNumSuccess, setWaNumSuccess] = useState(false);
   const [deletingWaNumberId, setDeletingWaNumberId] = useState<string | null>(null);
+  const [waTestingId, setWaTestingId] = useState<string | null>(null);
+  const [waTestResult, setWaTestResult] = useState<Record<string, { valid: boolean; message: string; error_type?: string }>>({});
+
+  const testWaToken = async (settingsId: string) => {
+    setWaTestingId(settingsId);
+    setWaTestResult((prev) => { const next = { ...prev }; delete next[settingsId]; return next; });
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (!token) { setWaTestResult((prev) => ({ ...prev, [settingsId]: { valid: false, message: 'Not authenticated' } })); setWaTestingId(null); return; }
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/wa-embedded-signup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ action: 'test_token', wa_settings_id: settingsId }),
+      });
+      const data = await res.json();
+      setWaTestResult((prev) => ({ ...prev, [settingsId]: { valid: data.valid, message: data.message, error_type: data.error_type } }));
+    } catch {
+      setWaTestResult((prev) => ({ ...prev, [settingsId]: { valid: false, message: 'Failed to test connection' } }));
+    }
+    setWaTestingId(null);
+  };
 
   // Twilio / virtual calling state
   const [callProvider, setCallProvider] = useState<'twilio' | 'exotel' | 'plivo'>('twilio');
@@ -9405,7 +9427,10 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                                 </div>
                               </div>
                             </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0, flexWrap: 'wrap' }}>
+                              <button type="button" onClick={() => testWaToken(n.id)} disabled={waTestingId === n.id} style={{ fontSize: '0.75rem', fontWeight: 600, color: '#0f766e', border: '1px solid rgba(15,118,110,0.2)', borderRadius: '6px', padding: '4px 10px', cursor: 'pointer', background: 'var(--bg-card)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                {waTestingId === n.id ? <Loader2 size={12} className="animate-spin" /> : <Zap size={12} />} Test
+                              </button>
                               <button type="button" onClick={() => startEditWaNumber(n)} style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', border: '1px solid var(--border-subtle)', borderRadius: '6px', padding: '4px 10px', cursor: 'pointer', background: 'var(--bg-card)', display: 'flex', alignItems: 'center', gap: '4px' }}>
                                 <Edit3 size={12} /> Edit
                               </button>
@@ -9413,6 +9438,12 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                                 {deletingWaNumberId === n.id ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />} Delete
                               </button>
                             </div>
+                          {waTestResult[n.id] && (
+                            <div style={{ marginTop: '8px', padding: '8px 12px', borderRadius: '6px', fontSize: '0.76rem', lineHeight: 1.5, display: 'flex', alignItems: 'flex-start', gap: '6px', background: waTestResult[n.id].valid ? 'rgba(34,197,94,0.08)' : 'rgba(239,68,68,0.08)', border: `1px solid ${waTestResult[n.id].valid ? 'rgba(34,197,94,0.2)' : 'rgba(239,68,68,0.2)'}`, color: waTestResult[n.id].valid ? '#15803d' : '#dc2626' }}>
+                              {waTestResult[n.id].valid ? <CheckCircle2 size={14} style={{ flexShrink: 0, marginTop: '1px' }} /> : <AlertTriangle size={14} style={{ flexShrink: 0, marginTop: '1px' }} />}
+                              <span>{waTestResult[n.id].message}</span>
+                            </div>
+                          )}
                           </div>
                         ))}
                       </div>

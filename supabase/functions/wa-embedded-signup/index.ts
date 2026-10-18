@@ -1,4 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2.45.4";
+// test_token action added
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -238,6 +239,77 @@ Deno.serve(async (req: Request) => {
       return new Response(JSON.stringify({ config: data || { enabled: false } }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // ─── Test token validity ─────────────────────────────────────────
+    if (action === "test_token") {
+      const { wa_settings_id } = body;
+      if (!wa_settings_id) {
+        return new Response(JSON.stringify({ error: "Missing wa_settings_id" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const { data: waSetting, error: waErr } = await serviceClient
+        .from("whatsapp_settings")
+        .select("id, access_token, phone_number_id, waba_id, user_id, label, connected_phone_number")
+        .eq("id", wa_settings_id)
+        .single();
+
+      if (waErr || !waSetting) {
+        return new Response(JSON.stringify({ error: "WhatsApp number not found" }), {
+          status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      if (waSetting.user_id !== userId) {
+        return new Response(JSON.stringify({ error: "Not authorized" }), {
+          status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      if (!waSetting.phone_number_id || !waSetting.access_token) {
+        return new Response(JSON.stringify({
+          valid: false,
+          error_type: "not_configured",
+          message: "This number is missing a Phone Number ID or Access Token. Edit the number and add both fields.",
+        }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+
+      try {
+        const testRes = await fetch(
+          `https://graph.facebook.com/${GRAPH_API_VERSION}/${waSetting.phone_number_id}?fields=verified_name,display_phone_number,status,quality_rating`,
+          { headers: { Authorization: `Bearer ${waSetting.access_token}` } }
+        );
+        const testData = await testRes.json();
+
+        if (testData.error) {
+          const errCode = testData.error.code;
+          const errMsg = testData.error.message || "Unknown";
+          const isAuthError = errCode === 190 || errCode === 200 || errCode === 401 || /authentic|access token|oauth|session/i.test(errMsg);
+          return new Response(JSON.stringify({
+            valid: false,
+            error_type: isAuthError ? "auth" : "api",
+            meta_code: errCode,
+            message: isAuthError
+              ? `Your access token is invalid or expired (Meta error: ${errMsg}). Generate a new permanent access token in Meta Business Manager: go to Business Settings → Users → System Users → select your system user → Generate Access Token. Then edit this number and paste the new token.`
+              : `Meta API error (${errCode}): ${errMsg}`,
+          }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
+
+        return new Response(JSON.stringify({
+          valid: true,
+          phone_info: testData,
+          message: `Connection is healthy. Number: ${testData.display_phone_number || waSetting.connected_phone_number || "N/A"}, Status: ${testData.status || "Unknown"}.`,
+        }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Failed to test token";
+        return new Response(JSON.stringify({
+          valid: false,
+          error_type: "network",
+          message: `Could not reach Meta's servers: ${msg}`,
+        }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
     }
 
     // ─── Get webhook status for a WhatsApp number ───────────────────
