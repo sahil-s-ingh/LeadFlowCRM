@@ -20,6 +20,7 @@ import {
   Bell, CalendarClock, BellRing, Shuffle, ClipboardList, History, Droplets, MessageSquare, RotateCcw,
   BookOpen, MousePointerClick, EyeOff, FileSpreadsheet,
   PanelLeft, Type, Signal, GitMerge, ShieldAlert, Activity,
+  ShieldCheck,
   Building2, Trophy, Target, TrendingDown, GitBranch, Hash, Radar,
 
   LayoutTemplate, Inbox as InboxIcon,
@@ -47,6 +48,7 @@ import DuplicateDetectionView from '@/components/DuplicateDetectionView';
 import LeadFollowupHeatmap from '@/components/LeadFollowupHeatmap';
 import AutomationBuilder from '@/components/AutomationBuilder';
 import BrokerTrackerPage from '@/components/BrokerTrackerPage';
+import CallGuardrailSettings from '@/components/CallGuardrailSettings';
 import LeadTrackerPage from '@/components/LeadTrackerPage';
 import LeadSourceBadge from '@/components/LeadSourceBadge';
 import LeadWhatsAppDrawer from '@/components/LeadWhatsAppDrawer';
@@ -4168,6 +4170,7 @@ function DialerPanel({ onClose, number, setNumber, callInitiated, setCallInitiat
   const [permissionSent, setPermissionSent] = useState(false);
   const [recordEnabled, setRecordEnabled] = useState(false);
   const [transcribeEnabled, setTranscribeEnabled] = useState(false);
+  const [recordingConsent, setRecordingConsent] = useState(false);
   const pcRef = useRef<RTCPeerConnection | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const permPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -4402,6 +4405,7 @@ function DialerPanel({ onClose, number, setNumber, callInitiated, setCallInitiat
         sessionId,
         recording: recordEnabled ? { enabled: true, purpose: 'quality assurance', announcementLanguage: 'en_US' } : undefined,
         transcription: transcribeEnabled ? { enabled: true, purpose: 'quality assurance', announcementLanguage: 'en_US' } : undefined,
+        consent: recordEnabled ? recordingConsent : undefined,
       }),
       });
       const data = await res.json();
@@ -4688,6 +4692,25 @@ function DialerPanel({ onClose, number, setNumber, callInitiated, setCallInitiat
                 <FileText size={13} /> Transcribe
               </button>
             </div>
+          )}
+
+          {/* Recording consent affirmation (WhatsApp mode, when recording is on) */}
+          {callMode === 'whatsapp' && !callInitiated && recordEnabled && (
+            <label style={{
+              display: 'flex', alignItems: 'flex-start', gap: '8px', marginBottom: '12px',
+              padding: '10px 12px', borderRadius: '8px',
+              background: recordingConsent ? 'rgba(22,163,74,0.08)' : 'rgba(234,179,8,0.08)',
+              border: `1px solid ${recordingConsent ? 'rgba(22,163,74,0.3)' : 'rgba(234,179,8,0.3)'}`,
+              cursor: 'pointer', fontSize: '0.72rem', color: recordingConsent ? '#16a34a' : '#854d0e',
+            }}>
+              <input
+                type="checkbox"
+                checked={recordingConsent}
+                onChange={(e) => setRecordingConsent(e.target.checked)}
+                style={{ marginTop: '2px', cursor: 'pointer' }}
+              />
+              <span>I confirm the lead has agreed to be recorded, as required by our Call Guardrails.</span>
+            </label>
           )}
 
           {/* Keypad */}
@@ -8605,6 +8628,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
     { key: 'telegram', label: 'Telegram Bot', icon: <MessageCircle size={18} />, accent: 'telegram', show: true },
     { key: 'whatsapp', label: 'WhatsApp API', icon: <PhoneIcon size={18} />, accent: 'whatsapp', show: true },
     { key: 'twilio', label: 'Virtual Calling', icon: <PhoneCall size={18} />, accent: 'twilio', show: true },
+    { key: 'call_guardrails', label: 'Call Guardrails', icon: <ShieldCheck size={18} />, accent: 'call_guardrails', show: true },
     { key: 'team', label: 'Team', icon: <Users size={18} />, accent: 'team', show: permissions.teamManagement },
     { key: 'team_dashboard', label: 'Team Dashboard', icon: <Activity size={18} />, accent: 'team_dashboard', show: permissions.teamManagement },
     { key: 'role_management', label: 'Role Management', icon: <SlidersHorizontal size={18} />, accent: 'role_management', show: permissions.teamManagement },
@@ -8984,6 +9008,8 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                     </div>
                   )}
                 </>
+              ) : activeTab === 'call_guardrails' ? (
+                <CallGuardrailSettings userId={session.user.id} />
               ) : activeTab === 'team' ? (
                 <>
                   <div className="crm-settings-card-header">
