@@ -343,6 +343,81 @@ Deno.serve(async (req: Request) => {
             } catch { /* best effort — don't block inbound processing */ }
           }
 
+          // ─── Opt-out keyword detection ───
+          // If the lead texts STOP / UNSUBSCRIBE / STOP ALL / CANCEL, add them
+          // to the opt-out list so future broadcasts and drip messages are
+          // suppressed. Mark any active drip enrollments as opted_out.
+          if (msg.type === "text") {
+            const optText = (msg.text?.body || "").toLowerCase().trim();
+            const OPT_OUT_KEYWORDS = ["stop", "stop all", "unsubscribe", "cancel", "opt out", "opt-out", "remove"];
+            if (OPT_OUT_KEYWORDS.includes(optText)) {
+              try {
+                await supabase.from("wa_opt_outs").upsert(
+                  { user_id: adminUserId, phone_number: phoneFromWaId, reason: "keyword", source: optText },
+                  { onConflict: "user_id,phone_number" },
+                );
+                await supabase.from("wa_drip_enrollments")
+                  .update({ status: "opted_out", next_step_at: null })
+                  .eq("user_id", adminUserId)
+                  .eq("phone_number", phoneFromWaId)
+                  .eq("status", "active");
+                await sendWhatsAppMessage(
+                  settings.phone_number_id,
+                  settings.access_token,
+                  phoneFromWaId,
+                  "You've been unsubscribed from our WhatsApp messages. Reply START to re-subscribe.",
+                );
+              } catch { /* best effort */ }
+            }
+            // START keyword re-subscribes
+            if (optText === "start" || optText === "opt in" || optText === "subscribe") {
+              try {
+                await supabase.from("wa_opt_outs")
+                  .delete()
+                  .eq("user_id", adminUserId)
+                  .eq("phone_number", phoneFromWaId);
+              } catch { /* best effort */ }
+            }
+          }
+
+          // ─── Auto-enroll into drip sequences on new conversation ───
+          // If this is a brand-new conversation (created_at within last 60s),
+          // check for any active sequence with trigger_type='on_new_conversation'
+          // and enroll the contact. The cron-driven process-wa-drips function
+          // handles sending the steps at the right times.
+          if (!existingConv && msg.type === "text") {
+            try {
+              const { data: autoSeqs } = await supabase
+                .from("wa_drip_sequences")
+                .select("id, total_steps, wa_drip_steps!wa_drip_steps_sequence_id_fkey (step_order, delay_hours)")
+                .eq("user_id", adminUserId)
+                .eq("is_active", true)
+                .eq("trigger_type", "on_new_conversation");
+
+              for (const seq of (autoSeqs || []) as any[]) {
+                const steps = (seq.wa_drip_steps || []).sort((a: any, b: any) => a.step_order - b.step_order);
+                if (steps.length === 0) continue;
+                const firstStep = steps[0];
+                const nextAt = new Date(Date.now() + firstStep.delay_hours * 3600 * 1000).toISOString();
+                await supabase.from("wa_drip_enrollments").upsert(
+                  {
+                    sequence_id: seq.id,
+                    user_id: adminUserId,
+                    conversation_id: conversation.id,
+                    phone_number: phoneFromWaId,
+                    current_step: 0,
+                    next_step_at: nextAt,
+                    status: "active",
+                  },
+                  { onConflict: "sequence_id,phone_number" },
+                );
+                await supabase.from("wa_drip_sequences")
+                  .update({ enrolled_count: (seq.enrolled_count || 0) + 1 })
+                  .eq("id", seq.id);
+              }
+            } catch { /* best effort */ }
+          }
+
           // Send welcome message if this is a new conversation and it's a text "hi"/"hello"
           // (skipped when a chatbot rule already replied)
           if (!chatbotHandled && settings.welcome_message && msg.type === "text") {
