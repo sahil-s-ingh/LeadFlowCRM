@@ -20,6 +20,7 @@ import SuperAdminWhatsAppOnboarding from './SuperAdminWhatsAppOnboarding';
 import SuperAdminWhatsAppConfig from './SuperAdminWhatsAppConfig';
 import SuperAdminMetaAdsSettings from './SuperAdminMetaAdsSettings';
 import SuperAdminSocialAuthSettings from './SuperAdminSocialAuthSettings';
+import SuperAdminSettings from './SuperAdminSettings';
 
 type Stats = {
   total_auth_users: number;
@@ -42,20 +43,12 @@ type Account = {
   conversation_count: number;
 };
 
-type NavKey = 'dashboard' | 'profile' | 'plans' | 'features' | 'legal' | 'usage' | 'setup' | 'email' | 'payments' | 'wa_config' | 'wa_onboarding' | 'meta_ads' | 'social_auth';
+type NavKey = 'dashboard' | 'usage' | 'settings' | 'setup' | 'profile';
 
 const NAV_ITEMS: { key: NavKey; label: string; icon: React.ReactNode; group: string }[] = [
   { key: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard size={18} />, group: 'Overview' },
   { key: 'usage', label: 'Usage & Billing', icon: <BarChart3 size={18} />, group: 'Overview' },
-  { key: 'plans', label: 'Plans & Pricing', icon: <CreditCard size={18} />, group: 'Platform' },
-  { key: 'features', label: 'Feature Toggles', icon: <ToggleLeft size={18} />, group: 'Platform' },
-  { key: 'legal', label: 'Legal Pages', icon: <FileText size={18} />, group: 'Platform' },
-  { key: 'email', label: 'Email Config', icon: <Mail size={18} />, group: 'Platform' },
-  { key: 'payments', label: 'Payment Gateway', icon: <Wallet size={18} />, group: 'Platform' },
-  { key: 'wa_config', label: 'WhatsApp Cloud API', icon: <MessageSquare size={18} />, group: 'Platform' },
-  { key: 'wa_onboarding', label: 'WhatsApp Onboarding', icon: <Zap size={18} />, group: 'Platform' },
-  { key: 'meta_ads', label: 'Meta Marketing API', icon: <TrendingUp size={18} />, group: 'Platform' },
-  { key: 'social_auth', label: 'Social Login', icon: <LogIn size={18} />, group: 'Platform' },
+  { key: 'settings', label: 'Settings', icon: <Settings as SettingsIcon size={18} />, group: 'Platform' },
   { key: 'setup', label: 'Setup Guide', icon: <Server size={18} />, group: 'System' },
   { key: 'profile', label: 'My Profile', icon: <UserCircle size={18} />, group: 'Account' },
 ];
@@ -63,20 +56,12 @@ const NAV_ITEMS: { key: NavKey; label: string; icon: React.ReactNode; group: str
 const PAGE_SUBTITLES: Record<NavKey, string> = {
   dashboard: 'Platform overview and account management',
   usage: 'Per-account usage and revenue tracking',
-  plans: 'Manage subscription plans and pricing',
-  features: 'Enable or disable platform features',
-  legal: 'Edit legal pages published on your site',
-  email: 'Configure default SMTP for all accounts',
-  payments: 'Configure Razorpay payment gateway for checkout',
-  wa_config: 'Master switches for WhatsApp Cloud API, embedded signup, and coexistence mode',
-  wa_onboarding: 'Configure embedded signup for client WhatsApp onboarding',
-  meta_ads: 'Configure Facebook Marketing API for the Ads Manager OAuth flow',
-  social_auth: 'Enable Continue with Google / Facebook on the admin login page',
+  settings: 'Plans, feature toggles, integrations, and platform configuration',
   setup: 'Deploy your CRM on a VPS step by step',
   profile: 'Super admin account settings',
 };
 
-const VALID_NAV_KEYS: NavKey[] = ['dashboard', 'profile', 'plans', 'features', 'legal', 'usage', 'setup', 'email', 'payments', 'wa_config', 'wa_onboarding', 'meta_ads', 'social_auth'];
+const VALID_NAV_KEYS: NavKey[] = ['dashboard', 'usage', 'settings', 'setup', 'profile'];
 
 export default function SuperAdminDashboard({ session, onSignOut, initialView }: { session: Session; onSignOut: () => void; initialView?: string }) {
   const [stats, setStats] = useState<Stats | null>(null);
@@ -229,17 +214,9 @@ export default function SuperAdminDashboard({ session, onSignOut, initialView }:
 
   const renderContent = () => {
     if (view === 'profile') return <AdminProfilePage session={session} />;
-    if (view === 'plans') return <SuperAdminPlans />;
-    if (view === 'features') return <SuperAdminFeatures />;
-    if (view === 'legal') return <SuperAdminLegal />;
     if (view === 'usage') return <SuperAdminUsage session={session} />;
     if (view === 'setup') return <SuperAdminSetupGuide />;
-    if (view === 'email') return <SuperAdminEmailSettings />;
-    if (view === 'payments') return <SuperAdminPaymentSettings />;
-    if (view === 'wa_config') return <SuperAdminWhatsAppConfig />;
-    if (view === 'wa_onboarding') return <SuperAdminWhatsAppOnboarding />;
-    if (view === 'meta_ads') return <SuperAdminMetaAdsSettings />;
-    if (view === 'social_auth') return <SuperAdminSocialAuthSettings />;
+    if (view === 'settings') return <SuperAdminSettings session={session} />;
 
     // Dashboard view
     if (loading) {
