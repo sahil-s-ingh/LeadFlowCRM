@@ -7483,15 +7483,17 @@ a.crm-drawer-contact-item:hover {
 .crm-quick-actions {
   display: flex;
   gap: 10px;
+  flex-wrap: wrap;
 }
 
 .crm-quick-btn {
   flex: 1;
+  min-width: 110px;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 12px;
+  padding: 12px 14px;
   border-radius: 12px;
   font-family: 'Outfit', sans-serif;
   font-size: 0.84rem;
@@ -7515,17 +7517,33 @@ a.crm-drawer-contact-item:hover {
 }
 
 .crm-quick-wa {
-  background: #FFFFFF;
-  color: #475569;
-  border: 1px solid #E2E8F0;
+  background: #25D366;
+  color: #075E54;
+  box-shadow: 0 2px 8px rgba(37, 211, 102, 0.22);
 }
 
 .crm-quick-wa:hover {
-  background: #F1F5F9;
-  border-color: #CBD5E1;
-  color: #1E293B;
   transform: translateY(-1px);
+  background: #20bd56;
+  color: #075E54;
+  box-shadow: 0 4px 14px rgba(37, 211, 102, 0.35);
 }
+
+.crm-quick-email {
+  background: #2563eb;
+  color: #FFFFFF;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.2);
+}
+
+.crm-quick-email:hover {
+  transform: translateY(-1px);
+  background: #1d4ed8;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);
+}
+
+html.crm-dark .crm-quick-call { background: #16A34A; color: #fff; }
+html.crm-dark .crm-quick-wa { background: #25D366; color: #052e2b; }
+html.crm-dark .crm-quick-email { background: #2563eb; color: #fff; }
 
 /* ==========================================
    CRM ADD LEAD BUTTON
