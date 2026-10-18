@@ -350,6 +350,7 @@ Deno.serve(async (req: Request) => {
         previewText = bodyText.slice(0, 100);
       }
 
+      const tplWaMessageId = tplData.messages?.[0]?.id || null;
       const { data: tplMessage, error: tplMsgError } = await adminSupabase
         .from("wa_messages")
         .insert({
@@ -357,6 +358,8 @@ Deno.serve(async (req: Request) => {
           sender: "admin",
           message_type: "template",
           text_content: previewText,
+          wa_message_id: tplWaMessageId,
+          delivery_status: tplWaMessageId ? 'sent' : null,
         })
         .select()
         .single();
@@ -409,6 +412,7 @@ Deno.serve(async (req: Request) => {
     }
 
     // Save message in database
+    const waMessageId = waData.messages?.[0]?.id || null;
     const { data: message, error: msgError } = await adminSupabase
       .from("wa_messages")
       .insert({
@@ -416,6 +420,8 @@ Deno.serve(async (req: Request) => {
         sender: "admin",
         message_type: "text",
         text_content: text,
+        wa_message_id: waMessageId,
+        delivery_status: waMessageId ? 'sent' : null,
       })
       .select()
       .single();

@@ -161,8 +161,36 @@ Deno.serve(async (req: Request) => {
 
         // ─── Handle delivery/read status callbacks for outbound messages ───
         // Meta sends these when messages you sent transition to sent/delivered/read.
-        // We forward them to the broadcast function to update recipient + campaign stats.
+        // We update the matching wa_messages row AND forward to the broadcast function
+        // to update recipient + campaign stats.
         if (Array.isArray(value.statuses) && value.statuses.length > 0) {
+          // 1. Update individual chat message rows (1:1 inbox messages)
+          for (const st of value.statuses) {
+            const mid = st.id;
+            const stStatus = (st.status || "").toLowerCase();
+            if (!mid || !stStatus) continue;
+            const upd: Record<string, unknown> = { delivery_status: stStatus };
+            if (stStatus === "delivered") upd.delivered_at = new Date().toISOString();
+            if (stStatus === "read") { upd.delivered_at = new Date().toISOString(); upd.read_at = new Date().toISOString(); }
+            if (stStatus === "failed") {
+              const errs = st.errors?.[0];
+              if (errs) upd.delivery_status = "failed";
+            }
+            if (stStatus === "typing") {
+              // Update the conversation's typing indicator
+              try {
+                const phoneFromStatus = st.recipient_id ? `+${st.recipient_id}` : null;
+                if (phoneFromStatus) {
+                  await supabase.from("wa_conversations").update({ is_typing: true, typing_at: new Date().toISOString() }).eq("wa_phone_number", phoneFromStatus);
+                }
+              } catch { /* best effort */ }
+              continue; // don't update wa_messages for typing
+            }
+            try {
+              await supabase.from("wa_messages").update(upd).eq("wa_message_id", mid);
+            } catch { /* best effort */ }
+          }
+          // 2. Forward to broadcast function for campaign recipient updates
           try {
             await fetch(`${supabaseUrl}/functions/v1/whatsapp-broadcast?action=update_status`, {
               method: "POST",
