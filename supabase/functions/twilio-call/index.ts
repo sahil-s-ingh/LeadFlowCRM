@@ -8,6 +8,74 @@ const corsHeaders = {
 
 type Provider = "twilio" | "exotel" | "plivo";
 
+type GuardrailResult = { blocked: boolean; reason: string; rule: string };
+
+async function checkCallGuardrails(
+  supabase: any,
+  userId: string,
+  toPhone: string,
+  opts: { leadId?: string },
+): Promise<GuardrailResult> {
+  const { data: g } = await supabase
+    .from("call_guardrail_settings")
+    .select("*")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (!g || !g.enabled) return { blocked: false, reason: "", rule: "" };
+
+  if (Array.isArray(g.dnd_phone_numbers) && g.dnd_phone_numbers.length > 0) {
+    const toNorm = toPhone.replace(/[^0-9]/g, "");
+    const hit = g.dnd_phone_numbers.some((n: string) => n.replace(/[^0-9]/g, "") === toNorm);
+    if (hit) return { blocked: true, reason: "This number is on your Do-Not-Call list.", rule: "dnd" };
+  }
+
+  if (g.quiet_hours_enabled) {
+    try {
+      const tz = g.timezone || "Asia/Kolkata";
+      const now = new Date();
+      const local = new Intl.DateTimeFormat("en-US", {
+        timeZone: tz, hour: "2-digit", minute: "2-digit", hour12: false,
+      }).format(now);
+      const [hStr, mStr] = local.split(":");
+      const curMin = (parseInt(hStr, 10) * 60) + parseInt(mStr, 10);
+      const [sh, sm] = (g.quiet_hours_start || "22:00").split(":").map((x: string) => parseInt(x, 10));
+      const [eh, em] = (g.quiet_hours_end || "08:00").split(":").map((x: string) => parseInt(x, 10));
+      const startMin = sh * 60 + sm;
+      let endMin = eh * 60 + em;
+      if (endMin <= startMin) endMin += 24 * 60;
+      let inWindow = curMin >= startMin && curMin < endMin;
+      if (!inWindow && curMin + 24 * 60 < endMin && curMin + 24 * 60 >= startMin) inWindow = true;
+      if (inWindow) {
+        return {
+          blocked: true,
+          reason: `Calls are blocked during quiet hours (${g.quiet_hours_start}–${g.quiet_hours_end} ${tz}).`,
+          rule: "quiet_hours",
+        };
+      }
+    } catch { /* ignore tz errors */ }
+  }
+
+  if (g.cooldown_enabled && g.cooldown_minutes > 0) {
+    const since = new Date(Date.now() - g.cooldown_minutes * 60 * 1000).toISOString();
+    for (const t of ["call_logs", "wa_call_sessions"]) {
+      let q = supabase.from(t).select("created_at").eq("user_id", userId).gte("created_at", since).order("created_at", { ascending: false }).limit(1);
+      if (opts.leadId) q = q.eq("lead_id", opts.leadId);
+      else q = q.or(`phone_number.eq.+${toPhone},phone_number.eq.${toPhone}`);
+      const { data: recent } = await q.maybeSingle();
+      if (recent) {
+        const mins = Math.round((Date.now() - new Date(recent.created_at).getTime()) / 60000);
+        return {
+          blocked: true,
+          reason: `A call to this lead was placed ${mins} min ago. Cooldown is ${g.cooldown_minutes} min.`,
+          rule: "cooldown",
+        };
+      }
+    }
+  }
+
+  return { blocked: false, reason: "", rule: "" };
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { status: 200, headers: corsHeaders });
@@ -71,6 +139,15 @@ Deno.serve(async (req: Request) => {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // ---- Call guardrails ----
+    const guardResult = await checkCallGuardrails(supabase, userId, to.replace(/^\+/, ""), { leadId });
+    if (guardResult.blocked) {
+      return new Response(
+        JSON.stringify({ error: guardResult.reason, errorType: "guardrail", guardrail: guardResult.rule }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
     }
 
     const provider = (settings.provider as Provider) || "twilio";

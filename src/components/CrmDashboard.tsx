@@ -24,7 +24,7 @@ import {
 
   LayoutTemplate, Inbox as InboxIcon,
   HelpCircle, Sun, Moon,
-  CreditCard, Smartphone, ShieldBan,
+  CreditCard, Smartphone,
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import DashboardOverview from '@/components/DashboardOverview';
@@ -50,9 +50,6 @@ import BrokerTrackerPage from '@/components/BrokerTrackerPage';
 import LeadTrackerPage from '@/components/LeadTrackerPage';
 import LeadSourceBadge from '@/components/LeadSourceBadge';
 import LeadWhatsAppDrawer from '@/components/LeadWhatsAppDrawer';
-import WhatsAppChatbotBuilder from '@/components/WhatsAppChatbotBuilder';
-import WhatsAppDripSequences from '@/components/WhatsAppDripSequences';
-import WhatsAppOptOutManager from '@/components/WhatsAppOptOutManager';
 import { SourceLogo } from '@/components/BrandLogos';
 import WhatsAppOnboarding from '@/components/WhatsAppOnboarding';
 import MetaAdsManager from '@/components/MetaAdsManager';
@@ -104,7 +101,7 @@ const MOBILE_STAT_OPTIONS: { key: MobileStatKey; label: string }[] = [
 ];
 
 type DateFilterPreset = 'all' | 'today' | 'yesterday' | 'last_7_days' | 'this_week' | 'this_month' | 'this_year' | 'custom';
-type ActiveView = 'dashboard' | 'leads' | 'inbox_hub' | 'inbox' | 'whatsapp' | 'settings' | 'drip' | 'analytics_hub' | 'email_analytics' | 'message_templates' | 'broadcast_hub' | 'broadcast' | 'email_broadcast' | 'telegram_broadcast' | 'activity_timeline' | 'revenue_forecast' | 'followups' | 'leaderboard' | 'goals' | 'win_loss' | 'duplicates' | 'heatmap' | 'automations' | 'brokers' | 'lead_tracker' | 'meta_ads' | 'wa_chatbot' | 'wa_drips' | 'wa_optout';
+type ActiveView = 'dashboard' | 'leads' | 'inbox_hub' | 'inbox' | 'whatsapp' | 'settings' | 'drip' | 'analytics_hub' | 'email_analytics' | 'message_templates' | 'broadcast_hub' | 'broadcast' | 'email_broadcast' | 'telegram_broadcast' | 'activity_timeline' | 'revenue_forecast' | 'followups' | 'leaderboard' | 'goals' | 'win_loss' | 'duplicates' | 'heatmap' | 'automations' | 'brokers' | 'lead_tracker' | 'meta_ads';
 
 type UserRole = 'owner' | 'admin' | 'manager' | 'agent';
 
@@ -519,7 +516,7 @@ async function sendMetaConversionEvent(leadId: string, lead: Lead, newStatus: Le
   }
 }
 
-const VALID_VIEWS: ActiveView[] = ['dashboard', 'leads', 'inbox_hub', 'inbox', 'whatsapp', 'settings', 'drip', 'analytics_hub', 'email_analytics', 'message_templates', 'broadcast_hub', 'broadcast', 'email_broadcast', 'telegram_broadcast', 'activity_timeline', 'revenue_forecast', 'followups', 'leaderboard', 'goals', 'win_loss', 'duplicates', 'heatmap', 'automations', 'brokers', 'lead_tracker', 'meta_ads', 'wa_chatbot', 'wa_drips', 'wa_optout'];
+const VALID_VIEWS: ActiveView[] = ['dashboard', 'leads', 'inbox_hub', 'inbox', 'whatsapp', 'settings', 'drip', 'analytics_hub', 'email_analytics', 'message_templates', 'broadcast_hub', 'broadcast', 'email_broadcast', 'telegram_broadcast', 'activity_timeline', 'revenue_forecast', 'followups', 'leaderboard', 'goals', 'win_loss', 'duplicates', 'heatmap', 'automations', 'brokers', 'lead_tracker', 'meta_ads'];
 
 export default function CrmDashboard({ session, initialView }: { session: Session; initialView?: string }) {
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -2068,15 +2065,6 @@ export default function CrmDashboard({ session, initialView }: { session: Sessio
             <Zap size={18} /> {!sidebarCollapsed && 'Automations'}
           </a>
           )}
-          <a className={`crm-nav-item ${activeView === 'wa_chatbot' ? 'active' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`} onClick={() => { navigateToView('wa_chatbot'); setMobileSidebarOpen(false); setMobileNav('leads'); }} style={{ cursor: 'pointer' }} title={sidebarCollapsed ? 'WhatsApp Chatbot' : undefined}>
-            <Bot size={18} /> {!sidebarCollapsed && 'Chatbot'}
-          </a>
-          <a className={`crm-nav-item ${activeView === 'wa_drips' ? 'active' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`} onClick={() => { navigateToView('wa_drips'); setMobileSidebarOpen(false); setMobileNav('leads'); }} style={{ cursor: 'pointer' }} title={sidebarCollapsed ? 'Drip Sequences' : undefined}>
-            <Droplets size={18} /> {!sidebarCollapsed && 'Drip Sequences'}
-          </a>
-          <a className={`crm-nav-item ${activeView === 'wa_optout' ? 'active' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`} onClick={() => { navigateToView('wa_optout'); setMobileSidebarOpen(false); setMobileNav('leads'); }} style={{ cursor: 'pointer' }} title={sidebarCollapsed ? 'Opt-Out Management' : undefined}>
-            <ShieldBan size={18} /> {!sidebarCollapsed && 'Opt-Out'}
-          </a>
         </div>
         )}
         {!sidebarCollapsed && sidebarSections.pipeline && sectionVisibility.pipeline && (
@@ -2275,12 +2263,6 @@ export default function CrmDashboard({ session, initialView }: { session: Sessio
           <DuplicateDetectionView leads={leads} onBack={() => navigateToView('dashboard')} onMerge={mergeDuplicates} assigneeMap={assigneeMap} />
         ) : activeView === 'automations' ? (
           <AutomationBuilder session={session} onBack={() => navigateToView('dashboard')} stages={pipelineStages} />
-        ) : activeView === 'wa_chatbot' ? (
-          <WhatsAppChatbotBuilder session={session} onBack={() => navigateToView('dashboard')} />
-        ) : activeView === 'wa_drips' ? (
-          <WhatsAppDripSequences session={session} onBack={() => navigateToView('dashboard')} />
-        ) : activeView === 'wa_optout' ? (
-          <WhatsAppOptOutManager session={session} onBack={() => navigateToView('dashboard')} />
         ) : activeView === 'brokers' ? (
           <BrokerTrackerPage session={session} onBack={() => navigateToView('dashboard')} />
         ) : activeView === 'lead_tracker' ? (

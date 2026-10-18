@@ -121,7 +121,12 @@ Deno.serve(async (req: Request) => {
       const uploadData = await uploadRes.json();
       if (!uploadData.id) {
         return new Response(
-          JSON.stringify({ error: `WhatsApp media upload failed: ${uploadData.error?.message || "Unknown"}` }),
+          JSON.stringify({
+            error: `WhatsApp media upload failed: ${uploadData.error?.message || "Unknown"}`,
+            errorStep: "meta_media_upload",
+            metaErrorRaw: uploadData.error || uploadData,
+            debug: { mimeType, fileName: file.name, fileSize, phoneNumberId },
+          }),
           { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }
@@ -174,7 +179,13 @@ Deno.serve(async (req: Request) => {
           ? "Your WhatsApp Business number's display name has not been approved by Meta yet. Until approval is granted, you cannot send outgoing messages. Please visit Meta Business Manager to submit or check the status of your display name approval."
           : `WhatsApp API error: ${errMsg}`;
         return new Response(
-          JSON.stringify({ error: friendlyMsg }),
+          JSON.stringify({
+            error: friendlyMsg,
+            errorStep: "meta_send_media",
+            metaErrorRaw: sendData.error,
+            metaCode: errCode,
+            debug: { typeKey, mimeType, to, sendBody },
+          }),
           { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }
@@ -197,12 +208,20 @@ Deno.serve(async (req: Request) => {
 
       if (msgError) {
         return new Response(
-          JSON.stringify({ error: "Failed to save message" }),
+          JSON.stringify({
+            error: `Failed to save message: ${msgError.message || "Unknown DB error"}`,
+            errorStep: "db_insert_media",
+            dbError: {
+              message: msgError.message,
+              details: msgError.details,
+              hint: msgError.hint,
+              code: msgError.code,
+            },
+            debug: { conversationId, messageType, mimeType, mediaId },
+          }),
           { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }
-
-      const preview = caption ? caption.slice(0, 100) : `[${messageType}]`;
       await adminSupabase
         .from("wa_conversations")
         .update({ last_message_text: preview, last_message_at: new Date().toISOString() })
@@ -282,7 +301,11 @@ Deno.serve(async (req: Request) => {
 
       if (!tpl) {
         return new Response(
-          JSON.stringify({ error: "Template not found or not approved. Only approved templates can be sent." }),
+          JSON.stringify({
+            error: "Template not found or not approved. Only approved templates can be sent.",
+            errorStep: "template_lookup",
+            debug: { templateName, userId: userData.user.id },
+          }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }
@@ -340,7 +363,15 @@ Deno.serve(async (req: Request) => {
           ? `Your WhatsApp Business access token is invalid or expired (Meta error: ${errMsg}). Please go to WhatsApp Settings and reconnect your number — re-enter your Phone Number ID and a valid access token from Meta Business Manager.`
           : `WhatsApp API error: ${errMsg}`;
         return new Response(
-          JSON.stringify({ error: friendlyMsg, errorType: isAuthError ? "auth" : "api", metaError: errMsg, metaCode: errCode }),
+          JSON.stringify({
+            error: friendlyMsg,
+            errorType: isAuthError ? "auth" : "api",
+            errorStep: "meta_send_template",
+            metaError: errMsg,
+            metaCode: errCode,
+            metaErrorRaw: tplData.error,
+            debug: { templateName, templateLanguage: templateLanguage || tpl.language, to, sendBody: tplSendBody },
+          }),
           { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }
@@ -376,7 +407,17 @@ Deno.serve(async (req: Request) => {
 
       if (tplMsgError) {
         return new Response(
-          JSON.stringify({ error: "Failed to save message" }),
+          JSON.stringify({
+            error: `Failed to save message: ${tplMsgError.message || "Unknown DB error"}`,
+            errorStep: "db_insert_template",
+            dbError: {
+              message: tplMsgError.message,
+              details: tplMsgError.details,
+              hint: tplMsgError.hint,
+              code: tplMsgError.code,
+            },
+            debug: { conversationId, messageType: "template", waMessageId: tplWaMessageId },
+          }),
           { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }
@@ -424,7 +465,15 @@ Deno.serve(async (req: Request) => {
           ? "Your WhatsApp Business number's display name has not been approved by Meta yet. Until approval is granted, you cannot send outgoing messages. Please visit Meta Business Manager to submit or check the status of your display name approval."
           : `WhatsApp API error: ${errMsg}`;
       return new Response(
-        JSON.stringify({ error: friendlyMsg, errorType: isAuthError ? "auth" : "api", metaError: errMsg, metaCode: errCode }),
+        JSON.stringify({
+          error: friendlyMsg,
+          errorType: isAuthError ? "auth" : "api",
+          errorStep: "meta_send_text",
+          metaError: errMsg,
+          metaCode: errCode,
+          metaErrorRaw: waData.error,
+          debug: { to, text: (text || "").slice(0, 200) },
+        }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
@@ -446,7 +495,17 @@ Deno.serve(async (req: Request) => {
 
     if (msgError) {
       return new Response(
-        JSON.stringify({ error: "Failed to save message" }),
+        JSON.stringify({
+          error: `Failed to save message: ${msgError.message || "Unknown DB error"}`,
+          errorStep: "db_insert_text",
+          dbError: {
+            message: msgError.message,
+            details: msgError.details,
+            hint: msgError.hint,
+            code: msgError.code,
+          },
+          debug: { conversationId, messageType: "text", waMessageId },
+        }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
@@ -463,7 +522,7 @@ Deno.serve(async (req: Request) => {
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
     return new Response(
-      JSON.stringify({ error: message }),
+      JSON.stringify({ error: message, errorStep: "unexpected_exception", debug: { stack: err instanceof Error ? err.stack : undefined } }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }
