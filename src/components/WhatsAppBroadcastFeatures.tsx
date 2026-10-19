@@ -622,52 +622,280 @@ export function ReplyTrackingPanel({ broadcasts, onClose }: { broadcasts: Broadc
 }
 
 // ===================== 8. Cost Estimator =====================
-export function CostEstimator({ recipientCount, onClose }: { recipientCount: number; onClose: () => void }) {
-  const [costPerMessage, setCostPerMessage] = useState(0.0085); // WhatsApp India marketing avg
-  const tiers = [
-    { label: 'India Marketing', cost: 0.0085 },
-    { label: 'India Utility', cost: 0.0042 },
-    { label: 'India Authentication', cost: 0.0013 },
-    { label: 'US Marketing', cost: 0.025 },
-    { label: 'UK Marketing', cost: 0.030 },
-  ];
-  const totalCost = (recipientCount * costPerMessage).toFixed(2);
+const COST_TIERS = [
+  { label: 'India Marketing', cost: 0.78, currency: 'INR' },
+  { label: 'India Utility', cost: 0.38, currency: 'INR' },
+  { label: 'India Authentication', cost: 0.12, currency: 'INR' },
+  { label: 'US Marketing', cost: 0.025, currency: 'USD' },
+  { label: 'UK Marketing', cost: 0.030, currency: 'USD' },
+];
+const CURRENCY_SYMBOL: Record<string, string> = { USD: '$', INR: 'Rs.', GBP: 'GBP ', EUR: 'EUR ' };
+const CURRENCY_RATES: Record<string, number> = { USD: 1, INR: 91.5, GBP: 0.79, EUR: 0.92 };
+
+export function CostEstimator({ recipientCount, broadcasts, onClose }: { recipientCount: number; broadcasts?: BroadcastCampaign[]; onClose: () => void }) {
+  const [messageCount, setMessageCount] = useState(recipientCount);
+  const [selectedTier, setSelectedTier] = useState(0);
+  const [costPerMessage, setCostPerMessage] = useState(COST_TIERS[0].cost);
+  const [currency, setCurrency] = useState<string>(COST_TIERS[0].currency);
+  const [displayCurrency, setDisplayCurrency] = useState<string>(COST_TIERS[0].currency);
+  const [conversationWindow, setConversationWindow] = useState<'new' | 'existing'>('new');
+  const [budget, setBudget] = useState<string>('');
+  const [savedEstimates, setSavedEstimates] = useState<any[]>([]);
+  const [savedLoading, setSavedLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveLabel, setSaveLabel] = useState('');
+  const [showSaveForm, setShowSaveForm] = useState(false);
+  const [activeTab, setActiveTab] = useState<'calculator' | 'actual' | 'saved'>('calculator');
+
+  const tier = COST_TIERS[selectedTier];
+  const windowMultiplier = conversationWindow === 'existing' ? 0.25 : 1;
+  const effectiveCost = costPerMessage * windowMultiplier;
+  const rateUSD = effectiveCost / (CURRENCY_RATES[currency] || 1);
+  const totalUSD = messageCount * rateUSD;
+  const totalDisplay = totalUSD * (CURRENCY_RATES[displayCurrency] || 1);
+  const symbol = CURRENCY_SYMBOL[displayCurrency] || '$';
+  const costPerMsgInDisplay = effectiveCost * ((CURRENCY_RATES[displayCurrency] || 1) / (CURRENCY_RATES[currency] || 1));
+
+  const budgetValue = parseFloat(budget) || 0;
+  const budgetUSD = budgetValue / (CURRENCY_RATES[displayCurrency] || 1);
+  const maxMessagesOnBudget = rateUSD > 0 ? Math.floor(budgetUSD / rateUSD) : 0;
+  const overBudget = budgetValue > 0 && totalDisplay > budgetValue;
+
+  const selectTier = (idx: number) => {
+    setSelectedTier(idx);
+    setCostPerMessage(COST_TIERS[idx].cost);
+    setCurrency(COST_TIERS[idx].currency);
+    setDisplayCurrency(COST_TIERS[idx].currency);
+  };
+
+  const fetchSavedEstimates = useCallback(async () => {
+    setSavedLoading(true);
+    try {
+      const { data } = await supabase.from('wa_cost_estimates').select('*').order('created_at', { ascending: false }).limit(20);
+      setSavedEstimates(data || []);
+    } catch { /* ignore */ }
+    finally { setSavedLoading(false); }
+  }, []);
+
+  useEffect(() => { fetchSavedEstimates(); }, [fetchSavedEstimates]);
+
+  const handleSave = async () => {
+    if (!saveLabel.trim()) return;
+    setSaving(true);
+    try {
+      await supabase.from('wa_cost_estimates').insert({
+        label: saveLabel.trim(),
+        message_count: messageCount,
+        cost_per_message: effectiveCost,
+        currency: displayCurrency,
+        tier_label: tier.label,
+        conversation_window: conversationWindow,
+        estimated_total: parseFloat(totalDisplay.toFixed(4)),
+      });
+      setSaveLabel('');
+      setShowSaveForm(false);
+      await fetchSavedEstimates();
+    } catch { /* ignore */ }
+    finally { setSaving(false); }
+  };
+
+  const handleDeleteSaved = async (id: string) => {
+    await supabase.from('wa_cost_estimates').delete().eq('id', id);
+    await fetchSavedEstimates();
+  };
+
+  const completedBroadcasts = (broadcasts || []).filter((b) => b.status === 'completed' || b.status === 'sending');
+  const actualRows = completedBroadcasts.slice(0, 8).map((b) => {
+    const sent = b.sent_count;
+    const delivered = b.delivered_count;
+    const estCost = sent * costPerMsgInDisplay;
+    const costPerDelivered = delivered > 0 ? estCost / delivered : 0;
+    return { id: b.id, name: b.campaign_name || b.template_name, sent, delivered, failed: b.failed_count, estCost, costPerDelivered };
+  });
+  const totalActualSpend = actualRows.reduce((s, r) => s + r.estCost, 0);
+  const totalActualSent = actualRows.reduce((s, r) => s + r.sent, 0);
+  const totalActualDelivered = actualRows.reduce((s, r) => s + r.delivered, 0);
+  const avgCostPerDelivered = totalActualDelivered > 0 ? totalActualSpend / totalActualDelivered : 0;
+
+  const fmt = (n: number) => `${symbol}${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 })}`;
 
   return (
     <div className="wb-modal-overlay" onClick={onClose}>
-      <div className="wb-modal-card" onClick={(e) => e.stopPropagation()}>
+      <div className="wb-modal-card wb-modal-large" onClick={(e) => e.stopPropagation()}>
         <div className="wb-modal-header">
-          <div className="wb-modal-title"><DollarSign size={18} /><span>Cost Estimator</span></div>
+          <div className="wb-modal-title"><DollarSign size={18} /><span>Message Cost Calculator</span></div>
           <button onClick={onClose} className="wb-modal-close"><X size={18} /></button>
         </div>
         <div className="wb-modal-body">
-          <p className="wb-modal-desc">Estimate the cost of your broadcast based on WhatsApp's per-message pricing. Actual costs vary by country and conversation category.</p>
+          <p className="wb-modal-desc">Plan broadcast budgets before sending. Enter message count, pick country/category, toggle conversation window, set a budget limit, and save estimates for your finance team.</p>
 
-          <div className="wb-cost-tiers">
-            {tiers.map((t) => (
-              <button key={t.label} className={`wb-cost-tier ${costPerMessage === t.cost ? 'active' : ''}`} onClick={() => setCostPerMessage(t.cost)}>
-                <strong>{t.label}</strong>
-                <span>${t.cost.toFixed(4)} / msg</span>
-              </button>
-            ))}
+          <div className="wb-cost-tabs">
+            <button className={activeTab === 'calculator' ? 'active' : ''} onClick={() => setActiveTab('calculator')}><DollarSign size={14} /> Calculator</button>
+            <button className={activeTab === 'actual' ? 'active' : ''} onClick={() => setActiveTab('actual')}><TrendingUp size={14} /> Actual Spend</button>
+            <button className={activeTab === 'saved' ? 'active' : ''} onClick={() => setActiveTab('saved')}><Save size={14} /> Saved ({savedEstimates.length})</button>
           </div>
 
-          <div className="wb-cost-custom">
-            <label>Custom cost per message ($):
-              <input type="number" value={costPerMessage} step="0.0001" min="0" onChange={(e) => setCostPerMessage(parseFloat(e.target.value) || 0)} className="wb-input" />
-            </label>
-          </div>
+          {activeTab === 'calculator' && (
+            <>
+              <label className="wb-field wb-cost-message-count">
+                <span>Messages to send</span>
+                <input type="number" min="0" step="1" value={messageCount} onChange={(e) => setMessageCount(Math.max(0, parseInt(e.target.value, 10) || 0))} className="wb-input" />
+              </label>
 
-          <div className="wb-cost-result">
-            <div className="wb-cost-row"><span>Recipients</span><strong>{recipientCount.toLocaleString()}</strong></div>
-            <div className="wb-cost-row"><span>Cost per message</span><strong>${costPerMessage.toFixed(4)}</strong></div>
-            <div className="wb-cost-row wb-cost-total"><span>Estimated total cost</span><strong>${totalCost}</strong></div>
-          </div>
+              <div className="wb-cost-tiers">
+                {COST_TIERS.map((t, i) => (
+                  <button key={t.label} className={`wb-cost-tier ${selectedTier === i ? 'active' : ''}`} onClick={() => selectTier(i)}>
+                    <strong>{t.label}</strong>
+                    <span>{CURRENCY_SYMBOL[t.currency]}{t.cost.toFixed(t.currency === 'INR' ? 2 : 4)} / msg</span>
+                  </button>
+                ))}
+              </div>
 
-          <div className="wb-warn-box">
-            <AlertTriangle size={16} />
-            <div>This is an estimate only. Actual WhatsApp pricing depends on the recipient's country code, conversation category (marketing/utility/authentication), and whether a conversation window is already open. Check <strong>Meta Business Manager</strong> for exact pricing.</div>
-          </div>
+              <div className="wb-cost-controls-row">
+                <div className="wb-cost-custom">
+                  <label>Custom cost / msg:
+                    <input type="number" value={costPerMessage} step="0.0001" min="0" onChange={(e) => setCostPerMessage(parseFloat(e.target.value) || 0)} className="wb-input" />
+                    <select value={currency} onChange={(e) => setCurrency(e.target.value)} className="wb-select wb-cost-currency-sel">
+                      <option value="USD">USD</option><option value="INR">INR</option><option value="GBP">GBP</option><option value="EUR">EUR</option>
+                    </select>
+                  </label>
+                </div>
+                <div className="wb-cost-window-toggle">
+                  <span>Conversation window:</span>
+                  <div className="wb-cost-window-btns">
+                    <button type="button" className={conversationWindow === 'new' ? 'active' : ''} onClick={() => setConversationWindow('new')}>New (full price)</button>
+                    <button type="button" className={conversationWindow === 'existing' ? 'active' : ''} onClick={() => setConversationWindow('existing')}>Open 24h window (lower)</button>
+                  </div>
+                </div>
+                <div className="wb-cost-display-currency">
+                  <label>Show totals in:
+                    <select value={displayCurrency} onChange={(e) => setDisplayCurrency(e.target.value)} className="wb-select">
+                      <option value="USD">USD ($)</option><option value="INR">INR (Rs.)</option><option value="GBP">GBP</option><option value="EUR">EUR</option>
+                    </select>
+                  </label>
+                </div>
+              </div>
+
+              <div className="wb-cost-result">
+                <div className="wb-cost-row"><span>Messages to send</span><strong>{messageCount.toLocaleString()}</strong></div>
+                <div className="wb-cost-row"><span>Effective cost / message</span><strong>{fmt(costPerMsgInDisplay)}</strong></div>
+                <div className="wb-cost-row"><span>Conversation window</span><strong>{conversationWindow === 'new' ? 'New conversation' : 'Existing 24h window'}</strong></div>
+                <div className="wb-cost-row wb-cost-total"><span>Estimated total cost</span><strong>{fmt(totalDisplay)}</strong></div>
+              </div>
+
+              {budgetValue > 0 && (
+                <div className={`wb-cost-budget-box ${overBudget ? 'over' : 'ok'}`}>
+                  <div className="wb-cost-budget-row">
+                    <span>Your budget</span>
+                    <strong>{fmt(budgetValue)}</strong>
+                  </div>
+                  <div className="wb-cost-budget-row">
+                    <span>Max messages affordable</span>
+                    <strong>{maxMessagesOnBudget.toLocaleString()}</strong>
+                  </div>
+                  {overBudget ? (
+                    <div className="wb-cost-budget-warn"><AlertTriangle size={14} /> Planned send exceeds budget by {fmt(totalDisplay - budgetValue)}. Reduce message count to {maxMessagesOnBudget.toLocaleString()} or increase budget.</div>
+                  ) : (
+                    <div className="wb-cost-budget-ok"><CheckCircle2 size={14} /> Within budget — {fmt(budgetValue - totalDisplay)} remaining.</div>
+                  )}
+                </div>
+              )}
+
+              <label className="wb-field wb-cost-budget-input">
+                <span>Set a budget (optional, to check affordability)</span>
+                <div className="wb-cost-budget-input-row">
+                  <select value={displayCurrency} onChange={(e) => setDisplayCurrency(e.target.value)} className="wb-select wb-cost-currency-sel">
+                    <option value="USD">$</option><option value="INR">Rs.</option><option value="GBP">GBP</option><option value="EUR">EUR</option>
+                  </select>
+                  <input type="number" min="0" step="any" value={budget} onChange={(e) => setBudget(e.target.value)} placeholder="e.g. 5000" className="wb-input" />
+                </div>
+              </label>
+
+              {!showSaveForm ? (
+                <button className="wb-action-btn wb-action-btn-primary" onClick={() => setShowSaveForm(true)} disabled={messageCount === 0}>
+                  <Save size={14} /> Save this estimate
+                </button>
+              ) : (
+                <div className="wb-cost-save-form">
+                  <input type="text" value={saveLabel} onChange={(e) => setSaveLabel(e.target.value)} placeholder="Label e.g. Diwali Campaign Estimate" className="wb-input" />
+                  <button className="wb-action-btn wb-action-btn-primary" onClick={handleSave} disabled={!saveLabel.trim() || saving}>
+                    {saving ? <Loader2 size={14} className="crm-spin" /> : <Save size={14} />} Save
+                  </button>
+                  <button className="wb-action-btn wb-action-btn-ghost" onClick={() => setShowSaveForm(false)}>Cancel</button>
+                </div>
+              )}
+
+              <div className="wb-warn-box">
+                <AlertTriangle size={16} />
+                <div>This is an estimate. Actual WhatsApp pricing depends on the recipient's country code, conversation category, and whether a 24-hour conversation window is already open. Check <strong>Meta Business Manager</strong> for exact pricing.</div>
+              </div>
+            </>
+          )}
+
+          {activeTab === 'actual' && (
+            <>
+              <p className="wb-modal-desc">Estimated spend across your recent campaigns, using the currently selected rate ({fmt(costPerMsgInDisplay)} / msg, {conversationWindow === 'new' ? 'new window' : '24h window'}). Change the rate above to recompute.</p>
+              {actualRows.length === 0 ? (
+                <p className="wb-analytics-empty">No completed campaigns yet. Send a broadcast and come back to see spend here.</p>
+              ) : (
+                <>
+                  <div className="wb-cost-actual-summary">
+                    <div className="wb-cost-stat"><Send size={16} /><strong>{totalActualSent.toLocaleString()}</strong><span>Messages sent</span></div>
+                    <div className="wb-cost-stat"><CheckCircle2 size={16} /><strong>{totalActualDelivered.toLocaleString()}</strong><span>Delivered</span></div>
+                    <div className="wb-cost-stat"><DollarSign size={16} /><strong>{fmt(totalActualSpend)}</strong><span>Estimated spend</span></div>
+                    <div className="wb-cost-stat"><TrendingUp size={16} /><strong>{fmt(avgCostPerDelivered)}</strong><span>Avg cost / delivered</span></div>
+                  </div>
+                  <div className="wb-table-wrap">
+                    <table className="wb-table">
+                      <thead><tr><th>Campaign</th><th>Sent</th><th>Delivered</th><th>Failed</th><th>Est. spend</th><th>Cost / delivered</th></tr></thead>
+                      <tbody>
+                        {actualRows.map((r) => (
+                          <tr key={r.id}>
+                            <td>{r.name}</td>
+                            <td>{r.sent.toLocaleString()}</td>
+                            <td>{r.delivered.toLocaleString()}</td>
+                            <td>{r.failed.toLocaleString()}</td>
+                            <td>{fmt(r.estCost)}</td>
+                            <td>{fmt(r.costPerDelivered)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
+              )}
+            </>
+          )}
+
+          {activeTab === 'saved' && (
+            <>
+              <p className="wb-modal-desc">Saved estimates for your finance team. Delete ones you no longer need.</p>
+              {savedLoading ? (
+                <div className="wb-loading-state"><Loader2 size={20} className="crm-spin" style={{ color: '#25D366' }} /><p>Loading...</p></div>
+              ) : savedEstimates.length === 0 ? (
+                <p className="wb-analytics-empty">No saved estimates yet. Use the Calculator tab to create one.</p>
+              ) : (
+                <div className="wb-table-wrap">
+                  <table className="wb-table">
+                    <thead><tr><th>Label</th><th>Messages</th><th>Tier</th><th>Window</th><th>Total</th><th>Saved</th><th></th></tr></thead>
+                    <tbody>
+                      {savedEstimates.map((s: any) => (
+                        <tr key={s.id}>
+                          <td>{s.label}</td>
+                          <td>{(s.message_count || 0).toLocaleString()}</td>
+                          <td>{s.tier_label || '—'}</td>
+                          <td>{s.conversation_window === 'new' ? 'New' : '24h'}</td>
+                          <td>{CURRENCY_SYMBOL[s.currency] || '$'}{(Number(s.estimated_total) || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                          <td>{new Date(s.created_at).toLocaleDateString()}</td>
+                          <td><button className="wb-action-btn wb-action-btn-danger" onClick={() => handleDeleteSaved(s.id)}><Trash2 size={12} /></button></td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </>
+          )}
         </div>
       </div>
     </div>

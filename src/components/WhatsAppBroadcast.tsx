@@ -608,6 +608,7 @@ export default function WhatsAppBroadcast({ session, onBack }: { session: Sessio
               <button className="wb-refresh-btn" onClick={() => setShowCalendar(true)} title="Calendar"><CalendarDays size={16} /> Calendar</button>
               <button className="wb-refresh-btn" onClick={() => setShowComparison(true)} title="Compare"><GitCompare size={16} /> Compare</button>
               <button className="wb-refresh-btn" onClick={() => setShowReplyTracking(true)} title="Replies"><MessageCircle size={16} /> Replies</button>
+              <button className="wb-refresh-btn wb-cost-header-btn" onClick={() => setShowCostEstimator(true)} title="Estimate WhatsApp message cost"><DollarSign size={16} /> Message Cost</button>
               <button className="wb-refresh-btn" onClick={() => setShowAudienceManager(true)} title="Audiences"><UsersIcon size={16} /> Audiences</button>
               <button className="wb-refresh-btn" onClick={() => setShowDripBuilder(true)} title="Drip Sequences"><CalendarDaysIcon size={16} /> Drip</button>
               <button className="wb-refresh-btn" onClick={() => setShowOptOutManager(true)} title="Opt-outs"><Ban size={16} /> Opt-outs</button>
@@ -849,7 +850,7 @@ export default function WhatsAppBroadcast({ session, onBack }: { session: Sessio
               {/* Feature quick buttons */}
               <div className="wb-feature-quick-btns">
                 <button type="button" className="wb-quick-btn" onClick={() => setShowSendTime(true)}><Clock3 size={13} /> Optimize Send Time</button>
-                <button type="button" className="wb-quick-btn" onClick={() => setShowCostEstimator(true)} disabled={totalRecipientsForCreate === 0}><DollarSign size={13} /> Estimate Cost</button>
+                <button type="button" className="wb-quick-btn" onClick={() => setShowCostEstimator(true)} disabled={totalRecipientsForCreate === 0}><DollarSign size={13} /> Message Cost Calculator</button>
                 <button type="button" className="wb-quick-btn" onClick={() => setShowABTest(true)}><FlaskConical size={13} /> A/B Test</button>
               </div>
 
@@ -1070,7 +1071,7 @@ export default function WhatsAppBroadcast({ session, onBack }: { session: Sessio
       {showABTest && <ABTestBroadcastModal templates={approvedTemplates.map((t) => ({ name: t.name, language: t.language }))} onLaunch={handleABTestLaunch} onClose={() => setShowABTest(false)} />}
       {showSendTime && <SendTimeOptimization broadcasts={broadcasts} onApply={handleSendTimeApply} onClose={() => setShowSendTime(false)} />}
       {showReplyTracking && <ReplyTrackingPanel broadcasts={broadcasts} onClose={() => setShowReplyTracking(false)} />}
-      {showCostEstimator && <CostEstimator recipientCount={totalRecipientsForCreate} onClose={() => setShowCostEstimator(false)} />}
+      {showCostEstimator && <CostEstimator recipientCount={totalRecipientsForCreate} broadcasts={broadcasts} onClose={() => setShowCostEstimator(false)} />}
       {showComparison && <CampaignComparison broadcasts={broadcasts} onClose={() => setShowComparison(false)} />}
       {showCalendar && <BroadcastCalendarView broadcasts={broadcasts} onSelect={(camp) => { setShowCalendar(false); fetchBroadcastRecipients(camp.id); }} onClose={() => setShowCalendar(false)} />}
       {showAudienceManager && <AudienceManagerPanel session={session} onUseAudience={(conditions, count, name) => { setShowAudienceManager(false); handleSegmentApply(conditions, count); }} onClose={() => setShowAudienceManager(false)} />}

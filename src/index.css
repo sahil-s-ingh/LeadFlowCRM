@@ -17948,6 +17948,46 @@ html.crm-dark .crm-quick-email { background: #2563eb; color: #fff; }
 .wb-cost-total { border-top: 1px solid #e2e8f0; margin-top: 8px; padding-top: 12px; }
 .wb-cost-total strong { font-size: 1.2rem; color: #128c7e; }
 
+.wb-cost-message-count { margin-bottom: 16px; }
+.wb-cost-message-count .wb-input { width: 100%; }
+
+.wb-cost-tabs { display: flex; gap: 6px; margin-bottom: 18px; border-bottom: 1px solid #e2e8f0; }
+.wb-cost-tabs button { display: inline-flex; align-items: center; gap: 6px; padding: 9px 14px; border: none; background: transparent; color: #64748b; font-size: 0.8rem; font-weight: 700; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.15s ease; font-family: 'Plus Jakarta Sans', sans-serif; }
+.wb-cost-tabs button:hover { color: #0f172a; }
+.wb-cost-tabs button.active { color: #128c7e; border-bottom-color: #128c7e; }
+
+.wb-cost-controls-row { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 16px; }
+.wb-cost-controls-row > * { flex: 1 1 200px; }
+.wb-cost-currency-sel { width: 80px !important; display: inline-block; }
+.wb-cost-window-toggle { display: flex; flex-direction: column; gap: 6px; font-size: 0.76rem; color: #64748b; }
+.wb-cost-window-btns { display: flex; gap: 6px; flex-wrap: wrap; }
+.wb-cost-window-btns button { padding: 7px 10px; border: 1.5px solid #e2e8f0; border-radius: 8px; background: #fff; color: #475569; font-size: 0.72rem; font-weight: 600; cursor: pointer; transition: all 0.15s ease; font-family: 'Plus Jakarta Sans', sans-serif; }
+.wb-cost-window-btns button:hover { border-color: #cbd5e1; }
+.wb-cost-window-btns button.active { border-color: #25D366; background: rgba(37,211,102,0.06); color: #128c7e; }
+.wb-cost-display-currency label { display: flex; flex-direction: column; gap: 6px; font-size: 0.76rem; color: #64748b; }
+.wb-cost-display-currency .wb-select { width: 100%; }
+
+.wb-cost-budget-input { margin: 14px 0 16px; }
+.wb-cost-budget-input-row { display: flex; gap: 8px; }
+.wb-cost-budget-input-row .wb-input { flex: 1; }
+
+.wb-cost-budget-box { padding: 14px 16px; border-radius: 10px; margin: 12px 0; border: 1.5px solid; }
+.wb-cost-budget-box.ok { background: rgba(37,211,102,0.05); border-color: #25D366; }
+.wb-cost-budget-box.over { background: rgba(239,68,68,0.05); border-color: #ef4444; }
+.wb-cost-budget-row { display: flex; align-items: center; justify-content: space-between; font-size: 0.82rem; color: #475569; padding: 4px 0; }
+.wb-cost-budget-row strong { color: #0f172a; font-weight: 700; }
+.wb-cost-budget-warn { display: flex; align-items: center; gap: 6px; margin-top: 8px; font-size: 0.76rem; color: #dc2626; font-weight: 600; }
+.wb-cost-budget-ok { display: flex; align-items: center; gap: 6px; margin-top: 8px; font-size: 0.76rem; color: #16a34a; font-weight: 600; }
+
+.wb-cost-save-form { display: flex; gap: 8px; margin: 12px 0 16px; align-items: center; flex-wrap: wrap; }
+.wb-cost-save-form .wb-input { flex: 1; min-width: 200px; }
+
+.wb-cost-actual-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 18px; }
+.wb-cost-stat { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; color: #128c7e; }
+.wb-cost-stat strong { font-size: 1.1rem; color: #0f172a; font-weight: 800; }
+.wb-cost-stat span { font-size: 0.7rem; color: #64748b; }
+.wb-cost-stat svg { margin-bottom: 2px; }
+
 /* Campaign Comparison */
 .wb-compare-select { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; max-height: 300px; overflow-y: auto; }
 .wb-compare-option { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border: 1.5px solid #eef0f3; border-radius: 10px; cursor: pointer; transition: all 0.15s ease; }
