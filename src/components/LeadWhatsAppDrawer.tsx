@@ -4,7 +4,8 @@ import {
   Sparkles, ChevronRight, Check, CheckCheck, Clock, StickyNote, Plus, Trash2,
   Phone, Mail, CalendarClock, Tag, Zap, ChevronDown, KeyRound, Pin, Smile,
   Mic, Square, XCircle, Send as SendIcon, Activity, UserCheck, Flame,
-  TrendingUp, DollarSign, CalendarCheck, CreditCard, Bot, Copy,
+  TrendingUp, DollarSign, CalendarCheck, CreditCard, Bot, Copy, Star, Search,
+  CalendarPlus, ChevronUp,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { Session } from '@supabase/supabase-js';
@@ -111,6 +112,23 @@ type ActivityItem = {
   description: string;
   created_at: string;
   icon: 'email' | 'whatsapp' | 'call' | 'note' | 'followup' | 'status' | 'lead';
+};
+
+type ScheduledMessage = {
+  id: string;
+  conversation_id: string;
+  text: string | null;
+  template_name: string | null;
+  scheduled_at: string;
+  status: string;
+  error_message: string | null;
+};
+
+type StarredMessage = {
+  id: string;
+  message_id: string;
+  note: string | null;
+  created_at: string;
 };
 
 type Props = {
@@ -331,6 +349,26 @@ const LeadWhatsAppDrawer: React.FC<Props> = ({ open, lead, session, onClose }) =
   const [smartLoading, setSmartLoading] = useState(false);
   const [showSmartReplies, setShowSmartReplies] = useState(false);
 
+  // Scheduled messages state
+  const [showScheduler, setShowScheduler] = useState(false);
+  const [scheduleDate, setScheduleDate] = useState<string>('');
+  const [scheduledMsgs, setScheduledMsgs] = useState<ScheduledMessage[]>([]);
+  const [scheduleSaving, setScheduleSaving] = useState(false);
+
+  // Starred messages state
+  const [starredMsgIds, setStarredMsgIds] = useState<Set<string>>(new Set());
+  const [showStarredPanel, setShowStarredPanel] = useState(false);
+  const [starredList, setStarredList] = useState<StarredMessage[]>([]);
+
+  // Conversation search state
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<{ conversation_id: string; wa_name: string | null; wa_phone_number: string; text_content: string; created_at: string }[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+
+  // Quick replies strip state
+  const [showQuickReplies, setShowQuickReplies] = useState(false);
+
   // Voice recording state
   const [isRecording, setIsRecording] = useState(false);
   const [recordSeconds, setRecordSeconds] = useState(0);
@@ -549,8 +587,8 @@ const LeadWhatsAppDrawer: React.FC<Props> = ({ open, lead, session, onClose }) =
   }, [open, lead?.id, lead?.status]);
 
   useEffect(() => {
-    if (open && conversation) { loadNotes(); loadActivities(); }
-  }, [open, conversation, loadNotes, loadActivities]);
+    if (open && conversation) { loadNotes(); loadActivities(); loadScheduledMessages(); loadStarredMessages(); }
+  }, [open, conversation, loadNotes, loadActivities, loadScheduledMessages, loadStarredMessages]);
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -1073,6 +1111,127 @@ const LeadWhatsAppDrawer: React.FC<Props> = ({ open, lead, session, onClose }) =
     showToast(type === 'booking' ? 'Booking link added — press send' : 'Payment link added — press send');
   };
 
+  const loadScheduledMessages = useCallback(async () => {
+    if (!session || !conversation) return;
+    try {
+      const { data, error } = await supabase
+        .from('wa_scheduled_messages')
+        .select('id, conversation_id, text, template_name, scheduled_at, status, error_message')
+        .eq('user_id', session.user.id)
+        .eq('conversation_id', conversation.id)
+        .eq('status', 'pending')
+        .order('scheduled_at', { ascending: true });
+      if (error) throw error;
+      setScheduledMsgs((data || []) as ScheduledMessage[]);
+    } catch {
+      setScheduledMsgs([]);
+    }
+  }, [session, conversation]);
+
+  const loadStarredMessages = useCallback(async () => {
+    if (!session || !conversation) return;
+    try {
+      const { data, error } = await supabase
+        .from('wa_starred_messages')
+        .select('id, message_id, note, created_at')
+        .eq('user_id', session.user.id)
+        .eq('conversation_id', conversation.id)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      const items = (data || []) as StarredMessage[];
+      setStarredList(items);
+      setStarredMsgIds(new Set(items.map((s) => s.message_id)));
+    } catch {
+      setStarredList([]);
+      setStarredMsgIds(new Set());
+    }
+  }, [session, conversation]);
+
+  const handleScheduleMessage = async () => {
+    if (!session || !conversation || !draft.trim() || !scheduleDate) return;
+    setScheduleSaving(true);
+    setError(null);
+    try {
+      const { error } = await supabase.from('wa_scheduled_messages').insert({
+        user_id: session.user.id,
+        conversation_id: conversation.id,
+        lead_id: lead?.id,
+        text: draft.trim(),
+        scheduled_at: new Date(scheduleDate).toISOString(),
+        status: 'pending',
+      });
+      if (error) throw error;
+      setDraft('');
+      setShowScheduler(false);
+      showToast('Message scheduled');
+      await loadScheduledMessages();
+    } catch (e: any) {
+      setError(e.message || 'Failed to schedule message');
+    } finally {
+      setScheduleSaving(false);
+    }
+  };
+
+  const handleCancelScheduled = async (id: string) => {
+    try {
+      const { error } = await supabase.from('wa_scheduled_messages').update({ status: 'cancelled' }).eq('id', id);
+      if (error) throw error;
+      setScheduledMsgs((prev) => prev.filter((s) => s.id !== id));
+      showToast('Scheduled message cancelled');
+    } catch (e: any) {
+      setError(e.message || 'Failed to cancel');
+    }
+  };
+
+  const handleToggleStar = async (msg: WaMessage) => {
+    if (!session || !conversation) return;
+    if (starredMsgIds.has(msg.id)) {
+      try {
+        await supabase.from('wa_starred_messages').delete().eq('user_id', session.user.id).eq('message_id', msg.id);
+        setStarredMsgIds((prev) => { const next = new Set(prev); next.delete(msg.id); return next; });
+        setStarredList((prev) => prev.filter((s) => s.message_id !== msg.id));
+      } catch (e: any) { setError(e.message || 'Failed to unstar'); }
+    } else {
+      try {
+        const { data, error } = await supabase.from('wa_starred_messages').insert({
+          user_id: session.user.id,
+          message_id: msg.id,
+          conversation_id: conversation.id,
+        }).select('id, message_id, note, created_at').single();
+        if (error) throw error;
+        setStarredMsgIds((prev) => new Set(prev).add(msg.id));
+        setStarredList((prev) => [data as StarredMessage, ...prev]);
+        showToast('Message starred');
+      } catch (e: any) { setError(e.message || 'Failed to star message'); }
+    }
+  };
+
+  const handleSearchConversations = async () => {
+    if (!session || !searchQuery.trim()) return;
+    setSearchLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('wa_messages')
+        .select('id, conversation_id, text_content, created_at, sender, wa_conversations(wa_name, wa_phone_number)')
+        .ilike('text_content', `%${searchQuery.trim()}%`)
+        .order('created_at', { ascending: false })
+        .limit(20);
+      if (error) throw error;
+      const results = ((data || []) as any[]).map((r) => ({
+        conversation_id: r.conversation_id,
+        wa_name: r.wa_conversations?.wa_name || null,
+        wa_phone_number: r.wa_conversations?.wa_phone_number || '',
+        text_content: r.text_content || '',
+        created_at: r.created_at,
+      }));
+      setSearchResults(results);
+    } catch (e: any) {
+      setError(e.message || 'Search failed');
+    } finally {
+      setSearchLoading(false);
+    }
+  };
+
   const handleEntityClick = (entity: { type: 'phone' | 'email' | 'amount'; value: string }) => {
     if (entity.type === 'amount') {
       const num = parseFloat(entity.value.replace(/[^\d.]/g, ''));
@@ -1254,6 +1413,22 @@ const LeadWhatsAppDrawer: React.FC<Props> = ({ open, lead, session, onClose }) =
           </div>
           <div className="lead-wa-header-actions">
             <button
+              className={`lead-wa-icon-btn ${searchOpen ? 'lead-wa-icon-btn-active' : ''}`}
+              onClick={() => { setSearchOpen((v) => !v); if (searchOpen) { setSearchQuery(''); setSearchResults([]); } }}
+              aria-label="Search conversations"
+              title="Search across all chats"
+            >
+              <Search size={16} />
+            </button>
+            <button
+              className={`lead-wa-icon-btn ${showStarredPanel ? 'lead-wa-icon-btn-active' : ''}`}
+              onClick={() => setShowStarredPanel((v) => !v)}
+              aria-label="Starred messages"
+              title="Starred messages"
+            >
+              <Star size={16} />
+            </button>
+            <button
               className={`lead-wa-icon-btn ${activityOpen ? 'lead-wa-icon-btn-active' : ''}`}
               onClick={() => { setActivityOpen((v) => !v); setNotesOpen(false); }}
               aria-label="Activity timeline"
@@ -1282,6 +1457,78 @@ const LeadWhatsAppDrawer: React.FC<Props> = ({ open, lead, session, onClose }) =
             </button>
           </div>
         </header>
+
+        {/* Search panel */}
+        {searchOpen && (
+          <div className="lead-wa-search-panel">
+            <div className="lead-wa-search-bar">
+              <Search size={15} />
+              <input
+                type="text"
+                className="lead-wa-search-input"
+                placeholder="Search across all WhatsApp chats…"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleSearchConversations(); }}
+                autoFocus
+              />
+              {searchLoading && <div className="lead-wa-spinner lead-wa-spinner-sm" />}
+              <button className="lead-wa-search-go" onClick={handleSearchConversations} disabled={!searchQuery.trim()}>Search</button>
+            </div>
+            {searchResults.length > 0 && (
+              <div className="lead-wa-search-results">
+                {searchResults.map((r, i) => (
+                  <div key={i} className="lead-wa-search-result">
+                    <MessageCircle size={13} />
+                    <div className="lead-wa-search-result-body">
+                      <span className="lead-wa-search-result-name">{r.wa_name || r.wa_phone_number}</span>
+                      <span className="lead-wa-search-result-text">{r.text_content.slice(0, 60)}{r.text_content.length > 60 ? '…' : ''}</span>
+                    </div>
+                    <span className="lead-wa-search-result-time">{formatTime(r.created_at)}</span>
+                  </div>
+                ))}
+              </div>
+            )
+            }
+            {searchQuery.trim() && !searchLoading && searchResults.length === 0 && (
+              <p className="lead-wa-search-empty">No messages found. Try a different keyword.</p>
+            )
+            }
+          </div>
+        )
+        }
+
+        {/* Starred messages panel */}
+        {showStarredPanel && (
+          <div className="lead-wa-starred-panel">
+            <div className="lead-wa-starred-head">
+              <Star size={14} />
+              <span>Starred messages</span>
+              <button className="lead-wa-starred-close" onClick={() => setShowStarredPanel(false)}><X size={13} /></button>
+            </div>
+            {starredList.length === 0 ? (
+              <p className="lead-wa-starred-empty">No starred messages in this chat yet. Click the star icon on any message to bookmark it for later follow-up.</p>
+            ) : (
+              <div className="lead-wa-starred-list">
+                {starredList.map((s) => {
+                  const msg = messages.find((m) => m.id === s.message_id);
+                  return (
+                    <div key={s.id} className="lead-wa-starred-item">
+                      <Star size={11} className="lead-wa-starred-item-icon" />
+                      <span className="lead-wa-starred-item-text">{(msg?.text_content || '[media]').slice(0, 50)}{(msg?.text_content || '').length > 50 ? '…' : ''}</span>
+                      <span className="lead-wa-starred-item-time">{formatTime(s.created_at)}</span>
+                      <button className="lead-wa-starred-item-unstar" onClick={() => msg && handleToggleStar(msg)} title="Unstar">
+                        <X size={11} />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )
+            }
+          </div>
+        )
+        }
 
         {/* Pinned message banner */}
         {pinnedMessage && (
@@ -1663,6 +1910,13 @@ const LeadWhatsAppDrawer: React.FC<Props> = ({ open, lead, session, onClose }) =
                           <Pin size={12} />
                         </button>
                         <button
+                          className={`lead-wa-bubble-action ${starredMsgIds.has(m.id) ? 'lead-wa-bubble-action-active' : ''}`}
+                          onClick={() => handleToggleStar(m)}
+                          title={starredMsgIds.has(m.id) ? 'Unstar' : 'Star message'}
+                        >
+                          <Star size={12} />
+                        </button>
+                        <button
                           className="lead-wa-bubble-action"
                           onClick={() => setReactionPickerFor(reactionPickerFor === m.id ? null : m.id)}
                           title="React"
@@ -1919,6 +2173,7 @@ const LeadWhatsAppDrawer: React.FC<Props> = ({ open, lead, session, onClose }) =
         ) : null}
 
         {conversation ? (
+          <>
           <div className="lead-wa-composer">
             <button className="lead-wa-attach" onClick={() => fileInputRef.current?.click()} disabled={sending || isRecording} aria-label="Attach file">
               <Paperclip size={18} />
@@ -1945,11 +2200,80 @@ const LeadWhatsAppDrawer: React.FC<Props> = ({ open, lead, session, onClose }) =
               onPaste={onPaste}
               rows={1} disabled={sending || isRecording}
             />
+            <button
+              className={`lead-wa-attach ${showScheduler ? 'lead-wa-icon-btn-active' : ''}`}
+              onClick={() => setShowScheduler((v) => !v)}
+              disabled={sending || isRecording || !draft.trim()}
+              aria-label="Schedule message"
+              title="Schedule for later"
+            >
+              <CalendarPlus size={18} />
+            </button>
             <button className="lead-wa-send" onClick={handleSend} disabled={!draft.trim() || sending || isRecording} aria-label="Send message">
               <Send size={16} />
             </button>
             {toast && <div className="lead-wa-toast">{toast}</div>}
           </div>
+
+          {/* Schedule message panel */}
+          {showScheduler && conversation && (
+            <div className="lead-wa-scheduler-panel">
+              <div className="lead-wa-scheduler-head">
+                <CalendarPlus size={14} />
+                <span>Schedule this message</span>
+                <button className="lead-wa-scheduler-close" onClick={() => setShowScheduler(false)}><X size={13} /></button>
+              </div>
+              <div className="lead-wa-scheduler-body">
+                <input
+                  type="datetime-local"
+                  className="lead-wa-scheduler-input"
+                  value={scheduleDate}
+                  onChange={(e) => setScheduleDate(e.target.value)}
+                  disabled={scheduleSaving}
+                />
+                <button className="lead-wa-scheduler-save" onClick={handleScheduleMessage} disabled={scheduleSaving || !scheduleDate || !draft.trim()}>
+                  {scheduleSaving ? 'Scheduling…' : 'Schedule send'}
+                </button>
+              </div>
+              {scheduledMsgs.length > 0 && (
+                <div className="lead-wa-scheduler-list">
+                  <div className="lead-wa-scheduler-list-title">Pending scheduled messages</div>
+                  {scheduledMsgs.map((s) => (
+                    <div key={s.id} className="lead-wa-scheduler-item">
+                      <Clock size={12} />
+                      <span className="lead-wa-scheduler-item-text">{(s.text || s.template_name || '').slice(0, 40)}{(s.text || '').length > 40 ? '…' : ''}</span>
+                      <span className="lead-wa-scheduler-item-time">{formatTime(s.scheduled_at)}</span>
+                      <button className="lead-wa-scheduler-item-cancel" onClick={() => handleCancelScheduled(s.id)} title="Cancel">
+                        <X size={11} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )
+          }
+
+          {/* Quick replies collapsible strip */}
+          {conversation && !showScheduler && (
+            <button className="lead-wa-qr-strip-toggle" onClick={() => setShowQuickReplies((v) => !v)}>
+              <ChevronUp size={12} className={showQuickReplies ? '' : 'lead-wa-qr-rotate'} />
+              <span>Quick replies</span>
+              {starredList.length > 0 && <Star size={10} />}
+            </button>
+          )
+          }
+          {showQuickReplies && conversation && (
+            <div className="lead-wa-quick-replies lead-wa-quick-replies-strip">
+              {QUICK_REPLIES.map((q) => (
+                <button key={q} className="lead-wa-quick-reply" onClick={() => setDraft(q)} disabled={sending}>
+                  {q.length > 42 ? q.slice(0, 42) + '…' : q}
+                </button>
+              ))}
+            </div>
+          )
+          }
+          </>
         ) : (
           !showStarterTemplatePicker && (
             <div className="lead-wa-composer lead-wa-composer-disabled">
