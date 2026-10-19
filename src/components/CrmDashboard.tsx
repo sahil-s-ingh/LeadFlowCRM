@@ -21,6 +21,7 @@ import {
   BookOpen, MousePointerClick, EyeOff, FileSpreadsheet,
   PanelLeft, Type, Signal, GitMerge, ShieldAlert, Activity,
   ShieldCheck,
+  Award,
   Building2, Trophy, Target, TrendingDown, GitBranch, Hash, Radar,
 
   LayoutTemplate, Inbox as InboxIcon,
@@ -51,6 +52,8 @@ import AutomationBuilder from '@/components/AutomationBuilder';
 import { IntegrationHub } from '@/components/IntegrationHub';
 import BrokerTrackerPage from '@/components/BrokerTrackerPage';
 import CallGuardrailSettings from '@/components/CallGuardrailSettings';
+import FollowupEscalationSettings from '@/components/FollowupEscalationSettings';
+import CallQualityScoring from '@/components/CallQualityScoring';
 import LeadTrackerPage from '@/components/LeadTrackerPage';
 import LeadSourceBadge from '@/components/LeadSourceBadge';
 import LeadWhatsAppDrawer from '@/components/LeadWhatsAppDrawer';
@@ -106,7 +109,7 @@ const MOBILE_STAT_OPTIONS: { key: MobileStatKey; label: string }[] = [
 ];
 
 type DateFilterPreset = 'all' | 'today' | 'yesterday' | 'last_7_days' | 'this_week' | 'this_month' | 'this_year' | 'custom';
-type ActiveView = 'dashboard' | 'leads' | 'inbox_hub' | 'inbox' | 'whatsapp' | 'settings' | 'drip' | 'analytics_hub' | 'email_analytics' | 'message_templates' | 'broadcast_hub' | 'broadcast' | 'email_broadcast' | 'telegram_broadcast' | 'activity_timeline' | 'revenue_forecast' | 'followups' | 'leaderboard' | 'goals' | 'win_loss' | 'duplicates' | 'heatmap' | 'automations' | 'brokers' | 'lead_tracker' | 'meta_ads' | 'integrations';
+type ActiveView = 'dashboard' | 'leads' | 'inbox_hub' | 'inbox' | 'whatsapp' | 'settings' | 'drip' | 'analytics_hub' | 'email_analytics' | 'message_templates' | 'broadcast_hub' | 'broadcast' | 'email_broadcast' | 'telegram_broadcast' | 'activity_timeline' | 'revenue_forecast' | 'followups' | 'leaderboard' | 'goals' | 'win_loss' | 'duplicates' | 'heatmap' | 'automations' | 'brokers' | 'lead_tracker' | 'meta_ads' | 'integrations' | 'call_quality';
 
 type UserRole = 'owner' | 'admin' | 'manager' | 'agent';
 
@@ -521,7 +524,7 @@ async function sendMetaConversionEvent(leadId: string, lead: Lead, newStatus: Le
   }
 }
 
-const VALID_VIEWS: ActiveView[] = ['dashboard', 'leads', 'inbox_hub', 'inbox', 'whatsapp', 'settings', 'drip', 'analytics_hub', 'email_analytics', 'message_templates', 'broadcast_hub', 'broadcast', 'email_broadcast', 'telegram_broadcast', 'activity_timeline', 'revenue_forecast', 'followups', 'leaderboard', 'goals', 'win_loss', 'duplicates', 'heatmap', 'automations', 'brokers', 'lead_tracker', 'meta_ads', 'integrations'];
+const VALID_VIEWS: ActiveView[] = ['dashboard', 'leads', 'inbox_hub', 'inbox', 'whatsapp', 'settings', 'drip', 'analytics_hub', 'email_analytics', 'message_templates', 'broadcast_hub', 'broadcast', 'email_broadcast', 'telegram_broadcast', 'activity_timeline', 'revenue_forecast', 'followups', 'leaderboard', 'goals', 'win_loss', 'duplicates', 'heatmap', 'automations', 'brokers', 'lead_tracker', 'meta_ads', 'integrations', 'call_quality'];
 
 export default function CrmDashboard({ session, initialView }: { session: Session; initialView?: string }) {
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -2126,6 +2129,9 @@ export default function CrmDashboard({ session, initialView }: { session: Sessio
             <Zap size={18} /> {!sidebarCollapsed && 'Automations'}
           </a>
           )}
+          <a className={`crm-nav-item ${activeView === 'call_quality' ? 'active' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`} onClick={() => { navigateToView('call_quality'); setMobileSidebarOpen(false); setMobileNav('leads'); }} style={{ cursor: 'pointer' }} title={sidebarCollapsed ? 'Call Quality' : undefined}>
+            <Award size={18} /> {!sidebarCollapsed && 'Call Quality'}
+          </a>
 
           {sectionVisibility.integrations && (
           <a className={`crm-nav-item ${activeView === 'integrations' ? 'active' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`} onClick={() => { navigateToView('integrations'); setMobileSidebarOpen(false); setMobileNav('leads'); }} style={{ cursor: 'pointer' }} title={sidebarCollapsed ? 'Integrations' : undefined}>
@@ -2338,6 +2344,8 @@ export default function CrmDashboard({ session, initialView }: { session: Sessio
           <LeadTrackerPage leads={leads} session={session} onBack={() => navigateToView('dashboard')} />
         ) : activeView === 'meta_ads' ? (
           <MetaAdsManager session={session} />
+        ) : activeView === 'call_quality' ? (
+          <CallQualityScoring session={session} onBack={() => navigateToView('dashboard')} />
         ) : activeView === 'heatmap' ? (
           <div className="dash-overview">
             <div className="dash-page-header">
@@ -8709,6 +8717,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
     { key: 'whatsapp', label: 'WhatsApp API', icon: <PhoneIcon size={18} />, accent: 'whatsapp', show: true },
     { key: 'twilio', label: 'Virtual Calling', icon: <PhoneCall size={18} />, accent: 'twilio', show: true },
     { key: 'call_guardrails', label: 'Call Guardrails', icon: <ShieldCheck size={18} />, accent: 'call_guardrails', show: true },
+    { key: 'followup_escalation', label: 'Escalation', icon: <TrendingUp size={18} />, accent: 'followup_escalation', show: true },
     { key: 'team', label: 'Team', icon: <Users size={18} />, accent: 'team', show: permissions.teamManagement },
     { key: 'team_dashboard', label: 'Team Dashboard', icon: <Activity size={18} />, accent: 'team_dashboard', show: permissions.teamManagement },
     { key: 'role_management', label: 'Role Management', icon: <SlidersHorizontal size={18} />, accent: 'role_management', show: permissions.teamManagement },
@@ -9090,6 +9099,8 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                 </>
               ) : activeTab === 'call_guardrails' ? (
                 <CallGuardrailSettings userId={session.user.id} />
+              ) : activeTab === 'followup_escalation' ? (
+                <FollowupEscalationSettings userId={session.user.id} />
               ) : activeTab === 'team' ? (
                 <>
                   <div className="crm-settings-card-header">

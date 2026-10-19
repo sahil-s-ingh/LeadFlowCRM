@@ -240,8 +240,206 @@ Log in to your CRM to follow up with this lead.`;
       }
     }
 
+    // ===================== Escalation Logic =====================
+    // Check for overdue reminders that have already been sent (status='sent')
+    // and escalate them based on the user's escalation settings.
+    let totalEscalated = 0;
+
+    {
+      const nowMs = Date.now();
+
+      // Fetch all sent reminders (already emailed) — these are candidates for escalation
+      const { data: sentReminders } = await supabase
+        .from("lead_followups")
+        .select("*")
+        .eq("status", "sent")
+        .order("user_id");
+
+      if (sentReminders && sentReminders.length > 0) {
+        // Group by user
+        const sentByUser = new Map<string, typeof sentReminders>();
+        for (const r of sentReminders) {
+          const arr = sentByUser.get(r.user_id) || [];
+          arr.push(r);
+          sentByUser.set(r.user_id, arr);
+        }
+
+        for (const [escUserId, reminders] of sentByUser) {
+          // Get escalation settings
+          const { data: escSettings } = await supabase
+            .from("followup_escalation_settings")
+            .select("*")
+            .eq("user_id", escUserId)
+            .maybeSingle();
+
+          if (!escSettings || !escSettings.enabled) continue;
+
+          // Get escalation logs to avoid duplicate escalations
+          const { data: existingLogs } = await supabase
+            .from("followup_escalation_log")
+            .select("followup_id, step")
+            .eq("user_id", escUserId);
+
+          const loggedMap = new Map<string, Set<number>>();
+          for (const log of existingLogs || []) {
+            const set = loggedMap.get(log.followup_id) || new Set<number>();
+            set.add(log.step);
+            loggedMap.set(log.followup_id, set);
+          }
+
+          for (const reminder of reminders) {
+            const overdueMs = nowMs - new Date(reminder.reminder_at).getTime();
+            const overdueHours = overdueMs / (1000 * 60 * 60);
+
+            const alreadyLogged = loggedMap.get(reminder.id) || new Set<number>();
+
+            // Determine which step to escalate to
+            let escalateStep = 0;
+            let escalateAction = "";
+            let notifyEmail: string | null = null;
+
+            if (escSettings.step1_enabled && overdueHours >= escSettings.step1_hours && !alreadyLogged.has(1)) {
+              escalateStep = 1;
+              escalateAction = "agent_reminder";
+              // Get the user's own email for step 1
+              const { data: userInfo } = await supabase.auth.admin.getUserById(escUserId);
+              notifyEmail = userInfo?.user?.email || null;
+            } else if (escSettings.step2_enabled && overdueHours >= escSettings.step2_hours && !alreadyLogged.has(2)) {
+              escalateStep = 2;
+              escalateAction = "manager_escalation";
+              notifyEmail = escSettings.step2_manager_email || null;
+            } else if (escSettings.step3_enabled && overdueHours >= escSettings.step3_hours && !alreadyLogged.has(3)) {
+              escalateStep = 3;
+              escalateAction = escSettings.step3_reassign_lead ? "lead_reassignment" : "final_escalation";
+              notifyEmail = escSettings.step2_manager_email || null;
+            }
+
+            if (escalateStep === 0 || !notifyEmail) continue;
+
+            // Get lead info
+            const lead = reminder.lead_id ? leadMap.get(reminder.lead_id) : null;
+            const leadName = lead?.full_name || reminder.title?.replace(/^Follow up:\s*/i, "") || "a lead";
+
+            // Send escalation email using the user's SMTP
+            let smtpForEsc = smtpConfig;
+            // Reuse SMTP from earlier — look up if needed
+            if (!smtpForEsc) {
+              const { data: escSmtp } = await supabase
+                .from("smtp_settings")
+                .select("*")
+                .eq("user_id", escUserId)
+                .maybeSingle();
+              smtpForEsc = escSmtp as typeof smtpForEsc | null;
+              if (!smtpForEsc || !smtpForEsc.smtp_host) {
+                // Try owner's SMTP
+                const { data: userInfo2 } = await supabase.auth.admin.getUserById(escUserId);
+                const memberEmail = userInfo2?.user?.email;
+                if (memberEmail) {
+                  const { data: teamMember } = await supabase
+                    .from("team_members")
+                    .select("owner_id")
+                    .eq("email", memberEmail)
+                    .maybeSingle();
+                  if (teamMember?.owner_id) {
+                    const { data: ownerSmtp } = await supabase
+                      .from("smtp_settings")
+                      .select("*")
+                      .eq("user_id", teamMember.owner_id)
+                      .maybeSingle();
+                    if (ownerSmtp?.smtp_host) smtpForEsc = ownerSmtp as typeof smtpForEsc | null;
+                  }
+                }
+              }
+            }
+
+            if (smtpForEsc && smtpForEsc.smtp_host && smtpForEsc.smtp_username && smtpForEsc.smtp_password) {
+              const escTransporter = nodemailer.createTransport({
+                host: smtpForEsc.smtp_host,
+                port: smtpForEsc.smtp_port || 587,
+                secure: (smtpForEsc.smtp_port || 587) === 465,
+                auth: { user: smtpForEsc.smtp_username, pass: smtpForEsc.smtp_password },
+              });
+
+              const stepLabels: Record<number, string> = { 1: "Reminder", 2: "Manager Escalation", 3: "Final Escalation" };
+              const escSubject = `[${stepLabels[escalateStep]}] Overdue follow-up: ${leadName}`;
+
+              const escHtml = `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px;">
+                  <div style="background: linear-gradient(135deg, #dc2626, #ea580c); padding: 24px; border-radius: 12px 12px 0 0; text-align: center;">
+                    <h1 style="color: #fff; margin: 0; font-size: 1.3rem;">${stepLabels[escalateStep]}</h1>
+                    <p style="color: rgba(255,255,255,0.85); margin: 8px 0 0; font-size: 0.85rem;">Overdue by ${Math.round(overdueHours)} hours</p>
+                  </div>
+                  <div style="background: #f8fafc; padding: 24px; border-radius: 0 0 12px 12px; border: 1px solid #e2e8f0;">
+                    <p style="font-size: 1rem; color: #1f2937; margin: 0 0 12px;">
+                      ${escalateStep === 1 ? "A follow-up reminder is overdue and has not been completed." : ""}
+                      ${escalateStep === 2 ? "This follow-up has been overdue for an extended period and requires manager attention." : ""}
+                      ${escalateStep === 3 ? "This follow-up has been severely overdue and requires immediate action." : ""}
+                    </p>
+                    <div style="background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px; margin-bottom: 16px;">
+                      <h2 style="margin: 0 0 8px; font-size: 1.1rem; color: #111827;">${leadName}</h2>
+                      ${lead?.mobile_number && lead.mobile_number !== "N/A" ? `<p style="margin: 4px 0; font-size: 0.88rem; color: #64748b;"><strong>Phone:</strong> ${lead.mobile_number}</p>` : ""}
+                      <p style="margin: 4px 0 0; font-size: 0.88rem; color: #64748b;"><strong>Scheduled:</strong> ${new Date(reminder.reminder_at).toLocaleString("en-US")}</p>
+                      ${reminder.note ? `<div style="margin-top: 10px; padding: 10px; background: #f1f5f9; border-radius: 8px; font-size: 0.85rem; color: #475569;">${reminder.note}</div>` : ""}
+                    </div>
+                    <p style="font-size: 0.78rem; color: #94a3b8; text-align: center;">LeadCentre CRM — Auto Escalation</p>
+                  </div>
+                </div>
+              `;
+
+              try {
+                await escTransporter.sendMail({
+                  from: smtpForEsc.from_name
+                    ? `"${smtpForEsc.from_name}" <${smtpForEsc.from_email || smtpForEsc.smtp_username}>`
+                    : (smtpForEsc.from_email || smtpForEsc.smtp_username),
+                  to: notifyEmail,
+                  subject: escSubject,
+                  html: escHtml,
+                });
+                totalEscalated++;
+              } catch (err) {
+                errors.push(`Escalation ${reminder.id} step ${escalateStep}: ${err instanceof Error ? err.message : "Unknown"}`);
+              }
+            }
+
+            // Log the escalation
+            await supabase.from("followup_escalation_log").insert({
+              user_id: escUserId,
+              followup_id: reminder.id,
+              lead_id: reminder.lead_id,
+              step: escalateStep,
+              action: escalateAction,
+              notified_email: notifyEmail,
+            });
+
+            // Step 3 reassignment: find another team member and reassign the lead
+            if (escalateStep === 3 && escSettings.step3_reassign_lead && reminder.lead_id) {
+              const { data: teamMembers } = await supabase
+                .from("team_members")
+                .select("email")
+                .eq("owner_id", escUserId)
+                .eq("role", "agent")
+                .limit(10);
+
+              if (teamMembers && teamMembers.length > 0) {
+                // Pick the first agent (simple rotation)
+                const newAgentEmail = teamMembers[0].email;
+                const { data: newAgentUser } = await supabase.auth.admin.listUsers();
+                const newAgent = newAgentUser?.users?.find((u: { email?: string }) => u.email === newAgentEmail);
+                if (newAgent) {
+                  await supabase
+                    .from("submissions")
+                    .update({ assigned_to: newAgent.id, updated_at: new Date().toISOString() })
+                    .eq("id", reminder.lead_id);
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
     return new Response(
-      JSON.stringify({ success: true, sent: totalSent, errors: errors.length > 0 ? errors : undefined }),
+      JSON.stringify({ success: true, sent: totalSent, escalated: totalEscalated, errors: errors.length > 0 ? errors : undefined }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (err) {
