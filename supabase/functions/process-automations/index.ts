@@ -682,24 +682,30 @@ async function executeAction(
     const message = replacePlaceholders((config.message as string) || "");
     const phone = (lead.mobile_number as string) || "";
     if (!phone) return "skipped: no phone";
-    const { data: broadcast } = await supabase
-      .from("whatsapp_broadcasts")
-      .insert({
-        name: `Automation: ${message.slice(0, 30)}`,
-        message_template: message,
-        status: "pending",
-        created_by: (lead as Record<string, unknown>).user_id as string || null,
-      })
-      .select()
+    const cleanPhone = phone.replace(/^\+/, "");
+    const { data: flowOwner } = await supabase
+      .from("automation_flows")
+      .select("user_id")
+      .eq("id", context.flow_id || "")
       .maybeSingle();
-    if (broadcast) {
-      await supabase.from("whatsapp_broadcast_recipients").insert({
-        broadcast_id: broadcast.id,
-        phone_number: phone,
-        status: "pending",
-      });
-    }
-    return `whatsapp queued to ${phone}`;
+    const ownerId = (flowOwner?.user_id as string) || ((lead as Record<string, unknown>).user_id as string) || null;
+    if (!ownerId) return "skipped: no flow owner";
+    const { data: waSettings } = await supabase
+      .from("whatsapp_settings")
+      .select("phone_number_id, access_token")
+      .eq("user_id", ownerId)
+      .order("created_at", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    if (!waSettings?.phone_number_id || !waSettings?.access_token) return "skipped: whatsapp not configured";
+    const waResp = await fetch(`https://graph.facebook.com/v20.0/${waSettings.phone_number_id}/messages`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${waSettings.access_token}` },
+      body: JSON.stringify({ messaging_product: "whatsapp", to: cleanPhone, type: "text", text: { body: message } }),
+    });
+    const waData = await waResp.json();
+    if (waData.error) return `whatsapp send failed: ${waData.error.message || "unknown"}`;
+    return `whatsapp sent to ${cleanPhone}`;
   }
 
   if (type === "send_telegram") {
@@ -843,3 +849,4 @@ async function executeAction(
 
   return `unknown action type: ${type}`;
 }
+

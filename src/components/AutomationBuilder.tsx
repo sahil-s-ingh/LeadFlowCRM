@@ -213,6 +213,26 @@ const AUTOMATION_TEMPLATES: AutomationTemplate[] = [
     ],
   },
   {
+    name: 'Instant Form Auto-Reply',
+    description: 'When a Facebook/Instagram Instant Form lead arrives, immediately send a WhatsApp template message to their number. Speed-to-lead automation for Meta Ads leads.',
+    category: 'Welcome',
+    trigger_type: 'lead_created',
+    trigger_config: { lead_source: 'Meta Ads' },
+    actions: [
+      { type: 'send_whatsapp', config: { message: 'Hi {{lead_name}}, thanks for your interest! This is [Your Company] reaching out about your inquiry. Our team will connect with you shortly to help you get started.' } },
+    ],
+  },
+  {
+    name: 'Push Lead to Zapier/Make',
+    description: 'Fire a webhook to your Zapier, Make.com, or Pabbly Connect URL when a new lead is created. Use this to sync leads to Google Sheets, Slack, or any external tool.',
+    category: 'Integrations',
+    trigger_type: 'lead_created',
+    trigger_config: {},
+    actions: [
+      { type: 'fire_webhook', config: {} },
+    ],
+  },
+  {
     name: 'Post-Call Follow-Up',
     description: 'After a WhatsApp call completes, schedule a follow-up for the next day and send a summary email.',
     category: 'Follow-up',

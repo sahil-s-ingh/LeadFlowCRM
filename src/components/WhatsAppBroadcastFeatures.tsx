@@ -6,6 +6,7 @@ import {
   DollarSign, GitCompare, CalendarDays, X, Loader2, Trash2, Plus,
   CheckCircle2, AlertTriangle, TrendingUp, Eye, Copy, ChevronRight,
   Zap, Users, Send, CheckCheck, Activity, Award, Calendar,
+  Ban, UserCheck, Pause, Play, ArrowLeft, Info,
 } from 'lucide-react';
 
 type BroadcastCampaign = {
@@ -729,7 +730,618 @@ export function CampaignComparison({ broadcasts, onClose }: { broadcasts: Broadc
   );
 }
 
-// ===================== 10. Calendar View =====================
+// ===================== 11. Audience Manager =====================
+export function AudienceManagerPanel({ session, onUseAudience, onClose }: { session: Session; onUseAudience: (conditions: SegmentCondition[], count: number, name: string) => void; onClose: () => void }) {
+  type SegmentCondition = { field: string; operator: string; value: string };
+  type SavedAudience = { id: string; name: string; description: string | null; conditions: SegmentCondition[]; recipient_count: number; type: string; created_at: string };
+
+  const [audiences, setAudiences] = useState<SavedAudience[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const [conditions, setConditions] = useState<SegmentCondition[]>([{ field: 'status', operator: 'eq', value: 'interested' }]);
+  const [count, setCount] = useState(0);
+  const [countLoading, setCountLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  const fetchAudiences = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data } = await supabase.from('wa_broadcast_segments').select('*').order('created_at', { ascending: false });
+      setAudiences((data || []).map((s: any) => ({ id: s.id, name: s.name, description: s.description, conditions: s.conditions || [], recipient_count: s.recipient_count || 0, type: s.type || 'segment', created_at: s.created_at })));
+    } catch { /* ignore */ }
+    finally { setLoading(false); }
+  }, []);
+
+  useEffect(() => { fetchAudiences(); }, [fetchAudiences]);
+
+  const fetchCount = useCallback(async () => {
+    setCountLoading(true);
+    try {
+      let query = supabase.from('submissions').select('id', { count: 'exact', head: true }).is('deleted_at', null);
+      for (const cond of conditions) {
+        if (!cond.value.trim()) continue;
+        if (cond.operator === 'eq') query = query.eq(cond.field, cond.value);
+        else if (cond.operator === 'neq') query = query.neq(cond.field, cond.value);
+        else if (cond.operator === 'contains') query = query.ilike(cond.field, `%${cond.value}%`);
+        else if (cond.operator === 'gt') query = query.gt(cond.field, cond.value);
+        else if (cond.operator === 'lt') query = query.lt(cond.field, cond.value);
+      }
+      const { count: c } = await query;
+      setCount(c || 0);
+    } catch { /* ignore */ }
+    finally { setCountLoading(false); }
+  }, [conditions]);
+
+  useEffect(() => { if (showForm) fetchCount(); }, [showForm, fetchCount]);
+
+  const handleSave = async () => {
+    if (!name.trim()) { setError('Please enter a name for this audience'); return; }
+    setSaving(true);
+    setError('');
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (!token) return;
+      const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/whatsapp-broadcast?action=audience_save`;
+      const res = await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ name: name.trim(), description: description.trim() || null, conditions, type: 'audience' }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) { setError(data.error || 'Failed to save audience'); setSaving(false); return; }
+      setName(''); setDescription(''); setConditions([{ field: 'status', operator: 'eq', value: 'interested' }]); setShowForm(false);
+      await fetchAudiences();
+    } catch { setError('Failed to save audience'); }
+    finally { setSaving(false); }
+  };
+
+  const handleDelete = async (id: string) => {
+    await supabase.from('wa_broadcast_segments').delete().eq('id', id);
+    await fetchAudiences();
+  };
+
+  return (
+    <div className="wb-modal-overlay" onClick={onClose}>
+      <div className="wb-modal-card wb-modal-large" onClick={(e) => e.stopPropagation()}>
+        <div className="wb-modal-header">
+          <div className="wb-modal-title"><Users size={18} /><span>Audience Manager</span></div>
+          <button onClick={onClose} className="wb-modal-close"><X size={18} /></button>
+        </div>
+        <div className="wb-modal-body">
+          <p className="wb-modal-desc">Save filtered audiences once and reuse them across multiple broadcasts — no need to rebuild filters every time.</p>
+
+          {!showForm ? (
+            <button className="wb-create-btn" onClick={() => setShowForm(true)} style={{ marginBottom: 16 }}>
+              <Plus size={16} /> Create New Audience
+            </button>
+          ) : (
+            <div className="wb-audience-form">
+              <label className="wb-field">
+                <span>Audience Name <em>*</em></span>
+                <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Interested leads from India" className="wb-input" />
+              </label>
+              <label className="wb-field">
+                <span>Description (optional)</span>
+                <input type="text" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="What defines this audience?" className="wb-input" />
+              </label>
+
+              <div className="wb-segment-conditions">
+                {conditions.map((cond, idx) => (
+                  <div key={idx} className="wb-segment-row">
+                    <span className="wb-segment-num">{idx + 1}</span>
+                    <select value={cond.field} onChange={(e) => { const n = [...conditions]; n[idx] = { ...cond, field: e.target.value, value: '' }; setConditions(n); }} className="wb-select">
+                      {SEGMENT_FIELDS.map((f) => <option key={f.value} value={f.value}>{f.label}</option>)}
+                    </select>
+                    <select value={cond.operator} onChange={(e) => { const n = [...conditions]; n[idx] = { ...cond, operator: e.target.value }; setConditions(n); }} className="wb-select wb-segment-op">
+                      {SEGMENT_OPERATORS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                    </select>
+                    {SEGMENT_FIELDS.find((f) => f.value === cond.field)?.type === 'select' ? (
+                      <select value={cond.value} onChange={(e) => { const n = [...conditions]; n[idx] = { ...cond, value: e.target.value }; setConditions(n); }} className="wb-select">
+                        <option value="">Select...</option>
+                        {SEGMENT_FIELDS.find((f) => f.value === cond.field)?.options.map((o) => <option key={o} value={o}>{o.replace(/_/g, ' ')}</option>)}
+                      </select>
+                    ) : (
+                      <input type="text" value={cond.value} onChange={(e) => { const n = [...conditions]; n[idx] = { ...cond, value: e.target.value }; setConditions(n); }} placeholder="Enter value..." className="wb-input" />
+                    )}
+                    {conditions.length > 1 && (
+                      <button className="wb-segment-remove" onClick={() => setConditions(conditions.filter((_, i) => i !== idx))}><Trash2 size={12} /></button>
+                    )}
+                  </div>
+                ))}
+                <button className="wb-segment-add" onClick={() => setConditions([...conditions, { field: 'state', operator: 'eq', value: '' }])}>
+                  <Plus size={12} /> Add Condition
+                </button>
+              </div>
+
+              <div className="wb-segment-count">
+                {countLoading ? <Loader2 size={14} className="crm-spin" /> : <Users size={14} />}
+                <span>{countLoading ? 'Counting...' : <><strong>{count.toLocaleString()}</strong> leads match this audience</>}</span>
+              </div>
+
+              {error && <div className="wb-error-banner" style={{ marginBottom: 12 }}><AlertTriangle size={14} /> {error}</div>}
+
+              <div className="wb-audience-form-actions">
+                <button className="wb-action-btn wb-action-btn-ghost" onClick={() => setShowForm(false)}>Cancel</button>
+                <button className="wb-create-btn" onClick={handleSave} disabled={!name.trim() || saving || count === 0} style={{ flex: '0 0 auto' }}>
+                  {saving ? <Loader2 size={14} className="crm-spin" /> : <Save size={14} />} Save Audience
+                </button>
+              </div>
+            </div>
+          )}
+
+          <div className="wb-audience-list">
+            <h4 className="wb-preset-section-title">Saved Audiences</h4>
+            {loading ? (
+              <div className="wb-loading-state"><Loader2 size={20} className="crm-spin" style={{ color: '#25D366' }} /><p>Loading...</p></div>
+            ) : audiences.length === 0 ? (
+              <p className="wb-analytics-empty">No saved audiences yet. Create one to reuse it across broadcasts.</p>
+            ) : audiences.map((aud) => (
+              <div key={aud.id} className="wb-audience-item">
+                <div className="wb-audience-info">
+                  <strong>{aud.name}</strong>
+                  {aud.description && <span className="wb-audience-desc">{aud.description}</span>}
+                  <span className="wb-audience-meta">{aud.recipient_count.toLocaleString()} leads - {aud.conditions.length} condition{aud.conditions.length !== 1 ? 's' : ''}</span>
+                </div>
+                <button className="wb-action-btn wb-action-btn-primary" onClick={() => onUseAudience(aud.conditions, aud.recipient_count, aud.name)}>
+                  <Send size={12} /> Use
+                </button>
+                <button className="wb-action-btn wb-action-btn-danger" onClick={() => handleDelete(aud.id)}><Trash2 size={12} /></button>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ===================== 12. Opt-out Manager =====================
+export function OptOutManagerPanel({ session, onClose }: { session: Session; onClose: () => void }) {
+  type OptOut = { id: string; phone_number: string; lead_id: string | null; reason: string | null; status: string; opted_out_at: string; opted_in_at: string | null };
+
+  const [optOuts, setOptOuts] = useState<OptOut[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<'all' | 'opted_out' | 'subscribed'>('opted_out');
+  const [search, setSearch] = useState('');
+  const [manualPhone, setManualPhone] = useState('');
+  const [adding, setAdding] = useState(false);
+  const [actioning, setActioningId] = useState<string | null>(null);
+
+  const fetchOptOuts = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (!token) return;
+      const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/whatsapp-broadcast?action=list_opt_outs`;
+      const res = await fetch(apiUrl, { headers: { Authorization: `Bearer ${token}` } });
+      const data = await res.json();
+      if (!res.ok || data.error) return;
+      setOptOuts(data.opt_outs || []);
+    } catch { /* ignore */ }
+    finally { setLoading(false); }
+  }, []);
+
+  useEffect(() => { fetchOptOuts(); }, [fetchOptOuts]);
+
+  const handleResubscribe = async (id: string) => {
+    setActioningId(id);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (!token) return;
+      await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/whatsapp-broadcast?action=resubscribe`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ opt_out_id: id }),
+      });
+      await fetchOptOuts();
+    } catch { /* ignore */ }
+    finally { setActioningId(null); }
+  };
+
+  const handleAddManual = async () => {
+    if (!manualPhone.trim()) return;
+    setAdding(true);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (!token) return;
+      await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/whatsapp-broadcast?action=add_opt_out`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ phone_number: manualPhone.trim() }),
+      });
+      setManualPhone('');
+      await fetchOptOuts();
+    } catch { /* ignore */ }
+    finally { setAdding(false); }
+  };
+
+  const handleDelete = async (id: string) => {
+    await supabase.from('wa_opt_outs').delete().eq('id', id);
+    await fetchOptOuts();
+  };
+
+  const filtered = optOuts.filter((o) => {
+    if (filter !== 'all' && o.status !== filter) return false;
+    if (search && !o.phone_number.includes(search.replace(/^\+/, ''))) return false;
+    return true;
+  });
+
+  const optedOutCount = optOuts.filter((o) => o.status === 'opted_out').length;
+  const subscribedCount = optOuts.filter((o) => o.status === 'subscribed').length;
+
+  return (
+    <div className="wb-modal-overlay" onClick={onClose}>
+      <div className="wb-modal-card wb-modal-large" onClick={(e) => e.stopPropagation()}>
+        <div className="wb-modal-header">
+          <div className="wb-modal-title"><Ban size={18} /><span>Unsubscribe / Opt-out Manager</span></div>
+          <button onClick={onClose} className="wb-modal-close"><X size={18} /></button>
+        </div>
+        <div className="wb-modal-body">
+          <p className="wb-modal-desc">Contacts who reply STOP, UNSUBSCRIBE, CANCEL, or similar keywords are automatically excluded from future broadcasts. You can also manually add or re-subscribe contacts here.</p>
+
+          <div className="wb-optout-summary">
+            <div className="wb-reply-stat"><Ban size={18} style={{ color: '#dc2626' }} /><strong>{optedOutCount}</strong><span>Opted Out</span></div>
+            <div className="wb-reply-stat"><CheckCircle2 size={18} style={{ color: '#16a34a' }} /><strong>{subscribedCount}</strong><span>Re-subscribed</span></div>
+            <div className="wb-reply-stat"><Users size={18} /><strong>{optOuts.length}</strong><span>Total Records</span></div>
+          </div>
+
+          <div className="wb-optout-add-bar">
+            <input type="text" value={manualPhone} onChange={(e) => setManualPhone(e.target.value)} placeholder="+919876543210" className="wb-input" />
+            <button className="wb-action-btn wb-action-btn-danger" onClick={handleAddManual} disabled={!manualPhone.trim() || adding}>
+              {adding ? <Loader2 size={14} className="crm-spin" /> : <Plus size={14} />} Add to Opt-out
+            </button>
+          </div>
+
+          <div className="wb-optout-filters">
+            <button className={`wb-optout-tab ${filter === 'opted_out' ? 'active' : ''}`} onClick={() => setFilter('opted_out')}>Opted Out ({optedOutCount})</button>
+            <button className={`wb-optout-tab ${filter === 'subscribed' ? 'active' : ''}`} onClick={() => setFilter('subscribed')}>Subscribed ({subscribedCount})</button>
+            <button className={`wb-optout-tab ${filter === 'all' ? 'active' : ''}`} onClick={() => setFilter('all')}>All ({optOuts.length})</button>
+            <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search phone..." className="wb-input wb-optout-search" />
+          </div>
+
+          <div className="wb-table-wrap">
+            {loading ? (
+              <div className="wb-loading-state"><Loader2 size={24} className="crm-spin" style={{ color: '#25D366' }} /><p>Loading opt-out list...</p></div>
+            ) : filtered.length === 0 ? (
+              <p className="wb-analytics-empty">No records found.</p>
+            ) : (
+              <table className="wb-table">
+                <thead><tr><th>Phone</th><th>Reason</th><th>Status</th><th>Opted Out</th><th>Actions</th></tr></thead>
+                <tbody>
+                  {filtered.map((o) => (
+                    <tr key={o.id}>
+                      <td className="wb-td-phone">+{o.phone_number}</td>
+                      <td>{o.reason || '—'}</td>
+                      <td>
+                        <span className="wb-status-pill wb-status-sm" style={{ background: o.status === 'opted_out' ? 'rgba(220,38,38,0.12)' : 'rgba(22,163,74,0.12)', color: o.status === 'opted_out' ? '#dc2626' : '#16a34a' }}>
+                          {o.status === 'opted_out' ? 'Opted Out' : 'Subscribed'}
+                        </span>
+                      </td>
+                      <td>{o.opted_out_at ? new Date(o.opted_out_at).toLocaleDateString() : '—'}</td>
+                      <td>
+                        <div className="wb-campaign-actions" style={{ gap: 4 }}>
+                          {o.status === 'opted_out' && (
+                            <button className="wb-action-btn wb-action-btn-primary" onClick={() => handleResubscribe(o.id)} disabled={actioningId === o.id} title="Re-subscribe">
+                              {actioningId === o.id ? <Loader2 size={12} className="crm-spin" /> : <UserCheck size={12} />}
+                            </button>
+                          )}
+                          <button className="wb-action-btn wb-action-btn-danger" onClick={() => handleDelete(o.id)} title="Remove record"><Trash2 size={12} /></button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+
+          <div className="wb-warn-box">
+            <Info size={16} />
+            <div>Opted-out contacts are automatically excluded from all new broadcasts and drip sequences. When a contact replies START or SUBSCRIBE, they are automatically re-subscribed.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ===================== 13. Drip Sequence Builder =====================
+export function DripSequenceBuilder({ session, templates, onClose }: { session: Session; templates: { name: string; language: string; components: any[]; status: string }[]; onClose: () => void }) {
+  type DripStep = { id?: string; template_name: string; template_language: string; template_components: any[]; offset_days: number; variable_mapping: Record<string, string> };
+  type DripSequence = { id: string; name: string; status: string; total_recipients: number; started_at: string | null; steps: DripStep[] };
+
+  const [sequences, setSequences] = useState<DripSequence[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [seqName, setSeqName] = useState('');
+  const [recipientFilter, setRecipientFilter] = useState('all');
+  const [steps, setSteps] = useState<DripStep[]>([{ template_name: '', template_language: 'en_US', template_components: [], offset_days: 0, variable_mapping: {} }]);
+  const [creating, setCreating] = useState(false);
+  const [error, setError] = useState('');
+  const [selectedSeq, setSelectedSeq] = useState<DripSequence | null>(null);
+  const [actioningId, setActioningId] = useState<string | null>(null);
+
+  const approvedTemplates = templates.filter((t) => t.status === 'APPROVED');
+
+  const fetchSequences = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (!token) return;
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/whatsapp-broadcast?action=drip_list`, { headers: { Authorization: `Bearer ${token}` } });
+      const data = await res.json();
+      if (!res.ok || data.error) return;
+      setSequences(data.sequences || []);
+    } catch { /* ignore */ }
+    finally { setLoading(false); }
+  }, []);
+
+  useEffect(() => { fetchSequences(); }, [fetchSequences]);
+
+  const handleStepTemplateChange = (idx: number, tplName: string) => {
+    const tpl = approvedTemplates.find((t) => t.name === tplName);
+    if (!tpl) return;
+    const newSteps = [...steps];
+    newSteps[idx] = { ...newSteps[idx], template_name: tpl.name, template_language: tpl.language, template_components: tpl.components || [] };
+    setSteps(newSteps);
+  };
+
+  const handleCreate = async () => {
+    if (!seqName.trim()) { setError('Please enter a sequence name'); return; }
+    const validSteps = steps.filter((s) => s.template_name);
+    if (validSteps.length === 0) { setError('Add at least one step with a template'); return; }
+    setCreating(true);
+    setError('');
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (!token) return;
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/whatsapp-broadcast?action=drip_create`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ name: seqName.trim(), recipient_filter: recipientFilter, steps: validSteps }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) { setError(data.error || 'Failed to create sequence'); setCreating(false); return; }
+      setSeqName(''); setSteps([{ template_name: '', template_language: 'en_US', template_components: [], offset_days: 0, variable_mapping: {} }]); setShowForm(false);
+      await fetchSequences();
+    } catch { setError('Failed to create sequence'); }
+    finally { setCreating(false); }
+  };
+
+  const handleUpdateStatus = async (id: string, status: string) => {
+    setActioningId(id);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (!token) return;
+      await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/whatsapp-broadcast?action=drip_update_status`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ sequence_id: id, status }),
+      });
+      await fetchSequences();
+    } catch { /* ignore */ }
+    finally { setActioningId(null); }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Delete this drip sequence? This cannot be undone.')) return;
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (!token) return;
+      await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/whatsapp-broadcast?action=drip_delete`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ sequence_id: id }),
+      });
+      if (selectedSeq?.id === id) setSelectedSeq(null);
+      await fetchSequences();
+    } catch { /* ignore */ }
+  };
+
+  const fetchSeqDetail = async (id: string) => {
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (!token) return;
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/whatsapp-broadcast?action=drip_get&sequence_id=${id}`, { headers: { Authorization: `Bearer ${token}` } });
+      const data = await res.json();
+      if (!res.ok || data.error) return;
+      setSelectedSeq({ ...data.sequence, steps: data.steps || [] });
+    } catch { /* ignore */ }
+  };
+
+  const sortedSteps = [...steps].sort((a, b) => a.offset_days - b.offset_days);
+
+  return (
+    <div className="wb-modal-overlay" onClick={onClose}>
+      <div className="wb-modal-card wb-modal-large" onClick={(e) => e.stopPropagation()}>
+        <div className="wb-modal-header">
+          <div className="wb-modal-title"><CalendarDays size={18} /><span>Drip Sequence Builder</span></div>
+          <button onClick={onClose} className="wb-modal-close"><X size={18} /></button>
+        </div>
+        <div className="wb-modal-body">
+          <p className="wb-modal-desc">Set up a series of broadcast messages sent over multiple days. Each step uses an approved template and sends automatically after the specified number of days from the sequence start.</p>
+
+          {!showForm && !selectedSeq && (
+            <>
+              <button className="wb-create-btn" onClick={() => setShowForm(true)} style={{ marginBottom: 16 }}>
+                <Plus size={16} /> Create New Drip Sequence
+              </button>
+
+              <h4 className="wb-preset-section-title">Your Drip Sequences</h4>
+              {loading ? (
+                <div className="wb-loading-state"><Loader2 size={20} className="crm-spin" style={{ color: '#25D366' }} /><p>Loading...</p></div>
+              ) : sequences.length === 0 ? (
+                <p className="wb-analytics-empty">No drip sequences yet. Create one to send a series of messages over multiple days.</p>
+              ) : sequences.map((seq) => {
+                const completedSteps = seq.steps.filter((s: any) => s.status === 'completed').length;
+                const sc: Record<string, { bg: string; color: string; label: string }> = {
+                  active: { bg: 'rgba(22,163,74,0.12)', color: '#16a34a', label: 'Active' },
+                  paused: { bg: 'rgba(234,179,8,0.12)', color: '#854d0e', label: 'Paused' },
+                  draft: { bg: 'rgba(100,116,139,0.12)', color: '#64748b', label: 'Draft' },
+                  completed: { bg: 'rgba(37,99,235,0.12)', color: '#2563eb', label: 'Completed' },
+                };
+                const cfg = sc[seq.status] || sc.draft;
+                return (
+                  <div key={seq.id} className="wb-audience-item">
+                    <div className="wb-audience-info" style={{ cursor: 'pointer' }} onClick={() => fetchSeqDetail(seq.id)}>
+                      <strong>{seq.name}</strong>
+                      <span className="wb-audience-meta">
+                        {seq.steps.length} step{seq.steps.length !== 1 ? 's' : ''} - {seq.total_recipients} recipients - {completedSteps}/{seq.steps.length} sent
+                      </span>
+                      <span className="wb-status-pill wb-status-sm" style={{ background: cfg.bg, color: cfg.color }}>{cfg.label}</span>
+                    </div>
+                    {seq.status === 'active' && (
+                      <button className="wb-action-btn wb-action-btn-ghost" onClick={() => handleUpdateStatus(seq.id, 'paused')} disabled={actioningId === seq.id} title="Pause">
+                        <Pause size={12} />
+                      </button>
+                    )}
+                    {seq.status === 'paused' && (
+                      <button className="wb-action-btn wb-action-btn-primary" onClick={() => handleUpdateStatus(seq.id, 'active')} disabled={actioningId === seq.id} title="Resume">
+                        <Play size={12} />
+                      </button>
+                    )}
+                    <button className="wb-action-btn wb-action-btn-danger" onClick={() => handleDelete(seq.id)}><Trash2 size={12} /></button>
+                  </div>
+                );
+              })}
+            </>
+          )}
+
+          {showForm && (
+            <div className="wb-drip-form">
+              <label className="wb-field">
+                <span>Sequence Name <em>*</em></span>
+                <input type="text" value={seqName} onChange={(e) => setSeqName(e.target.value)} placeholder="e.g. New Lead Welcome Series" className="wb-input" />
+              </label>
+
+              <label className="wb-field">
+                <span>Recipient Filter</span>
+                <select value={recipientFilter} onChange={(e) => setRecipientFilter(e.target.value)} className="wb-select">
+                  <option value="all">All Leads</option>
+                  <option value="new">New Leads</option>
+                  <option value="interested">Interested</option>
+                  <option value="called_responded">Called - Responded</option>
+                  <option value="not_interested">Not Interested</option>
+                </select>
+                <small className="wb-field-hint">Only leads with phone numbers are included. Opted-out contacts are automatically excluded.</small>
+              </label>
+
+              <h4 className="wb-preset-section-title">Steps</h4>
+              {steps.map((step, idx) => (
+                <div key={idx} className="wb-drip-step">
+                  <div className="wb-drip-step-header">
+                    <span className="wb-drip-step-num">Step {idx + 1}</span>
+                    {steps.length > 1 && (
+                      <button className="wb-segment-remove" onClick={() => setSteps(steps.filter((_, i) => i !== idx))}><Trash2 size={12} /></button>
+                    )}
+                  </div>
+                  <div className="wb-drip-step-row">
+                    <label className="wb-field" style={{ flex: '0 0 100px' }}>
+                      <span>Send on Day</span>
+                      <input type="number" value={step.offset_days} min="0" max="90" onChange={(e) => { const n = [...steps]; n[idx] = { ...step, offset_days: parseInt(e.target.value) || 0 }; setSteps(n); }} className="wb-input" />
+                      <small className="wb-field-hint">0 = Day 1</small>
+                    </label>
+                    <label className="wb-field" style={{ flex: 1 }}>
+                      <span>Template</span>
+                      <select value={step.template_name} onChange={(e) => handleStepTemplateChange(idx, e.target.value)} className="wb-select">
+                        <option value="">Select template...</option>
+                        {approvedTemplates.map((t) => <option key={t.name} value={t.name}>{t.name} ({t.language})</option>)}
+                      </select>
+                    </label>
+                  </div>
+                </div>
+              ))}
+              <button className="wb-segment-add" onClick={() => setSteps([...steps, { template_name: '', template_language: 'en_US', template_components: [], offset_days: (steps[steps.length - 1]?.offset_days || 0) + 2, variable_mapping: {} }])}>
+                <Plus size={12} /> Add Step
+              </button>
+
+              <div className="wb-drip-timeline">
+                <h4 className="wb-preset-section-title">Timeline Preview</h4>
+                {sortedSteps.filter((s) => s.template_name).length === 0 ? (
+                  <p className="wb-analytics-empty">Add steps to see the timeline.</p>
+                ) : (
+                  <div className="wb-drip-timeline-list">
+                    {sortedSteps.filter((s) => s.template_name).map((s, i) => (
+                      <div key={i} className="wb-drip-timeline-item">
+                        <div className="wb-drip-timeline-dot" style={{ background: i === 0 ? '#16a34a' : '#2563eb' }} />
+                        <div className="wb-drip-timeline-content">
+                          <strong>Day {s.offset_days}</strong>
+                          <span>{s.template_name}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {error && <div className="wb-error-banner" style={{ marginBottom: 12 }}><AlertTriangle size={14} /> {error}</div>}
+
+              <div className="wb-audience-form-actions">
+                <button className="wb-action-btn wb-action-btn-ghost" onClick={() => setShowForm(false)}>Cancel</button>
+                <button className="wb-create-btn" onClick={handleCreate} disabled={creating || !seqName.trim()}>
+                  {creating ? <Loader2 size={14} className="crm-spin" /> : <Send size={14} />} Activate Sequence
+                </button>
+              </div>
+            </div>
+          )}
+
+          {selectedSeq && !showForm && (
+            <div className="wb-drip-detail">
+              <button className="wb-back-link" onClick={() => setSelectedSeq(null)}><ArrowLeft size={14} /> Back to sequences</button>
+              <h3 className="wb-preset-section-title" style={{ fontSize: '1rem' }}>{selectedSeq.name}</h3>
+              <div className="wb-drip-steps-list">
+                {selectedSeq.steps.map((step: any, idx: number) => {
+                  const stCfg: Record<string, { bg: string; color: string }> = {
+                    pending: { bg: 'rgba(100,116,139,0.12)', color: '#64748b' },
+                    sending: { bg: 'rgba(59,130,246,0.12)', color: '#2563eb' },
+                    completed: { bg: 'rgba(22,163,74,0.12)', color: '#16a34a' },
+                  };
+                  const cfg = stCfg[step.status] || stCfg.pending;
+                  return (
+                    <div key={step.id || idx} className="wb-drip-step-card">
+                      <div className="wb-drip-step-card-top">
+                        <strong>Step {step.step_number} - Day {step.offset_days}</strong>
+                        <span className="wb-status-pill wb-status-sm" style={{ background: cfg.bg, color: cfg.color }}>{step.status}</span>
+                      </div>
+                      <span className="wb-campaign-template">{step.template_name} - {step.template_language}</span>
+                      <div className="wb-campaign-stats">
+                        <span><strong>{step.sent_count}</strong> sent</span>
+                        <span className="wb-campaign-stat-red"><strong>{step.failed_count}</strong> failed</span>
+                        {step.sent_at && <span className="wb-campaign-date"><Clock size={11} /> {new Date(step.sent_at).toLocaleString()}</span>}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              {selectedSeq.status === 'active' && (
+                <button className="wb-action-btn wb-action-btn-ghost" onClick={() => handleUpdateStatus(selectedSeq.id, 'paused')} disabled={actioningId === selectedSeq.id} style={{ marginTop: 12 }}>
+                  <Pause size={13} /> Pause Sequence
+                </button>
+              )}
+              {selectedSeq.status === 'paused' && (
+                <button className="wb-action-btn wb-action-btn-primary" onClick={() => handleUpdateStatus(selectedSeq.id, 'active')} disabled={actioningId === selectedSeq.id} style={{ marginTop: 12 }}>
+                  <Play size={13} /> Resume Sequence
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
 export function BroadcastCalendarView({ broadcasts, onSelect, onClose }: { broadcasts: BroadcastCampaign[]; onSelect: (camp: BroadcastCampaign) => void; onClose: () => void }) {
   const [monthOffset, setMonthOffset] = useState(0);
   const today = new Date();

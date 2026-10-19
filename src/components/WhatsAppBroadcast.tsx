@@ -12,7 +12,9 @@ import {
   BroadcastAnalyticsDashboard, SegmentationBuilder, QuickRecreatePanel,
   ABTestBroadcastModal, SendTimeOptimization, ThrottleControl,
   ReplyTrackingPanel, CostEstimator, CampaignComparison, BroadcastCalendarView,
+  AudienceManagerPanel, OptOutManagerPanel, DripSequenceBuilder,
 } from '@/components/WhatsAppBroadcastFeatures';
+import { Ban, CalendarDays as CalendarDaysIcon, Users as UsersIcon } from 'lucide-react';
 
 type WaTemplate = {
   meta_template_id: string | null;
@@ -132,6 +134,9 @@ export default function WhatsAppBroadcast({ session, onBack }: { session: Sessio
   const [showCostEstimator, setShowCostEstimator] = useState(false);
   const [showComparison, setShowComparison] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
+  const [showAudienceManager, setShowAudienceManager] = useState(false);
+  const [showOptOutManager, setShowOptOutManager] = useState(false);
+  const [showDripBuilder, setShowDripBuilder] = useState(false);
   const [throttleDelay, setThrottleDelay] = useState(500);
   const [segmentConditions, setSegmentConditions] = useState<{ field: string; operator: string; value: string }[]>([]);
 
@@ -603,6 +608,9 @@ export default function WhatsAppBroadcast({ session, onBack }: { session: Sessio
               <button className="wb-refresh-btn" onClick={() => setShowCalendar(true)} title="Calendar"><CalendarDays size={16} /> Calendar</button>
               <button className="wb-refresh-btn" onClick={() => setShowComparison(true)} title="Compare"><GitCompare size={16} /> Compare</button>
               <button className="wb-refresh-btn" onClick={() => setShowReplyTracking(true)} title="Replies"><MessageCircle size={16} /> Replies</button>
+              <button className="wb-refresh-btn" onClick={() => setShowAudienceManager(true)} title="Audiences"><UsersIcon size={16} /> Audiences</button>
+              <button className="wb-refresh-btn" onClick={() => setShowDripBuilder(true)} title="Drip Sequences"><CalendarDaysIcon size={16} /> Drip</button>
+              <button className="wb-refresh-btn" onClick={() => setShowOptOutManager(true)} title="Opt-outs"><Ban size={16} /> Opt-outs</button>
               <button className="wb-refresh-btn" onClick={() => setShowQuickRecreate(true)} title="Quick recreate"><Copy size={16} /> Presets</button>
               <button className="wb-new-btn" onClick={() => { setShowBroadcastForm(true); fetchBroadcastRecipientCount(broadcastRecipientFilter); }}>
                 <Plus size={16} /> New Broadcast
@@ -1065,6 +1073,9 @@ export default function WhatsAppBroadcast({ session, onBack }: { session: Sessio
       {showCostEstimator && <CostEstimator recipientCount={totalRecipientsForCreate} onClose={() => setShowCostEstimator(false)} />}
       {showComparison && <CampaignComparison broadcasts={broadcasts} onClose={() => setShowComparison(false)} />}
       {showCalendar && <BroadcastCalendarView broadcasts={broadcasts} onSelect={(camp) => { setShowCalendar(false); fetchBroadcastRecipients(camp.id); }} onClose={() => setShowCalendar(false)} />}
+      {showAudienceManager && <AudienceManagerPanel session={session} onUseAudience={(conditions, count, name) => { setShowAudienceManager(false); handleSegmentApply(conditions, count); }} onClose={() => setShowAudienceManager(false)} />}
+      {showOptOutManager && <OptOutManagerPanel session={session} onClose={() => setShowOptOutManager(false)} />}
+      {showDripBuilder && <DripSequenceBuilder session={session} templates={waTemplates} onClose={() => setShowDripBuilder(false)} />}
     </div>
   );
 }

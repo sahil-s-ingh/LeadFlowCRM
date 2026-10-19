@@ -111,3 +111,12 @@ verify_jwt = false
 
 [functions.process-scheduled-wa-messages]
 verify_jwt = false
+
+[functions.process-drip-sequences]
+verify_jwt = false
+
+[functions.integration-webhooks]
+verify_jwt = true
+
+[functions.integration-webhooks-retry]
+verify_jwt = false

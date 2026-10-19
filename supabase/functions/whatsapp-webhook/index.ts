@@ -1,6 +1,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2.45.4";
 import nodemailer from "npm:nodemailer@6.9.15";
 // multi-number support: conversations tagged with wa_settings_id
+// opt-out keyword detection: STOP, UNSUBSCRIBE, etc. → wa_opt_outs table
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -303,6 +304,64 @@ Deno.serve(async (req: Request) => {
           };
 
           await supabase.from("wa_messages").insert(messageData);
+
+          // ─── Opt-out keyword detection ───────────────────────────────
+          // If the incoming message text matches an opt-out keyword, flag the
+          // sender as opted-out so they are excluded from future broadcasts.
+          if (msg.type === "text") {
+            const inboundText = (msg.text?.body || "").toLowerCase().trim();
+            const OPT_OUT_KEYWORDS = ["stop", "unsubscribe", "opt out", "optout", "cancel", "quit", "end", "stop all", "remove"];
+            const matchedKeyword = OPT_OUT_KEYWORDS.find((kw) => inboundText === kw || inboundText.startsWith(kw + " ") || inboundText === kw.replace(" ", ""));
+            if (matchedKeyword) {
+              try {
+                const normalizedPhone = waId || "";
+                if (normalizedPhone) {
+                  // Try to find a matching lead
+                  const { data: lead } = await supabase
+                    .from("submissions")
+                    .select("id")
+                    .eq("mobile_number", `+${normalizedPhone}`)
+                    .maybeSingle();
+                  // Upsert opt-out record: if one exists, update status to opted_out; else insert
+                  const { data: existing } = await supabase
+                    .from("wa_opt_outs")
+                    .select("id, status")
+                    .eq("user_id", adminUserId)
+                    .eq("phone_number", normalizedPhone)
+                    .maybeSingle();
+                  if (existing) {
+                    await supabase
+                      .from("wa_opt_outs")
+                      .update({ status: "opted_out", reason: matchedKeyword, opted_out_at: new Date().toISOString(), opted_in_at: null, lead_id: lead?.id || existing.lead_id, updated_at: new Date().toISOString() })
+                      .eq("id", existing.id);
+                  } else {
+                    await supabase
+                      .from("wa_opt_outs")
+                      .insert({ user_id: adminUserId, phone_number: normalizedPhone, lead_id: lead?.id || null, reason: matchedKeyword, status: "opted_out", opted_out_at: new Date().toISOString() });
+                  }
+                  // Send confirmation
+                  await sendWhatsAppMessage(settings.phone_number_id, settings.access_token, phoneFromWaId, "You've been unsubscribed from our broadcasts. You will no longer receive broadcast messages. Reply START to re-subscribe.");
+                }
+              } catch { /* best effort */ }
+            } else {
+              const RESUB_KEYWORDS = ["start", "subscribe", "opt in", "optin"];
+              const matchedResub = RESUB_KEYWORDS.find((kw) => inboundText === kw);
+              if (matchedResub) {
+                try {
+                  const normalizedPhone = waId || "";
+                  if (normalizedPhone) {
+                    await supabase
+                      .from("wa_opt_outs")
+                      .update({ status: "subscribed", opted_in_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+                      .eq("user_id", adminUserId)
+                      .eq("phone_number", normalizedPhone)
+                      .eq("status", "opted_out");
+                    await sendWhatsAppMessage(settings.phone_number_id, settings.access_token, phoneFromWaId, "You've been re-subscribed to our broadcasts. Welcome back!");
+                  }
+                } catch { /* best effort */ }
+              }
+            }
+          }
 
           // Fire automation trigger for whatsapp_received
           try {

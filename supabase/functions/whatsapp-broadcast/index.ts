@@ -9,6 +9,7 @@ const corsHeaders = {
 const GRAPH_API_VERSION = "v21.0";
 const BATCH_DELAY_MS = 500;
 // Broadcast sender — create, send, schedule, retry, duplicate check, variable mapping, CSV
+// Opt-out filtering, drip sequences, audience management
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
@@ -166,6 +167,14 @@ Deno.serve(async (req: Request) => {
         return new Response(JSON.stringify({ error: "template_name, template_components, and recipients array are required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
 
+      // Fetch opted-out phone numbers for this user and exclude them
+      const { data: optOuts } = await adminSupabase
+        .from("wa_opt_outs")
+        .select("phone_number")
+        .eq("user_id", userData.user.id)
+        .eq("status", "opted_out");
+      const optedOutSet = new Set((optOuts || []).map((o: { phone_number: string }) => o.phone_number.replace(/^\+/, "")));
+
       const resolveVariables = (recipient: { lead_id?: string; phone_number: string; name?: string; lead_data?: Record<string, unknown> }): Record<string, string> => {
         if (!variable_mapping || Object.keys(variable_mapping).length === 0) return {};
         const leadData = recipient.lead_data || {};
@@ -177,7 +186,13 @@ Deno.serve(async (req: Request) => {
         return resolved;
       };
 
-      const recipientRows = recipients.map((r: { lead_id?: string; phone_number: string; name?: string; lead_data?: Record<string, unknown> }) => ({
+      const filteredRecipients = recipients.filter((r: { phone_number: string }) => !optedOutSet.has(r.phone_number.replace(/^\+/, "")));
+      const excludedCount = recipients.length - filteredRecipients.length;
+      if (filteredRecipients.length === 0) {
+        return new Response(JSON.stringify({ error: `All ${recipients.length} recipients have opted out of broadcasts and were excluded.` }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+
+      const recipientRows = filteredRecipients.map((r: { lead_id?: string; phone_number: string; name?: string; lead_data?: Record<string, unknown> }) => ({
         campaign_id: null,
         user_id: userData.user.id,
         lead_id: r.lead_id || null,
@@ -190,7 +205,7 @@ Deno.serve(async (req: Request) => {
 
       const { data: campaign, error: campError } = await adminSupabase
         .from("wa_broadcast_campaigns")
-        .insert({ user_id: userData.user.id, campaign_name: campaign_name || template_name, template_name, template_language: template_language || "en_US", template_components, status: scheduled_at ? "scheduled" : "draft", total_recipients: recipients.length, scheduled_at: scheduled_at || null, phone_number_id: phone_number_id || null, variable_mapping: variable_mapping || {} })
+        .insert({ user_id: userData.user.id, campaign_name: campaign_name || template_name, template_name, template_language: template_language || "en_US", template_components, status: scheduled_at ? "scheduled" : "draft", total_recipients: filteredRecipients.length, scheduled_at: scheduled_at || null, phone_number_id: phone_number_id || null, variable_mapping: variable_mapping || {} })
         .select().single();
 
       if (campError || !campaign) return new Response(JSON.stringify({ error: campError?.message || "Failed to create campaign" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -199,7 +214,7 @@ Deno.serve(async (req: Request) => {
       const { error: recipError } = await adminSupabase.from("wa_broadcast_recipients").insert(finalRecipientRows);
       if (recipError) return new Response(JSON.stringify({ error: recipError.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
-      return new Response(JSON.stringify({ success: true, campaign_id: campaign.id }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({ success: true, campaign_id: campaign.id, excluded_opt_outs: excludedCount }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     // ─── SEND (also used by retry — filters by status) ──────────────────
@@ -329,6 +344,236 @@ Deno.serve(async (req: Request) => {
       const { error } = await adminSupabase.from("wa_broadcast_campaigns").delete().eq("id", campaign_id).eq("user_id", userData.user.id);
       if (error) return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       return new Response(JSON.stringify({ success: true }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    // ─── LIST_OPT_OUTS ─────────────────────────────────────────────────
+    if (action === "list_opt_outs" && req.method === "GET") {
+      const { data, error } = await adminSupabase
+        .from("wa_opt_outs")
+        .select("*")
+        .eq("user_id", userData.user.id)
+        .order("opted_out_at", { ascending: false });
+      if (error) return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({ opt_outs: data || [] }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    // ─── RESUBSCRIBE ───────────────────────────────────────────────────
+    if (action === "resubscribe" && req.method === "POST") {
+      const body = await req.json();
+      const { opt_out_id } = body;
+      if (!opt_out_id) return new Response(JSON.stringify({ error: "opt_out_id is required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      const { error } = await adminSupabase
+        .from("wa_opt_outs")
+        .update({ status: "subscribed", opted_in_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+        .eq("id", opt_out_id)
+        .eq("user_id", userData.user.id);
+      if (error) return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({ success: true }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    // ─── ADD_OPT_OUT (manual) ──────────────────────────────────────────
+    if (action === "add_opt_out" && req.method === "POST") {
+      const body = await req.json();
+      const { phone_number } = body;
+      if (!phone_number) return new Response(JSON.stringify({ error: "phone_number is required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      const normalized = phone_number.replace(/^\+/, "");
+      const { data: existing } = await adminSupabase
+        .from("wa_opt_outs")
+        .select("id")
+        .eq("user_id", userData.user.id)
+        .eq("phone_number", normalized)
+        .maybeSingle();
+      if (existing) {
+        await adminSupabase.from("wa_opt_outs").update({ status: "opted_out", reason: "manual", opted_out_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq("id", existing.id);
+      } else {
+        await adminSupabase.from("wa_opt_outs").insert({ user_id: userData.user.id, phone_number: normalized, reason: "manual", status: "opted_out", opted_out_at: new Date().toISOString() });
+      }
+      return new Response(JSON.stringify({ success: true }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    // ─── DRIP: CREATE SEQUENCE ─────────────────────────────────────────
+    if (action === "drip_create" && req.method === "POST") {
+      const body = await req.json();
+      const { name, recipient_filter, segment_id, phone_number_id, steps } = body;
+      if (!name || !steps || !Array.isArray(steps) || steps.length === 0) {
+        return new Response(JSON.stringify({ error: "name and steps array are required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+
+      // Fetch recipients based on filter or segment
+      let leads: any[] = [];
+      if (segment_id) {
+        const { data: seg } = await adminSupabase.from("wa_broadcast_segments").select("conditions").eq("id", segment_id).eq("user_id", userData.user.id).maybeSingle();
+        if (seg?.conditions) {
+          let query = adminSupabase.from("submissions").select("id, full_name, mobile_number, email, state, status, trading_product, fund_amount, lead_source").eq("user_id", userData.user.id).is("deleted_at", null);
+          for (const cond of seg.conditions) {
+            if (!cond.value?.trim?.()) continue;
+            if (cond.operator === "eq") query = query.eq(cond.field, cond.value);
+            else if (cond.operator === "neq") query = query.neq(cond.field, cond.value);
+            else if (cond.operator === "contains") query = query.ilike(cond.field, `%${cond.value}%`);
+            else if (cond.operator === "gt") query = query.gt(cond.field, cond.value);
+            else if (cond.operator === "lt") query = query.lt(cond.field, cond.value);
+          }
+          const { data } = await query;
+          leads = data || [];
+        }
+      } else {
+        let query = adminSupabase.from("submissions").select("id, full_name, mobile_number, email, state, status, trading_product, fund_amount, lead_source").eq("user_id", userData.user.id).is("deleted_at", null);
+        if (recipient_filter && recipient_filter !== "all") query = query.eq("status", recipient_filter);
+        const { data } = await query;
+        leads = data || [];
+      }
+
+      // Filter leads with phone numbers and exclude opted-out
+      const { data: optOuts } = await adminSupabase.from("wa_opt_outs").select("phone_number").eq("user_id", userData.user.id).eq("status", "opted_out");
+      const optedOutSet = new Set((optOuts || []).map((o: any) => o.phone_number.replace(/^\+/, "")));
+      const validLeads = leads.filter((l: any) => l.mobile_number?.trim() && !optedOutSet.has(l.mobile_number.trim().replace(/^\+/, "")));
+      if (validLeads.length === 0) return new Response(JSON.stringify({ error: "No valid recipients found (all either lack phone numbers or have opted out)" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+
+      // Create the sequence
+      const { data: seq, error: seqErr } = await adminSupabase
+        .from("wa_drip_sequences")
+        .insert({ user_id: userData.user.id, name, recipient_filter: recipient_filter || "all", segment_id: segment_id || null, phone_number_id: phone_number_id || null, status: "active", total_recipients: validLeads.length, started_at: new Date().toISOString() })
+        .select().single();
+      if (seqErr || !seq) return new Response(JSON.stringify({ error: seqErr?.message || "Failed to create sequence" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+
+      // Create steps sorted by offset_days then step_number
+      const sortedSteps = [...steps].sort((a: any, b: any) => (a.offset_days || 0) - (b.offset_days || 0));
+      for (let i = 0; i < sortedSteps.length; i++) {
+        const s = sortedSteps[i];
+        const { data: step } = await adminSupabase
+          .from("wa_drip_steps")
+          .insert({
+            sequence_id: seq.id,
+            user_id: userData.user.id,
+            step_number: i + 1,
+            template_name: s.template_name,
+            template_language: s.template_language || "en_US",
+            template_components: s.template_components || [],
+            variable_mapping: s.variable_mapping || {},
+            offset_days: s.offset_days || 0,
+            status: s.offset_days === 0 ? "pending" : "pending",
+          })
+          .select().single();
+
+        if (step) {
+          // Create drip recipients for this step
+          const resolveVars = (lead: any): Record<string, string> => {
+            if (!s.variable_mapping || Object.keys(s.variable_mapping).length === 0) return {};
+            const resolved: Record<string, string> = {};
+            for (const [varNum, fieldName] of Object.entries(s.variable_mapping)) {
+              const val = lead[fieldName as string];
+              if (val !== null && val !== undefined) resolved[varNum] = String(val);
+            }
+            return resolved;
+          };
+          const recipRows = validLeads.map((l: any) => ({
+            sequence_id: seq.id,
+            step_id: step.id,
+            user_id: userData.user.id,
+            lead_id: l.id,
+            phone_number: l.mobile_number.trim().replace(/^\+/, ""),
+            recipient_name: l.full_name || null,
+            status: "pending",
+            variable_values: resolveVars(l),
+          }));
+          // Insert in batches of 200
+          for (let j = 0; j < recipRows.length; j += 200) {
+            await adminSupabase.from("wa_drip_recipients").insert(recipRows.slice(j, j + 200));
+          }
+        }
+      }
+
+      return new Response(JSON.stringify({ success: true, sequence_id: seq.id, total_recipients: validLeads.length }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    // ─── DRIP: LIST SEQUENCES ──────────────────────────────────────────
+    if (action === "drip_list" && req.method === "GET") {
+      const { data, error } = await adminSupabase
+        .from("wa_drip_sequences")
+        .select("*")
+        .eq("user_id", userData.user.id)
+        .order("created_at", { ascending: false });
+      if (error) return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      // Fetch steps for each sequence
+      const seqIds = (data || []).map((s: any) => s.id);
+      let stepsBySeq: Record<string, any[]> = {};
+      if (seqIds.length > 0) {
+        const { data: allSteps } = await adminSupabase.from("wa_drip_steps").select("*").in("sequence_id", seqIds).order("step_number", { ascending: true });
+        for (const st of allSteps || []) {
+          if (!stepsBySeq[st.sequence_id]) stepsBySeq[st.sequence_id] = [];
+          stepsBySeq[st.sequence_id].push(st);
+        }
+      }
+      const sequences = (data || []).map((s: any) => ({ ...s, steps: stepsBySeq[s.id] || [] }));
+      return new Response(JSON.stringify({ sequences }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    // ─── DRIP: GET SEQUENCE DETAIL ─────────────────────────────────────
+    if (action === "drip_get" && req.method === "GET") {
+      const seqId = url.searchParams.get("sequence_id");
+      if (!seqId) return new Response(JSON.stringify({ error: "sequence_id is required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      const { data: seq } = await adminSupabase.from("wa_drip_sequences").select("*").eq("id", seqId).eq("user_id", userData.user.id).maybeSingle();
+      if (!seq) return new Response(JSON.stringify({ error: "Sequence not found" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      const { data: steps } = await adminSupabase.from("wa_drip_steps").select("*").eq("sequence_id", seqId).order("step_number", { ascending: true });
+      return new Response(JSON.stringify({ sequence: seq, steps: steps || [] }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    // ─── DRIP: PAUSE / RESUME / DELETE ─────────────────────────────────
+    if (action === "drip_update_status" && req.method === "POST") {
+      const body = await req.json();
+      const { sequence_id, status } = body;
+      if (!sequence_id || !status) return new Response(JSON.stringify({ error: "sequence_id and status are required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      const updateData: Record<string, unknown> = { status, updated_at: new Date().toISOString() };
+      if (status === "completed") updateData.completed_at = new Date().toISOString();
+      const { error } = await adminSupabase.from("wa_drip_sequences").update(updateData).eq("id", sequence_id).eq("user_id", userData.user.id);
+      if (error) return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({ success: true }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    if (action === "drip_delete" && req.method === "DELETE") {
+      const body = await req.json();
+      const { sequence_id } = body;
+      if (!sequence_id) return new Response(JSON.stringify({ error: "sequence_id is required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      const { error } = await adminSupabase.from("wa_drip_sequences").delete().eq("id", sequence_id).eq("user_id", userData.user.id);
+      if (error) return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({ success: true }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    // ─── AUDIENCE: LIST with recipient counts ──────────────────────────
+    if (action === "audience_list" && req.method === "GET") {
+      const { data, error } = await adminSupabase
+        .from("wa_broadcast_segments")
+        .select("*")
+        .eq("user_id", userData.user.id)
+        .order("created_at", { ascending: false });
+      if (error) return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({ audiences: data || [] }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    // ─── AUDIENCE: SAVE ────────────────────────────────────────────────
+    if (action === "audience_save" && req.method === "POST") {
+      const body = await req.json();
+      const { name, description, conditions, type } = body;
+      if (!name || !conditions || !Array.isArray(conditions)) {
+        return new Response(JSON.stringify({ error: "name and conditions array are required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      // Count matching leads
+      let query = adminSupabase.from("submissions").select("id", { count: "exact", head: true }).eq("user_id", userData.user.id).is("deleted_at", null);
+      for (const cond of conditions) {
+        if (!cond.value?.trim?.()) continue;
+        if (cond.operator === "eq") query = query.eq(cond.field, cond.value);
+        else if (cond.operator === "neq") query = query.neq(cond.field, cond.value);
+        else if (cond.operator === "contains") query = query.ilike(cond.field, `%${cond.value}%`);
+        else if (cond.operator === "gt") query = query.gt(cond.field, cond.value);
+        else if (cond.operator === "lt") query = query.lt(cond.field, cond.value);
+      }
+      const { count } = await query;
+      const { data, error } = await adminSupabase
+        .from("wa_broadcast_segments")
+        .insert({ user_id: userData.user.id, name, description: description || null, conditions, type: type || "audience", recipient_count: count || 0 })
+        .select().single();
+      if (error) return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({ success: true, audience: data, recipient_count: count || 0 }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     return new Response(JSON.stringify({ error: "Unknown action" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });

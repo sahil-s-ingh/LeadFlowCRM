@@ -1,3 +1,4 @@
+// Updated: AI generation + heatmap analytics
 import { createClient } from "npm:@supabase/supabase-js@2.45.4";
 
 const corsHeaders = {
@@ -575,6 +576,156 @@ Deno.serve(async (req: Request) => {
 
       return new Response(
         JSON.stringify({ analytics: totals, dataPoints }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    // ─── AI GENERATE: generate template content from a goal ───────────
+    if (action === 'ai_generate' && req.method === 'POST') {
+      const body = await req.json();
+      const { goal, category, language, tone } = body;
+
+      if (!goal || !goal.trim()) {
+        return new Response(
+          JSON.stringify({ error: "A goal description is required" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      const cat = (category || 'MARKETING').toUpperCase();
+      const langLabel = language || 'en_US';
+      const toneLabel = tone || 'professional';
+      const optOutPhrase = cat === 'MARKETING' ? '\n\nFooter must include an opt-out phrase like "Reply STOP to unsubscribe".' : '';
+      const authNote = cat === 'AUTHENTICATION' ? '\n\nFor authentication templates, the body must contain only {{1}} for the OTP code.' : '';
+
+      const prompt = `You are a WhatsApp Business template expert. Generate a WhatsApp message template for the following goal:
+
+Goal: ${goal}
+Category: ${cat}
+Language: ${langLabel}
+Tone: ${toneLabel}
+
+Return ONLY a valid JSON object with this exact structure (no markdown, no explanation):
+{
+  "name": "lowercase_with_underscores_min_5_chars",
+  "header": "Short header text or empty string for no header",
+  "body": "The message body text. Use {{1}}, {{2}} etc. for variables.",
+  "footer": "Footer text or empty string",
+  "bodyExamples": ["example_value_1", "example_value_2"],
+  "headerExample": "example value if header has a variable, else empty string",
+  "buttons": [{"type": "QUICK_REPLY", "text": "Button text"}, {"type": "URL", "text": "Button text", "url": "https://example.com"}]
+}
+
+Rules:
+- Name must be lowercase, only letters, numbers, and underscores, 5-60 chars
+- Body must be under 1024 characters
+- Variables must be sequential starting from {{1}}
+- Provide example values for every variable
+- Up to 2 buttons (can be empty array for no buttons)
+- Button text max 25 characters
+- Do NOT use banned words: free, win, winner, won, prize, gift, guaranteed, lottery, earn, click here, buy now, limited time, act now, urgent, casino, gambling, loan, credit card
+- Do NOT include URLs in the body text (use URL buttons instead)${optOutPhrase}${authNote}
+- Keep the tone ${toneLabel} and natural for WhatsApp messaging`;
+
+      const aiRes = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${Deno.env.get("OPENAI_API_KEY")}`,
+        },
+        body: JSON.stringify({
+          model: "gpt-4o-mini",
+          messages: [
+            { role: "system", content: "You are a WhatsApp Business template generator. You only return valid JSON." },
+            { role: "user", content: prompt },
+          ],
+          temperature: 0.7,
+          max_tokens: 800,
+        }),
+      });
+
+      if (!aiRes.ok) {
+        const errText = await aiRes.text();
+        return new Response(
+          JSON.stringify({ error: `AI generation failed: ${aiRes.status}. ${errText.slice(0, 200)}` }),
+          { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      const aiData = await aiRes.json();
+      const content = aiData.choices?.[0]?.message?.content || '';
+
+      let parsed: any;
+      try {
+        const jsonMatch = content.match(/\{[\s\S]*\}/);
+        parsed = JSON.parse(jsonMatch ? jsonMatch[0] : content);
+      } catch {
+        return new Response(
+          JSON.stringify({ error: "AI returned an invalid response. Please try again with a different goal." }),
+          { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      if (!parsed.body || !parsed.name) {
+        return new Response(
+          JSON.stringify({ error: "AI response is missing required fields (name or body)." }),
+          { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      // Sanitize name
+      parsed.name = parsed.name.toLowerCase().replace(/[^a-z0-9_]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '');
+
+      return new Response(
+        JSON.stringify({ template: parsed }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    // ─── HEATMAP: daily analytics data points for heatmap ─────────────
+    if (action === 'heatmap' && req.method === 'GET') {
+      const templateName = url.searchParams.get('name');
+      if (!templateName) {
+        return new Response(
+          JSON.stringify({ error: "name query parameter is required" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      const startTs = url.searchParams.get('start') || String(Math.floor(Date.now() / 1000) - 30 * 86400);
+      const endTs = url.searchParams.get('end') || String(Math.floor(Date.now() / 1000));
+
+      const analyticsRes = await fetch(
+        `https://graph.facebook.com/${GRAPH_API_VERSION}/${wabaId}/template_analytics?` +
+        `template_name=${encodeURIComponent(templateName)}&` +
+        `start=${startTs}&end=${endTs}&granularity=DAILY&metric_types=CLICKS,DELIVERED,READ,SENT`,
+        { headers: { Authorization: `Bearer ${accessToken}` } },
+      );
+      const analyticsData = await analyticsRes.json();
+
+      if (analyticsData.error) {
+        return new Response(
+          JSON.stringify({ error: analyticsData.error.message || "Failed to fetch analytics" }),
+          { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      const dataPoints = analyticsData.analytics?.data?.category?.[0]?.data_points || [];
+      const dayStats = dataPoints.map((dp: any) => {
+        const date = new Date(dp.start * 1000);
+        return {
+          date: date.toISOString().split('T')[0],
+          dayOfWeek: date.getDay(),
+          hour: date.getHours(),
+          sent: dp.sent || 0,
+          delivered: dp.delivered || 0,
+          read: dp.read || 0,
+          clicked: dp.clicked || 0,
+        };
+      });
+
+      return new Response(
+        JSON.stringify({ dataPoints: dayStats }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }

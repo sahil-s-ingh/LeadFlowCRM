@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Plus, Trash2, Edit3, Save, X, Loader2, AlertCircle, CheckCircle2, ToggleLeft, ToggleRight } from 'lucide-react';
+import { RoleTypeManager } from '@/components/RoleTags';
 
 export type Toggle = {
   id: string;
@@ -137,6 +138,11 @@ export default function SuperAdminFeatures() {
 
       {error && <Banner type="error" message={error} onClose={() => setError('')} />}
       {success && <Banner type="success" message={success} onClose={() => setSuccess('')} />}
+
+      {/* Conversion Role Types Manager */}
+      <div style={{ marginBottom: '24px' }}>
+        <RoleTypeManager sessionUserId="" />
+      </div>
 
       {/* Platform Billing Mode Switch */}
       <div style={{

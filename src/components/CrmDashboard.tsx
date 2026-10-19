@@ -26,6 +26,7 @@ import {
   LayoutTemplate, Inbox as InboxIcon,
   HelpCircle, Sun, Moon,
   CreditCard, Smartphone,
+  Webhook,
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import DashboardOverview from '@/components/DashboardOverview';
@@ -47,6 +48,7 @@ import WinLossAnalysis from '@/components/WinLossAnalysis';
 import DuplicateDetectionView from '@/components/DuplicateDetectionView';
 import LeadFollowupHeatmap from '@/components/LeadFollowupHeatmap';
 import AutomationBuilder from '@/components/AutomationBuilder';
+import { IntegrationHub } from '@/components/IntegrationHub';
 import BrokerTrackerPage from '@/components/BrokerTrackerPage';
 import CallGuardrailSettings from '@/components/CallGuardrailSettings';
 import LeadTrackerPage from '@/components/LeadTrackerPage';
@@ -57,6 +59,7 @@ import WhatsAppOnboarding from '@/components/WhatsAppOnboarding';
 import MetaAdsManager from '@/components/MetaAdsManager';
 import BillingPlansSection from '@/components/BillingPlansSection';
 import CheckoutDrawer from '@/components/CheckoutDrawer';
+import { RoleTagPicker } from '@/components/RoleTags';
 
 type LeadStatus = 'new' | 'called_no_response' | 'called_responded' | 'interested' | 'not_interested' | 'converted';
 
@@ -103,7 +106,7 @@ const MOBILE_STAT_OPTIONS: { key: MobileStatKey; label: string }[] = [
 ];
 
 type DateFilterPreset = 'all' | 'today' | 'yesterday' | 'last_7_days' | 'this_week' | 'this_month' | 'this_year' | 'custom';
-type ActiveView = 'dashboard' | 'leads' | 'inbox_hub' | 'inbox' | 'whatsapp' | 'settings' | 'drip' | 'analytics_hub' | 'email_analytics' | 'message_templates' | 'broadcast_hub' | 'broadcast' | 'email_broadcast' | 'telegram_broadcast' | 'activity_timeline' | 'revenue_forecast' | 'followups' | 'leaderboard' | 'goals' | 'win_loss' | 'duplicates' | 'heatmap' | 'automations' | 'brokers' | 'lead_tracker' | 'meta_ads';
+type ActiveView = 'dashboard' | 'leads' | 'inbox_hub' | 'inbox' | 'whatsapp' | 'settings' | 'drip' | 'analytics_hub' | 'email_analytics' | 'message_templates' | 'broadcast_hub' | 'broadcast' | 'email_broadcast' | 'telegram_broadcast' | 'activity_timeline' | 'revenue_forecast' | 'followups' | 'leaderboard' | 'goals' | 'win_loss' | 'duplicates' | 'heatmap' | 'automations' | 'brokers' | 'lead_tracker' | 'meta_ads' | 'integrations';
 
 type UserRole = 'owner' | 'admin' | 'manager' | 'agent';
 
@@ -518,7 +521,7 @@ async function sendMetaConversionEvent(leadId: string, lead: Lead, newStatus: Le
   }
 }
 
-const VALID_VIEWS: ActiveView[] = ['dashboard', 'leads', 'inbox_hub', 'inbox', 'whatsapp', 'settings', 'drip', 'analytics_hub', 'email_analytics', 'message_templates', 'broadcast_hub', 'broadcast', 'email_broadcast', 'telegram_broadcast', 'activity_timeline', 'revenue_forecast', 'followups', 'leaderboard', 'goals', 'win_loss', 'duplicates', 'heatmap', 'automations', 'brokers', 'lead_tracker', 'meta_ads'];
+const VALID_VIEWS: ActiveView[] = ['dashboard', 'leads', 'inbox_hub', 'inbox', 'whatsapp', 'settings', 'drip', 'analytics_hub', 'email_analytics', 'message_templates', 'broadcast_hub', 'broadcast', 'email_broadcast', 'telegram_broadcast', 'activity_timeline', 'revenue_forecast', 'followups', 'leaderboard', 'goals', 'win_loss', 'duplicates', 'heatmap', 'automations', 'brokers', 'lead_tracker', 'meta_ads', 'integrations'];
 
 export default function CrmDashboard({ session, initialView }: { session: Session; initialView?: string }) {
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -1150,6 +1153,37 @@ export default function CrmDashboard({ session, initialView }: { session: Sessio
     setSelectedLead((prev) => (prev && prev.id === id ? { ...prev, ...updates } : prev));
   }, []);
 
+  const fireWebhooks = useCallback(async (event: string, leadData: Record<string, unknown>) => {
+    try {
+      const { data: webhooks } = await supabase
+        .from('integration_webhooks')
+        .select('id')
+        .eq('is_active', true)
+        .contains('events', [event]);
+      if (!webhooks || webhooks.length === 0) return;
+      const { data: sessionData } = await supabase.auth.getSession();
+      const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/integration-webhooks`;
+      for (const wh of webhooks) {
+        fetch(apiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${sessionData.session?.access_token}`, apikey: import.meta.env.VITE_SUPABASE_ANON_KEY },
+          body: JSON.stringify({ webhook_id: wh.id, event, payload: { lead: leadData } }),
+        }).catch(() => {});
+      }
+    } catch { /* webhooks are best-effort */ }
+  }, []);
+
+  const triggerAutomations = useCallback(async (triggerType: string, leadId: string | null, leadData: Record<string, unknown>) => {
+    try {
+      const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-automations`;
+      fetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}` },
+        body: JSON.stringify({ trigger_type: triggerType, lead_id: leadId, lead_data: leadData, user_id: session.user.id }),
+      }).catch(() => {});
+    } catch { /* automations are best-effort */ }
+  }, [session.user.id]);
+
   const updateLead = useCallback(async (id: string, updates: Partial<Lead>) => {
     // Pipeline Auto-Assign: if status is changing from 'new' to another stage, auto-assign to current user
     let autoAssignedTo: string | null = null;
@@ -1182,7 +1216,14 @@ export default function CrmDashboard({ session, initialView }: { session: Sessio
       const currentLead = leads.find((l) => l.id === id);
       if (currentLead) {
         sendMetaConversionEvent(id, { ...currentLead, ...updates }, updates.status);
+        const eventData = { ...currentLead, ...updates };
+        fireWebhooks(updates.status === 'converted' ? 'lead_converted' : 'lead_status_changed', eventData);
+        triggerAutomations('lead_status_changed', id, eventData);
       }
+    }
+    if (updates.assigned_to !== undefined) {
+      const currentLead = leads.find((l) => l.id === id);
+      if (currentLead) fireWebhooks('lead_assigned', { ...currentLead, ...updates });
     }
     // Show toast if auto-assignment happened
     if (autoAssignedTo) {
@@ -1192,9 +1233,10 @@ export default function CrmDashboard({ session, initialView }: { session: Sessio
       setAutoAssignToast({ leadName: lead?.full_name || 'Lead', assigneeName });
       setTimeout(() => setAutoAssignToast(null), 4000);
     }
-  }, [updateLeadInState, leads, session.user.id, pipelineAutoAssignEnabled, pipelineAutoAssignStages, currentMemberId, assigneeMap]);
+  }, [updateLeadInState, leads, session.user.id, pipelineAutoAssignEnabled, pipelineAutoAssignStages, currentMemberId, assigneeMap, fireWebhooks, triggerAutomations]);
 
   const deleteLead = useCallback(async (id: string) => {
+    const leadData = leads.find((l) => l.id === id);
     setLeads((prev) => prev.filter((l) => l.id !== id));
     setSelectedLead(null);
     const { error: deleteError } = await supabase
@@ -1205,8 +1247,9 @@ export default function CrmDashboard({ session, initialView }: { session: Sessio
       setError(deleteError.message);
       fetchLeads();
     } else {
+      if (leadData) fireWebhooks('lead_deleted', leadData);
     }
-  }, [fetchLeads, session.user.id]);
+  }, [fetchLeads, session.user.id, leads, fireWebhooks]);
 
   const bulkDeleteLeads = useCallback(async (ids: string[]) => {
     setBulkDeleting(true);
@@ -1568,10 +1611,13 @@ export default function CrmDashboard({ session, initialView }: { session: Sessio
     }
 
     if (data) {
-      setLeads((prev) => [data as Lead, ...prev]);
+      const newLead = data as Lead;
+      setLeads((prev) => [newLead, ...prev]);
+      fireWebhooks('lead_created', newLead);
+      triggerAutomations('lead_created', newLead.id, newLead);
     }
     return true;
-  }, [session.user.id, getNextAssignee]);
+  }, [session.user.id, getNextAssignee, fireWebhooks]);
 
   const mergeLead = useCallback(async (existingLead: Lead, newForm: NewLeadForm): Promise<boolean> => {
     const updatePayload: Record<string, unknown> = {};
@@ -2067,6 +2113,10 @@ export default function CrmDashboard({ session, initialView }: { session: Sessio
             <Zap size={18} /> {!sidebarCollapsed && 'Automations'}
           </a>
           )}
+
+          <a className={`crm-nav-item ${activeView === 'integrations' ? 'active' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`} onClick={() => { navigateToView('integrations'); setMobileSidebarOpen(false); setMobileNav('leads'); }} style={{ cursor: 'pointer' }} title={sidebarCollapsed ? 'Integrations' : undefined}>
+            <Webhook size={18} /> {!sidebarCollapsed && 'Integrations'}
+          </a>
         </div>
         )}
         {!sidebarCollapsed && sidebarSections.pipeline && sectionVisibility.pipeline && (
@@ -2265,6 +2315,8 @@ export default function CrmDashboard({ session, initialView }: { session: Sessio
           <DuplicateDetectionView leads={leads} onBack={() => navigateToView('dashboard')} onMerge={mergeDuplicates} assigneeMap={assigneeMap} />
         ) : activeView === 'automations' ? (
           <AutomationBuilder session={session} onBack={() => navigateToView('dashboard')} stages={pipelineStages} />
+        ) : activeView === 'integrations' ? (
+          <IntegrationHub session={session} />
         ) : activeView === 'brokers' ? (
           <BrokerTrackerPage session={session} onBack={() => navigateToView('dashboard')} />
         ) : activeView === 'lead_tracker' ? (
@@ -5851,6 +5903,14 @@ function LeadDetailDrawer({ lead, onClose, onUpdate, onDelete, formatDate, onSen
   const [editSource, setEditSource] = useState(lead.lead_source || 'Manual Entry');
   const [savingInfo, setSavingInfo] = useState(false);
   const [brokers, setBrokers] = useState<{ id: string; name: string; website: string | null; logo_url: string | null }[]>([]);
+  const [drawerUserId, setDrawerUserId] = useState('');
+
+  useEffect(() => {
+    (async () => {
+      const { data: sd } = await supabase.auth.getSession();
+      if (sd.session?.user.id) setDrawerUserId(sd.session.user.id);
+    })();
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -6336,6 +6396,8 @@ function LeadDetailDrawer({ lead, onClose, onUpdate, onDelete, formatDate, onSen
             <span style={{ fontWeight: 700, color: '#2563eb', fontSize: '0.9rem' }}>${setupCostPerClient.toFixed(2)}</span>
             <span style={{ fontSize: '0.75rem', color: 'var(--text-dark)', marginLeft: 'auto' }}>Auto-counted on conversion</span>
           </div>
+
+          <RoleTagPicker leadId={lead.id} sessionUserId={drawerUserId} />
         </div>
         )}
 

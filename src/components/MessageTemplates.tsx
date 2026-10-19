@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef, Fragment } from 'react';
 import { supabase } from '@/lib/supabase';
 import type { Session } from '@supabase/supabase-js';
 import {
@@ -397,7 +397,7 @@ function AuthPhonePreview({ body, addButtonType }: { body: string; addButtonType
   );
 }
 
-function TemplateCard({ tpl, onEdit, onDelete, onSync, onClone, onTestSend, onAnalytics, onTranslate, onVersionHistory, onArchive, selected, onSelect, syncing, testing, analyticsOpen }: {
+function TemplateCard({ tpl, onEdit, onDelete, onSync, onClone, onTestSend, onAnalytics, onTranslate, onVersionHistory, onArchive, onHeatmap, selected, onSelect, syncing, testing, analyticsOpen }: {
   tpl: WaTemplate;
   onEdit: (t: WaTemplate) => void;
   onDelete: (t: WaTemplate) => void;
@@ -408,6 +408,7 @@ function TemplateCard({ tpl, onEdit, onDelete, onSync, onClone, onTestSend, onAn
   onTranslate: (t: WaTemplate) => void;
   onVersionHistory: (t: WaTemplate) => void;
   onArchive: (t: WaTemplate) => void;
+  onHeatmap: (t: WaTemplate) => void;
   selected: boolean;
   onSelect: (id: string) => void;
   syncing: boolean;
@@ -492,6 +493,7 @@ function TemplateCard({ tpl, onEdit, onDelete, onSync, onClone, onTestSend, onAn
               </button>
             )}
             <button type="button" onClick={() => onAnalytics(tpl)} className={`mt2-action-btn ${analyticsOpen ? 'mt2-action-btn-edit' : 'mt2-action-btn-ghost'}`} title="View analytics"><BarChart3 size={12} /></button>
+            <button type="button" onClick={() => onHeatmap(tpl)} className="mt2-action-btn mt2-action-btn-ghost" title="Performance heatmap"><Activity size={12} /></button>
             <button type="button" onClick={() => onVersionHistory(tpl)} className="mt2-action-btn mt2-action-btn-ghost" title="Version history"><History size={12} /></button>
             <button type="button" onClick={() => onArchive(tpl)} className="mt2-action-btn mt2-action-btn-ghost" title={tpl.archived ? 'Unarchive' : 'Archive'}><Archive size={12} /></button>
             <button type="button" onClick={() => onDelete(tpl)} className="mt2-action-btn mt2-action-btn-danger"><Trash2 size={12} /></button>
@@ -1496,6 +1498,245 @@ function LanguageGroupView({ templates, onEdit, onClose }: { templates: WaTempla
   );
 }
 
+function AiTemplateGeneratorModal({ onClose, onApply }: { onClose: () => void; onApply: (tpl: { name: string; header: string; body: string; footer: string; bodyExamples: string[]; headerExample: string; buttons: { type: 'QUICK_REPLY' | 'URL' | 'PHONE_NUMBER'; text: string; url?: string }[] }) => void }) {
+  const [goal, setGoal] = useState('');
+  const [category, setCategory] = useState('MARKETING');
+  const [language, setLanguage] = useState('en_US');
+  const [tone, setTone] = useState('professional');
+  const [generating, setGenerating] = useState(false);
+  const [error, setError] = useState('');
+  const [result, setResult] = useState<any>(null);
+
+  const handleGenerate = async () => {
+    if (!goal.trim()) { setError('Please describe what you want the template to accomplish'); return; }
+    setGenerating(true); setError(''); setResult(null);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (!token) { setError('Not authenticated'); return; }
+      const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/whatsapp-templates?action=ai_generate`;
+      const res = await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ goal: goal.trim(), category, language, tone }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) { setError(data.error || 'Generation failed'); return; }
+      setResult(data.template);
+    } catch { setError('Failed to generate template'); }
+    finally { setGenerating(false); }
+  };
+
+  const handleApply = () => {
+    if (!result) return;
+    onApply({
+      name: result.name || '',
+      header: result.header || '',
+      body: result.body || '',
+      footer: result.footer || '',
+      bodyExamples: result.bodyExamples || [],
+      headerExample: result.headerExample || '',
+      buttons: (result.buttons || []).map((b: any) => ({ type: b.type || 'QUICK_REPLY', text: b.text || '', url: b.url || '' })),
+    });
+    onClose();
+  };
+
+  const goalSuggestions = [
+    'Re-engage cold leads who haven\'t responded in 7 days',
+    'Welcome new leads and introduce our trading platform',
+    'Remind leads about their upcoming appointment',
+    'Send a limited-time festival discount offer',
+    'Ask for feedback after a successful conversion',
+  ];
+
+  return (
+    <div className="mt2-modal-overlay" onClick={onClose}>
+      <div className="mt2-modal-card mt2-modal-large" onClick={(e) => e.stopPropagation()}>
+        <div className="mt2-modal-header">
+          <div className="mt2-modal-title"><Sparkles size={18} /><span>AI Template Generator</span></div>
+          <button onClick={onClose} className="mt2-modal-close"><X size={18} /></button>
+        </div>
+        <div className="mt2-modal-body">
+          {!result ? (
+            <>
+              <p className="mt2-modal-desc">Describe what you want the template to do, and the AI will draft a complete WhatsApp template with header, body, footer, buttons, and example values — ready to submit for Meta review.</p>
+              <label className="mt2-field mt2-field-full">
+                <span>What should this template do? <em>*</em></span>
+                <textarea value={goal} onChange={(e) => setGoal(e.target.value)} rows={3} placeholder="e.g. Re-engage cold leads for a trading platform with a special offer" className="mt2-textarea" />
+              </label>
+              <div className="mt2-ai-suggestions">
+                {goalSuggestions.map((s, i) => (
+                  <button key={i} className="mt2-ai-suggestion-chip" onClick={() => setGoal(s)}><Sparkles size={11} /> {s}</button>
+                ))}
+              </div>
+              <div className="mt2-ai-form-row">
+                <label className="mt2-field">
+                  <span>Category</span>
+                  <select value={category} onChange={(e) => setCategory(e.target.value)} className="mt2-select">
+                    <option value="MARKETING">Marketing</option>
+                    <option value="UTILITY">Utility</option>
+                  </select>
+                </label>
+                <label className="mt2-field">
+                  <span>Language</span>
+                  <select value={language} onChange={(e) => setLanguage(e.target.value)} className="mt2-select">
+                    {LANGUAGES.map((l) => <option key={l.value} value={l.value}>{l.label}</option>)}
+                  </select>
+                </label>
+                <label className="mt2-field">
+                  <span>Tone</span>
+                  <select value={tone} onChange={(e) => setTone(e.target.value)} className="mt2-select">
+                    <option value="professional">Professional</option>
+                    <option value="friendly">Friendly</option>
+                    <option value="casual">Casual</option>
+                    <option value="urgent">Urgent</option>
+                  </select>
+                </label>
+              </div>
+              {error && <div className="mt2-error-banner"><AlertTriangle size={16} /> {error}</div>}
+              <button onClick={handleGenerate} disabled={generating || !goal.trim()} className="mt2-submit-btn" style={{ width: '100%', justifyContent: 'center' }}>
+                {generating ? <><Loader2 size={14} className="crm-spin" /> Generating...</> : <><Sparkles size={14} /> Generate Template</>}
+              </button>
+            </>
+          ) : (
+            <>
+              <div className="mt2-ai-result-preview">
+                <div className="mt2-ai-result-header">
+                  <CheckCircle2 size={20} style={{ color: '#16a34a' }} />
+                  <span>Template generated! Review and apply it to the editor.</span>
+                </div>
+                <div className="mt2-ai-result-card">
+                  {result.header && <div className="mt2-ai-result-section"><span className="mt2-ai-result-label">Header</span><p>{result.header}</p></div>}
+                  <div className="mt2-ai-result-section"><span className="mt2-ai-result-label">Body</span><p className="mt2-ai-result-body">{result.body}</p></div>
+                  {result.footer && <div className="mt2-ai-result-section"><span className="mt2-ai-result-label">Footer</span><p>{result.footer}</p></div>}
+                  {result.bodyExamples?.length > 0 && <div className="mt2-ai-result-section"><span className="mt2-ai-result-label">Example Values</span><p>{result.bodyExamples.join(', ')}</p></div>}
+                  {result.buttons?.length > 0 && (
+                    <div className="mt2-ai-result-section"><span className="mt2-ai-result-label">Buttons</span>
+                      <div className="mt2-ai-result-btns">{result.buttons.map((b: any, i: number) => <span key={i} className="mt2-ai-result-btn-pill">{b.text}</span>)}</div>
+                    </div>
+                  )}
+                  <div className="mt2-ai-result-section"><span className="mt2-ai-result-label">Template Name</span><p className="mt2-ai-result-name">{result.name}</p></div>
+                </div>
+              </div>
+              <div className="mt2-ai-result-actions">
+                <button onClick={() => setResult(null)} className="mt2-cancel-btn">Try Again</button>
+                <button onClick={handleApply} className="mt2-submit-btn"><CheckCircle2 size={14} /> Apply to Editor</button>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TemplateHeatmapModal({ template, onClose }: { template: WaTemplate; onClose: () => void }) {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [dataPoints, setDataPoints] = useState<{ date: string; dayOfWeek: number; sent: number; delivered: number; read: number; clicked: number }[]>([]);
+
+  useEffect(() => {
+    (async () => {
+      setLoading(true); setError('');
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const token = sessionData.session?.access_token;
+        if (!token) return;
+        const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/whatsapp-templates?action=heatmap&name=${encodeURIComponent(template.name)}`;
+        const res = await fetch(apiUrl, { headers: { Authorization: `Bearer ${token}` } });
+        const data = await res.json();
+        if (!res.ok || data.error) { setError(data.error || 'Failed to load heatmap data'); return; }
+        setDataPoints(data.dataPoints || []);
+      } catch { setError('Failed to load heatmap data'); }
+      finally { setLoading(false); }
+    })();
+  }, [template.name]);
+
+  const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const HOURS = Array.from({ length: 24 }, (_, i) => i);
+
+  const cellMap: Record<string, { sent: number; read: number; rate: number }> = {};
+  let maxRate = 0;
+  dataPoints.forEach((dp) => {
+    const key = `${dp.dayOfWeek}-${dp.hour}`;
+    const rate = dp.delivered > 0 ? (dp.read / dp.delivered) * 100 : 0;
+    if (!cellMap[key] || cellMap[key].sent < dp.sent) {
+      cellMap[key] = { sent: dp.sent, read: dp.read, rate };
+      if (rate > maxRate) maxRate = rate;
+    }
+  });
+
+  const getHeatColor = (rate: number) => {
+    if (rate === 0) return 'rgba(148,163,184,0.08)';
+    const intensity = Math.min(rate / Math.max(maxRate, 1), 1);
+    const alpha = 0.15 + intensity * 0.85;
+    return `rgba(22,163,74,${alpha})`;
+  };
+
+  const totalSent = dataPoints.reduce((s, d) => s + d.sent, 0);
+  const totalRead = dataPoints.reduce((s, d) => s + d.read, 0);
+  const overallRate = totalSent > 0 ? ((totalRead / totalSent) * 100).toFixed(1) : '0';
+
+  return (
+    <div className="mt2-modal-overlay" onClick={onClose}>
+      <div className="mt2-modal-card mt2-modal-large" onClick={(e) => e.stopPropagation()}>
+        <div className="mt2-modal-header">
+          <div className="mt2-modal-title"><Activity size={18} /><span>Performance Heatmap: {template.name}</span></div>
+          <button onClick={onClose} className="mt2-modal-close"><X size={18} /></button>
+        </div>
+        <div className="mt2-modal-body">
+          {loading ? (
+            <div className="mt2-loading-state"><Loader2 size={24} className="crm-spin" style={{ color: '#25D366' }} /><p>Loading heatmap data (last 30 days)...</p></div>
+          ) : error ? (
+            <div className="mt2-error-banner"><AlertTriangle size={16} /> {error}</div>
+          ) : dataPoints.length === 0 ? (
+            <div className="mt2-empty-state" style={{ padding: 40 }}><Activity size={36} style={{ opacity: 0.25, marginBottom: 8 }} /><p>No analytics data available for this template yet.</p></div>
+          ) : (
+            <>
+              <div className="mt2-heatmap-summary">
+                <div className="mt2-heatmap-stat"><span className="mt2-heatmap-stat-num">{totalSent}</span><span className="mt2-heatmap-stat-label">Total Sent</span></div>
+                <div className="mt2-heatmap-stat"><span className="mt2-heatmap-stat-num">{totalRead}</span><span className="mt2-heatmap-stat-label">Total Read</span></div>
+                <div className="mt2-heatmap-stat"><span className="mt2-heatmap-stat-num">{overallRate}%</span><span className="mt2-heatmap-stat-label">Read Rate</span></div>
+                <div className="mt2-heatmap-stat"><span className="mt2-heatmap-stat-num">{dataPoints.length}</span><span className="mt2-heatmap-stat-label">Data Days</span></div>
+              </div>
+              <p className="mt2-modal-desc">This heatmap shows read rates by day of week and hour. Darker green = higher read rate. Use this to pick the best time to send broadcasts using this template.</p>
+              <div className="mt2-heatmap-wrap">
+                <div className="mt2-heatmap-grid">
+                  <div className="mt2-heatmap-corner" />
+                  {HOURS.map((h) => (
+                    <div key={h} className="mt2-heatmap-hour-label">{h % 6 === 0 ? `${h}:00` : ''}</div>
+                  ))}
+                  {DAYS.map((day, dIdx) => (
+                    <Fragment key={day}>
+                      <div className="mt2-heatmap-day-label">{day}</div>
+                      {HOURS.map((h) => {
+                        const cell = cellMap[`${dIdx}-${h}`];
+                        const rate = cell?.rate || 0;
+                        return (
+                          <div key={`${dIdx}-${h}`} className="mt2-heatmap-cell" style={{ background: getHeatColor(rate) }} title={`${day} ${h}:00 — Sent: ${cell?.sent || 0}, Read: ${cell?.read || 0}, Rate: ${rate.toFixed(1)}%`}>
+                            {cell && cell.sent > 0 && <span className="mt2-heatmap-cell-val">{Math.round(rate)}%</span>}
+                          </div>
+                        );
+                      })}
+                    </Fragment>
+                  ))}
+                </div>
+                <div className="mt2-heatmap-legend">
+                  <span>Low</span>
+                  <div className="mt2-heatmap-legend-bar">
+                    <div className="mt2-heatmap-legend-gradient" />
+                  </div>
+                  <span>High Read Rate</span>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function MessageTemplates({ session, onBack, embedded }: { session: Session; onBack: () => void; embedded?: boolean }) {
   const [waTemplates, setWaTemplates] = useState<WaTemplate[]>([]);
   const [waTemplatesLoading, setWaTemplatesLoading] = useState(false);
@@ -1553,6 +1794,8 @@ export default function MessageTemplates({ session, onBack, embedded }: { sessio
   const [showLangGroups, setShowLangGroups] = useState(false);
   const [showCompliance, setShowCompliance] = useState(false);
   const [varMappings, setVarMappings] = useState<Record<number, string>>({});
+  const [showAiGenerator, setShowAiGenerator] = useState(false);
+  const [heatmapTpl, setHeatmapTpl] = useState<WaTemplate | null>(null);
 
   const fetchWaTemplates = useCallback(async () => {
     setWaTemplatesLoading(true);
@@ -2057,6 +2300,7 @@ export default function MessageTemplates({ session, onBack, embedded }: { sessio
             <button className="mt2-refresh-btn" onClick={() => setShowArchived(!showArchived)} title={showArchived ? 'Show active' : 'Show archived'}><Archive size={16} /> {showArchived ? 'Active' : 'Archived'}</button>
             <button className="mt2-refresh-btn" onClick={() => setShowImportExport(true)} title="Import/Export"><Download size={16} /> Backup</button>
             <button className="mt2-refresh-btn" onClick={() => setShowUsage(true)} title="Usage dashboard"><Activity size={16} /> Usage</button>
+            <button className="mt2-refresh-btn" onClick={() => setShowAiGenerator(true)} title="AI template generator" style={{ color: '#7C3AED' }}><Sparkles size={16} /> AI Generate</button>
             <button className="mt2-refresh-btn" onClick={() => setShowLangGroups(true)} title="Language groups"><Globe size={16} /> Languages</button>
             <button className="mt2-new-btn" onClick={() => { if (tplEditingId) resetTplForm(); setShowWaTemplateForm(true); }}><Plus size={16} /> New Template</button>
           </>}
@@ -2368,7 +2612,7 @@ export default function MessageTemplates({ session, onBack, embedded }: { sessio
           ) : (
             <div className="mt2-tpl-grid">
               {filteredTemplates.map((tpl) => (
-                <TemplateCard key={tpl.meta_template_id || tpl.name} tpl={tpl} onEdit={handleEditWaTemplate} onDelete={handleDeleteWaTemplate} onSync={handleSyncWaTemplate} onClone={handleClone} onTestSend={handleTestSend} onAnalytics={(t) => setAnalyticsTpl(t)} onTranslate={(t) => setTranslateTpl(t)} onVersionHistory={(t) => setShowVersionHistory(t)} onArchive={handleArchiveToggle} selected={selectedTemplateIds.has(tpl.meta_template_id || '')} onSelect={toggleTemplateSelection} syncing={tplSyncingId === tpl.meta_template_id} testing={tplTestingId === tpl.meta_template_id} analyticsOpen={analyticsTpl?.meta_template_id === tpl.meta_template_id} />
+                <TemplateCard key={tpl.meta_template_id || tpl.name} tpl={tpl} onEdit={handleEditWaTemplate} onDelete={handleDeleteWaTemplate} onSync={handleSyncWaTemplate} onClone={handleClone} onTestSend={handleTestSend} onAnalytics={(t) => setAnalyticsTpl(t)} onTranslate={(t) => setTranslateTpl(t)} onVersionHistory={(t) => setShowVersionHistory(t)} onArchive={handleArchiveToggle} onHeatmap={(t) => setHeatmapTpl(t)} selected={selectedTemplateIds.has(tpl.meta_template_id || '')} onSelect={toggleTemplateSelection} syncing={tplSyncingId === tpl.meta_template_id} testing={tplTestingId === tpl.meta_template_id} analyticsOpen={analyticsTpl?.meta_template_id === tpl.meta_template_id} />
               ))}
             </div>
           )}
@@ -2388,6 +2632,20 @@ export default function MessageTemplates({ session, onBack, embedded }: { sessio
       {showUsage && <UsageDashboard templates={waTemplates} onClose={() => setShowUsage(false)} />}
       {showDuplicate && <DuplicateDetectionModal templates={waTemplates} onClose={() => setShowDuplicate(false)} />}
       {showExpiry && <ExpiryWarningsPanel templates={waTemplates} onClose={() => setShowExpiry(false)} />}
+      {showAiGenerator && <AiTemplateGeneratorModal onClose={() => setShowAiGenerator(false)} onApply={(tpl) => {
+        setShowAiGenerator(false);
+        resetTplForm();
+        setTplMode('standard');
+        setTplName(tpl.name);
+        setTplBody(tpl.body);
+        if (tpl.header) { setTplHeaderFormat('TEXT'); setTplHeader(tpl.header); }
+        if (tpl.footer) setTplFooter(tpl.footer);
+        if (tpl.bodyExamples.length > 0) setTplBodyExample(tpl.bodyExamples.join(', '));
+        if (tpl.headerExample) setTplHeaderExample(tpl.headerExample);
+        if (tpl.buttons.length > 0) setTplButtons(tpl.buttons.map((b) => ({ type: b.type, text: b.text, url: b.url || '', phone: '' })));
+        setShowWaTemplateForm(true);
+      }} />}
+      {heatmapTpl && <TemplateHeatmapModal template={heatmapTpl} onClose={() => setHeatmapTpl(null)} />}
       {showLangGroups && <LanguageGroupView templates={waTemplates} onEdit={handleEditWaTemplate} onClose={() => setShowLangGroups(false)} />}
       {!showWaTemplateForm && approvedTemplates.length >= 2 && (
         <button className="mt2-abtest-fab" onClick={() => setShowABTest(true)} title="Create A/B Test"><FlaskConical size={20} /></button>
