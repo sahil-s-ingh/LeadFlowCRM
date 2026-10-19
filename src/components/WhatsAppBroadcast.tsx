@@ -314,13 +314,13 @@ export default function WhatsAppBroadcast({ session, onBack }: { session: Sessio
       if (recipientMode === 'csv') {
         const parsed = parseCsv();
         if (parsed.length === 0) { setBroadcastError('No valid phone numbers found in CSV'); setBroadcastCreating(false); return; }
-        recipients = parsed.map((r) => ({ phone_number: r.phone_number, name: r.name }));
+        recipients = parsed.map((r) => ({ phone_number: String(r.phone_number || '').replace(/[^\d]/g, '').replace(/^0+/, ''), name: r.name }));
       } else {
         let query = supabase.from('submissions').select('id, full_name, mobile_number, email, state, status, trading_product, fund_amount, lead_source').is('deleted_at', null);
         if (broadcastRecipientFilter !== 'all') query = query.eq('status', broadcastRecipientFilter);
         const { data: leads } = await query;
         if (!leads || leads.length === 0) { setBroadcastError('No leads found matching the filter'); setBroadcastCreating(false); return; }
-        recipients = leads.filter((l: any) => l.mobile_number && l.mobile_number.trim()).map((l: any) => ({ lead_id: l.id, phone_number: l.mobile_number.trim(), name: l.full_name, lead_data: l }));
+        recipients = leads.filter((l: any) => l.mobile_number && l.mobile_number.trim()).map((l: any) => ({ lead_id: l.id, phone_number: String(l.mobile_number).replace(/[^\d]/g, '').replace(/^0+/, ''), name: l.full_name, lead_data: l }));
       }
       if (recipients.length === 0) { setBroadcastError('No valid recipients found'); setBroadcastCreating(false); return; }
 
@@ -468,6 +468,7 @@ export default function WhatsAppBroadcast({ session, onBack }: { session: Sessio
       if (!leads || leads.length === 0) { setBroadcastError('No leads found for A/B test'); return; }
 
       const validLeads = leads.filter((l: any) => l.mobile_number?.trim());
+      const normPhone = (p: string) => String(p).replace(/[^\d]/g, '').replace(/^0+/, '');
       const splitIdx = Math.floor(validLeads.length * (config.split / 100));
       const groupA = validLeads.slice(0, splitIdx);
       const groupB = validLeads.slice(splitIdx);
@@ -479,14 +480,14 @@ export default function WhatsAppBroadcast({ session, onBack }: { session: Sessio
       // Create campaign A
       const resA = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/whatsapp-broadcast?action=create`, {
         method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ template_name: config.variantA, template_language: tplA.language, template_components: tplA.components, recipients: groupA.map((l: any) => ({ lead_id: l.id, phone_number: l.mobile_number.trim(), name: l.full_name, lead_data: l })), campaign_name: `${config.name} - Variant A`, phone_number_id: selectedPhoneId || null, variable_mapping: {} }),
+        body: JSON.stringify({ template_name: config.variantA, template_language: tplA.language, template_components: tplA.components, recipients: groupA.map((l: any) => ({ lead_id: l.id, phone_number: normPhone(l.mobile_number), name: l.full_name, lead_data: l })), campaign_name: `${config.name} - Variant A`, phone_number_id: selectedPhoneId || null, variable_mapping: {} }),
       });
       const dataA = await resA.json();
 
       // Create campaign B
       const resB = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/whatsapp-broadcast?action=create`, {
         method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ template_name: config.variantB, template_language: tplB.language, template_components: tplB.components, recipients: groupB.map((l: any) => ({ lead_id: l.id, phone_number: l.mobile_number.trim(), name: l.full_name, lead_data: l })), campaign_name: `${config.name} - Variant B`, phone_number_id: selectedPhoneId || null, variable_mapping: {} }),
+        body: JSON.stringify({ template_name: config.variantB, template_language: tplB.language, template_components: tplB.components, recipients: groupB.map((l: any) => ({ lead_id: l.id, phone_number: normPhone(l.mobile_number), name: l.full_name, lead_data: l })), campaign_name: `${config.name} - Variant B`, phone_number_id: selectedPhoneId || null, variable_mapping: {} }),
       });
       const dataB = await resB.json();
 

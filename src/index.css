@@ -12466,6 +12466,9 @@ html.crm-dark .crm-quick-email { background: #2563eb; color: #fff; }
 
 .crm-chat-header-action:hover { background: #f3f4f6; color: #6b7280; }
 
+.wa-window-badge-wrap { display: flex; align-items: center; flex-shrink: 0; margin-left: auto; }
+.crm-dark .wa-window-badge-wrap .wa-window-badge { color: inherit; }
+
 .crm-chat-header-profile-btn {
   display: flex;
   align-items: center;

@@ -192,11 +192,17 @@ Deno.serve(async (req: Request) => {
         return new Response(JSON.stringify({ error: `All ${recipients.length} recipients have opted out of broadcasts and were excluded.` }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
 
+      const normalizePhone = (raw: string): string => {
+        // Strip everything but digits, drop leading + or 00
+        const digits = String(raw || "").replace(/[^\d]/g, "").replace(/^0+/, "");
+        return digits;
+      };
+
       const recipientRows = filteredRecipients.map((r: { lead_id?: string; phone_number: string; name?: string; lead_data?: Record<string, unknown> }) => ({
         campaign_id: null,
         user_id: userData.user.id,
         lead_id: r.lead_id || null,
-        phone_number: r.phone_number.replace(/^\+/, ""),
+        phone_number: normalizePhone(r.phone_number),
         recipient_name: r.name || null,
         status: "pending",
         variable_values: resolveVariables(r),
@@ -269,6 +275,8 @@ Deno.serve(async (req: Request) => {
           const varValues: Record<string, string> = recipient.variable_values || {};
           const components: { type: string; parameters: { type: string; text: string }[] }[] = [];
 
+          // Send every component the template actually defines (body, header,
+          // buttons). Meta rejects sends that omit required components.
           if (expectedParamCount > 0) {
             const params: { type: string; text: string }[] = [];
             for (let i = 1; i <= expectedParamCount; i++) {
@@ -282,6 +290,19 @@ Deno.serve(async (req: Request) => {
             const sortedKeys = Object.keys(varValues).sort((a, b) => parseInt(a) - parseInt(b));
             components.push({ type: "body", parameters: sortedKeys.map((k) => ({ type: "text", text: varValues[k] || " " })) });
           }
+
+          // Re-include header / button components as originally stored so Meta
+          // doesn't reject for missing required components.
+          for (const comp of storedComponents) {
+            const ctype = (comp?.type || "").toUpperCase();
+            if (ctype === "HEADER" || ctype === "BUTTONS") {
+              components.push(comp as { type: string; parameters: { type: string; text: string }[] });
+            }
+          }
+
+          // Last-resort guard: if the stored template had no body component at
+          // all but the template body in Meta has placeholders, we still need
+          // to send them. Already handled above via expectedParamCount.
 
           const templatePayload: Record<string, unknown> = { name: templateName, language: { code: templateLanguage } };
           if (components.length > 0) templatePayload.components = components;

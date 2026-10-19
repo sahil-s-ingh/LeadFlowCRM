@@ -5,7 +5,7 @@ import {
   Phone, Mail, CalendarClock, Tag, Zap, ChevronDown, KeyRound, Pin, Smile,
   Mic, Square, XCircle, Send as SendIcon, Activity, UserCheck, Flame,
   TrendingUp, DollarSign, CalendarCheck, CreditCard, Bot, Copy, Star, Search,
-  CalendarPlus, ChevronUp,
+  CalendarPlus, ChevronUp, Clock3,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { Session } from '@supabase/supabase-js';
@@ -1357,6 +1357,33 @@ const LeadWhatsAppDrawer: React.FC<Props> = ({ open, lead, session, onClose }) =
                     <Flame size={10} /> {leadScore}
                   </span>
                 )}
+                {(() => {
+                  const lastInbound = messages.filter((m) => m.sender === 'client').sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
+                  if (!lastInbound) return null;
+                  const elapsedMs = Date.now() - new Date(lastInbound.created_at).getTime();
+                  const windowMs = 24 * 60 * 60 * 1000;
+                  const remainingMs = windowMs - elapsedMs;
+                  const open = remainingMs > 0;
+                  const remainingH = Math.floor(remainingMs / (60 * 60 * 1000));
+                  const remainingM = Math.floor((remainingMs % (60 * 60 * 1000)) / (60 * 1000));
+                  return (
+                    <span
+                      className="lead-wa-window-badge"
+                      style={{
+                        display: 'inline-flex', alignItems: 'center', gap: '4px',
+                        padding: '2px 8px', borderRadius: '6px', fontSize: '0.62rem', fontWeight: 700,
+                        background: open ? (remainingH < 1 ? 'rgba(245,158,11,0.12)' : 'rgba(37,211,102,0.12)') : 'rgba(239,68,68,0.12)',
+                        color: open ? (remainingH < 1 ? '#D97706' : '#16A34A') : '#DC2626',
+                        border: `1px solid ${open ? (remainingH < 1 ? 'rgba(245,158,11,0.3)' : 'rgba(37,211,102,0.3)') : 'rgba(239,68,68,0.3)'}`,
+                        whiteSpace: 'nowrap', flexShrink: 0,
+                      }}
+                      title={open ? `24-hour window open — closes in ${remainingH}h ${remainingM}m` : '24-hour window expired — only template messages can be sent'}
+                    >
+                      <Clock3 size={10} />
+                      {open ? `${remainingH}h ${remainingM}m left` : 'Window closed'}
+                    </span>
+                  );
+                })()}
                 {conversation && (
                   <div className="lead-wa-header-actions-right">
                     <button

@@ -26,7 +26,7 @@ import {
   LayoutTemplate, Inbox as InboxIcon,
   HelpCircle, Sun, Moon,
   CreditCard, Smartphone,
-  Webhook,
+  Webhook, Clock3,
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import DashboardOverview from '@/components/DashboardOverview';
@@ -14781,6 +14781,34 @@ function WhatsAppInbox({ session, onUnreadChange, refreshKey, onRefresh, onCall 
               >
                 {chatCallState ? <Loader2 size={18} className="crm-spin" /> : <PhoneIcon size={18} />}
               </button>
+              <div className="wa-window-badge-wrap">
+                {(() => {
+                  const lastInbound = messages.filter((m) => m.sender === 'client').sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
+                  if (!lastInbound) return null;
+                  const elapsedMs = Date.now() - new Date(lastInbound.created_at).getTime();
+                  const windowMs = 24 * 60 * 60 * 1000;
+                  const remainingMs = windowMs - elapsedMs;
+                  const open = remainingMs > 0;
+                  const remainingH = Math.floor(remainingMs / (60 * 60 * 1000));
+                  const remainingM = Math.floor((remainingMs % (60 * 60 * 1000)) / (60 * 1000));
+                  return (
+                    <div
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: '5px',
+                        padding: '4px 9px', borderRadius: '7px', fontSize: '0.66rem', fontWeight: 700,
+                        background: open ? (remainingH < 1 ? 'rgba(245,158,11,0.12)' : 'rgba(37,211,102,0.12)') : 'rgba(239,68,68,0.12)',
+                        color: open ? (remainingH < 1 ? '#D97706' : '#16A34A') : '#DC2626',
+                        border: `1px solid ${open ? (remainingH < 1 ? 'rgba(245,158,11,0.3)' : 'rgba(37,211,102,0.3)') : 'rgba(239,68,68,0.3)'}`,
+                        whiteSpace: 'nowrap', flexShrink: 0,
+                      }}
+                      title={open ? `24-hour window open — closes in ${remainingH}h ${remainingM}m` : '24-hour window expired — only template messages can be sent'}
+                    >
+                      <Clock3 size={11} />
+                      {open ? `${remainingH}h ${remainingM}m left` : 'Window closed'}
+                    </div>
+                  );
+                })()}
+              </div>
               <button className="crm-chat-header-action" aria-label="Conversation options"><MoreVertical size={18} /></button>
             </div>
 
