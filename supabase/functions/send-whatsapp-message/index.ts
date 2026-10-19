@@ -317,7 +317,7 @@ Deno.serve(async (req: Request) => {
             .map((c: Record<string, unknown>) => {
               const typeStr = typeof c.type === "string" ? (c.type as string).toLowerCase() : "";
               const params = c.parameters as Array<{ type: string; text: string }> | undefined;
-              if (params && Array.isArray(params)) {
+              if (params && Array.isArray(params) && params.length > 0) {
                 return { type: typeStr, parameters: params };
               }
               return null;

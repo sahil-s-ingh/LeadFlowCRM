@@ -799,7 +799,21 @@ const LeadWhatsAppDrawer: React.FC<Props> = ({ open, lead, session, onClose }) =
       const conv = await ensureConversation();
       if (!conv) { setSending(false); return; }
       const templateComponents = (tpl.components || [])
-        .map((c) => ((c.type || '').toLowerCase() === 'body' ? { type: 'body', parameters: params.map((p) => ({ type: 'text', text: p })) } : null))
+        .map((c) => {
+          const ctype = (c.type || '').toLowerCase();
+          if (ctype === 'body') {
+            if (params.length === 0) return null;
+            return { type: 'body', parameters: params.map((p) => ({ type: 'text', text: p })) };
+          }
+          if (ctype === 'header') {
+            const headerText = (c as Record<string, unknown>).text as string | undefined;
+            if (!headerText) return null;
+            const headerParams = (headerText.match(/\{\{(\d+)\}\}/g) || []).map(() => ({ type: 'text', text: params.shift() || '' }));
+            if (headerParams.length === 0) return null;
+            return { type: 'header', parameters: headerParams };
+          }
+          return null;
+        })
         .filter(Boolean);
       const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-whatsapp-message`, {
         method: 'POST',
