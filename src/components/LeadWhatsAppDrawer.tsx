@@ -586,6 +586,42 @@ const LeadWhatsAppDrawer: React.FC<Props> = ({ open, lead, session, onClose }) =
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, lead?.id, lead?.status]);
 
+  const loadScheduledMessages = useCallback(async () => {
+    if (!session || !conversation) return;
+    try {
+      const { data, error } = await supabase
+        .from('wa_scheduled_messages')
+        .select('id, conversation_id, text, template_name, scheduled_at, status, error_message')
+        .eq('user_id', session.user.id)
+        .eq('conversation_id', conversation.id)
+        .eq('status', 'pending')
+        .order('scheduled_at', { ascending: true });
+      if (error) throw error;
+      setScheduledMsgs((data || []) as ScheduledMessage[]);
+    } catch {
+      setScheduledMsgs([]);
+    }
+  }, [session, conversation]);
+
+  const loadStarredMessages = useCallback(async () => {
+    if (!session || !conversation) return;
+    try {
+      const { data, error } = await supabase
+        .from('wa_starred_messages')
+        .select('id, message_id, note, created_at')
+        .eq('user_id', session.user.id)
+        .eq('conversation_id', conversation.id)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      const items = (data || []) as StarredMessage[];
+      setStarredList(items);
+      setStarredMsgIds(new Set(items.map((s) => s.message_id)));
+    } catch {
+      setStarredList([]);
+      setStarredMsgIds(new Set());
+    }
+  }, [session, conversation]);
+
   useEffect(() => {
     if (open && conversation) { loadNotes(); loadActivities(); loadScheduledMessages(); loadStarredMessages(); }
   }, [open, conversation, loadNotes, loadActivities, loadScheduledMessages, loadStarredMessages]);
@@ -1110,42 +1146,6 @@ const LeadWhatsAppDrawer: React.FC<Props> = ({ open, lead, session, onClose }) =
     setShowSmartReplies(false);
     showToast(type === 'booking' ? 'Booking link added — press send' : 'Payment link added — press send');
   };
-
-  const loadScheduledMessages = useCallback(async () => {
-    if (!session || !conversation) return;
-    try {
-      const { data, error } = await supabase
-        .from('wa_scheduled_messages')
-        .select('id, conversation_id, text, template_name, scheduled_at, status, error_message')
-        .eq('user_id', session.user.id)
-        .eq('conversation_id', conversation.id)
-        .eq('status', 'pending')
-        .order('scheduled_at', { ascending: true });
-      if (error) throw error;
-      setScheduledMsgs((data || []) as ScheduledMessage[]);
-    } catch {
-      setScheduledMsgs([]);
-    }
-  }, [session, conversation]);
-
-  const loadStarredMessages = useCallback(async () => {
-    if (!session || !conversation) return;
-    try {
-      const { data, error } = await supabase
-        .from('wa_starred_messages')
-        .select('id, message_id, note, created_at')
-        .eq('user_id', session.user.id)
-        .eq('conversation_id', conversation.id)
-        .order('created_at', { ascending: false });
-      if (error) throw error;
-      const items = (data || []) as StarredMessage[];
-      setStarredList(items);
-      setStarredMsgIds(new Set(items.map((s) => s.message_id)));
-    } catch {
-      setStarredList([]);
-      setStarredMsgIds(new Set());
-    }
-  }, [session, conversation]);
 
   const handleScheduleMessage = async () => {
     if (!session || !conversation || !draft.trim() || !scheduleDate) return;
