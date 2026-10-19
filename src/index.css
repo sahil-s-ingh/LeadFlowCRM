@@ -13024,6 +13024,271 @@ html.crm-dark .crm-quick-email { background: #2563eb; color: #fff; }
   .crm-chat-container.wa-theme .crm-chat-thread { border: none; }
 }
 
+/* ===================== WhatsApp Inbox Dark Mode ===================== */
+html.crm-dark .crm-chat-container.wa-theme {
+  --wa-tint: rgba(37, 211, 102, 0.08);
+  --wa-tint-strong: rgba(37, 211, 102, 0.14);
+}
+
+html.crm-dark .crm-chat-container.wa-theme .crm-chat-list,
+html.crm-dark .crm-chat-container.wa-theme .crm-chat-thread,
+html.crm-dark .crm-chat-container.wa-theme .crm-chat-header,
+html.crm-dark .crm-chat-container.wa-theme .crm-chat-reply-bar,
+html.crm-dark .crm-chat-container.wa-theme .crm-chat-search {
+  background: #131c31;
+}
+
+html.crm-dark .crm-chat-container.wa-theme .crm-chat-list-header {
+  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+html.crm-dark .crm-chat-container.wa-theme .crm-chat-list-heading h2 {
+  color: #e2e8f0;
+}
+
+html.crm-dark .crm-chat-container.wa-theme .crm-chat-list-heading span {
+  color: #94a3b8;
+}
+
+html.crm-dark .crm-chat-container.wa-theme .crm-chat-refresh {
+  background: rgba(37, 211, 102, 0.06);
+  color: #25D366;
+}
+
+html.crm-dark .crm-chat-container.wa-theme .crm-chat-search {
+  color: #64748b;
+}
+
+html.crm-dark .crm-chat-container.wa-theme .crm-chat-search input {
+  background: #0f172a;
+  color: #e2e8f0;
+}
+
+html.crm-dark .crm-chat-container.wa-theme .crm-chat-search input::placeholder {
+  color: #64748b;
+}
+
+html.crm-dark .crm-chat-container.wa-theme .crm-chat-search input:focus {
+  background: #162038;
+}
+
+html.crm-dark .crm-chat-container.wa-theme .crm-chat-list-body::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.2);
+}
+
+html.crm-dark .crm-chat-container.wa-theme .crm-chat-conv-name {
+  color: #e2e8f0;
+}
+
+html.crm-dark .crm-chat-container.wa-theme .crm-chat-conv-time,
+html.crm-dark .crm-chat-container.wa-theme .crm-chat-conv-preview {
+  color: #64748b;
+}
+
+html.crm-dark .crm-chat-container.wa-theme .crm-chat-conv-item:hover {
+  background: rgba(37, 211, 102, 0.06);
+}
+
+html.crm-dark .crm-chat-container.wa-theme .crm-chat-conv-item.active {
+  background: rgba(37, 211, 102, 0.1);
+}
+
+html.crm-dark .crm-chat-container.wa-theme .crm-chat-conv-item.active .crm-chat-conv-name {
+  color: #25D366;
+}
+
+html.crm-dark .crm-chat-container.wa-theme .crm-chat-status-dot {
+  border-color: #131c31;
+}
+
+html.crm-dark .crm-chat-container.wa-theme .crm-chat-header {
+  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+html.crm-dark .crm-chat-container.wa-theme .crm-chat-header-copy strong {
+  color: #e2e8f0;
+}
+
+html.crm-dark .crm-chat-container.wa-theme .crm-chat-header-copy span,
+html.crm-dark .crm-chat-container.wa-theme .crm-chat-status-text {
+  color: #94a3b8;
+}
+
+html.crm-dark .crm-chat-container.wa-theme .crm-chat-header-status-dot,
+html.crm-dark .crm-chat-container.wa-theme .crm-chat-profile-status-dot {
+  border-color: #131c31;
+}
+
+html.crm-dark .crm-chat-container.wa-theme .crm-chat-back-btn {
+  color: #94a3b8;
+}
+
+html.crm-dark .crm-chat-container.wa-theme .crm-chat-back-btn:hover {
+  background: rgba(148, 163, 184, 0.1);
+}
+
+html.crm-dark .crm-chat-container.wa-theme .crm-chat-messages {
+  background: #0b1120;
+}
+
+html.crm-dark .crm-chat-container.wa-theme .crm-chat-messages::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.2);
+}
+
+html.crm-dark .crm-chat-container.wa-theme .crm-chat-date-sep::before,
+html.crm-dark .crm-chat-container.wa-theme .crm-chat-date-sep::after {
+  background: rgba(148, 163, 184, 0.12);
+}
+
+html.crm-dark .crm-chat-container.wa-theme .crm-chat-date-sep span {
+  color: #64748b;
+}
+
+html.crm-dark .crm-chat-container.wa-theme .crm-chat-bubble-client {
+  background: #1a2640;
+  color: #e2e8f0;
+  border: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+html.crm-dark .crm-chat-container.wa-theme .crm-chat-bubble-time {
+  color: #94a3b8;
+}
+
+html.crm-dark .crm-chat-container.wa-theme .crm-chat-reply-bar {
+  border-top: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+html.crm-dark .crm-chat-container.wa-theme .crm-chat-attach-btn,
+html.crm-dark .crm-chat-container.wa-theme .crm-chat-mic-btn,
+html.crm-dark .crm-chat-container.wa-theme .crm-chat-emoji-toggle {
+  background: rgba(37, 211, 102, 0.04);
+  color: #25D366;
+}
+
+html.crm-dark .crm-chat-container.wa-theme .crm-chat-attach-btn:hover,
+html.crm-dark .crm-chat-container.wa-theme .crm-chat-mic-btn:hover,
+html.crm-dark .crm-chat-container.wa-theme .crm-chat-emoji-toggle:hover {
+  background: rgba(37, 211, 102, 0.12);
+}
+
+html.crm-dark .crm-chat-container.wa-theme .crm-chat-reply-input {
+  background: #0f172a;
+  color: #e2e8f0;
+}
+
+html.crm-dark .crm-chat-container.wa-theme .crm-chat-reply-input::placeholder {
+  color: #64748b;
+}
+
+html.crm-dark .crm-chat-container.wa-theme .crm-chat-reply-input:focus {
+  background: #162038;
+}
+
+html.crm-dark .crm-chat-container.wa-theme .crm-chat-send-btn:disabled {
+  background: rgba(148, 163, 184, 0.15);
+  color: #64748b;
+}
+
+html.crm-dark .crm-chat-container.wa-theme .crm-chat-emoji-picker {
+  background: #131c31;
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.3);
+}
+
+html.crm-dark .crm-chat-container.wa-theme .crm-chat-emoji-btn:hover {
+  background: rgba(148, 163, 184, 0.1);
+}
+
+html.crm-dark .crm-chat-container.wa-theme .crm-chat-pending-file {
+  background: rgba(37, 211, 102, 0.06);
+  border: 1px solid rgba(37, 211, 102, 0.15);
+}
+
+html.crm-dark .crm-chat-container.wa-theme .crm-chat-pending-info strong {
+  color: #e2e8f0;
+}
+
+html.crm-dark .crm-chat-container.wa-theme .crm-chat-pending-info span {
+  color: #64748b;
+}
+
+html.crm-dark .crm-chat-container.wa-theme .crm-chat-pending-remove {
+  background: rgba(239, 68, 68, 0.12);
+  color: #f87171;
+}
+
+html.crm-dark .crm-chat-container.wa-theme .crm-chat-recording-bar {
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+html.crm-dark .crm-chat-container.wa-theme .crm-chat-recording-cancel {
+  background: #1a2640;
+  color: #94a3b8;
+  border-color: rgba(148, 163, 184, 0.12);
+}
+
+html.crm-dark .crm-chat-container.wa-theme .crm-chat-recording-cancel:hover {
+  background: #243353;
+}
+
+/* Dark mode for profile panel */
+html.crm-dark .crm-chat-profile-panel {
+  background: #131c31;
+  box-shadow: -8px 0 32px rgba(0, 0, 0, 0.4);
+}
+
+html.crm-dark .crm-chat-profile-header {
+  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+html.crm-dark .crm-chat-profile-header h2 {
+  color: #e2e8f0;
+}
+
+html.crm-dark .crm-chat-profile-status-text {
+  color: #94a3b8;
+}
+
+html.crm-dark .crm-chat-profile-panel .crm-drawer-section {
+  border-bottom: 1px solid rgba(148, 163, 184, 0.08);
+}
+
+html.crm-dark .crm-chat-profile-input {
+  background: #0f172a;
+  border-color: rgba(148, 163, 184, 0.12);
+  color: #e2e8f0;
+}
+
+html.crm-dark .crm-chat-profile-input:focus {
+  border-color: #25D366;
+  background: #162038;
+}
+
+html.crm-dark .crm-chat-profile-cancel-btn {
+  background: #1a2640;
+  color: #94a3b8;
+  border-color: rgba(148, 163, 184, 0.12);
+}
+
+/* Dark mode for lead sidebar */
+html.crm-dark .wa-lead-sidebar {
+  background: #131c31;
+  border-left: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+html.crm-dark .wa-lead-sidebar-header {
+  border-bottom: 1px solid rgba(148, 163, 184, 0.08);
+  background: #131c31;
+}
+
+html.crm-dark .wa-lead-field-label {
+  color: #64748b;
+}
+
+html.crm-dark .wa-lead-field-value {
+  color: #e2e8f0;
+}
+
 /* ===================== WhatsApp Typing Indicator ===================== */
 .wa-typing-dot {
   width: 7px;

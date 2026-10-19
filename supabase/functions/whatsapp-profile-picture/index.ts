@@ -116,6 +116,7 @@ Deno.serve(async (req: Request) => {
           verified_name: statusData.verified_name || null,
           display_phone_number: statusData.display_phone_number || null,
           quality_rating: statusData.quality_rating || null,
+          messaging_limit_tier: statusData.messaging_limit_tier || null,
           status: statusData.status || null,
           name_status: statusData.name_status || null,
           throughput: statusData.throughput || null,

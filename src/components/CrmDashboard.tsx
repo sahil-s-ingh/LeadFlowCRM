@@ -26,7 +26,7 @@ import {
   LayoutTemplate, Inbox as InboxIcon,
   HelpCircle, Sun, Moon,
   CreditCard, Smartphone,
-  Webhook, Clock3,
+  Webhook, Clock3, Gauge,
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import DashboardOverview from '@/components/DashboardOverview';
@@ -7471,6 +7471,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
     verified_name: string | null;
     display_phone_number: string | null;
     quality_rating: string | null;
+    messaging_limit_tier: string | null;
     status: string | null;
     name_status: string | null;
     throughput: { level: string } | null;
@@ -9764,6 +9765,33 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                               <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-main)' }}>{waPhoneStatus.throughput.level}</span>
                             </div>
                           )}
+
+                          {/* Messaging Limit Tier */}
+                          {(() => {
+                            const tier = (waPhoneStatus.messaging_limit_tier || '').toUpperCase();
+                            const tierMap: Record<string, { label: string; limit: string; color: string; bg: string }> = {
+                              TIER_1K: { label: 'Tier 1', limit: '1,000 unique customers / 24h', color: '#0891B2', bg: 'rgba(8,145,178,0.1)' },
+                              TIER_10K: { label: 'Tier 2', limit: '10,000 unique customers / 24h', color: '#2563EB', bg: 'rgba(37,99,235,0.1)' },
+                              TIER_100K: { label: 'Tier 3', limit: '100,000 unique customers / 24h', color: '#7C3AED', bg: 'rgba(124,58,237,0.1)' },
+                              TIER_UNLIMITED: { label: 'Unlimited', limit: 'No daily limit', color: '#16A34A', bg: 'rgba(22,163,74,0.1)' },
+                            };
+                            const t = tierMap[tier] || { label: 'Not available', limit: 'Connect your number to see limits', color: 'var(--text-muted)', bg: 'rgba(100,116,139,0.1)' };
+                            return (
+                              <div style={{ padding: '12px', background: t.bg, borderRadius: '8px', border: '1px solid var(--border-subtle)', gridColumn: '1 / -1' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
+                                  <Gauge size={14} style={{ color: t.color }} />
+                                  <span style={{ fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: t.color }}>Messaging Limit</span>
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', flexWrap: 'wrap' }}>
+                                  <span style={{ fontSize: '0.85rem', fontWeight: 700, color: t.color }}>{t.label}</span>
+                                  <span style={{ fontSize: '0.72rem', color: 'var(--text-dark)', fontWeight: 500 }}>{t.limit}</span>
+                                </div>
+                                <p style={{ fontSize: '0.68rem', color: 'var(--text-dark)', marginTop: '6px', lineHeight: 1.45 }}>
+                                  This is the max number of unique customers you can message in a rolling 24-hour window. Meta upgrades your tier automatically when your quality rating stays high. Keep quality green and you'll move up.
+                                </p>
+                              </div>
+                            );
+                          })()}
                         </div>
                       )}
 
