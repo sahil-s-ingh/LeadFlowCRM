@@ -647,7 +647,7 @@ export default function CrmDashboard({ session, initialView }: { session: Sessio
   const [sectionVisibility, setSectionVisibility] = useState<Record<string, boolean>>({
     leads: true, brokers: true, inbox: true, broadcasts: true,
     analytics: true, lead_tracker: true, templates: true, followups: true,
-    automations: true, pipeline: true,
+    automations: true, pipeline: true, integrations: true,
   });
   const [sidebarSections, setSidebarSections] = useState<Record<string, boolean>>(() => {
     try {
@@ -962,12 +962,25 @@ export default function CrmDashboard({ session, initialView }: { session: Sessio
     (async () => {
       const { data } = await supabase
         .from('appearance_settings')
-        .select('show_telegram_inbox, show_whatsapp_inbox, show_leads, show_brokers, show_inbox, show_broadcasts, show_analytics, show_lead_tracker, show_templates, show_followups, show_automations, show_pipeline, setup_cost')
+        .select('show_telegram_inbox, show_whatsapp_inbox, show_leads, show_brokers, show_inbox, show_broadcasts, show_analytics, show_lead_tracker, show_templates, show_followups, show_automations, show_pipeline, show_integrations, setup_cost')
         .maybeSingle();
       if (data) {
-        const a = data as { show_telegram_inbox: boolean; show_whatsapp_inbox: boolean; show_leads: boolean; show_brokers: boolean; show_inbox: boolean; show_broadcasts: boolean; show_analytics: boolean; show_lead_tracker: boolean; show_templates: boolean; show_followups: boolean; show_automations: boolean; show_pipeline: boolean; setup_cost: number | null };
+        const a = data as { show_telegram_inbox: boolean; show_whatsapp_inbox: boolean; show_leads: boolean; show_brokers: boolean; show_inbox: boolean; show_broadcasts: boolean; show_analytics: boolean; show_lead_tracker: boolean; show_templates: boolean; show_followups: boolean; show_automations: boolean; show_pipeline: boolean; show_integrations: boolean; setup_cost: number | null };
         setShowTelegramInbox(a.show_telegram_inbox !== false);
         setShowWhatsAppInbox(a.show_whatsapp_inbox !== false);
+        setSectionVisibility({
+          leads: a.show_leads !== false,
+          brokers: a.show_brokers !== false,
+          inbox: a.show_inbox !== false,
+          broadcasts: a.show_broadcasts !== false,
+          analytics: a.show_analytics !== false,
+          lead_tracker: a.show_lead_tracker !== false,
+          templates: a.show_templates !== false,
+          followups: a.show_followups !== false,
+          automations: a.show_automations !== false,
+          pipeline: a.show_pipeline !== false,
+          integrations: a.show_integrations !== false,
+        });
         setSectionVisibility({
           leads: a.show_leads !== false,
           brokers: a.show_brokers !== false,
@@ -2114,9 +2127,11 @@ export default function CrmDashboard({ session, initialView }: { session: Sessio
           </a>
           )}
 
+          {sectionVisibility.integrations && (
           <a className={`crm-nav-item ${activeView === 'integrations' ? 'active' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`} onClick={() => { navigateToView('integrations'); setMobileSidebarOpen(false); setMobileNav('leads'); }} style={{ cursor: 'pointer' }} title={sidebarCollapsed ? 'Integrations' : undefined}>
             <Webhook size={18} /> {!sidebarCollapsed && 'Integrations'}
           </a>
+          )}
         </div>
         )}
         {!sidebarCollapsed && sidebarSections.pipeline && sectionVisibility.pipeline && (
@@ -7845,7 +7860,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
   const [localSectionVis, setLocalSectionVis] = useState<Record<string, boolean>>({
     leads: true, brokers: true, inbox: true, broadcasts: true,
     analytics: true, lead_tracker: true, templates: true, followups: true,
-    automations: true, pipeline: true,
+    automations: true, pipeline: true, integrations: true,
   });
   const [sectionVisSaving, setSectionVisSaving] = useState(false);
   const [sectionVisSaved, setSectionVisSaved] = useState(false);
@@ -7953,6 +7968,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
           followups: sv.show_followups !== false,
           automations: sv.show_automations !== false,
           pipeline: sv.show_pipeline !== false,
+          integrations: sv.show_integrations !== false,
         });
       }
 
@@ -8345,6 +8361,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
         show_followups: localSectionVis.followups,
         show_automations: localSectionVis.automations,
         show_pipeline: localSectionVis.pipeline,
+        show_integrations: localSectionVis.integrations,
         updated_at: new Date().toISOString(),
       };
       const { data: existing } = await supabase.from('appearance_settings').select('id').maybeSingle();
@@ -11629,6 +11646,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                         { key: 'followups', label: 'Follow-Ups', sub: 'Scheduled reminders and follow-up tasks', icon: <Bell size={18} />, iconBg: 'rgba(239,68,68,0.1)', iconColor: '#EF4444' },
                         { key: 'automations', label: 'Automations', sub: 'Automated workflows and drip campaigns', icon: <Zap size={18} />, iconBg: 'rgba(245,158,11,0.1)', iconColor: '#F59E0B' },
                         { key: 'pipeline', label: 'Pipeline Funnel', sub: 'Visual lead pipeline funnel in sidebar', icon: <Filter size={18} />, iconBg: 'rgba(139,92,246,0.1)', iconColor: '#8B5CF6' },
+                        { key: 'integrations', label: 'Integrations', sub: 'Webhook endpoints for Zapier, Make, and Pabbly', icon: <Webhook size={18} />, iconBg: 'rgba(99,102,241,0.1)', iconColor: '#6366F1' },
                       ].map((item) => {
                         const isVisible = localSectionVis[item.key] !== false;
                         return (

@@ -18634,30 +18634,32 @@ html.crm-dark .crm-quick-email { background: #2563eb; color: #fff; }
 .mt2-wa-chat {
   width: 300px;
   max-width: 100%;
-  border-radius: 16px;
+  border-radius: 18px;
   overflow: hidden;
-  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.12);
-  border: 3px solid #1a1a2e;
-  background: #e5ddd5;
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.16);
+  border: 4px solid #0b141a;
+  background: #efeae2;
 }
 .mt2-wa-chat-bar {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 12px;
-  background: #075e54;
+  padding: 10px 12px;
+  background: #1f2c34;
   color: #fff;
+  border-bottom: 2px solid #0b141a;
 }
-.mt2-wa-chat-back { color: #fff; opacity: 0.7; display: flex; }
+.mt2-wa-chat-back { color: #fff; opacity: 0.85; display: flex; }
 .mt2-wa-chat-avatar {
   display: grid;
-  width: 30px;
-  height: 30px;
+  width: 32px;
+  height: 32px;
   place-items: center;
   border-radius: 50%;
-  background: #d9fdd3;
-  color: #075e54;
+  background: #25d366;
+  color: #0b141a;
   flex-shrink: 0;
+  border: 2px solid rgba(255,255,255,0.15);
 }
 .mt2-wa-chat-name-col {
   display: flex;
@@ -18666,38 +18668,40 @@ html.crm-dark .crm-quick-email { background: #2563eb; color: #fff; }
   min-width: 0;
 }
 .mt2-wa-chat-name {
-  font-size: 0.78rem;
+  font-size: 0.8rem;
   font-weight: 700;
   color: #fff;
   line-height: 1.2;
 }
 .mt2-wa-chat-status {
   font-size: 0.62rem;
-  color: rgba(255, 255, 255, 0.7);
+  color: #25d366;
+  font-weight: 600;
 }
 .mt2-wa-chat-icons {
   display: flex;
-  gap: 12px;
-  color: rgba(255, 255, 255, 0.6);
+  gap: 14px;
+  color: rgba(255, 255, 255, 0.7);
 }
 .mt2-wa-chat-body {
-  padding: 16px 10px 10px;
-  background: #e5ddd5;
-  background-image: radial-gradient(rgba(37, 99, 65, 0.04) 0.8px, transparent 0.8px);
-  background-size: 12px 12px;
+  padding: 18px 10px 14px;
+  background: #efeae2;
+  background-image: radial-gradient(rgba(0, 0, 0, 0.035) 0.8px, transparent 0.8px);
+  background-size: 14px 14px;
   min-height: 280px;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 2px;
+  gap: 3px;
 }
 .mt2-wa-msg-bubble {
   position: relative;
   max-width: 88%;
   background: #fff;
-  border-radius: 8px 0 8px 8px;
-  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.08);
+  border-radius: 10px 0 10px 10px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
   overflow: hidden;
+  border: 1.5px solid rgba(0, 0, 0, 0.08);
 }
 .mt2-wa-msg-tail {
   position: absolute;
@@ -18706,15 +18710,16 @@ html.crm-dark .crm-quick-email { background: #2563eb; color: #fff; }
   width: 0;
   height: 0;
   border-style: solid;
-  border-width: 0 10px 10px 0;
+  border-width: 0 12px 12px 0;
   border-color: transparent #fff transparent transparent;
 }
 
 /* Media in preview */
 .mt2-wa-media-wrap {
-  border-radius: 8px 0 0 0;
+  border-radius: 10px 0 0 0;
   overflow: hidden;
   background: #f0f0f0;
+  border-bottom: 1.5px solid rgba(0,0,0,0.08);
 }
 .mt2-wa-media-img {
   display: block;
@@ -18737,28 +18742,28 @@ html.crm-dark .crm-quick-email { background: #2563eb; color: #fff; }
   color: #64748b;
   font-size: 0.75rem;
   font-weight: 600;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1.5px solid rgba(0,0,0,0.08);
 }
 
 /* Message parts */
 .mt2-wa-msg-header {
   padding: 10px 12px 4px;
-  font-size: 0.76rem;
+  font-size: 0.78rem;
   font-weight: 700;
-  color: #1f2937;
+  color: #0b141a;
   line-height: 1.35;
 }
 .mt2-wa-msg-body {
   padding: 6px 12px 4px;
-  font-size: 0.76rem;
+  font-size: 0.78rem;
   line-height: 1.5;
-  color: #374151;
+  color: #303030;
   white-space: pre-wrap;
   word-break: break-word;
 }
 .mt2-wa-msg-footer {
   padding: 2px 12px 6px;
-  color: #94a3b8;
+  color: #8696a0;
   font-size: 0.66rem;
   font-weight: 500;
 }
@@ -18767,9 +18772,9 @@ html.crm-dark .crm-quick-email { background: #2563eb; color: #fff; }
   align-items: center;
   justify-content: flex-end;
   gap: 3px;
-  padding: 2px 10px 7px;
+  padding: 2px 10px 8px;
   font-size: 0.6rem;
-  color: #94a3b8;
+  color: #8696a0;
 }
 .mt2-wa-msg-time svg { color: #53bdeb; }
 
@@ -18787,28 +18792,31 @@ html.crm-dark .crm-quick-email { background: #2563eb; color: #fff; }
 .mt2-wa-msg-buttons {
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: 0;
   max-width: 88%;
   width: 100%;
-  border-radius: 0 0 8px 8px;
+  border-radius: 0 0 10px 10px;
   overflow: hidden;
   background: #fff;
-  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+  border: 1.5px solid rgba(0, 0, 0, 0.08);
+  border-top: none;
 }
 .mt2-wa-msg-btn {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 5px;
-  padding: 9px 10px;
-  border-top: 1px solid #e5e7eb;
-  color: #128c7e;
-  font-size: 0.72rem;
+  padding: 10px 10px;
+  border-top: 1.5px solid rgba(0, 0, 0, 0.08);
+  color: #00a5f4;
+  font-size: 0.74rem;
   font-weight: 700;
   cursor: default;
   transition: background 0.15s ease;
 }
-.mt2-wa-msg-btn:hover { background: #f0fdf4; }
+.mt2-wa-msg-btn:first-child { border-top: none; }
+.mt2-wa-msg-btn:hover { background: #f0f4f8; }
 
 /* List card */
 .mt2-list-card {
@@ -18977,7 +18985,7 @@ html.crm-dark .crm-quick-email { background: #2563eb; color: #fff; }
 }
 .mt2-tpl-card-preview .mt2-wa-chat {
   width: 100%;
-  border-width: 2px;
+  border-width: 3px;
 }
 .mt2-tpl-card-info {
   padding: 12px 14px 10px;
@@ -19057,35 +19065,45 @@ html.crm-dark .crm-quick-email { background: #2563eb; color: #fff; }
 .mt2-tpl-card-actions {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
-  border-top: 1px solid #f1f5f9;
-  background: #fafafa;
+  gap: 5px;
+  padding: 9px 12px;
+  border-top: 1px solid #edf1f5;
+  background: #fbfcfd;
+  overflow-x: auto;
+  scrollbar-width: none;
 }
+.mt2-tpl-card-actions::-webkit-scrollbar { display: none; }
 .mt2-action-btn {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 6px 10px;
-  border-radius: 7px;
-  font-size: 0.72rem;
-  font-weight: 600;
+  justify-content: center;
+  gap: 5px;
+  min-height: 34px;
+  padding: 6px 9px;
+  border-radius: 8px;
+  font-size: 0.7rem;
+  font-weight: 650;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
   white-space: nowrap;
   font-family: 'Plus Jakarta Sans', sans-serif;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #e4e9ef;
   background: #fff;
-  flex: 1;
-  justify-content: center;
+  flex: 0 0 auto;
+  color: #526173;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
 }
-.mt2-action-btn-ghost { color: #475569; }
-.mt2-action-btn-ghost:hover { border-color: #cbd5e1; background: #f8fafc; }
+.mt2-action-btn:hover {
+  border-color: #d5dde6;
+  background: #f8fafc;
+  box-shadow: 0 2px 5px rgba(15, 23, 42, 0.06);
+}
+.mt2-action-btn-ghost { color: #526173; }
 .mt2-action-btn-ghost:disabled { opacity: 0.5; cursor: not-allowed; }
-.mt2-action-btn-edit { color: #2563eb; }
-.mt2-action-btn-edit:hover { border-color: #2563eb; background: rgba(59, 130, 246, 0.06); }
-.mt2-action-btn-danger { color: #dc2626; }
-.mt2-action-btn-danger:hover { border-color: #dc2626; background: rgba(239, 68, 68, 0.06); }
+.mt2-action-btn-edit { color: #2563eb; background: #f8fbff; border-color: #dce8fb; }
+.mt2-action-btn-edit:hover { border-color: #b9d2f7; background: #f1f7ff; }
+.mt2-action-btn-danger { color: #dc2626; background: #fffafa; border-color: #f1dddd; }
+.mt2-action-btn-danger:hover { border-color: #efbcbc; background: #fff4f4; }
 
 /* Responsive */
 @media (max-width: 1100px) {
@@ -19268,9 +19286,10 @@ html.crm-dark .crm-quick-email { background: #2563eb; color: #fff; }
   position: relative;
   max-width: 88%;
   background: #fff;
-  border-radius: 8px 0 8px 8px;
-  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.08);
+  border-radius: 10px 0 10px 10px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
   overflow: hidden;
+  border: 1.5px solid rgba(0, 0, 0, 0.08);
 }
 .mt2-carousel-nav {
   display: flex;
