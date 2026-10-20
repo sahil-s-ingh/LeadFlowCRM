@@ -2,6 +2,8 @@ import { createClient } from "npm:@supabase/supabase-js@2.45.4";
 import nodemailer from "npm:nodemailer@6.9.15";
 // multi-number support: conversations tagged with wa_settings_id
 // opt-out keyword detection: STOP, UNSUBSCRIBE, etc. → wa_opt_outs table
+// group webhook handling: lifecycle, settings, participants, status, inbound group messages
+// flow webhook handling: nfm/nfm_reply messages from Flow submissions
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -201,6 +203,45 @@ Deno.serve(async (req: Request) => {
           } catch { /* best effort — don't block incoming message handling */ }
         }
 
+        // ─── Handle payment status callbacks ──────────────────────────
+        // Meta sends these when a customer pays (or the payment fails) for an
+        // order_details message we sent. The payload arrives under value.payments.
+        if (Array.isArray(value.payments) && value.payments.length > 0) {
+          for (const pay of value.payments) {
+            const refId = pay.reference_id;
+            const payStatus = (pay.status || "").toLowerCase();
+            if (!refId || !payStatus) continue;
+
+            const orderUpd: Record<string, unknown> = {
+              status: payStatus === "captured" ? "captured" : payStatus === "failed" ? "failed" : payStatus,
+              updated_at: new Date().toISOString(),
+            };
+            if (payStatus === "captured") {
+              orderUpd.paid_at = new Date().toISOString();
+              if (pay.transaction?.id) orderUpd.gateway_transaction_id = pay.transaction.id;
+            }
+
+            try {
+              await supabase.from("wa_payment_orders").update(orderUpd).eq("reference_id", refId);
+            } catch { /* best effort */ }
+
+            // Send a payment confirmation message to the customer
+            if (payStatus === "captured" && settings?.phone_number_id && settings?.access_token) {
+              const custPhone = pay.from ? `+${pay.from}` : "";
+              if (custPhone) {
+                try {
+                  await sendWhatsAppMessage(
+                    settings.phone_number_id,
+                    settings.access_token,
+                    custPhone,
+                    "Payment received. Thank you!",
+                  );
+                } catch { /* best effort */ }
+              }
+            }
+          }
+        }
+
         if (!value.messages || !Array.isArray(value.messages)) continue;
 
         const phoneNumberId = value.metadata?.phone_number_id;
@@ -225,6 +266,109 @@ Deno.serve(async (req: Request) => {
         }
 
         if (!settings) continue;
+
+        // ─── Handle group lifecycle / settings / participants webhooks ───
+        // These come as change.field === "group_lifecycle_update" etc.
+        if (change.field === "group_lifecycle_update" || change.field === "group_settings_update" ||
+            change.field === "group_participants_update" || change.field === "group_status_update") {
+          try {
+            const gv = value;
+            const groupId = gv.group_id || gv.id;
+            if (groupId) {
+              const upd: Record<string, unknown> = { updated_at: new Date().toISOString() };
+              if (gv.invite_link) upd.invite_link = gv.invite_link;
+              if (gv.subject) upd.subject = gv.subject;
+              if (gv.description !== undefined) upd.description = gv.description;
+              if (gv.total_participant_count !== undefined) upd.participant_count = gv.total_participant_count;
+              if (change.field === "group_status_update") {
+                if (gv.suspended === "true" || gv.suspended === true) upd.status = "suspended";
+                else upd.status = "active";
+              }
+              await supabase.from("wa_groups").update(upd).eq("wa_group_id", groupId);
+            }
+          } catch { /* best effort */ }
+          continue;
+        }
+
+        // ─── Handle inbound group messages ──────────────────────────
+        // Group messages have msg.context.group_id or the conversation is a group
+        for (const msg of value.messages || []) {
+          const groupId = msg.context?.group_id || msg.group_id;
+          if (!groupId) continue;
+
+          const { data: localGroup } = await supabase
+            .from("wa_groups")
+            .select("id, user_id")
+            .eq("wa_group_id", groupId)
+            .maybeSingle();
+
+          if (!localGroup) continue;
+
+          const senderWaId = msg.from || "";
+          const contactInfo = (value.contacts || []).find((c: any) => c.wa_id === senderWaId);
+          const senderName = contactInfo?.profile?.name || contactInfo?.name || senderWaId;
+
+          await supabase.from("wa_group_messages").insert({
+            group_id: localGroup.id,
+            user_id: localGroup.user_id,
+            sender: "client",
+            sender_wa_id: senderWaId || null,
+            sender_name: senderName || null,
+            message_type: getMessageType(msg),
+            text_content: getTextContent(msg),
+            media_id: getMediaId(msg),
+            mime_type: getMimeType(msg),
+            file_name: getFileName(msg),
+            wa_message_id: msg.id || null,
+          });
+        }
+
+        // ─── Handle WhatsApp Flow submissions (nfm) ───────────────
+        // When a user completes a Flow, Meta sends a message with type "nfm"
+        // containing the submitted data in nfm.response_json
+        for (const msg of value.messages || []) {
+          if (msg.type !== "nfm" && msg.type !== "nfm_reply") continue;
+
+          const senderWaId = msg.from || "";
+          const phoneFromWaIdNfm = senderWaId ? `+${senderWaId}` : "";
+          let submittedData: Record<string, unknown> = {};
+          let flowToken: string | null = null;
+
+          try {
+            const rawResponse = msg.nfm?.response_json || msg.nfm_reply?.response_json;
+            if (typeof rawResponse === "string") {
+              const parsed = JSON.parse(rawResponse);
+              submittedData = parsed.data || parsed;
+              flowToken = parsed.flow_token || null;
+            } else if (rawResponse) {
+              submittedData = rawResponse.data || rawResponse;
+              flowToken = rawResponse.flow_token || null;
+            }
+          } catch { /* best effort parse */ }
+
+          // Try to find a local flow matching this flow_token or by settings
+          let localFlowId: string | null = null;
+          const { data: flowRow } = await supabase
+            .from("wa_flows")
+            .select("id")
+            .eq("wa_settings_id", settings.id)
+            .limit(1)
+            .maybeSingle();
+          if (flowRow) localFlowId = flowRow.id;
+
+          // Insert the submission
+          if (localFlowId) {
+            await supabase.from("wa_flow_submissions").insert({
+              flow_id: localFlowId,
+              user_id: settings.user_id,
+              wa_phone_number: phoneFromWaIdNfm || null,
+              wa_wa_id: senderWaId || null,
+              submitted_data: submittedData,
+              raw_payload: { msg, flow_token: flowToken },
+              wa_message_id: msg.id || null,
+            });
+          }
+        }
 
         const adminUserId = settings.user_id;
         const contacts = value.contacts || [];
@@ -497,5 +641,6 @@ async function sendWhatsAppMessage(
     }),
   });
 }
+
 
 

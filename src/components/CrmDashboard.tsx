@@ -24,7 +24,7 @@ import {
   Award,
   Building2, Trophy, Target, TrendingDown, GitBranch, Hash, Radar,
 
-  LayoutTemplate, Inbox as InboxIcon,
+  LayoutTemplate, Inbox as InboxIcon, Layout, Instagram,
   HelpCircle, Sun, Moon,
   CreditCard, Smartphone,
   Webhook, Clock3, Gauge, ExternalLink, Wallet, Columns3, HeartPulse, Radio,
@@ -64,6 +64,9 @@ import MetaAdsManager from '@/components/MetaAdsManager';
 import BillingPlansSection from '@/components/BillingPlansSection';
 import CheckoutDrawer from '@/components/CheckoutDrawer';
 import { RoleTagPicker } from '@/components/RoleTags';
+import WhatsAppGroups from '@/components/WhatsAppGroups';
+import WhatsAppFlows from '@/components/WhatsAppFlows';
+import InstagramInbox from '@/components/InstagramInbox';
 
 type LeadStatus = 'new' | 'called_no_response' | 'called_responded' | 'interested' | 'not_interested' | 'converted';
 
@@ -110,7 +113,7 @@ const MOBILE_STAT_OPTIONS: { key: MobileStatKey; label: string }[] = [
 ];
 
 type DateFilterPreset = 'all' | 'today' | 'yesterday' | 'last_7_days' | 'this_week' | 'this_month' | 'this_year' | 'custom';
-type ActiveView = 'dashboard' | 'leads' | 'inbox_hub' | 'inbox' | 'whatsapp' | 'settings' | 'drip' | 'analytics_hub' | 'email_analytics' | 'message_templates' | 'broadcast_hub' | 'broadcast' | 'email_broadcast' | 'telegram_broadcast' | 'activity_timeline' | 'revenue_forecast' | 'followups' | 'leaderboard' | 'goals' | 'win_loss' | 'duplicates' | 'heatmap' | 'automations' | 'brokers' | 'lead_tracker' | 'meta_ads' | 'integrations' | 'call_quality' | 'call_logs';
+type ActiveView = 'dashboard' | 'leads' | 'inbox_hub' | 'inbox' | 'whatsapp' | 'settings' | 'drip' | 'analytics_hub' | 'email_analytics' | 'message_templates' | 'broadcast_hub' | 'broadcast' | 'email_broadcast' | 'telegram_broadcast' | 'activity_timeline' | 'revenue_forecast' | 'followups' | 'leaderboard' | 'goals' | 'win_loss' | 'duplicates' | 'heatmap' | 'automations' | 'brokers' | 'lead_tracker' | 'meta_ads' | 'integrations' | 'call_quality' | 'call_logs' | 'wa_groups' | 'wa_flows' | 'ig_inbox';
 
 type UserRole = 'owner' | 'admin' | 'manager' | 'agent';
 
@@ -525,7 +528,7 @@ async function sendMetaConversionEvent(leadId: string, lead: Lead, newStatus: Le
   }
 }
 
-const VALID_VIEWS: ActiveView[] = ['dashboard', 'leads', 'inbox_hub', 'inbox', 'whatsapp', 'settings', 'drip', 'analytics_hub', 'email_analytics', 'message_templates', 'broadcast_hub', 'broadcast', 'email_broadcast', 'telegram_broadcast', 'activity_timeline', 'revenue_forecast', 'followups', 'leaderboard', 'goals', 'win_loss', 'duplicates', 'heatmap', 'automations', 'brokers', 'lead_tracker', 'meta_ads', 'integrations', 'call_quality', 'call_logs'];
+const VALID_VIEWS: ActiveView[] = ['dashboard', 'leads', 'inbox_hub', 'inbox', 'whatsapp', 'settings', 'drip', 'analytics_hub', 'email_analytics', 'message_templates', 'broadcast_hub', 'broadcast', 'email_broadcast', 'telegram_broadcast', 'activity_timeline', 'revenue_forecast', 'followups', 'leaderboard', 'goals', 'win_loss', 'duplicates', 'heatmap', 'automations', 'brokers', 'lead_tracker', 'meta_ads', 'integrations', 'call_quality', 'call_logs', 'wa_groups', 'wa_flows'];
 
 export default function CrmDashboard({ session, initialView }: { session: Session; initialView?: string }) {
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -651,7 +654,7 @@ export default function CrmDashboard({ session, initialView }: { session: Sessio
   const [sectionVisibility, setSectionVisibility] = useState<Record<string, boolean>>({
     leads: true, brokers: true, inbox: true, broadcasts: true,
     analytics: true, lead_tracker: true, templates: true, followups: true,
-    automations: true, pipeline: true, integrations: true,
+    automations: true, pipeline: true, integrations: true, telegram_inbox: true,
   });
   const [sidebarSections, setSidebarSections] = useState<Record<string, boolean>>(() => {
     try {
@@ -984,18 +987,7 @@ export default function CrmDashboard({ session, initialView }: { session: Sessio
           automations: a.show_automations !== false,
           pipeline: a.show_pipeline !== false,
           integrations: a.show_integrations !== false,
-        });
-        setSectionVisibility({
-          leads: a.show_leads !== false,
-          brokers: a.show_brokers !== false,
-          inbox: a.show_inbox !== false,
-          broadcasts: a.show_broadcasts !== false,
-          analytics: a.show_analytics !== false,
-          lead_tracker: a.show_lead_tracker !== false,
-          templates: a.show_templates !== false,
-          followups: a.show_followups !== false,
-          automations: a.show_automations !== false,
-          pipeline: a.show_pipeline !== false,
+          telegram_inbox: a.show_telegram_inbox !== false,
         });
         if (a.setup_cost != null) setSetupCostPerClient(a.setup_cost);
       }
@@ -2084,6 +2076,15 @@ export default function CrmDashboard({ session, initialView }: { session: Sessio
             <Send size={18} /> {!sidebarCollapsed && 'Broadcasts'}
           </a>
           )}
+          <a className={`crm-nav-item ${activeView === 'wa_groups' ? 'active' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`} onClick={() => { navigateToView('wa_groups'); setMobileSidebarOpen(false); setMobileNav('leads'); }} style={{ cursor: 'pointer' }} title={sidebarCollapsed ? 'WhatsApp Groups' : undefined}>
+            <Users size={18} /> {!sidebarCollapsed && 'WhatsApp Groups'}
+          </a>
+          <a className={`crm-nav-item ${activeView === 'wa_flows' ? 'active' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`} onClick={() => { navigateToView('wa_flows'); setMobileSidebarOpen(false); setMobileNav('leads'); }} style={{ cursor: 'pointer' }} title={sidebarCollapsed ? 'WhatsApp Flows' : undefined}>
+            <Layout size={18} /> {!sidebarCollapsed && 'WhatsApp Flows'}
+          </a>
+          <a className={`crm-nav-item ${activeView === 'ig_inbox' ? 'active' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`} onClick={() => { navigateToView('ig_inbox'); setMobileSidebarOpen(false); setMobileNav('leads'); }} style={{ cursor: 'pointer' }} title={sidebarCollapsed ? 'Instagram Inbox' : undefined}>
+            <Instagram size={18} /> {!sidebarCollapsed && 'Instagram Inbox'}
+          </a>
         </div>
         )}
         {permissions.analytics && sidebarSections.analytics && (
@@ -2352,6 +2353,12 @@ export default function CrmDashboard({ session, initialView }: { session: Sessio
           <CallQualityScoring session={session} onBack={() => navigateToView('dashboard')} />
         ) : activeView === 'call_logs' ? (
           <WhatsAppCallLogs session={session} onBack={() => navigateToView('dashboard')} />
+        ) : activeView === 'wa_groups' ? (
+          <WhatsAppGroups session={session} onBack={() => navigateToView('dashboard')} />
+        ) : activeView === 'wa_flows' ? (
+          <WhatsAppFlows session={session} onBack={() => navigateToView('dashboard')} />
+        ) : activeView === 'ig_inbox' ? (
+          <InstagramInbox session={session} onBack={() => navigateToView('dashboard')} />
         ) : activeView === 'heatmap' ? (
           <div className="dash-overview">
             <div className="dash-page-header">
@@ -8042,7 +8049,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
   const [localSectionVis, setLocalSectionVis] = useState<Record<string, boolean>>({
     leads: true, brokers: true, inbox: true, broadcasts: true,
     analytics: true, lead_tracker: true, templates: true, followups: true,
-    automations: true, pipeline: true, integrations: true,
+    automations: true, pipeline: true, integrations: true, telegram_inbox: true,
   });
   const [sectionVisSaving, setSectionVisSaving] = useState(false);
   const [sectionVisSaved, setSectionVisSaved] = useState(false);
@@ -8151,6 +8158,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
           automations: sv.show_automations !== false,
           pipeline: sv.show_pipeline !== false,
           integrations: sv.show_integrations !== false,
+          telegram_inbox: sv.show_telegram_inbox !== false,
         });
       }
 
@@ -8544,6 +8552,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
         show_automations: localSectionVis.automations,
         show_pipeline: localSectionVis.pipeline,
         show_integrations: localSectionVis.integrations,
+        show_telegram_inbox: localSectionVis.telegram_inbox,
         updated_at: new Date().toISOString(),
       };
       const { data: existing } = await supabase.from('appearance_settings').select('id').maybeSingle();
@@ -8552,6 +8561,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
         : await supabase.from('appearance_settings').insert({ ...payload, user_id: session.user.id });
       if (result.error) { setError(result.error.message); setSectionVisSaving(false); return; }
       Object.entries(localSectionVis).forEach(([key, val]) => onSectionVisibilityChange?.(key, val));
+      onInboxVisibilityChange?.(localSectionVis.telegram_inbox !== false, showWhatsAppInbox);
       setSectionVisSaved(true);
       setTimeout(() => setSectionVisSaved(false), 3000);
     } catch (e) {
@@ -12291,6 +12301,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                         { key: 'automations', label: 'Automations', sub: 'Automated workflows and drip campaigns', icon: <Zap size={18} />, iconBg: 'rgba(245,158,11,0.1)', iconColor: '#F59E0B' },
                         { key: 'pipeline', label: 'Pipeline Funnel', sub: 'Visual lead pipeline funnel in sidebar', icon: <Filter size={18} />, iconBg: 'rgba(139,92,246,0.1)', iconColor: '#8B5CF6' },
                         { key: 'integrations', label: 'Integrations', sub: 'Webhook endpoints for Zapier, Make, and Pabbly', icon: <Webhook size={18} />, iconBg: 'rgba(99,102,241,0.1)', iconColor: '#6366F1' },
+                        { key: 'telegram_inbox', label: 'Telegram Chat', sub: 'Show Telegram conversations in the shared inbox', icon: <Send size={18} />, iconBg: 'rgba(15,118,110,0.1)', iconColor: '#0F766E' },
                       ].map((item) => {
                         const isVisible = localSectionVis[item.key] !== false;
                         return (

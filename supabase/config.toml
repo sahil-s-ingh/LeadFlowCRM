@@ -123,3 +123,18 @@ verify_jwt = false
 
 [functions.call-quality-scoring]
 verify_jwt = true
+
+[functions.whatsapp-payment]
+verify_jwt = true
+
+[functions.whatsapp-groups]
+verify_jwt = true
+
+[functions.whatsapp-flows]
+verify_jwt = true
+
+[functions.instagram-webhook]
+verify_jwt = false
+
+[functions.send-instagram-message]
+verify_jwt = true

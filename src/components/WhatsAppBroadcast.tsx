@@ -16,6 +16,8 @@ import {
 } from '@/components/WhatsAppBroadcastFeatures';
 import { Ban, CalendarDays as CalendarDaysIcon, Users as UsersIcon, FileSpreadsheet } from 'lucide-react';
 import ExcelUploadPanel, { type UploadedContact } from '@/components/ExcelUploadPanel';
+import TimezonePicker from '@/components/TimezonePicker';
+import { localDateTimeInTimezoneToUtc } from '@/lib/metaTimezones';
 
 type WaTemplate = {
   meta_template_id: string | null;
@@ -115,6 +117,9 @@ export default function WhatsAppBroadcast({ session, onBack }: { session: Sessio
   const [selectedPhoneId, setSelectedPhoneId] = useState<string>('');
   const [campaignName, setCampaignName] = useState('');
   const [scheduledAt, setScheduledAt] = useState('');
+  const [scheduleTz, setScheduleTz] = useState<string>(
+    typeof Intl !== 'undefined' ? Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Kolkata' : 'Asia/Kolkata'
+  );
   const [recipientMode, setRecipientMode] = useState<'lead_filter' | 'csv' | 'excel'>('lead_filter');
   const [excelContacts, setExcelContacts] = useState<UploadedContact[]>([]);
   const [excelFileName, setExcelFileName] = useState('');
@@ -357,7 +362,7 @@ export default function WhatsAppBroadcast({ session, onBack }: { session: Sessio
           template_components: broadcastTplComponents,
           recipients,
           campaign_name: campaignName || broadcastTplName,
-          scheduled_at: scheduledAt || null,
+          scheduled_at: scheduledAt ? localDateTimeInTimezoneToUtc(scheduledAt, scheduleTz) : null,
           phone_number_id: selectedPhoneId || null,
           variable_mapping: recipientMode === 'lead_filter' ? variableMapping : {},
           excel_variable_values: recipientMode === 'excel' ? excelContacts.map((c) => c.variables) : undefined,
@@ -375,6 +380,7 @@ export default function WhatsAppBroadcast({ session, onBack }: { session: Sessio
   const resetForm = () => {
     setBroadcastTplName(''); setBroadcastTplComponents([]); setBroadcastRecipientFilter('all');
     setCampaignName(''); setScheduledAt(''); setSelectedPhoneId(''); setCsvText('');
+    setScheduleTz(typeof Intl !== 'undefined' ? Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Kolkata' : 'Asia/Kolkata');
     setCsvRecipients([]); setVariableMapping({}); setRecipientMode('lead_filter'); setDuplicateInfo(null);
     setExcelContacts([]); setExcelFileName('');
   };
@@ -549,12 +555,14 @@ export default function WhatsAppBroadcast({ session, onBack }: { session: Sessio
 
   const handleSendTimeApply = (time: string) => {
     setShowSendTime(false);
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const [hours, minutes] = time.split(':');
-    tomorrow.setHours(parseInt(hours), parseInt(minutes), 0, 0);
-    const localISOString = new Date(tomorrow.getTime() - tomorrow.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
-    setScheduledAt(localISOString);
+    const [hours, minutes] = time.split(':').map(Number);
+    // Build "tomorrow at HH:MM" wall-clock in the selected timezone, expressed as a datetime-local string
+    const now = new Date();
+    const tomorrowInTz = new Date(now.toLocaleString('en-US', { timeZone: scheduleTz }));
+    tomorrowInTz.setDate(tomorrowInTz.getDate() + 1);
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const localInput = `${tomorrowInTz.getFullYear()}-${pad(tomorrowInTz.getMonth() + 1)}-${pad(tomorrowInTz.getDate())}T${pad(hours)}:${pad(minutes)}`;
+    setScheduledAt(localInput);
     if (!showBroadcastForm) setShowBroadcastForm(true);
   };
 
@@ -882,6 +890,10 @@ export default function WhatsAppBroadcast({ session, onBack }: { session: Sessio
               <label className="wb-field">
                 <span>Schedule (optional)</span>
                 <input type="datetime-local" value={scheduledAt} onChange={(e) => setScheduledAt(e.target.value)} className="wb-input" />
+                <div className="wb-schedule-tz">
+                  <TimezonePicker value={scheduleTz} onChange={setScheduleTz} compact />
+                  <span className="wb-schedule-tz-hint">Date/time above is interpreted in this timezone</span>
+                </div>
                 <small className="wb-field-hint">Leave empty to send manually. If scheduled, the campaign auto-sends at the set time — no manual click needed.</small>
               </label>
 

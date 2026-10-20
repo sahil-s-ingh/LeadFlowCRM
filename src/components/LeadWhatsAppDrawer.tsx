@@ -10,6 +10,8 @@ import {
 import { supabase } from '@/lib/supabase';
 import { Session } from '@supabase/supabase-js';
 import { convertToMp3 } from '@/lib/audioConvert';
+import TimezonePicker from '@/components/TimezonePicker';
+import { localDateTimeInTimezoneToUtc } from '@/lib/metaTimezones';
 
 type Lead = {
   id: string;
@@ -353,6 +355,9 @@ const LeadWhatsAppDrawer: React.FC<Props> = ({ open, lead, session, onClose }) =
   // Scheduled messages state
   const [showScheduler, setShowScheduler] = useState(false);
   const [scheduleDate, setScheduleDate] = useState<string>('');
+  const [scheduleTimezone, setScheduleTimezone] = useState<string>(
+    typeof Intl !== 'undefined' ? Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Kolkata' : 'Asia/Kolkata'
+  );
   const [scheduledMsgs, setScheduledMsgs] = useState<ScheduledMessage[]>([]);
   const [scheduleSaving, setScheduleSaving] = useState(false);
 
@@ -369,6 +374,15 @@ const LeadWhatsAppDrawer: React.FC<Props> = ({ open, lead, session, onClose }) =
 
   // Quick replies strip state
   const [showQuickReplies, setShowQuickReplies] = useState(false);
+
+  // WhatsApp payment request state
+  const [showPaymentPanel, setShowPaymentPanel] = useState(false);
+  const [payAmount, setPayAmount] = useState<string>('');
+  const [payTitle, setPayTitle] = useState<string>('');
+  const [payDescription, setPayDescription] = useState<string>('');
+  const [paySending, setPaySending] = useState(false);
+  const [payConfigOk, setPayConfigOk] = useState<boolean | null>(null);
+  const [paymentOrders, setPaymentOrders] = useState<{ id: string; reference_id: string; amount_value: number; title: string; status: string; created_at: string }[]>([]);
 
   // Voice recording state
   const [isRecording, setIsRecording] = useState(false);
@@ -730,6 +744,11 @@ const LeadWhatsAppDrawer: React.FC<Props> = ({ open, lead, session, onClose }) =
             setConversation((prev) => prev ? { ...prev, assigned_to: updated.assigned_to } : prev);
           }
         },
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'wa_payment_orders', filter: `conversation_id=eq.${conversation.id}` },
+        () => { loadPaymentOrders(); },
       )
       .on(
         'postgres_changes',
@@ -1200,6 +1219,109 @@ const LeadWhatsAppDrawer: React.FC<Props> = ({ open, lead, session, onClose }) =
     showToast(type === 'booking' ? 'Booking link added — press send' : 'Payment link added — press send');
   };
 
+  const checkPaymentConfig = useCallback(async () => {
+    if (!session) return;
+    try {
+      const { data, error } = await supabase
+        .from('wa_payment_config')
+        .select('id, payment_gateway_name, configuration_name')
+        .eq('user_id', session.user.id)
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      setPayConfigOk(!!data);
+    } catch {
+      setPayConfigOk(false);
+    }
+  }, [session]);
+
+  const [payConfigGateway, setPayConfigGateway] = useState<string>('razorpay');
+  const [payConfigName, setPayConfigName] = useState<string>('');
+  const [payConfigSaving, setPayConfigSaving] = useState(false);
+
+  const handleSavePayConfig = async () => {
+    if (!session || !payConfigName.trim()) return;
+    setPayConfigSaving(true);
+    try {
+      const { error } = await supabase.from('wa_payment_config').insert({
+        user_id: session.user.id,
+        payment_gateway_name: payConfigGateway,
+        configuration_name: payConfigName.trim(),
+        is_active: true,
+      });
+      if (error) throw error;
+      setPayConfigOk(true);
+      setPayConfigName('');
+      showToast('Payment configuration linked');
+      checkPaymentConfig();
+    } catch (e: any) {
+      setError(e.message || 'Failed to save payment config');
+    } finally {
+      setPayConfigSaving(false);
+    }
+  };
+
+  const loadPaymentOrders = useCallback(async () => {
+    if (!session || !conversation) return;
+    try {
+      const { data, error } = await supabase
+        .from('wa_payment_orders')
+        .select('id, reference_id, amount_value, title, status, created_at')
+        .eq('user_id', session.user.id)
+        .eq('conversation_id', conversation.id)
+        .order('created_at', { ascending: false })
+        .limit(10);
+      if (error) throw error;
+      setPaymentOrders((data || []) as any);
+    } catch {
+      setPaymentOrders([]);
+    }
+  }, [session, conversation]);
+
+  const handleSendPaymentRequest = async () => {
+    if (!session || !conversation || !payAmount || !payTitle.trim()) return;
+    const amountNum = parseFloat(payAmount);
+    if (isNaN(amountNum) || amountNum < 1) {
+      showToast('Enter a valid amount (minimum ₹1)');
+      return;
+    }
+    setPaySending(true);
+    setError(null);
+    try {
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/whatsapp-payment`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          conversationId: conversation.id,
+          amount: amountNum,
+          title: payTitle.trim(),
+          description: payDescription.trim() || undefined,
+          leadId: lead?.id,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        throw new Error(data.error || `Request failed (${res.status})`);
+      }
+      showToast('Payment request sent to customer');
+      setShowPaymentPanel(false);
+      setPayAmount('');
+      setPayTitle('');
+      setPayDescription('');
+      loadPaymentOrders();
+      loadConversation();
+    } catch (e: any) {
+      setError(e.message || 'Failed to send payment request');
+    } finally {
+      setPaySending(false);
+    }
+  };
+
   const handleScheduleMessage = async () => {
     if (!session || !conversation || !draft.trim() || !scheduleDate) return;
     setScheduleSaving(true);
@@ -1210,7 +1332,7 @@ const LeadWhatsAppDrawer: React.FC<Props> = ({ open, lead, session, onClose }) =
         conversation_id: conversation.id,
         lead_id: lead?.id,
         text: draft.trim(),
-        scheduled_at: new Date(scheduleDate).toISOString(),
+        scheduled_at: localDateTimeInTimezoneToUtc(scheduleDate, scheduleTimezone),
         status: 'pending',
       });
       if (error) throw error;
@@ -1648,8 +1770,11 @@ const LeadWhatsAppDrawer: React.FC<Props> = ({ open, lead, session, onClose }) =
             <button className="lead-wa-action-btn" onClick={() => handleSendQuickLink('booking')}>
               <CalendarCheck size={16} /> Booking link
             </button>
-            <button className="lead-wa-action-btn" onClick={() => handleSendQuickLink('payment')}>
-              <CreditCard size={16} /> Payment link
+            <button className="lead-wa-action-btn" onClick={() => { setShowPaymentPanel((v) => !v); setShowFollowUp(false); setShowLabelEditor(false); setShowAutoFu(false); checkPaymentConfig(); loadPaymentOrders(); }}>
+              <CreditCard size={16} /> Payment Request
+              {paymentOrders.filter((o) => o.status === 'pending').length > 0 && (
+                <span className="lead-wa-action-badge">{paymentOrders.filter((o) => o.status === 'pending').length}</span>
+              )}
             </button>
             {leadStatus !== 'converted' && (
               <button className="lead-wa-convert-btn" onClick={handleMarkConverted} disabled={converting}>
@@ -1800,6 +1925,105 @@ const LeadWhatsAppDrawer: React.FC<Props> = ({ open, lead, session, onClose }) =
                   <Plus size={15} />
                 </button>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* WhatsApp payment request panel */}
+        {showActions && showPaymentPanel && (
+          <div className="lead-wa-panel">
+            <div className="lead-wa-panel-head">
+              <CreditCard size={15} />
+              <span>Send payment request (WhatsApp Pay)</span>
+            </div>
+            <div className="lead-wa-panel-body">
+              {payConfigOk === false && (
+                <>
+                  <div className="lead-wa-payment-warning">
+                    <AlertCircle size={14} />
+                    <span>Your WhatsApp payment gateway is not linked yet. First, create a payment configuration in WhatsApp Manager (Business Settings &gt; Payments), then link it here.</span>
+                  </div>
+                  <label className="lead-wa-panel-label">Payment gateway</label>
+                  <select className="lead-wa-panel-input" value={payConfigGateway} onChange={(e) => setPayConfigGateway(e.target.value)} disabled={payConfigSaving}>
+                    <option value="razorpay">Razorpay</option>
+                    <option value="payu">PayU</option>
+                    <option value="billdesk">BillDesk</option>
+                    <option value="zaakpay">Zaakpay</option>
+                  </select>
+                  <label className="lead-wa-panel-label">Configuration name (from WhatsApp Manager)</label>
+                  <input
+                    type="text"
+                    className="lead-wa-panel-input"
+                    placeholder="e.g. razorpay_config_1"
+                    value={payConfigName}
+                    onChange={(e) => setPayConfigName(e.target.value)}
+                    disabled={payConfigSaving}
+                  />
+                  <button
+                    className="lead-wa-panel-save"
+                    onClick={handleSavePayConfig}
+                    disabled={payConfigSaving || !payConfigName.trim()}
+                  >
+                    {payConfigSaving ? 'Saving…' : 'Link payment config'}
+                  </button>
+                </>
+              )}
+              <p className="lead-wa-starter-desc" style={{ marginBottom: 6 }}>
+                Send a native &quot;Review and Pay&quot; screen inside WhatsApp. The customer pays via UPI or cards without leaving the chat. India only, INR only.
+              </p>
+              <label className="lead-wa-panel-label">Title / item name</label>
+              <input
+                type="text"
+                className="lead-wa-panel-input"
+                placeholder="e.g. Account funding, Course fee, Broker deposit"
+                value={payTitle}
+                onChange={(e) => setPayTitle(e.target.value)}
+                disabled={paySending}
+              />
+              <label className="lead-wa-panel-label">Amount (₹)</label>
+              <input
+                type="number"
+                min={1}
+                step="0.01"
+                className="lead-wa-panel-input"
+                placeholder="e.g. 5000"
+                value={payAmount}
+                onChange={(e) => setPayAmount(e.target.value)}
+                disabled={paySending}
+              />
+              <label className="lead-wa-panel-label">Header text (optional)</label>
+              <input
+                type="text"
+                className="lead-wa-panel-input"
+                placeholder="Short label shown on the payment screen"
+                value={payDescription}
+                onChange={(e) => setPayDescription(e.target.value)}
+                disabled={paySending}
+                maxLength={60}
+              />
+              <button
+                className="lead-wa-panel-save"
+                onClick={handleSendPaymentRequest}
+                disabled={paySending || !payAmount || !payTitle.trim() || payConfigOk === false}
+              >
+                {paySending ? 'Sending…' : 'Send payment request'}
+              </button>
+
+              {paymentOrders.length > 0 && (
+                <div className="lead-wa-fu-list">
+                  <p className="lead-wa-fu-list-title">Recent payment requests</p>
+                  {paymentOrders.map((o) => (
+                    <div key={o.id} className="lead-wa-pay-item">
+                      <CreditCard size={13} />
+                      <div className="lead-wa-fu-info">
+                        <span className="lead-wa-fu-title">{o.title}</span>
+                        <span className="lead-wa-fu-date">₹{(o.amount_value / 100).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                      </div>
+                      <span className={`lead-wa-pay-status lead-wa-pay-status-${o.status}`}>{o.status}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -2314,6 +2538,10 @@ const LeadWhatsAppDrawer: React.FC<Props> = ({ open, lead, session, onClose }) =
                 <button className="lead-wa-scheduler-save" onClick={handleScheduleMessage} disabled={scheduleSaving || !scheduleDate || !draft.trim()}>
                   {scheduleSaving ? 'Scheduling…' : 'Schedule send'}
                 </button>
+                <div className="lead-wa-scheduler-tz">
+                  <TimezonePicker value={scheduleTimezone} onChange={setScheduleTimezone} compact />
+                  <span className="lead-wa-scheduler-tz-hint">Times above are interpreted in this timezone</span>
+                </div>
               </div>
               {scheduledMsgs.length > 0 && (
                 <div className="lead-wa-scheduler-list">
