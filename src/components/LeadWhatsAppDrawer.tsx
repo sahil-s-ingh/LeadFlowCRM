@@ -55,6 +55,7 @@ type Conversation = {
   auto_followup_enabled?: boolean | null;
   auto_followup_template_name?: string | null;
   auto_followup_delay_hours?: number | null;
+  wa_settings_id?: string | null;
 };
 
 type Template = {
@@ -404,7 +405,7 @@ const LeadWhatsAppDrawer: React.FC<Props> = ({ open, lead, session, onClose }) =
     try {
       const { data: conv, error: convErr } = await supabase
         .from('wa_conversations')
-        .select('id, wa_phone_number, wa_name, last_message_text, last_message_at, is_typing, typing_at, labels, pinned_message_id, assigned_to, auto_followup_enabled, auto_followup_template_name, auto_followup_delay_hours')
+        .select('id, wa_phone_number, wa_name, last_message_text, last_message_at, is_typing, typing_at, labels, pinned_message_id, assigned_to, auto_followup_enabled, auto_followup_template_name, auto_followup_delay_hours, wa_settings_id')
         .eq('user_id', session.user.id)
         .eq('wa_phone_number', phone)
         .maybeSingle();
@@ -416,6 +417,8 @@ const LeadWhatsAppDrawer: React.FC<Props> = ({ open, lead, session, onClose }) =
         setAutoFuEnabled(!!conv.auto_followup_enabled);
         setAutoFuTemplate(conv.auto_followup_template_name || '');
         setAutoFuHours(conv.auto_followup_delay_hours || 24);
+        // Re-fetch templates scoped to THIS conversation's number (different WABAs may have different templates)
+        loadTemplates(conv as Conversation);
         const { data: msgs, error: msgErr } = await supabase
           .from('wa_messages')
           .select('id, conversation_id, sender, message_type, text_content, media_id, mime_type, file_name, file_size, created_at, wa_message_id, delivery_status')
@@ -466,24 +469,72 @@ const LeadWhatsAppDrawer: React.FC<Props> = ({ open, lead, session, onClose }) =
     }
   }, [lead, session, conversation]);
 
-  const loadTemplates = useCallback(async () => {
+  // Resolve the phone_number_id for a conversation's connected WhatsApp number.
+  // Falls back to the first (default) number when the conversation has no wa_settings_id.
+  const resolvePhoneNumberId = useCallback(async (conv: Conversation | null): Promise<string | null> => {
+    if (!session) return null;
+    try {
+      if (conv?.wa_settings_id) {
+        const { data, error } = await supabase
+          .from('whatsapp_settings')
+          .select('phone_number_id')
+          .eq('id', conv.wa_settings_id)
+          .maybeSingle();
+        if (!error && data?.phone_number_id) return data.phone_number_id as string;
+      }
+      const { data: first, error: fErr } = await supabase
+        .from('whatsapp_settings')
+        .select('phone_number_id')
+        .eq('user_id', session.user.id)
+        .order('created_at', { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      if (!fErr && first?.phone_number_id) return first.phone_number_id as string;
+    } catch { /* fall through */ }
+    return null;
+  }, [session]);
+
+  const loadTemplates = useCallback(async (conv: Conversation | null) => {
     if (!session) return;
     setTemplatesLoading(true);
     try {
-      const { data, error: tErr } = await supabase
+      const phoneNumberId = await resolvePhoneNumberId(conv);
+      // Fetch templates scoped to this number's WABA via the edge function.
+      // Falls back to the default (first) number when no conversation is loaded yet.
+      const qs = phoneNumberId ? `&phone_number_id=${encodeURIComponent(phoneNumberId)}` : '';
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/whatsapp-templates?action=list${qs}`, {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      const data = await res.json();
+      if (res.ok && !data.error) {
+        const approved = ((data.templates || []) as any[])
+          .filter((t) => (t.status || '').toUpperCase() === 'APPROVED')
+          .map((t) => ({
+            id: t.meta_template_id || t.name,
+            name: t.name,
+            language: t.language,
+            category: t.category,
+            status: t.status,
+            components: t.components || [],
+          }));
+        setTemplates(approved);
+        return;
+      }
+      // Edge function failed — fall back to local cache (still unscoped, but better than empty)
+      const { data: cached, error: tErr } = await supabase
         .from('wa_message_templates')
         .select('id, name, language, category, status, components')
         .eq('user_id', session.user.id)
         .eq('status', 'APPROVED')
         .order('created_at', { ascending: false });
       if (tErr) throw tErr;
-      setTemplates((data || []) as Template[]);
+      setTemplates((cached || []) as Template[]);
     } catch {
       setTemplates([]);
     } finally {
       setTemplatesLoading(false);
     }
-  }, [session]);
+  }, [session, resolvePhoneNumberId]);
 
   const loadSnippets = useCallback(async () => {
     if (!session) return;
@@ -563,7 +614,9 @@ const LeadWhatsAppDrawer: React.FC<Props> = ({ open, lead, session, onClose }) =
     if (open) {
       setLeadStatus(lead?.status || 'new');
       loadConversation();
-      loadTemplates();
+      // Templates are loaded after the conversation resolves (scoped to its number).
+      // Preload once with the default number so the starter picker isn't empty.
+      loadTemplates(null);
       loadSnippets();
       loadFollowUps();
       loadTeamMembers();
@@ -844,7 +897,7 @@ const LeadWhatsAppDrawer: React.FC<Props> = ({ open, lead, session, onClose }) =
     try {
       const { data: existing, error: exErr } = await supabase
         .from('wa_conversations')
-        .select('id, wa_phone_number, wa_name, last_message_text, last_message_at, is_typing, typing_at, labels, pinned_message_id, assigned_to, auto_followup_enabled, auto_followup_template_name, auto_followup_delay_hours')
+        .select('id, wa_phone_number, wa_name, last_message_text, last_message_at, is_typing, typing_at, labels, pinned_message_id, assigned_to, auto_followup_enabled, auto_followup_template_name, auto_followup_delay_hours, wa_settings_id')
         .eq('user_id', session.user.id)
         .eq('wa_phone_number', phone)
         .maybeSingle();
@@ -853,7 +906,7 @@ const LeadWhatsAppDrawer: React.FC<Props> = ({ open, lead, session, onClose }) =
       const { data: created, error: createErr } = await supabase
         .from('wa_conversations')
         .insert({ user_id: session.user.id, wa_phone_number: phone, wa_name: lead.full_name, lead_id: lead.id })
-        .select('id, wa_phone_number, wa_name, last_message_text, last_message_at, is_typing, typing_at, labels, pinned_message_id, assigned_to, auto_followup_enabled, auto_followup_template_name, auto_followup_delay_hours')
+        .select('id, wa_phone_number, wa_name, last_message_text, last_message_at, is_typing, typing_at, labels, pinned_message_id, assigned_to, auto_followup_enabled, auto_followup_template_name, auto_followup_delay_hours, wa_settings_id')
         .single();
       if (createErr) throw createErr;
       const conv = created as Conversation;

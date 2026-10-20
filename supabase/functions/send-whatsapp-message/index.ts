@@ -227,6 +227,13 @@ Deno.serve(async (req: Request) => {
         .update({ last_message_text: preview, last_message_at: new Date().toISOString() })
         .eq("id", conversationId);
 
+      try {
+        await adminSupabase.from("wa_messaging_usage").upsert(
+          { wa_settings_id: settings.id, phone_number_id: phoneNumberId, customer_phone: to, window_hour: new Date().toISOString().slice(0,13) + ':00:00+00' },
+          { onConflict: 'wa_settings_id,customer_phone,window_hour' }
+        );
+      } catch {}
+
       return new Response(
         JSON.stringify({ success: true, message }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
@@ -427,6 +434,13 @@ Deno.serve(async (req: Request) => {
         .update({ last_message_text: previewText, last_message_at: new Date().toISOString() })
         .eq("id", conversationId);
 
+      try {
+        await adminSupabase.from("wa_messaging_usage").upsert(
+          { wa_settings_id: settings.id, phone_number_id: settings.phone_number_id, customer_phone: to, window_hour: new Date().toISOString().slice(0,13) + ':00:00+00' },
+          { onConflict: 'wa_settings_id,customer_phone,window_hour' }
+        );
+      } catch {}
+
       return new Response(
         JSON.stringify({ success: true, message: tplMessage }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
@@ -514,6 +528,13 @@ Deno.serve(async (req: Request) => {
       .from("wa_conversations")
       .update({ last_message_text: text.slice(0, 100), last_message_at: new Date().toISOString() })
       .eq("id", conversationId);
+
+    try {
+      await adminSupabase.from("wa_messaging_usage").upsert(
+        { wa_settings_id: settings.id, phone_number_id: settings.phone_number_id, customer_phone: to, window_hour: new Date().toISOString().slice(0,13) + ':00:00+00' },
+        { onConflict: 'wa_settings_id,customer_phone,window_hour' }
+      );
+    } catch {}
 
     return new Response(
       JSON.stringify({ success: true, message }),

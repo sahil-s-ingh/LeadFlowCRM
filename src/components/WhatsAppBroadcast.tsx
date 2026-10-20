@@ -94,6 +94,7 @@ function buildPreviewText(components: any[], variableValues: Record<string, stri
 
 export default function WhatsAppBroadcast({ session, onBack }: { session: Session; onBack: () => void }) {
   const [waTemplates, setWaTemplates] = useState<WaTemplate[]>([]);
+  const [templatesPhoneLabel, setTemplatesPhoneLabel] = useState<string>('');
   const [broadcasts, setBroadcasts] = useState<BroadcastCampaign[]>([]);
   const [broadcastsLoading, setBroadcastsLoading] = useState(false);
   const [broadcastError, setBroadcastError] = useState('');
@@ -140,16 +141,18 @@ export default function WhatsAppBroadcast({ session, onBack }: { session: Sessio
   const [throttleDelay, setThrottleDelay] = useState(500);
   const [segmentConditions, setSegmentConditions] = useState<{ field: string; operator: string; value: string }[]>([]);
 
-  const fetchWaTemplates = useCallback(async () => {
+  const fetchWaTemplates = useCallback(async (phoneNumberId?: string) => {
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData.session?.access_token;
       if (!token) return;
-      const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/whatsapp-templates?action=list`;
+      const qs = phoneNumberId ? `&phone_number_id=${encodeURIComponent(phoneNumberId)}` : '';
+      const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/whatsapp-templates?action=list${qs}`;
       const res = await fetch(apiUrl, { headers: { Authorization: `Bearer ${token}` } });
       const data = await res.json();
       if (!res.ok || data.error) return;
       setWaTemplates(data.templates || []);
+      setTemplatesPhoneLabel(data.phone_label || '');
     } catch { /* non-fatal */ }
   }, []);
 
@@ -195,6 +198,18 @@ export default function WhatsAppBroadcast({ session, onBack }: { session: Sessio
     fetchPhoneNumbers();
     fetchBroadcastRecipientCount(broadcastRecipientFilter);
   }, []);
+
+  // Re-fetch templates scoped to the selected number when it changes
+  useEffect(() => {
+    const pid = selectedPhoneId
+      ? phoneNumbers.find((p) => p.phone_number_id === selectedPhoneId)?.phone_number_id
+      : undefined;
+    fetchWaTemplates(pid);
+    setBroadcastTplName('');
+    setBroadcastTplComponents([]);
+    setBroadcastTplLanguage('en_US');
+    setVariableMapping({});
+  }, [selectedPhoneId, phoneNumbers.length]);
 
   useEffect(() => { fetchBroadcastRecipientCount(broadcastRecipientFilter); }, [broadcastRecipientFilter, fetchBroadcastRecipientCount]);
 
@@ -732,17 +747,6 @@ export default function WhatsAppBroadcast({ session, onBack }: { session: Sessio
               </label>
 
               <label className="wb-field">
-                <span>Select Template <em>*</em></span>
-                <select value={broadcastTplName} onChange={(e) => handleSelectBroadcastTemplate(e.target.value)} className="wb-select">
-                  <option value="">Choose an approved template...</option>
-                  {approvedTemplates.map((t) => <option key={t.name} value={t.name}>{t.name} ({t.language})</option>)}
-                </select>
-                {approvedTemplates.length === 0 && (
-                  <small className="wb-field-hint wb-field-hint-error">No approved templates yet. Go to WhatsApp Templates to create and get templates approved first.</small>
-                )}
-              </label>
-
-              <label className="wb-field">
                 <span>Send From (WhatsApp Number)</span>
                 <select value={selectedPhoneId} onChange={(e) => setSelectedPhoneId(e.target.value)} className="wb-select">
                   <option value="">Default (first connected number)</option>
@@ -752,7 +756,24 @@ export default function WhatsAppBroadcast({ session, onBack }: { session: Sessio
                     </option>
                   ))}
                 </select>
-                <small className="wb-field-hint">Choose which connected WhatsApp number to send from.</small>
+                <small className="wb-field-hint">Choose which connected WhatsApp number to send from. Templates will update to show only what's approved for this number.</small>
+              </label>
+
+              <label className="wb-field">
+                <span>Select Template <em>*</em></span>
+                <select value={broadcastTplName} onChange={(e) => handleSelectBroadcastTemplate(e.target.value)} className="wb-select">
+                  <option value="">Choose an approved template...</option>
+                  {approvedTemplates.map((t) => <option key={t.name} value={t.name}>{t.name} ({t.language})</option>)}
+                </select>
+                {templatesPhoneLabel && (
+                  <small className="wb-field-hint" style={{ color: '#0891b2', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    Showing approved templates for: <strong>{templatesPhoneLabel}</strong>
+                    {approvedTemplates.length > 0 && <span style={{ marginLeft: 4 }}>({approvedTemplates.length} approved)</span>}
+                  </small>
+                )}
+                {approvedTemplates.length === 0 && (
+                  <small className="wb-field-hint wb-field-hint-error">No approved templates for this number. Go to WhatsApp Templates to create and get templates approved first.</small>
+                )}
               </label>
 
               <div className="wb-field">

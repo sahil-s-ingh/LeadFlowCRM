@@ -27,7 +27,7 @@ import {
   LayoutTemplate, Inbox as InboxIcon,
   HelpCircle, Sun, Moon,
   CreditCard, Smartphone,
-  Webhook, Clock3, Gauge,
+  Webhook, Clock3, Gauge, ExternalLink, Wallet,
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import DashboardOverview from '@/components/DashboardOverview';
@@ -2317,7 +2317,7 @@ export default function CrmDashboard({ session, initialView }: { session: Sessio
             onCall={(number) => { window.location.href = `tel:${number.replace(/[^+\d]/g, '')}`; }}
           />
         ) : activeView === 'settings' ? (
-          <SettingsPage session={session} userRole={userRole} permissions={permissions} customPermissions={customPermissions} onBack={() => navigateToView('leads')} onSignOut={handleSignOut} onInboxVisibilityChange={(tg, wa) => { setShowTelegramInbox(tg); setShowWhatsAppInbox(wa); }} onOpenRecycleBin={() => { fetchTrashedLeads(); setShowTrashModal(true); }} pipelineAutoAssignEnabled={pipelineAutoAssignEnabled} pipelineAutoAssignStages={pipelineAutoAssignStages} onPipelineAutoAssignChange={(enabled, stages) => { setPipelineAutoAssignEnabled(enabled); setPipelineAutoAssignStages(stages); }} onStageLabelsChange={async () => { const { data } = await supabase.from('pipeline_stage_labels').select('stage_key, label'); if (data) { const map: Record<string, string> = {}; for (const row of data as { stage_key: string; label: string }[]) { map[row.stage_key] = row.label; } setStageLabelMap(map); } }} sidebarSections={sidebarSections} onSidebarSectionChange={updateSidebarSection} sectionVisibility={sectionVisibility} onSectionVisibilityChange={(key, visible) => setSectionVisibility((prev) => ({ ...prev, [key]: visible }))} />
+          <SettingsPage session={session} userRole={userRole} permissions={permissions} customPermissions={customPermissions} onBack={() => navigateToView('leads')} onSignOut={handleSignOut} onInboxVisibilityChange={(tg, wa) => { setShowTelegramInbox(tg); setShowWhatsAppInbox(wa); }} onOpenRecycleBin={() => { fetchTrashedLeads(); setShowTrashModal(true); }} pipelineAutoAssignEnabled={pipelineAutoAssignEnabled} pipelineAutoAssignStages={pipelineAutoAssignStages} onPipelineAutoAssignChange={(enabled, stages) => { setPipelineAutoAssignEnabled(enabled); setPipelineAutoAssignStages(stages); }} onStageLabelsChange={async () => { const { data } = await supabase.from('pipeline_stage_labels').select('stage_key, label'); if (data) { const map: Record<string, string> = {}; for (const row of data as { stage_key: string; label: string }[]) { map[row.stage_key] = row.label; } setStageLabelMap(map); } }} sidebarSections={sidebarSections} onSidebarSectionChange={updateSidebarSection} sectionVisibility={sectionVisibility} onSectionVisibilityChange={(key, visible) => setSectionVisibility((prev) => ({ ...prev, [key]: visible }))} onOpenInbox={() => navigateToView('inbox')} />
         ) : activeView === 'analytics_hub' ? (
           <AnalyticsHub session={session} onBack={() => navigateToView('dashboard')} />
         ) : activeView === 'message_templates' ? (
@@ -7311,6 +7311,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
   onSidebarSectionChange?: (key: string, visible: boolean) => void;
   sectionVisibility?: Record<string, boolean>;
   onSectionVisibilityChange?: (key: string, visible: boolean) => void;
+  onOpenInbox?: () => void;
 }) {
   const [activeTab, setActiveTab] = useState<'account' | 'email' | 'scheduled_emails' | 'telegram' | 'whatsapp' | 'twilio' | 'team' | 'team_dashboard' | 'role_management' | 'lead_distribution' | 'pipeline_autoassign' | 'pipeline_stages' | 'followup' | 'meta' | 'assignment' | 'recycle_bin' | 'section_visibility' | 'billing' | 'danger'>('account');
 
@@ -7487,6 +7488,48 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
   const [waPhoneStatus, setWaPhoneStatus] = useState<WaPhoneStatus>(null);
   const [waStatusLoading, setWaStatusLoading] = useState(false);
   const [waStatusError, setWaStatusError] = useState('');
+  type WaDailyVolume = {
+    date: string;
+    business: number;
+    customer: number;
+    unique_customers: number;
+  };
+  type WaQualityHistoryEntry = {
+    quality_rating: string;
+    messaging_limit_tier: string | null;
+    checked_at: string;
+  };
+  type WaCostEstimates = {
+    business_initiated_7d: number;
+    customer_initiated_7d: number;
+    estimated_cost_7d_usd: number;
+    estimated_cost_30d_usd: number;
+    note: string;
+  };
+  type WaNumberStatus = {
+    settings_id: string;
+    label: string;
+    phone_number_id: string;
+    connected_phone_number: string | null;
+    verified_name?: string | null;
+    display_phone_number?: string | null;
+    quality_rating?: string | null;
+    messaging_limit_tier?: string | null;
+    status?: string | null;
+    name_status?: string | null;
+    throughput?: { level: string } | null;
+    unique_customers_24h?: number;
+    daily_volume?: WaDailyVolume[];
+    quality_history?: WaQualityHistoryEntry[];
+    active_windows?: number;
+    expired_windows?: number;
+    cost_estimates?: WaCostEstimates | null;
+    error?: string;
+  };
+  const [waAllNumberStatuses, setWaAllNumberStatuses] = useState<WaNumberStatus[]>([]);
+  const [waAllStatusLoading, setWaAllStatusLoading] = useState(false);
+  const [waAllStatusError, setWaAllStatusError] = useState('');
+  const [waAllStatusChecked, setWaAllStatusChecked] = useState(false);
   const [waDisplayName, setWaDisplayName] = useState('');
   const [waDisplayNameSaving, setWaDisplayNameSaving] = useState(false);
   const [waDisplayNameError, setWaDisplayNameError] = useState('');
@@ -7585,6 +7628,29 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
       setWaStatusError('Failed to fetch status');
     }
     setWaStatusLoading(false);
+  };
+
+  const refreshAllWaStatuses = async () => {
+    setWaAllStatusLoading(true);
+    setWaAllStatusError('');
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (!token) { setWaAllStatusError('Not authenticated'); setWaAllStatusLoading(false); return; }
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/whatsapp-profile-picture?action=status_all`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        setWaAllStatusError(data.error || 'Failed to fetch status');
+      } else {
+        setWaAllNumberStatuses(data.numbers || []);
+        setWaAllStatusChecked(true);
+      }
+    } catch {
+      setWaAllStatusError('Failed to fetch status');
+    }
+    setWaAllStatusLoading(false);
   };
 
   const resetWaForm = () => {
@@ -9797,8 +9863,18 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                                   <span style={{ fontSize: '0.85rem', fontWeight: 700, color: t.color }}>{t.label}</span>
                                   <span style={{ fontSize: '0.72rem', color: 'var(--text-dark)', fontWeight: 500 }}>{t.limit}</span>
                                 </div>
-                                <p style={{ fontSize: '0.68rem', color: 'var(--text-dark)', marginTop: '6px', lineHeight: 1.45 }}>
-                                  This is the max number of unique customers you can message in a rolling 24-hour window. Meta upgrades your tier automatically when your quality rating stays high. Keep quality green and you'll move up.
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '8px', marginTop: '10px' }}>
+                                  <div style={{ padding: '9px 10px', borderRadius: '7px', background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}>
+                                    <div style={{ fontSize: '0.64rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-dark)', marginBottom: '3px' }}>Reset timing</div>
+                                    <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-main)' }}>Rolling 24 hours</div>
+                                  </div>
+                                  <div style={{ padding: '9px 10px', borderRadius: '7px', background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}>
+                                    <div style={{ fontSize: '0.64rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-dark)', marginBottom: '3px' }}>Fixed reset time</div>
+                                    <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-main)' }}>No fixed time</div>
+                                  </div>
+                                </div>
+                                <p style={{ fontSize: '0.68rem', color: 'var(--text-dark)', marginTop: '8px', lineHeight: 1.45 }}>
+                                  The limit refreshes continuously as each customer reaches 24 hours from the counted conversation. Meta does not provide one account-wide reset timestamp.
                                 </p>
                               </div>
                             );
@@ -9808,6 +9884,284 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
 
                       {!waPhoneStatus && !waStatusError && !waStatusLoading && (
                         <div style={{ fontSize: '0.78rem', color: 'var(--text-dark)', padding: '4px 0' }}>Click "Refresh" to check your number status.</div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* All Numbers Status & Messaging Usage — Enhanced */}
+                  {waNumbersList.length > 0 && (
+                    <div style={{ marginBottom: '16px', padding: '16px', background: 'var(--bg-light)', borderRadius: '10px', border: '1px solid var(--border-subtle)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <Gauge size={16} style={{ color: '#25D366' }} />
+                          <strong style={{ fontSize: '0.85rem' }}>All Numbers — Status, Usage & Insights</strong>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={refreshAllWaStatuses}
+                          disabled={waAllStatusLoading}
+                          style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 10px', border: '1px solid var(--border-subtle)', borderRadius: '6px', background: 'var(--bg-card)', color: 'var(--text-muted)', fontSize: '0.72rem', fontWeight: 600, cursor: waAllStatusLoading ? 'not-allowed' : 'pointer', opacity: waAllStatusLoading ? 0.5 : 1 }}
+                        >
+                          {waAllStatusLoading ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
+                          {waAllStatusLoading ? 'Checking...' : 'Check All Numbers'}
+                        </button>
+                      </div>
+
+                      {waAllStatusError && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 12px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '6px', color: '#dc2626', fontSize: '0.78rem', marginBottom: '12px' }}>
+                          <AlertTriangle size={14} /> {waAllStatusError}
+                        </div>
+                      )}
+
+                      {/* Quality Drop Alert Banner — shows when any number is YELLOW or RED */}
+                      {waAllNumberStatuses.length > 0 && waAllNumberStatuses.some((n) => {
+                        const q = (n.quality_rating || '').toUpperCase();
+                        return q === 'YELLOW' || q === 'RED';
+                      }) && (
+                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', padding: '12px 14px', background: 'rgba(234,179,8,0.08)', border: '1px solid rgba(234,179,8,0.25)', borderRadius: '8px', marginBottom: '12px' }}>
+                          <AlertTriangle size={16} style={{ color: '#a16207', flexShrink: 0, marginTop: '1px' }} />
+                          <div>
+                            <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#a16207', marginBottom: '4px' }}>Quality Rating Warning</div>
+                            <div style={{ fontSize: '0.74rem', color: 'var(--text-dark)', lineHeight: 1.5 }}>
+                              {waAllNumberStatuses.filter((n) => {
+                                const q = (n.quality_rating || '').toUpperCase();
+                                return q === 'YELLOW' || q === 'RED';
+                              }).map((n) => n.label).join(', ')} {waAllNumberStatuses.filter((n) => { const q = (n.quality_rating || '').toUpperCase(); return q === 'RED'; }).length > 0 ? 'has a LOW quality rating.' : 'has a MEDIUM quality rating.'}
+                              {' '}Stop sending marketing templates to {waAllNumberStatuses.filter((n) => { const q = (n.quality_rating || '').toUpperCase(); return q === 'YELLOW' || q === 'RED'; }).length > 1 ? 'these numbers' : 'this number'} for 24 hours and focus on responding to customer-initiated messages. Quality recovers automatically when customers engage positively.
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {!waAllStatusChecked && !waAllStatusError && !waAllStatusLoading && (
+                        <div style={{ fontSize: '0.78rem', color: 'var(--text-dark)', padding: '4px 0' }}>Click "Check All Numbers" to view the tier, quality, 7-day volume, conversation windows, and cost estimates for every connected WhatsApp number.</div>
+                      )}
+
+                      {waAllNumberStatuses.length > 0 && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                          {waAllNumberStatuses.map((n) => {
+                            const tier = (n.messaging_limit_tier || '').toUpperCase();
+                            const tierMap: Record<string, { label: string; cap: number; color: string; bg: string }> = {
+                              TIER_1K: { label: 'Tier 1', cap: 1000, color: '#0891B2', bg: 'rgba(8,145,178,0.1)' },
+                              TIER_10K: { label: 'Tier 2', cap: 10000, color: '#2563EB', bg: 'rgba(37,99,235,0.1)' },
+                              TIER_100K: { label: 'Tier 3', cap: 100000, color: '#0D9488', bg: 'rgba(13,148,136,0.1)' },
+                              TIER_UNLIMITED: { label: 'Unlimited', cap: 0, color: '#16A34A', bg: 'rgba(22,163,74,0.1)' },
+                            };
+                            const t = tierMap[tier] || { label: 'Unknown', cap: 0, color: 'var(--text-muted)', bg: 'rgba(100,116,139,0.1)' };
+                            const usage = n.unique_customers_24h || 0;
+                            const pct = t.cap > 0 ? Math.min(100, (usage / t.cap) * 100) : 0;
+                            const nextTier: Record<string, { label: string; cap: number }> = {
+                              TIER_1K: { label: 'Tier 2 (10K)', cap: 10000 },
+                              TIER_10K: { label: 'Tier 3 (100K)', cap: 100000 },
+                              TIER_100K: { label: 'Unlimited', cap: 0 },
+                            };
+                            const upgrade = nextTier[tier];
+                            const q = (n.quality_rating || '').toUpperCase();
+                            const qColors: Record<string, { bg: string; text: string; label: string }> = {
+                              GREEN: { bg: 'rgba(34,197,94,0.12)', text: '#15803d', label: 'High' },
+                              YELLOW: { bg: 'rgba(234,179,8,0.12)', text: '#a16207', label: 'Medium' },
+                              RED: { bg: 'rgba(239,68,68,0.12)', text: '#b91c1c', label: 'Low' },
+                            };
+                            const qc = qColors[q] || { bg: 'rgba(100,116,139,0.12)', text: 'var(--text-muted)', label: 'Unknown' };
+                            const dv = n.daily_volume || [];
+                            const maxVol = Math.max(1, ...dv.map((d) => d.business + d.customer));
+                            const hist = n.quality_history || [];
+                            const cost = n.cost_estimates;
+                            const activeWin = n.active_windows || 0;
+                            const expiredWin = n.expired_windows || 0;
+                            const isPrimary = waNumbersList[0]?.id === n.settings_id;
+                            return (
+                              <div key={n.settings_id} style={{ padding: '14px', background: 'var(--bg-card)', borderRadius: '10px', border: '1px solid var(--border-subtle)' }}>
+                                {/* Header with label, number, status badge, and quick actions */}
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px', flexWrap: 'wrap', gap: '6px' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <Smartphone size={14} style={{ color: '#25D366' }} />
+                                    <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-main)' }}>{n.label}</span>
+                                    {isPrimary && <span style={{ fontSize: '0.6rem', fontWeight: 700, color: '#25D366', background: 'rgba(37,211,102,0.1)', padding: '2px 6px', borderRadius: '9999px', border: '1px solid rgba(37,211,102,0.2)' }}>PRIMARY</span>}
+                                    {n.connected_phone_number && <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)', fontFamily: 'monospace' }}>{n.connected_phone_number}</span>}
+                                  </div>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    {n.status && (
+                                      <span style={{ fontSize: '0.68rem', fontWeight: 700, color: n.status === 'CONNECTED' ? '#16a34a' : '#dc2626', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                        <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: n.status === 'CONNECTED' ? '#16a34a' : '#dc2626' }} /> {n.status}
+                                      </span>
+                                    )}
+                                    {/* Quick Actions */}
+                                    {!n.error && (
+                                      <div style={{ display: 'flex', gap: '4px' }}>
+                                        <button type="button" onClick={() => onOpenInbox?.()} title="Open Inbox" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '26px', height: '26px', border: '1px solid var(--border-subtle)', borderRadius: '6px', background: 'var(--bg-light)', color: 'var(--text-muted)', cursor: 'pointer', padding: 0 }}>
+                                          <InboxIcon size={13} />
+                                        </button>
+                                        {!isPrimary && (
+                                          <button type="button" title="Set as Primary" onClick={async () => {
+                                            const targetId = n.settings_id;
+                                            const { error: updErr } = await supabase.from('whatsapp_settings').update({ updated_at: new Date(Date.now() - 1).toISOString() }).eq('id', targetId);
+                                            if (!updErr) {
+                                              const { data: refreshed } = await supabase.from('whatsapp_settings').select('*').order('created_at', { ascending: true });
+                                              if (refreshed) setWaNumbersList(refreshed as WaNumberConfig[]);
+                                            }
+                                          }} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '26px', height: '26px', border: '1px solid var(--border-subtle)', borderRadius: '6px', background: 'var(--bg-light)', color: 'var(--text-muted)', cursor: 'pointer', padding: 0 }}>
+                                            <Star size={13} />
+                                          </button>
+                                        )}
+                                        <a href={`https://business.facebook.com/wa/manage/phone-numbers`} target="_blank" rel="noopener noreferrer" title="Open Meta Business Manager" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '26px', height: '26px', border: '1px solid var(--border-subtle)', borderRadius: '6px', background: 'var(--bg-light)', color: 'var(--text-muted)', cursor: 'pointer', padding: 0 }}>
+                                          <ExternalLink size={13} />
+                                        </a>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+
+                                {n.error ? (
+                                  <div style={{ fontSize: '0.74rem', color: '#dc2626', padding: '6px 10px', background: 'rgba(239,68,68,0.06)', borderRadius: '6px' }}>{n.error}</div>
+                                ) : (
+                                  <>
+                                    {/* Stats grid: Tier, Quality, 24h Usage, Active Windows */}
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: '8px', marginBottom: '10px' }}>
+                                      <div style={{ padding: '8px 10px', borderRadius: '7px', background: t.bg, border: '1px solid var(--border-subtle)' }}>
+                                        <div style={{ fontSize: '0.62rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: t.color, marginBottom: '3px' }}>Tier</div>
+                                        <div style={{ fontSize: '0.78rem', fontWeight: 700, color: t.color }}>{t.label}</div>
+                                      </div>
+                                      <div style={{ padding: '8px 10px', borderRadius: '7px', background: qc.bg, border: '1px solid var(--border-subtle)' }}>
+                                        <div style={{ fontSize: '0.62rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: qc.text, marginBottom: '3px' }}>Quality</div>
+                                        <div style={{ fontSize: '0.78rem', fontWeight: 700, color: qc.text }}>{qc.label}</div>
+                                      </div>
+                                      <div style={{ padding: '8px 10px', borderRadius: '7px', background: 'var(--bg-light)', border: '1px solid var(--border-subtle)' }}>
+                                        <div style={{ fontSize: '0.62rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-dark)', marginBottom: '3px' }}>24h Usage</div>
+                                        <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-main)' }}>{usage}{t.cap > 0 ? ` / ${t.cap.toLocaleString()}` : ''}</div>
+                                      </div>
+                                      <div style={{ padding: '8px 10px', borderRadius: '7px', background: 'var(--bg-light)', border: '1px solid var(--border-subtle)' }}>
+                                        <div style={{ fontSize: '0.62rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-dark)', marginBottom: '3px' }}>Open Windows</div>
+                                        <div style={{ fontSize: '0.78rem', fontWeight: 700, color: activeWin > 0 ? '#0891B2' : 'var(--text-muted)' }}>{activeWin} active<span style={{ color: 'var(--text-muted)', fontWeight: 400 }}> / {expiredWin} expired</span></div>
+                                      </div>
+                                    </div>
+
+                                    {/* Usage progress bar */}
+                                    {t.cap > 0 && (
+                                      <div style={{ marginBottom: '10px' }}>
+                                        <div style={{ height: '6px', background: 'var(--bg-light)', borderRadius: '9999px', overflow: 'hidden', border: '1px solid var(--border-subtle)' }}>
+                                          <div style={{ height: '100%', width: `${pct}%`, background: pct > 80 ? '#ef4444' : pct > 50 ? '#eab308' : '#25D366', borderRadius: '9999px', transition: 'width 0.3s ease' }} />
+                                        </div>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '3px' }}>
+                                          <span style={{ fontSize: '0.62rem', color: 'var(--text-dark)' }}>{pct.toFixed(1)}% of limit</span>
+                                          <span style={{ fontSize: '0.62rem', color: 'var(--text-dark)' }}>{(t.cap - usage).toLocaleString()} remaining</span>
+                                        </div>
+                                      </div>
+                                    )}
+
+                                    {/* 7-Day Volume Bar Chart */}
+                                    {dv.length > 0 && (
+                                      <div style={{ marginBottom: '10px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
+                                          <BarChart3 size={12} style={{ color: 'var(--text-muted)' }} />
+                                          <span style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--text-dark)' }}>7-Day Message Volume</span>
+                                        </div>
+                                        <div style={{ display: 'flex', alignItems: 'flex-end', gap: '4px', height: '48px', padding: '4px 0' }}>
+                                          {dv.map((d) => {
+                                            const total = d.business + d.customer;
+                                            const h = total > 0 ? Math.max(3, (total / maxVol) * 40) : 2;
+                                            const bizH = d.business > 0 ? (d.business / Math.max(1, total)) * h : 0;
+                                            const custH = d.customer > 0 ? (d.customer / Math.max(1, total)) * h : 0;
+                                            const dayLabel = new Date(d.date + 'T00:00:00').toLocaleDateString('en', { weekday: 'short' }).slice(0, 2);
+                                            return (
+                                              <div key={d.date} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px' }}>
+                                                <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', height: '40px', width: '100%', alignItems: 'center' }}>
+                                                  {total > 0 && (
+                                                    <div style={{ width: '100%', maxWidth: '20px', borderRadius: '3px 3px 0 0', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                                                      {d.customer > 0 && <div style={{ height: `${custH}px`, background: '#0891B2' }} />}
+                                                      {d.business > 0 && <div style={{ height: `${bizH}px`, background: '#25D366' }} />}
+                                                    </div>
+                                                  )}
+                                                  {total === 0 && <div style={{ height: '2px', width: '100%', maxWidth: '20px', background: 'var(--border-subtle)', borderRadius: '2px' }} />}
+                                                </div>
+                                                <span style={{ fontSize: '0.55rem', color: 'var(--text-muted)', fontWeight: 600 }}>{dayLabel}</span>
+                                              </div>
+                                            );
+                                          })}
+                                        </div>
+                                        <div style={{ display: 'flex', gap: '10px', marginTop: '2px' }}>
+                                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', fontSize: '0.58rem', color: 'var(--text-muted)' }}><span style={{ width: '8px', height: '8px', borderRadius: '2px', background: '#25D366' }} /> Business</span>
+                                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', fontSize: '0.58rem', color: 'var(--text-muted)' }}><span style={{ width: '8px', height: '8px', borderRadius: '2px', background: '#0891B2' }} /> Customer</span>
+                                        </div>
+                                      </div>
+                                    )}
+
+                                    {/* Quality History Sparkline */}
+                                    {hist.length > 1 && (
+                                      <div style={{ marginBottom: '10px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                                          <Activity size={12} style={{ color: 'var(--text-muted)' }} />
+                                          <span style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--text-dark)' }}>Quality History ({hist.length} checks)</span>
+                                        </div>
+                                        <div style={{ display: 'flex', gap: '2px', alignItems: 'center', flexWrap: 'wrap' }}>
+                                          {hist.slice(-20).map((h, i) => {
+                                            const hq = (h.quality_rating || '').toUpperCase();
+                                            const color = hq === 'GREEN' ? '#22c55e' : hq === 'YELLOW' ? '#eab308' : hq === 'RED' ? '#ef4444' : '#94a3b8';
+                                            return <div key={i} title={`${hq} — ${new Date(h.checked_at).toLocaleString()}`} style={{ width: '10px', height: '14px', borderRadius: '2px', background: color, opacity: 0.4 + (i / Math.max(1, hist.length)) * 0.6 }} />;
+                                          })}
+                                        </div>
+                                      </div>
+                                    )}
+
+                                    {/* Conversation Window Indicators */}
+                                    {(activeWin > 0 || expiredWin > 0) && (
+                                      <div style={{ display: 'flex', gap: '8px', marginBottom: '10px', flexWrap: 'wrap' }}>
+                                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '5px 10px', borderRadius: '6px', background: 'rgba(8,145,178,0.08)', border: '1px solid rgba(8,145,178,0.2)', fontSize: '0.68rem', color: '#0891B2', fontWeight: 600 }}>
+                                          <MessageCircle size={11} /> {activeWin} active 24h window{activeWin !== 1 ? 's' : ''}
+                                        </div>
+                                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '5px 10px', borderRadius: '6px', background: 'rgba(100,116,139,0.08)', border: '1px solid var(--border-subtle)', fontSize: '0.68rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+                                          <Clock size={11} /> {expiredWin} expired
+                                        </div>
+                                      </div>
+                                    )}
+
+                                    {/* Cost Estimator */}
+                                    {cost && (
+                                      <div style={{ marginBottom: '10px', padding: '10px 12px', borderRadius: '7px', background: 'var(--bg-light)', border: '1px solid var(--border-subtle)' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
+                                          <Wallet size={12} style={{ color: 'var(--text-muted)' }} />
+                                          <span style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--text-dark)' }}>Cost Estimate (7 days)</span>
+                                        </div>
+                                        <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+                                          <div>
+                                            <span style={{ fontSize: '0.62rem', color: 'var(--text-muted)' }}>Business-initiated</span>
+                                            <div style={{ fontSize: '0.76rem', fontWeight: 700, color: 'var(--text-main)' }}>{cost.business_initiated_7d} msgs</div>
+                                          </div>
+                                          <div>
+                                            <span style={{ fontSize: '0.62rem', color: 'var(--text-muted)' }}>Customer-initiated</span>
+                                            <div style={{ fontSize: '0.76rem', fontWeight: 700, color: 'var(--text-main)' }}>{cost.customer_initiated_7d} msgs</div>
+                                          </div>
+                                          <div>
+                                            <span style={{ fontSize: '0.62rem', color: 'var(--text-muted)' }}>Est. cost (7d)</span>
+                                            <div style={{ fontSize: '0.76rem', fontWeight: 700, color: '#0891B2' }}>${cost.estimated_cost_7d_usd}</div>
+                                          </div>
+                                          <div>
+                                            <span style={{ fontSize: '0.62rem', color: 'var(--text-muted)' }}>Projected (30d)</span>
+                                            <div style={{ fontSize: '0.76rem', fontWeight: 700, color: '#0891B2' }}>${cost.estimated_cost_30d_usd}</div>
+                                          </div>
+                                        </div>
+                                        <div style={{ fontSize: '0.58rem', color: 'var(--text-muted)', marginTop: '4px', fontStyle: 'italic' }}>{cost.note}</div>
+                                      </div>
+                                    )}
+
+                                    {/* Upgrade / Unlimited tier notice */}
+                                    {upgrade && (
+                                      <div style={{ padding: '8px 10px', borderRadius: '7px', background: 'rgba(37,211,102,0.05)', border: '1px solid rgba(37,211,102,0.15)', fontSize: '0.68rem', color: 'var(--text-dark)', lineHeight: 1.5, display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
+                                        <Clock3 size={12} style={{ color: '#25D366', flexShrink: 0, marginTop: '1px' }} />
+                                        <span><strong style={{ color: '#15803d' }}>Upgrade to {upgrade.label}:</strong> Keep quality rating "High" (green) for 48 hours and maintain steady message volume. Meta upgrades tiers automatically — you don't need to request it.</span>
+                                      </div>
+                                    )}
+                                    {tier === 'TIER_UNLIMITED' && (
+                                      <div style={{ padding: '8px 10px', borderRadius: '7px', background: 'rgba(22,163,74,0.06)', border: '1px solid rgba(22,163,74,0.15)', fontSize: '0.68rem', color: '#15803d', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                        <CheckCircle2 size={12} /> You're on the highest tier — no daily unique-customer cap.
+                                      </div>
+                                    )}
+                                  </>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
                       )}
                     </div>
                   )}

@@ -39,14 +39,24 @@ Deno.serve(async (req: Request) => {
     }
 
     const adminSupabase = createClient(supabaseUrl, supabaseKey);
-    // multi-number: default to first (oldest) settings row
-    const { data: settings, error: settingsError } = await adminSupabase
+    const url = new URL(req.url);
+    const action = url.searchParams.get("action") || 'list';
+    const phoneNumberIdParam = url.searchParams.get("phone_number_id");
+
+    // If a specific phone_number_id is provided, use that number's WABA credentials.
+    // Otherwise fall back to the first (oldest) connected number.
+    let settingsQuery = adminSupabase
       .from("whatsapp_settings")
-      .select("waba_id, access_token")
-      .eq("user_id", userData.user.id)
-      .order("created_at", { ascending: true })
-      .limit(1)
-      .maybeSingle();
+      .select("waba_id, access_token, phone_number_id, connected_phone_number, label")
+      .eq("user_id", userData.user.id);
+
+    if (phoneNumberIdParam) {
+      settingsQuery = settingsQuery.eq("phone_number_id", phoneNumberIdParam);
+    } else {
+      settingsQuery = settingsQuery.order("created_at", { ascending: true }).limit(1);
+    }
+
+    const { data: settings, error: settingsError } = await settingsQuery.maybeSingle();
 
     if (settingsError || !settings || !settings.waba_id || !settings.access_token) {
       return new Response(
@@ -57,8 +67,6 @@ Deno.serve(async (req: Request) => {
 
     const wabaId = settings.waba_id;
     const accessToken = settings.access_token;
-    const url = new URL(req.url);
-    const action = url.searchParams.get("action") || 'list';
 
     // ─── LIST: fetch templates from Meta ───────────────────────────────
     if (action === 'list' && req.method === 'GET') {
@@ -85,17 +93,30 @@ Deno.serve(async (req: Request) => {
         rejection_reason: t.rejection_reason || null,
       }));
 
-      // Sync to local cache
+      const phoneLabel = settings.label || settings.connected_phone_number || settings.phone_number_id;
+
+      // Sync to local cache + detect status changes for notifications
       for (const t of templates) {
         const existing = await adminSupabase
           .from("wa_message_templates")
-          .select("id")
+          .select("id, status")
           .eq("user_id", userData.user.id)
           .eq("name", t.name)
           .eq("language", t.language)
           .maybeSingle();
 
         if (existing.data) {
+          if (existing.data.status !== t.status) {
+            await adminSupabase.from("wa_template_notifications").insert({
+              user_id: userData.user.id,
+              template_name: t.name,
+              template_language: t.language,
+              old_status: existing.data.status,
+              new_status: t.status,
+              rejection_reason: t.rejection_reason,
+              phone_label: phoneLabel,
+            });
+          }
           await adminSupabase
             .from("wa_message_templates")
             .update({
@@ -124,7 +145,11 @@ Deno.serve(async (req: Request) => {
       }
 
       return new Response(
-        JSON.stringify({ templates }),
+        JSON.stringify({
+          templates,
+          phone_number_id: settings.phone_number_id,
+          phone_label: phoneLabel,
+        }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }

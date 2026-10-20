@@ -12,11 +12,12 @@ import {
   ChevronDown, MoreVertical, Rocket,
   ShieldCheck, Download, Upload as UploadIcon, Activity, GitBranch,
   Layers, AlertCircle, Clock3, Globe, Check, FileJson, UserCheck,
-  ClipboardCheck, CalendarClock, Users,
+  ClipboardCheck, CalendarClock, Users, Bell,
 } from 'lucide-react';
 
 type HeaderFormat = 'TEXT' | 'IMAGE' | 'VIDEO' | 'DOCUMENT' | 'NONE';
-type TplButton = { type: 'QUICK_REPLY' | 'URL' | 'PHONE_NUMBER'; text: string; url?: string; phone?: string };
+type TplButtonKind = 'CUSTOM' | 'WEBSITE' | 'WHATSAPP' | 'PHONE' | 'FLOW' | 'COPY_CODE' | 'SHARE_CONTACT';
+type TplButton = { type: 'QUICK_REPLY' | 'URL' | 'PHONE_NUMBER' | 'FLOW' | 'OTP'; kind?: TplButtonKind; text: string; url?: string; phone?: string; flowId?: string; navigateScreen?: string };
 type CarouselCard = {
   mediaFormat: 'IMAGE' | 'VIDEO';
   mediaUrl: string;
@@ -35,6 +36,7 @@ type WaTemplate = {
   components: any[];
   rejection_reason: string | null;
   archived?: boolean;
+  phone_label?: string;
 };
 
 type TemplateTag = {
@@ -301,6 +303,7 @@ function WaPhonePreview({ headerFormat, headerText, headerExample, body, bodyExa
               <div key={i} className="mt2-wa-msg-btn">
                 {btn.type === 'URL' && <Link2 size={13} />}
                 {btn.type === 'PHONE_NUMBER' && <Phone size={13} />}
+                {btn.type === 'FLOW' && <Rocket size={13} />}
                 {btn.type === 'QUICK_REPLY' && <MessageSquare size={13} />}
                 <span>{btn.text || `Button ${i + 1}`}</span>
               </div>
@@ -558,8 +561,8 @@ function TestSendModal({ template, onClose }: { template: WaTemplate; onClose: (
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const bodyComp = template.components?.find((c: any) => c.type === 'BODY');
-  const bodyVars = (bodyComp?.text?.match(/\{\{(\d+)\}\}/g) || []).map((m: string) => parseInt(m.match(/\d+/)![0], 10));
-  const uniqueVars = [...new Set(bodyVars)].sort((a, b) => a - b);
+  const bodyVars: number[] = (bodyComp?.text?.match(/\{\{(\d+)\}\}/g) || []).map((m: string) => parseInt(m.match(/\d+/)![0], 10));
+  const uniqueVars = bodyVars.filter((value, index) => bodyVars.indexOf(value) === index).sort((a, b) => a - b);
   const [varValues, setVarValues] = useState<string[]>(uniqueVars.map(() => ''));
 
   const handleSend = async () => {
@@ -609,7 +612,7 @@ function TestSendModal({ template, onClose }: { template: WaTemplate; onClose: (
             {uniqueVars.length > 0 && (
               <div className="mt2-modal-vars">
                 <span className="mt2-modal-vars-label">Variable Values:</span>
-                {uniqueVars.map((v, i) => (
+                {uniqueVars.map((v: number, i: number) => (
                   <input key={i} type="text" value={varValues[i] || ''} onChange={(e) => { const nv = [...varValues]; nv[i] = e.target.value; setVarValues(nv); }} placeholder={`Value for {{${v}}}`} className="mt2-input" />
                 ))}
               </div>
@@ -1633,7 +1636,7 @@ function AiTemplateGeneratorModal({ onClose, onApply }: { onClose: () => void; o
 function TemplateHeatmapModal({ template, onClose }: { template: WaTemplate; onClose: () => void }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [dataPoints, setDataPoints] = useState<{ date: string; dayOfWeek: number; sent: number; delivered: number; read: number; clicked: number }[]>([]);
+  const [dataPoints, setDataPoints] = useState<{ date: string; dayOfWeek: number; hour: number; sent: number; delivered: number; read: number; clicked: number }[]>([]);
 
   useEffect(() => {
     (async () => {
@@ -1772,6 +1775,13 @@ export default function MessageTemplates({ session, onBack, embedded }: { sessio
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [autoRefresh, setAutoRefresh] = useState(true);
 
+  // Number selector state — multi-select
+  const [phoneNumbers, setPhoneNumbers] = useState<{ id: string; phone_number_id: string; connected_phone_number: string | null; label: string | null }[]>([]);
+  const [selectedPhoneIds, setSelectedPhoneIds] = useState<Set<string>>(new Set());
+  const selectedPhonesRef = useRef<Set<string>>(new Set());
+  const [showPhoneDropdown, setShowPhoneDropdown] = useState(false);
+  const phoneDropdownRef = useRef<HTMLDivElement>(null);
+
   // New feature state
   const [showLibrary, setShowLibrary] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
@@ -1797,23 +1807,118 @@ export default function MessageTemplates({ session, onBack, embedded }: { sessio
   const [showAiGenerator, setShowAiGenerator] = useState(false);
   const [heatmapTpl, setHeatmapTpl] = useState<WaTemplate | null>(null);
 
+  // Approval notification state
+  const [notifications, setNotifications] = useState<{ id: string; template_name: string; template_language: string; old_status: string; new_status: string; rejection_reason: string | null; phone_label: string | null; read: boolean; created_at: string }[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [showNotifPanel, setShowNotifPanel] = useState(false);
+  const notifRef = useRef<HTMLDivElement>(null);
+
+  const fetchPhoneNumbers = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from('whatsapp_settings')
+        .select('id, phone_number_id, connected_phone_number, label')
+        .order('created_at', { ascending: true });
+      if (error) return;
+      setPhoneNumbers((data || []) as any[]);
+      if (data && data.length > 0 && selectedPhonesRef.current.size === 0) {
+        const firstId = data[0].phone_number_id;
+        selectedPhonesRef.current = new Set([firstId]);
+        setSelectedPhoneIds(new Set([firstId]));
+      }
+    } catch { /* ignore */ }
+  }, []);
+
   const fetchWaTemplates = useCallback(async () => {
     setWaTemplatesLoading(true);
     setWaTemplateError('');
+    setWaTemplates([]);
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData.session?.access_token;
       if (!token) return;
-      const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/whatsapp-templates?action=list`;
-      const res = await fetch(apiUrl, { headers: { Authorization: `Bearer ${token}` } });
-      const data = await res.json();
-      if (!res.ok || data.error) { setWaTemplateError(data.error || 'Failed to load templates'); return; }
-      setWaTemplates(data.templates || []);
+      const ids = [...selectedPhonesRef.current];
+      if (ids.length === 0) { setWaTemplatesLoading(false); return; }
+      // Fetch templates from each selected WhatsApp number in parallel, then merge
+      const results = await Promise.all(ids.map(async (pid) => {
+        const qs = `&phone_number_id=${encodeURIComponent(pid)}`;
+        const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/whatsapp-templates?action=list${qs}`;
+        const res = await fetch(apiUrl, { headers: { Authorization: `Bearer ${token}` } });
+        const data = await res.json();
+        if (!res.ok || data.error) return [];
+        const label = data.phone_label || pid;
+        return (data.templates || []).map((t: any) => ({ ...t, phone_label: label }));
+      }));
+      // Deduplicate by meta_template_id (same WABA = same templates)
+      const seen = new Set<string>();
+      const merged: any[] = [];
+      for (const batch of results) {
+        for (const t of batch) {
+          const key = t.meta_template_id || `${t.name}_${t.language}`;
+          if (!seen.has(key)) { seen.add(key); merged.push(t); }
+        }
+      }
+      setWaTemplates(merged);
     } catch { setWaTemplateError('Failed to load templates'); }
     finally { setWaTemplatesLoading(false); }
   }, []);
 
+  const togglePhoneSelection = (id: string) => {
+    const next = new Set(selectedPhonesRef.current);
+    if (next.has(id)) { if (next.size > 1) next.delete(id); }
+    else next.add(id);
+    selectedPhonesRef.current = next;
+    setSelectedPhoneIds(next);
+    fetchWaTemplates();
+  };
+
+  // Close phone dropdown on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (phoneDropdownRef.current && !phoneDropdownRef.current.contains(e.target as Node)) setShowPhoneDropdown(false);
+    };
+    if (showPhoneDropdown) document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showPhoneDropdown]);
+
+  useEffect(() => { fetchPhoneNumbers(); }, [fetchPhoneNumbers]);
   useEffect(() => { fetchWaTemplates(); }, [fetchWaTemplates]);
+
+  // Fetch and poll template approval notifications
+  const fetchNotifications = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from('wa_template_notifications')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(20);
+      if (error) return;
+      setNotifications((data || []) as any[]);
+      setUnreadCount((data || []).filter((n: any) => !n.read).length);
+    } catch { /* ignore */ }
+  }, []);
+
+  useEffect(() => { fetchNotifications(); }, [fetchNotifications]);
+  useEffect(() => {
+    const interval = setInterval(fetchNotifications, 15000);
+    return () => clearInterval(interval);
+  }, [fetchNotifications]);
+
+  // Close notification panel on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (notifRef.current && !notifRef.current.contains(e.target as Node)) setShowNotifPanel(false);
+    };
+    if (showNotifPanel) document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showNotifPanel]);
+
+  const markNotificationsRead = async () => {
+    if (unreadCount === 0) return;
+    setUnreadCount(0);
+    await supabase.from('wa_template_notifications').update({ read: true }).eq('read', false);
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+  };
 
   // Fetch tags
   const fetchTags = useCallback(async () => {
@@ -1923,7 +2028,7 @@ export default function MessageTemplates({ session, onBack, embedded }: { sessio
       if (bodyComp) setTplBody(bodyComp.text || '');
       if (headerComp?.format === 'TEXT') { setTplHeaderFormat('TEXT'); setTplHeader(headerComp.text || ''); }
       if (footerComp) setTplFooter(footerComp.text || '');
-      if (buttonsComp?.buttons) setTplButtons(buttonsComp.buttons.map((b: any) => ({ type: b.type, text: b.text || '', url: b.url || '', phone: b.phone_number || '' })));
+      if (buttonsComp?.buttons) setTplButtons(buttonsComp.buttons.map((b: any) => ({ type: b.type, text: b.text || '', url: b.url || '', phone: b.phone_number || '', flowId: b.flow_id || '', navigateScreen: b.navigate_screen || '' })));
       if (bodyComp?.example?.body_text) setTplBodyExample(bodyComp.example.body_text[0].join(', '));
       setShowWaTemplateForm(true);
       break; // Load first one into editor, rest can be done one at a time
@@ -2037,6 +2142,8 @@ export default function MessageTemplates({ session, onBack, embedded }: { sessio
         buttons: tplButtons.map((b) => {
           if (b.type === 'QUICK_REPLY') return { type: 'QUICK_REPLY', text: b.text };
           if (b.type === 'URL') return { type: 'URL', text: b.text, url: b.url || '' };
+          if (b.type === 'FLOW') return { type: 'FLOW', text: b.text, flow_id: b.flowId || '', flow_action: 'navigate', navigate_screen: b.navigateScreen || undefined };
+          if (b.type === 'OTP') return { type: 'OTP', otp_type: 'COPY_CODE' };
           return { type: 'PHONE_NUMBER', text: b.text, phone_number: b.phone || '' };
         }),
       });
@@ -2058,6 +2165,7 @@ export default function MessageTemplates({ session, onBack, embedded }: { sessio
           buttons: c.buttons.length > 0 ? c.buttons.map((b) => {
             if (b.type === 'QUICK_REPLY') return { type: 'QUICK_REPLY', text: b.text };
             if (b.type === 'URL') return { type: 'URL', text: b.text, url: b.url || '' };
+            if (b.type === 'FLOW') return { type: 'FLOW', text: b.text, flow_id: b.flowId || '', flow_action: 'navigate', navigate_screen: b.navigateScreen || undefined };
             return { type: 'PHONE_NUMBER', text: b.text, phone_number: b.phone || '' };
           }) : [{ type: 'QUICK_REPLY', text: 'Buy Now' }],
         };
@@ -2117,7 +2225,7 @@ export default function MessageTemplates({ session, onBack, embedded }: { sessio
       return `Header format is ${tplHeaderFormat} but no media URL was provided`;
     const bodyVars = (tplBody.match(/\{\{(\d+)\}\}/g) || []).map((m) => parseInt(m.match(/\d+/)![0], 10));
     if (bodyVars.length > 0) {
-      const uniqueVars = [...new Set(bodyVars)].sort((a, b) => a - b);
+      const uniqueVars = bodyVars.filter((value, index) => bodyVars.indexOf(value) === index).sort((a, b) => a - b);
       for (let i = 0; i < uniqueVars.length; i++) {
         if (uniqueVars[i] !== i + 1) return `Body variables must be sequential starting from {{1}}. Found {{${uniqueVars[i]}}} but expected {{${i + 1}}}.`;
       }
@@ -2129,8 +2237,11 @@ export default function MessageTemplates({ session, onBack, embedded }: { sessio
       return 'Header has a variable but no example value was provided.';
     for (const [i, btn] of tplButtons.entries()) {
       if (!btn.text.trim()) return `Button ${i + 1} is missing a label`;
-      if (btn.type === 'URL' && !btn.url?.trim()) return `Button ${i + 1} (URL) is missing a URL`;
+      if (btn.type === 'URL' && !btn.url?.trim()) return `Button ${i + 1} is missing a URL`;
       if (btn.type === 'PHONE_NUMBER' && !btn.phone?.trim()) return `Button ${i + 1} (Phone) is missing a phone number`;
+      if (btn.type === 'FLOW' && !btn.flowId?.trim()) return `Button ${i + 1} (Flow) is missing a Flow ID`;
+      if (btn.kind === 'COPY_CODE') return 'Copy offer code is only available for authentication templates.';
+      if (btn.kind === 'WHATSAPP' && !btn.url?.startsWith('https://wa.me/')) return `Button ${i + 1} needs a WhatsApp link starting with https://wa.me/`;
     }
     return null;
   };
@@ -2154,7 +2265,9 @@ export default function MessageTemplates({ session, onBack, embedded }: { sessio
       const sanitizedName = sanitizeTemplateName(tplName);
       const reqBody: any = { name: sanitizedName, language: tplLanguage, category: tplMode === 'authentication' ? 'AUTHENTICATION' : tplCategory, components };
       if (tplEditingId) reqBody.meta_template_id = tplEditingId;
-      const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/whatsapp-templates?action=${action}`;
+      const selectedPhoneNumberId = [...selectedPhonesRef.current][0] || '';
+      const pid = selectedPhoneNumberId ? `&phone_number_id=${encodeURIComponent(selectedPhoneNumberId)}` : '';
+      const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/whatsapp-templates?action=${action}${pid}`;
       const res = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(reqBody) });
       const data = await res.json();
       if (!res.ok || data.error) { setWaTemplateError(data.error || 'Failed to save template'); return; }
@@ -2199,7 +2312,7 @@ export default function MessageTemplates({ session, onBack, embedded }: { sessio
       setTplMediaUrl(headerComp?.example?.header_handle?.[0] || '');
       if (bodyComp?.example?.body_text) setTplBodyExample(bodyComp.example.body_text[0].join(', '));
       if (headerComp?.example?.header_text) setTplHeaderExample(headerComp.example.header_text[0]);
-      if (buttonsComp?.buttons) setTplButtons(buttonsComp.buttons.map((b: any) => ({ type: b.type, text: b.text || '', url: b.url || '', phone: b.phone_number || '' })));
+      if (buttonsComp?.buttons) setTplButtons(buttonsComp.buttons.map((b: any) => ({ type: b.type, text: b.text || '', url: b.url || '', phone: b.phone_number || '', flowId: b.flow_id || '', navigateScreen: b.navigate_screen || '' })));
     }
     setShowWaTemplateForm(true);
   };
@@ -2253,6 +2366,19 @@ export default function MessageTemplates({ session, onBack, embedded }: { sessio
     setTplBody(tplBody + ` {{${nextNum}}}`);
   };
 
+  const addTemplateButton = (kind: TplButtonKind) => {
+    const defaults: Record<TplButtonKind, TplButton> = {
+      CUSTOM: { type: 'QUICK_REPLY', kind, text: '' },
+      WEBSITE: { type: 'URL', kind, text: 'Visit website', url: '' },
+      WHATSAPP: { type: 'URL', kind, text: 'Call on WhatsApp', url: 'https://wa.me/' },
+      PHONE: { type: 'PHONE_NUMBER', kind, text: 'Call Phone Number', phone: '' },
+      FLOW: { type: 'FLOW', kind, text: 'Complete flow', flowId: '', navigateScreen: '' },
+      COPY_CODE: { type: 'OTP', kind, text: 'Copy offer code' },
+      SHARE_CONTACT: { type: 'QUICK_REPLY', kind, text: 'Share contact info' },
+    };
+    setTplButtons((prev) => prev.length < 10 ? [...prev, defaults[kind]] : prev);
+  };
+
   const pendingCount = waTemplates.filter((t) => t.status === 'PENDING').length;
   const approvedCount = waTemplates.filter((t) => t.status === 'APPROVED').length;
   const rejectedCount = waTemplates.filter((t) => t.status === 'REJECTED').length;
@@ -2289,6 +2415,38 @@ export default function MessageTemplates({ session, onBack, embedded }: { sessio
           </div>
         </div>
         <div className="mt2-header-actions">
+          <div ref={notifRef} style={{ position: 'relative' }}>
+            <button className="mt2-refresh-btn" onClick={() => { setShowNotifPanel(!showNotifPanel); if (!showNotifPanel) markNotificationsRead(); }} title="Template approval notifications" style={{ position: 'relative' }}>
+              <Bell size={16} /> Notifications
+              {unreadCount > 0 && (
+                <span style={{ position: 'absolute', top: -4, right: -4, background: '#dc2626', color: '#fff', fontSize: 10, fontWeight: 700, borderRadius: 10, minWidth: 16, height: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 4px' }}>{unreadCount}</span>
+              )}
+            </button>
+            {showNotifPanel && (
+              <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: 8, width: 380, maxHeight: 420, overflowY: 'auto', background: 'var(--mt2-card-bg, #1a1a2e)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, boxShadow: '0 8px 32px rgba(0,0,0,0.4)', zIndex: 1000, padding: 8 }}>
+                <div style={{ padding: '8px 12px', fontSize: 13, fontWeight: 700, color: 'var(--mt2-text, #e4e4e7)', borderBottom: '1px solid rgba(255,255,255,0.08)', marginBottom: 4 }}>Template Approval Updates</div>
+                {notifications.length === 0 ? (
+                  <div style={{ padding: '24px 12px', textAlign: 'center', color: '#71717a', fontSize: 13 }}>No notifications yet. You'll see template approval and rejection alerts here.</div>
+                ) : (
+                  notifications.map((n) => (
+                    <div key={n.id} style={{ padding: '10px 12px', borderRadius: 8, marginBottom: 4, background: n.read ? 'transparent' : 'rgba(255,255,255,0.04)', cursor: 'default', transition: 'background 0.15s' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                        {n.new_status === 'APPROVED' ? <CheckCircle2 size={14} style={{ color: '#16a34a' }} /> : n.new_status === 'REJECTED' ? <XCircle size={14} style={{ color: '#dc2626' }} /> : <Clock size={14} style={{ color: '#d97706' }} />}
+                        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--mt2-text, #e4e4e7)' }}>{n.template_name}</span>
+                      </div>
+                      <div style={{ fontSize: 12, color: '#a1a1aa', marginLeft: 22 }}>
+                        {n.old_status && n.old_status !== n.new_status ? `${n.old_status} \u2192 ` : ''}{n.new_status}
+                        {n.template_language && <span style={{ marginLeft: 6 }}>({n.template_language})</span>}
+                        {n.phone_label && <span style={{ marginLeft: 6 }}>\u00b7 {n.phone_label}</span>}
+                      </div>
+                      {n.rejection_reason && <div style={{ fontSize: 11, color: '#dc2626', marginLeft: 22, marginTop: 4 }}>{n.rejection_reason}</div>}
+                      <div style={{ fontSize: 10, color: '#71717a', marginLeft: 22, marginTop: 4 }}>{new Date(n.created_at).toLocaleString()}</div>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
           <button className="mt2-refresh-btn" onClick={fetchWaTemplates} disabled={waTemplatesLoading}>
             {waTemplatesLoading ? <Loader2 size={16} className="crm-spin" /> : <RefreshCw size={16} />} Refresh
           </button>
@@ -2457,24 +2615,68 @@ export default function MessageTemplates({ session, onBack, embedded }: { sessio
                     <VariableMapper body={tplBody} onMap={(varIdx, field) => setVarMappings((prev) => ({ ...prev, [varIdx]: field }))} />
                   )}
 
-                  <ComplianceChecker body={tplBody} category={tplMode === 'authentication' ? 'AUTHENTICATION' : tplCategory} footer={tplFooter} header={tplHeader} />
+                  <ComplianceChecker body={tplBody} category={tplCategory} footer={tplFooter} header={tplHeader} />
 
                   <div className="mt2-buttons-section">
                     <div className="mt2-buttons-label">
                       <span>Buttons (optional, max 10)</span>
-                      {tplButtons.length < 10 && <button type="button" onClick={() => setTplButtons([...tplButtons, { type: 'QUICK_REPLY', text: '' }])} className="mt2-btn-add"><Plus size={12} /> Add Button</button>}
-                    </div>
-                    {tplButtons.map((btn, idx) => (
-                      <div key={idx} className="mt2-button-row">
-                        <select value={btn.type} onChange={(e) => { const n = [...tplButtons]; n[idx] = { ...btn, type: e.target.value as any }; setTplButtons(n); }} className="mt2-btn-type-select">
-                          <option value="QUICK_REPLY">Quick Reply</option><option value="URL">URL</option><option value="PHONE_NUMBER">Phone</option>
+                      {tplButtons.length < 10 && (
+                        <select
+                          defaultValue=""
+                          aria-label="Select button type"
+                          className="mt2-btn-add-select"
+                          onChange={(e) => {
+                            if (e.target.value) addTemplateButton(e.target.value as TplButtonKind);
+                            e.currentTarget.value = '';
+                          }}
+                        >
+                          <option value="">Add Button</option>
+                          <option value="CUSTOM">Custom</option>
+                          <option value="WEBSITE">Visit website</option>
+                          <option value="WHATSAPP">Call on WhatsApp</option>
+                          <option value="PHONE">Call Phone Number</option>
+                          <option value="FLOW">Complete flow</option>
+                          <option value="COPY_CODE">Copy offer code</option>
+                          <option value="SHARE_CONTACT">Share contact info</option>
                         </select>
-                        <input type="text" value={btn.text} onChange={(e) => { const n = [...tplButtons]; n[idx] = { ...btn, text: e.target.value }; setTplButtons(n); }} placeholder="Button label" maxLength={25} className="mt2-btn-text-input" />
-                        {btn.type === 'URL' && <input type="text" value={btn.url || ''} onChange={(e) => { const n = [...tplButtons]; n[idx] = { ...btn, url: e.target.value }; setTplButtons(n); }} placeholder="https://..." className="mt2-btn-text-input" />}
-                        {btn.type === 'PHONE_NUMBER' && <input type="text" value={btn.phone || ''} onChange={(e) => { const n = [...tplButtons]; n[idx] = { ...btn, phone: e.target.value }; setTplButtons(n); }} placeholder="+1234567890" className="mt2-btn-text-input" />}
-                        <button type="button" onClick={() => setTplButtons(tplButtons.filter((_, i) => i !== idx))} className="mt2-btn-remove"><Trash2 size={12} /></button>
-                      </div>
-                    ))}
+                      )}
+                    </div>
+                    {tplButtons.map((btn, idx) => {
+                      const buttonKind = btn.kind || (btn.type === 'URL' ? (btn.url?.startsWith('https://wa.me/') ? 'WHATSAPP' : 'WEBSITE') : btn.type === 'PHONE_NUMBER' ? 'PHONE' : btn.type === 'FLOW' ? 'FLOW' : btn.type === 'OTP' ? 'COPY_CODE' : 'CUSTOM');
+                      return (
+                        <div key={idx} className="mt2-button-row" style={{ flexWrap: 'wrap' }}>
+                          <select value={buttonKind} onChange={(e) => {
+                            const kind = e.target.value as TplButtonKind;
+                            const defaults: Record<TplButtonKind, Partial<TplButton>> = {
+                              CUSTOM: { type: 'QUICK_REPLY', kind, text: btn.text || 'Custom' },
+                              WEBSITE: { type: 'URL', kind, text: btn.text || 'Visit website' },
+                              WHATSAPP: { type: 'URL', kind, text: btn.text || 'Call on WhatsApp', url: btn.url || 'https://wa.me/' },
+                              PHONE: { type: 'PHONE_NUMBER', kind, text: btn.text || 'Call Phone Number' },
+                              FLOW: { type: 'FLOW', kind, text: btn.text || 'Complete flow' },
+                              COPY_CODE: { type: 'OTP', kind, text: 'Copy offer code' },
+                              SHARE_CONTACT: { type: 'QUICK_REPLY', kind, text: btn.text || 'Share contact info' },
+                            };
+                            const n = [...tplButtons]; n[idx] = { ...btn, ...defaults[kind] } as TplButton; setTplButtons(n);
+                          }} className="mt2-btn-type-select">
+                            <option value="CUSTOM">Custom</option>
+                            <option value="WEBSITE">Visit website</option>
+                            <option value="WHATSAPP">Call on WhatsApp</option>
+                            <option value="PHONE">Call Phone Number</option>
+                            <option value="FLOW">Complete flow</option>
+                            <option value="COPY_CODE">Copy offer code</option>
+                            <option value="SHARE_CONTACT">Share contact info</option>
+                          </select>
+                          <input type="text" value={btn.text} onChange={(e) => { const n = [...tplButtons]; n[idx] = { ...btn, text: e.target.value }; setTplButtons(n); }} placeholder="Button label" maxLength={25} className="mt2-btn-text-input" disabled={btn.type === 'OTP'} />
+                          {btn.type === 'URL' && <input type="text" value={btn.url || ''} onChange={(e) => { const n = [...tplButtons]; n[idx] = { ...btn, url: e.target.value }; setTplButtons(n); }} placeholder={btn.kind === 'WHATSAPP' ? 'https://wa.me/919876543210' : 'https://...'} className="mt2-btn-text-input" />}
+                          {btn.type === 'PHONE_NUMBER' && <input type="text" value={btn.phone || ''} onChange={(e) => { const n = [...tplButtons]; n[idx] = { ...btn, phone: e.target.value }; setTplButtons(n); }} placeholder="+1234567890" className="mt2-btn-text-input" />}
+                          {btn.type === 'FLOW' && <>
+                            <input type="text" value={btn.flowId || ''} onChange={(e) => { const n = [...tplButtons]; n[idx] = { ...btn, flowId: e.target.value }; setTplButtons(n); }} placeholder="Flow ID" className="mt2-btn-text-input" />
+                            <input type="text" value={btn.navigateScreen || ''} onChange={(e) => { const n = [...tplButtons]; n[idx] = { ...btn, navigateScreen: e.target.value }; setTplButtons(n); }} placeholder="Starting screen (optional)" className="mt2-btn-text-input" />
+                          </>}
+                          <button type="button" onClick={() => setTplButtons(tplButtons.filter((_, i) => i !== idx))} className="mt2-btn-remove"><Trash2 size={12} /></button>
+                        </div>
+                      );
+                    })}
                   </div>
                 </>
               )}
@@ -2573,6 +2775,41 @@ export default function MessageTemplates({ session, onBack, embedded }: { sessio
             <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value as any)} className="mt2-filter-select">
               <option value="all">All Categories</option><option value="MARKETING">Marketing</option><option value="UTILITY">Utility</option><option value="AUTHENTICATION">Authentication</option>
             </select>
+            {phoneNumbers.length > 0 && (
+              <div ref={phoneDropdownRef} style={{ position: 'relative' }}>
+                <button
+                  type="button"
+                  className="mt2-filter-select"
+                  style={{ minWidth: 180, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6, cursor: 'pointer' }}
+                  onClick={() => setShowPhoneDropdown(!showPhoneDropdown)}
+                  title="Filter templates by WhatsApp number"
+                >
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {selectedPhoneIds.size === phoneNumbers.length ? 'All Numbers' : selectedPhoneIds.size === 1 ? (phoneNumbers.find((p) => selectedPhoneIds.has(p.phone_number_id))?.label || phoneNumbers.find((p) => selectedPhoneIds.has(p.phone_number_id))?.connected_phone_number || '1 Number') : `${selectedPhoneIds.size} Numbers`}
+                  </span>
+                  <ChevronDown size={14} style={{ flexShrink: 0, opacity: 0.6 }} />
+                </button>
+                {showPhoneDropdown && (
+                  <div style={{ position: 'absolute', top: '100%', left: 0, marginTop: 4, width: 260, background: 'var(--mt2-card-bg, #1a1a2e)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 10, boxShadow: '0 8px 24px rgba(0,0,0,0.4)', zIndex: 1000, padding: 4, maxHeight: 280, overflowY: 'auto' }}>
+                    <div style={{ padding: '6px 10px', fontSize: 11, fontWeight: 700, color: '#71717a', textTransform: 'uppercase', letterSpacing: 0.5 }}>WhatsApp Numbers</div>
+                    {phoneNumbers.map((p) => {
+                      const isSelected = selectedPhoneIds.has(p.phone_number_id);
+                      return (
+                        <button
+                          key={p.id}
+                          type="button"
+                          onClick={() => togglePhoneSelection(p.phone_number_id)}
+                          style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', borderRadius: 6, border: 'none', background: isSelected ? 'rgba(37,211,102,0.1)' : 'transparent', color: 'var(--mt2-text, #e4e4e7)', fontSize: 13, cursor: 'pointer', textAlign: 'left' }}
+                        >
+                          {isSelected ? <CheckSquare size={15} style={{ color: '#25D366', flexShrink: 0 }} /> : <Square size={15} style={{ flexShrink: 0, opacity: 0.4 }} />}
+                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.label || p.connected_phone_number || p.phone_number_id}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
             {tags.length > 0 && (
               <select value={selectedTagFilter || ''} onChange={(e) => setSelectedTagFilter(e.target.value || null)} className="mt2-filter-select">
                 <option value="">All Tags</option>
