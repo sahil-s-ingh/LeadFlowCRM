@@ -7,6 +7,7 @@ const corsHeaders = {
 };
 
 const GRAPH_API_VERSION = "v21.0";
+// Enhanced status_all: quality history, 7-day volume, conversation windows, cost estimates
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
