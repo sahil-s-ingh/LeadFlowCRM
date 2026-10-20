@@ -14,7 +14,8 @@ import {
   ReplyTrackingPanel, CostEstimator, CampaignComparison, BroadcastCalendarView,
   AudienceManagerPanel, OptOutManagerPanel, DripSequenceBuilder,
 } from '@/components/WhatsAppBroadcastFeatures';
-import { Ban, CalendarDays as CalendarDaysIcon, Users as UsersIcon } from 'lucide-react';
+import { Ban, CalendarDays as CalendarDaysIcon, Users as UsersIcon, FileSpreadsheet } from 'lucide-react';
+import ExcelUploadPanel, { type UploadedContact } from '@/components/ExcelUploadPanel';
 
 type WaTemplate = {
   meta_template_id: string | null;
@@ -114,7 +115,9 @@ export default function WhatsAppBroadcast({ session, onBack }: { session: Sessio
   const [selectedPhoneId, setSelectedPhoneId] = useState<string>('');
   const [campaignName, setCampaignName] = useState('');
   const [scheduledAt, setScheduledAt] = useState('');
-  const [recipientMode, setRecipientMode] = useState<'lead_filter' | 'csv'>('lead_filter');
+  const [recipientMode, setRecipientMode] = useState<'lead_filter' | 'csv' | 'excel'>('lead_filter');
+  const [excelContacts, setExcelContacts] = useState<UploadedContact[]>([]);
+  const [excelFileName, setExcelFileName] = useState('');
   const [csvText, setCsvText] = useState('');
   const [csvRecipients, setCsvRecipients] = useState<{ phone_number: string; name?: string }[]>([]);
   const [variableMapping, setVariableMapping] = useState<Record<string, string>>({});
@@ -272,6 +275,8 @@ export default function WhatsAppBroadcast({ session, onBack }: { session: Sessio
       let phones: string[] = [];
       if (recipientMode === 'csv') {
         phones = csvRecipients.map((r) => r.phone_number);
+      } else if (recipientMode === 'excel') {
+        phones = excelContacts.map((r) => r.phone_number);
       } else {
         let query = supabase.from('submissions').select('mobile_number').is('deleted_at', null);
         if (broadcastRecipientFilter !== 'all') query = query.eq('status', broadcastRecipientFilter);
@@ -295,12 +300,12 @@ export default function WhatsAppBroadcast({ session, onBack }: { session: Sessio
   }, [broadcastTplName, recipientMode, csvRecipients, broadcastRecipientFilter]);
 
   useEffect(() => {
-    if (broadcastTplName && (recipientMode === 'csv' ? csvRecipients.length > 0 : broadcastRecipientCount > 0)) {
+    if (broadcastTplName && (recipientMode === 'csv' ? csvRecipients.length > 0 : recipientMode === 'excel' ? excelContacts.length > 0 : broadcastRecipientCount > 0)) {
       const timer = setTimeout(() => { checkDuplicates(); }, 600);
       return () => clearTimeout(timer);
     }
     setDuplicateInfo(null);
-  }, [broadcastTplName, broadcastRecipientFilter, recipientMode, csvRecipients.length, broadcastRecipientCount, checkDuplicates]);
+  }, [broadcastTplName, broadcastRecipientFilter, recipientMode, csvRecipients.length, excelContacts.length, broadcastRecipientCount, checkDuplicates]);
 
   const handlePreviewLeads = async () => {
     try {
@@ -330,6 +335,9 @@ export default function WhatsAppBroadcast({ session, onBack }: { session: Sessio
         const parsed = parseCsv();
         if (parsed.length === 0) { setBroadcastError('No valid phone numbers found in CSV'); setBroadcastCreating(false); return; }
         recipients = parsed.map((r) => ({ phone_number: String(r.phone_number || '').replace(/[^\d]/g, '').replace(/^0+/, ''), name: r.name }));
+      } else if (recipientMode === 'excel') {
+        if (excelContacts.length === 0) { setBroadcastError('No valid contacts from the uploaded file'); setBroadcastCreating(false); return; }
+        recipients = excelContacts.map((c) => ({ phone_number: c.phone_number, name: c.name, lead_data: { ...c.variables, full_name: c.name } }));
       } else {
         let query = supabase.from('submissions').select('id, full_name, mobile_number, email, state, status, trading_product, fund_amount, lead_source').is('deleted_at', null);
         if (broadcastRecipientFilter !== 'all') query = query.eq('status', broadcastRecipientFilter);
@@ -352,6 +360,7 @@ export default function WhatsAppBroadcast({ session, onBack }: { session: Sessio
           scheduled_at: scheduledAt || null,
           phone_number_id: selectedPhoneId || null,
           variable_mapping: recipientMode === 'lead_filter' ? variableMapping : {},
+          excel_variable_values: recipientMode === 'excel' ? excelContacts.map((c) => c.variables) : undefined,
         }),
       });
       const data = await res.json();
@@ -367,6 +376,7 @@ export default function WhatsAppBroadcast({ session, onBack }: { session: Sessio
     setBroadcastTplName(''); setBroadcastTplComponents([]); setBroadcastRecipientFilter('all');
     setCampaignName(''); setScheduledAt(''); setSelectedPhoneId(''); setCsvText('');
     setCsvRecipients([]); setVariableMapping({}); setRecipientMode('lead_filter'); setDuplicateInfo(null);
+    setExcelContacts([]); setExcelFileName('');
   };
 
   const handleSendBroadcast = async (campaignId: string) => {
@@ -576,7 +586,7 @@ export default function WhatsAppBroadcast({ session, onBack }: { session: Sessio
     return [...new Set(vars)].sort((a, b) => a - b);
   })();
 
-  const totalRecipientsForCreate = recipientMode === 'csv' ? csvRecipients.length || (csvText.trim() ? parseCsv().length : 0) : broadcastRecipientCount;
+  const totalRecipientsForCreate = recipientMode === 'csv' ? csvRecipients.length || (csvText.trim() ? parseCsv().length : 0) : recipientMode === 'excel' ? excelContacts.length : broadcastRecipientCount;
 
   // Estimated send time
   const estimatedSeconds = totalRecipientsForCreate * (BATCH_DELAY_MS / 1000);
@@ -783,7 +793,10 @@ export default function WhatsAppBroadcast({ session, onBack }: { session: Sessio
                     <Users size={14} /> Filter Leads
                   </button>
                   <button type="button" className={recipientMode === 'csv' ? 'active' : ''} onClick={() => setRecipientMode('csv')}>
-                    <Upload size={14} /> Paste Phone Numbers
+                    <Upload size={14} /> Paste Numbers
+                  </button>
+                  <button type="button" className={recipientMode === 'excel' ? 'active' : ''} onClick={() => setRecipientMode('excel')}>
+                    <FileSpreadsheet size={14} /> Upload Excel
                   </button>
                   <button type="button" className="wb-source-toggle-segment" onClick={() => setShowSegmentBuilder(true)}>
                     <Filter size={14} /> Segment Builder
@@ -827,12 +840,26 @@ export default function WhatsAppBroadcast({ session, onBack }: { session: Sessio
                     </div>
                   )}
                 </>
-              ) : (
+              ) : recipientMode === 'csv' ? (
                 <label className="wb-field">
                   <span>Phone Numbers <em>*</em></span>
                   <textarea value={csvText} onChange={(e) => { setCsvText(e.target.value); parseCsv(); }} rows={6} placeholder={'+919876543210, John Doe\n+12345678900, Jane Smith\n+441234567890'} className="wb-textarea" />
                   <small className="wb-field-hint">One per line. Format: phone_number, optional_name. {csvRecipients.length} valid numbers detected.</small>
                 </label>
+              ) : (
+                <div className="wb-field">
+                  <span>Upload Contact File <em>*</em></span>
+                  <ExcelUploadPanel
+                    templateVarCount={bodyVars.length}
+                    onContactsParsed={(contacts, name) => { setExcelContacts(contacts); setExcelFileName(name); }}
+                  />
+                  {excelContacts.length > 0 && (
+                    <small className="wb-field-hint" style={{ color: '#16a34a', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <CheckCircle2 size={13} />
+                      <strong>{excelContacts.length}</strong> valid contacts loaded from <strong>{excelFileName}</strong>
+                    </small>
+                  )}
+                </div>
               )}
 
               {/* Duplicate prevention warning */}
@@ -891,7 +918,7 @@ export default function WhatsAppBroadcast({ session, onBack }: { session: Sessio
                 </div>
               </div>
 
-              <button type="button" onClick={handleCreateBroadcast} disabled={!broadcastTplName || (recipientMode === 'lead_filter' && broadcastRecipientCount === 0) || (recipientMode === 'csv' && csvRecipients.length === 0) || broadcastCreating} className="wb-create-btn">
+              <button type="button" onClick={handleCreateBroadcast} disabled={!broadcastTplName || (recipientMode === 'lead_filter' && broadcastRecipientCount === 0) || (recipientMode === 'csv' && csvRecipients.length === 0) || (recipientMode === 'excel' && excelContacts.length === 0) || broadcastCreating} className="wb-create-btn">
                 {broadcastCreating ? <Loader2 size={18} className="crm-spin" /> : scheduledAt ? <Calendar size={16} /> : <Send size={16} />}
                 {broadcastCreating ? 'Creating...' : scheduledAt ? `Schedule Broadcast (${totalRecipientsForCreate} recipients)` : `Create Broadcast (${totalRecipientsForCreate} recipients)`}
               </button>
@@ -1032,7 +1059,7 @@ export default function WhatsAppBroadcast({ session, onBack }: { session: Sessio
                 <h4>How WhatsApp Broadcast Works</h4>
                 <ul>
                   <li><strong>Pick a template:</strong> Only Meta-approved templates can be sent. Create and get templates approved in the Templates page first.</li>
-                  <li><strong>Choose recipients:</strong> Filter your existing leads by status, or paste a list of phone numbers manually.</li>
+                  <li><strong>Choose recipients:</strong> Filter your existing leads by status, paste a list of phone numbers, or upload an Excel/CSV file with automatic column detection.</li>
                   <li><strong>Map variables:</strong> If your template has placeholders like {'{{1}}'}, they auto-fill from each lead's name, email, etc.</li>
                   <li><strong>Preview before sending:</strong> See a WhatsApp-style chat bubble showing exactly what each recipient will receive.</li>
                   <li><strong>Schedule or send now:</strong> Create as draft and send immediately, or schedule for auto-send at a future date.</li>

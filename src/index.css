@@ -18303,6 +18303,67 @@ html.crm-dark .wa-lead-field-value {
   .wb-filter-row { flex-direction: column; align-items: stretch; }
 }
 
+/* ===================== Excel Upload Panel ===================== */
+.wb-excel-upload-panel { width: 100%; }
+.wb-dropzone {
+  border: 2px dashed #cbd5e1; border-radius: 14px; padding: 36px 20px;
+  display: flex; flex-direction: column; align-items: center; gap: 12px;
+  cursor: pointer; transition: all 0.2s ease; background: #f8fafc; text-align: center;
+}
+.wb-dropzone:hover { border-color: #25D366; background: rgba(37,211,102,0.04); }
+.wb-dropzone-active { border-color: #25D366; background: rgba(37,211,102,0.08); transform: scale(1.01); }
+.wb-dropzone-icon { color: #94a3b8; transition: color 0.2s; }
+.wb-dropzone:hover .wb-dropzone-icon { color: #25D366; }
+.wb-dropzone-text { display: flex; flex-direction: column; gap: 3px; }
+.wb-dropzone-text strong { font-size: 0.88rem; color: #334155; font-weight: 700; }
+.wb-dropzone-text span { font-size: 0.76rem; color: #64748b; }
+.wb-dropzone-formats { font-size: 0.68rem !important; color: #94a3b8 !important; margin-top: 2px; }
+
+.wb-excel-config { display: flex; flex-direction: column; gap: 14px; }
+.wb-excel-file-info {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 12px 16px; border-radius: 10px; background: rgba(37,211,102,0.06); border: 1px solid rgba(37,211,102,0.2);
+}
+.wb-excel-file-left { display: flex; align-items: center; gap: 10px; }
+.wb-excel-filename { font-size: 0.82rem; font-weight: 700; color: #0f172a; }
+.wb-excel-rowcount { font-size: 0.72rem; color: #64748b; padding: 2px 8px; border-radius: 6px; background: #fff; }
+.wb-excel-reset {
+  display: inline-flex; align-items: center; gap: 5px; padding: 6px 12px; border-radius: 8px;
+  border: 1px solid #e2e8f0; background: #fff; color: #475569; font-size: 0.74rem; font-weight: 600;
+  cursor: pointer; transition: all 0.15s; font-family: 'Plus Jakarta Sans', sans-serif;
+}
+.wb-excel-reset:hover { border-color: #cbd5e1; color: #0f172a; }
+
+.wb-excel-stats { display: flex; gap: 10px; flex-wrap: wrap; }
+.wb-excel-stat {
+  display: flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 8px;
+  font-size: 0.76rem; font-weight: 600;
+}
+.wb-excel-stat-valid { background: rgba(22,163,74,0.08); color: #16a34a; }
+.wb-excel-stat-dup { background: rgba(234,179,8,0.08); color: #854d0e; }
+.wb-excel-stat-invalid { background: rgba(239,68,68,0.08); color: #dc2626; }
+
+.wb-excel-mapping { padding: 16px; border: 1px solid #eef0f3; border-radius: 12px; background: #f8fafc; display: flex; flex-direction: column; gap: 8px; }
+.wb-excel-mapping-title { display: flex; align-items: center; gap: 6px; font-size: 0.82rem; font-weight: 700; color: #0f172a; }
+.wb-excel-mapping-row { display: flex; align-items: center; gap: 8px; }
+.wb-excel-mapping-label { display: flex; align-items: center; gap: 5px; font-size: 0.76rem; font-weight: 600; color: #475569; min-width: 120px; }
+.wb-excel-mapping-row .wb-select { flex: 1; }
+.wb-excel-var-mapping { margin-top: 6px; padding-top: 10px; border-top: 1px solid #e2e8f0; display: flex; flex-direction: column; gap: 8px; }
+.wb-excel-var-mapping-title { display: flex; align-items: center; gap: 6px; font-size: 0.78rem; font-weight: 700; color: #334155; }
+
+.wb-excel-preview { display: flex; flex-direction: column; gap: 8px; }
+.wb-excel-preview-header { display: flex; align-items: center; justify-content: space-between; font-size: 0.78rem; font-weight: 600; color: #475569; }
+.wb-excel-preview-toggle {
+  padding: 4px 10px; border-radius: 6px; border: 1px solid #e2e8f0; background: #fff;
+  color: #475569; font-size: 0.72rem; font-weight: 600; cursor: pointer; transition: all 0.15s;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+.wb-excel-preview-toggle:hover { border-color: #25D366; color: #128c7e; }
+.wb-excel-th-phone { color: #16a34a; }
+.wb-excel-th-badge { display: inline-block; margin-left: 4px; padding: 1px 6px; border-radius: 4px; background: rgba(22,163,74,0.12); color: #16a34a; font-size: 0.62rem; font-weight: 700; text-transform: uppercase; }
+.wb-excel-confirm-btn { margin-top: 4px; }
+.wb-error-sm { padding: 8px 12px; font-size: 0.76rem; }
+
 /* ===================== Audience Manager ===================== */
 .wb-audience-form { display: flex; flex-direction: column; gap: 14px; padding: 16px; border: 1px solid #eef0f3; border-radius: 12px; margin-bottom: 16px; background: #f8fafc; }
 .wb-audience-form-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 4px; }
