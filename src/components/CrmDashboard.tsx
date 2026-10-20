@@ -54,6 +54,7 @@ import BrokerTrackerPage from '@/components/BrokerTrackerPage';
 import CallGuardrailSettings from '@/components/CallGuardrailSettings';
 import FollowupEscalationSettings from '@/components/FollowupEscalationSettings';
 import CallQualityScoring from '@/components/CallQualityScoring';
+import WhatsAppCallLogs from '@/components/WhatsAppCallLogs';
 import LeadTrackerPage from '@/components/LeadTrackerPage';
 import LeadSourceBadge from '@/components/LeadSourceBadge';
 import LeadWhatsAppDrawer from '@/components/LeadWhatsAppDrawer';
@@ -109,7 +110,7 @@ const MOBILE_STAT_OPTIONS: { key: MobileStatKey; label: string }[] = [
 ];
 
 type DateFilterPreset = 'all' | 'today' | 'yesterday' | 'last_7_days' | 'this_week' | 'this_month' | 'this_year' | 'custom';
-type ActiveView = 'dashboard' | 'leads' | 'inbox_hub' | 'inbox' | 'whatsapp' | 'settings' | 'drip' | 'analytics_hub' | 'email_analytics' | 'message_templates' | 'broadcast_hub' | 'broadcast' | 'email_broadcast' | 'telegram_broadcast' | 'activity_timeline' | 'revenue_forecast' | 'followups' | 'leaderboard' | 'goals' | 'win_loss' | 'duplicates' | 'heatmap' | 'automations' | 'brokers' | 'lead_tracker' | 'meta_ads' | 'integrations' | 'call_quality';
+type ActiveView = 'dashboard' | 'leads' | 'inbox_hub' | 'inbox' | 'whatsapp' | 'settings' | 'drip' | 'analytics_hub' | 'email_analytics' | 'message_templates' | 'broadcast_hub' | 'broadcast' | 'email_broadcast' | 'telegram_broadcast' | 'activity_timeline' | 'revenue_forecast' | 'followups' | 'leaderboard' | 'goals' | 'win_loss' | 'duplicates' | 'heatmap' | 'automations' | 'brokers' | 'lead_tracker' | 'meta_ads' | 'integrations' | 'call_quality' | 'call_logs';
 
 type UserRole = 'owner' | 'admin' | 'manager' | 'agent';
 
@@ -524,7 +525,7 @@ async function sendMetaConversionEvent(leadId: string, lead: Lead, newStatus: Le
   }
 }
 
-const VALID_VIEWS: ActiveView[] = ['dashboard', 'leads', 'inbox_hub', 'inbox', 'whatsapp', 'settings', 'drip', 'analytics_hub', 'email_analytics', 'message_templates', 'broadcast_hub', 'broadcast', 'email_broadcast', 'telegram_broadcast', 'activity_timeline', 'revenue_forecast', 'followups', 'leaderboard', 'goals', 'win_loss', 'duplicates', 'heatmap', 'automations', 'brokers', 'lead_tracker', 'meta_ads', 'integrations', 'call_quality'];
+const VALID_VIEWS: ActiveView[] = ['dashboard', 'leads', 'inbox_hub', 'inbox', 'whatsapp', 'settings', 'drip', 'analytics_hub', 'email_analytics', 'message_templates', 'broadcast_hub', 'broadcast', 'email_broadcast', 'telegram_broadcast', 'activity_timeline', 'revenue_forecast', 'followups', 'leaderboard', 'goals', 'win_loss', 'duplicates', 'heatmap', 'automations', 'brokers', 'lead_tracker', 'meta_ads', 'integrations', 'call_quality', 'call_logs'];
 
 export default function CrmDashboard({ session, initialView }: { session: Session; initialView?: string }) {
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -2132,6 +2133,9 @@ export default function CrmDashboard({ session, initialView }: { session: Sessio
           <a className={`crm-nav-item ${activeView === 'call_quality' ? 'active' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`} onClick={() => { navigateToView('call_quality'); setMobileSidebarOpen(false); setMobileNav('leads'); }} style={{ cursor: 'pointer' }} title={sidebarCollapsed ? 'Call Quality' : undefined}>
             <Award size={18} /> {!sidebarCollapsed && 'Call Quality'}
           </a>
+          <a className={`crm-nav-item ${activeView === 'call_logs' ? 'active' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`} onClick={() => { navigateToView('call_logs'); setMobileSidebarOpen(false); setMobileNav('leads'); }} style={{ cursor: 'pointer' }} title={sidebarCollapsed ? 'WhatsApp Call Logs' : undefined}>
+            <Phone size={18} /> {!sidebarCollapsed && 'WhatsApp Call Logs'}
+          </a>
 
           {sectionVisibility.integrations && (
           <a className={`crm-nav-item ${activeView === 'integrations' ? 'active' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`} onClick={() => { navigateToView('integrations'); setMobileSidebarOpen(false); setMobileNav('leads'); }} style={{ cursor: 'pointer' }} title={sidebarCollapsed ? 'Integrations' : undefined}>
@@ -2346,6 +2350,8 @@ export default function CrmDashboard({ session, initialView }: { session: Sessio
           <MetaAdsManager session={session} />
         ) : activeView === 'call_quality' ? (
           <CallQualityScoring session={session} onBack={() => navigateToView('dashboard')} />
+        ) : activeView === 'call_logs' ? (
+          <WhatsAppCallLogs session={session} onBack={() => navigateToView('dashboard')} />
         ) : activeView === 'heatmap' ? (
           <div className="dash-overview">
             <div className="dash-page-header">
