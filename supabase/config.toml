@@ -121,6 +121,9 @@ verify_jwt = true
 [functions.integration-webhooks-retry]
 verify_jwt = false
 
+[functions.google-sheets-sync]
+verify_jwt = true
+
 [functions.call-quality-scoring]
 verify_jwt = true
 

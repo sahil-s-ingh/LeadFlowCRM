@@ -5,6 +5,8 @@ import {
   Webhook, Copy, Send, Zap, Clock, RefreshCw, ExternalLink, Power,
 } from 'lucide-react';
 import type { Session } from '@supabase/supabase-js';
+import { GoogleSheetsIntegration } from './GoogleSheetsIntegration';
+import { FileSpreadsheet } from 'lucide-react';
 
 type WebhookEvent =
   | 'lead_created' | 'lead_status_changed' | 'lead_converted'
@@ -94,7 +96,7 @@ export function IntegrationHub({ session }: { session: Session | null }) {
   const [formUrl, setFormUrl] = useState('');
   const [formEvents, setFormEvents] = useState<WebhookEvent[]>(['lead_created']);
   const [saving, setSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState<'endpoints' | 'event_log' | 'platforms'>('endpoints');
+  const [activeTab, setActiveTab] = useState<'endpoints' | 'event_log' | 'platforms' | 'google_sheets'>('endpoints');
   const [deliveries, setDeliveries] = useState<Delivery[]>([]);
   const [deliveriesLoading, setDeliveriesLoading] = useState(false);
   const [expandedDelivery, setExpandedDelivery] = useState<string | null>(null);
@@ -266,9 +268,10 @@ export function IntegrationHub({ session }: { session: Session | null }) {
       {/* Tabs */}
       <div style={{ display: 'flex', gap: '4px', marginBottom: '20px', borderBottom: '1px solid var(--border-subtle)' }}>
         {([
-          { key: 'endpoints', label: 'Webhook Endpoints' },
-          { key: 'event_log', label: 'Event Log' },
-          { key: 'platforms', label: 'Platform Guides' },
+          { key: 'endpoints', label: 'Webhook Endpoints', icon: <Webhook size={14} /> },
+          { key: 'event_log', label: 'Event Log', icon: <Clock size={14} /> },
+          { key: 'platforms', label: 'Platform Guides', icon: <Zap size={14} /> },
+          { key: 'google_sheets', label: 'Google Sheets', icon: <FileSpreadsheet size={14} /> },
         ] as const).map((tab) => (
           <button
             key={tab.key}
@@ -278,9 +281,10 @@ export function IntegrationHub({ session }: { session: Session | null }) {
               background: 'none', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600,
               color: activeTab === tab.key ? '#2563eb' : 'var(--text-dark)',
               transition: 'all 0.15s', marginBottom: '-1px',
+              display: 'inline-flex', alignItems: 'center', gap: '6px',
             }}
           >
-            {tab.label}
+            {tab.icon} {tab.label}
           </button>
         ))}
       </div>
@@ -453,6 +457,11 @@ export function IntegrationHub({ session }: { session: Session | null }) {
             </div>
           )}
         </div>
+      )}
+
+      {/* Google Sheets Tab */}
+      {activeTab === 'google_sheets' && (
+        <GoogleSheetsIntegration session={session} />
       )}
 
       {/* Event Log Tab */}
