@@ -7,7 +7,7 @@ const corsHeaders = {
 };
 
 const GRAPH_API_VERSION = "v21.0";
-// Enhanced status_all: quality history, 7-day volume, conversation windows, cost estimates
+// Enhanced status_all: quality history, 7-day volume, conversation windows, cost estimates, response time, broadcasts, webhook health, health score
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
@@ -141,7 +141,7 @@ Deno.serve(async (req: Request) => {
       const numbers = [];
       for (const s of allSettings) {
         if (!s.phone_number_id || !s.access_token) {
-          numbers.push({ settings_id: s.id, label: s.label || s.connected_phone_number || s.phone_number_id, phone_number_id: s.phone_number_id, connected_phone_number: s.connected_phone_number, error: "Missing credentials", messaging_limit_tier: null, quality_rating: null, status: null, unique_customers_24h: 0, daily_volume: [], quality_history: [], active_windows: 0, expired_windows: 0, cost_estimates: null });
+          numbers.push({ settings_id: s.id, label: s.label || s.connected_phone_number || s.phone_number_id, phone_number_id: s.phone_number_id, connected_phone_number: s.connected_phone_number, error: "Missing credentials", messaging_limit_tier: null, quality_rating: null, status: null, unique_customers_24h: 0, daily_volume: [], quality_history: [], active_windows: 0, expired_windows: 0, cost_estimates: null, response_time: null, broadcast_queue: 0, recent_broadcasts: [], webhook_health: null, health_score: 0 });
           continue;
         }
         try {
@@ -151,7 +151,7 @@ Deno.serve(async (req: Request) => {
           );
           const sd = await statusRes.json();
           if (sd.error) {
-            numbers.push({ settings_id: s.id, label: s.label || s.connected_phone_number || s.phone_number_id, phone_number_id: s.phone_number_id, connected_phone_number: s.connected_phone_number, error: sd.error.message, messaging_limit_tier: null, quality_rating: null, status: null, unique_customers_24h: 0, daily_volume: [], quality_history: [], active_windows: 0, expired_windows: 0, cost_estimates: null });
+            numbers.push({ settings_id: s.id, label: s.label || s.connected_phone_number || s.phone_number_id, phone_number_id: s.phone_number_id, connected_phone_number: s.connected_phone_number, error: sd.error.message, messaging_limit_tier: null, quality_rating: null, status: null, unique_customers_24h: 0, daily_volume: [], quality_history: [], active_windows: 0, expired_windows: 0, cost_estimates: null, response_time: null, broadcast_queue: 0, recent_broadcasts: [], webhook_health: null, health_score: 0 });
             continue;
           }
 
@@ -231,11 +231,13 @@ Deno.serve(async (req: Request) => {
             .from("wa_conversations")
             .select("id", { count: "exact", head: true })
             .eq("user_id", s.user_id)
+            .eq("wa_settings_id", s.id)
             .gte("last_message_at", windowCutoff);
           const { count: totalConvs } = await adminSupabase
             .from("wa_conversations")
             .select("id", { count: "exact", head: true })
-            .eq("user_id", s.user_id);
+            .eq("user_id", s.user_id)
+            .eq("wa_settings_id", s.id);
           const expiredWindows = (totalConvs || 0) - (activeWindows || 0);
 
           // Cost estimates (rough — based on India pricing: business-initiated ~$0.012, customer-initiated free)
@@ -248,6 +250,118 @@ Deno.serve(async (req: Request) => {
             estimated_cost_30d_usd: +(last7Business * 0.012 * (30 / 7)).toFixed(2),
             note: "Based on India market pricing. Actual costs vary by country and conversation category.",
           };
+
+          // Response time analytics: for each conversation, find first client message then first admin reply after it
+          const { data: recentConvos } = await adminSupabase
+            .from("wa_conversations")
+            .select("id")
+            .eq("user_id", s.user_id)
+            .eq("wa_settings_id", s.id)
+            .order("last_message_at", { ascending: false })
+            .limit(50);
+          const convoIds = (recentConvos || []).map((c: { id: string }) => c.id);
+          let totalResponseSec = 0;
+          let responseCount = 0;
+          if (convoIds.length > 0) {
+            const { data: msgs } = await adminSupabase
+              .from("wa_messages")
+              .select("conversation_id, sender, created_at")
+              .in("conversation_id", convoIds)
+              .order("created_at", { ascending: true });
+            if (msgs) {
+              for (const cid of convoIds) {
+                const convoMsgs = msgs.filter((m: { conversation_id: string; sender: string; created_at: string }) => m.conversation_id === cid);
+                let lastClientTime: number | null = null;
+                for (const m of convoMsgs) {
+                  const t = new Date(m.created_at).getTime();
+                  if (m.sender === "client") {
+                    lastClientTime = t;
+                  } else if (m.sender === "admin" && lastClientTime !== null) {
+                    const diff = (t - lastClientTime) / 1000;
+                    if (diff > 0 && diff < 86400) {
+                      totalResponseSec += diff;
+                      responseCount++;
+                    }
+                    lastClientTime = null;
+                  }
+                }
+              }
+            }
+          }
+          const responseTime = responseCount > 0 ? {
+            avg_seconds: Math.round(totalResponseSec / responseCount),
+            avg_minutes: Math.round((totalResponseSec / responseCount) / 60),
+            sample_count: responseCount,
+          } : null;
+
+          // Broadcast queue: campaigns in draft or sending status for this user
+          const { count: broadcastQueue } = await adminSupabase
+            .from("wa_broadcast_campaigns")
+            .select("id", { count: "exact", head: true })
+            .eq("user_id", s.user_id)
+            .in("status", ["draft", "sending", "paused"]);
+
+          // Recent broadcast performance (last 5 campaigns)
+          const { data: recentBroadcastsData } = await adminSupabase
+            .from("wa_broadcast_campaigns")
+            .select("id, template_name, status, total_recipients, sent_count, delivered_count, failed_count, created_at")
+            .eq("user_id", s.user_id)
+            .order("created_at", { ascending: false })
+            .limit(5);
+          const recentBroadcasts = (recentBroadcastsData || []).map((b: {
+            id: string; template_name: string; status: string; total_recipients: number;
+            sent_count: number; delivered_count: number; failed_count: number; created_at: string;
+          }) => ({
+            id: b.id,
+            template_name: b.template_name,
+            status: b.status,
+            total_recipients: b.total_recipients,
+            sent_count: b.sent_count,
+            delivered_count: b.delivered_count,
+            failed_count: b.failed_count,
+            delivery_rate: b.sent_count > 0 ? +((b.delivered_count / b.sent_count) * 100).toFixed(1) : 0,
+            created_at: b.created_at,
+          }));
+
+          // Webhook health: try fetching webhook subscription status from Meta
+          let webhookHealth: { registered: boolean; error?: string } | null = null;
+          try {
+            const { data: ws } = await adminSupabase
+              .from("whatsapp_settings")
+              .select("waba_id")
+              .eq("id", s.id)
+              .maybeSingle();
+            if (ws?.waba_id) {
+              const whRes = await fetch(
+                `https://graph.facebook.com/${GRAPH_API_VERSION}/${ws.waba_id}/subscribed_apps`,
+                { headers: { Authorization: `Bearer ${s.access_token}` } },
+              );
+              const whData = await whRes.json();
+              if (whData.error) {
+                webhookHealth = { registered: false, error: whData.error.message };
+              } else {
+                const apps = whData.data || [];
+                webhookHealth = { registered: apps.length > 0 };
+              }
+            } else {
+              webhookHealth = { registered: false, error: "No WABA ID configured" };
+            }
+          } catch {
+            webhookHealth = { registered: false, error: "Failed to check webhook status" };
+          }
+
+          // Health score (0-100): weighted combination of quality, tier, response time, webhook health
+          let healthScore = 0;
+          const qScore = qualityRating === "GREEN" ? 40 : qualityRating === "YELLOW" ? 20 : qualityRating === "RED" ? 0 : 20;
+          const tScore = tier === "TIER_UNLIMITED" ? 25 : tier === "TIER_100K" ? 22 : tier === "TIER_10K" ? 18 : tier === "TIER_1K" ? 12 : 10;
+          const rScore = responseTime
+            ? responseTime.avg_minutes <= 5 ? 20
+              : responseTime.avg_minutes <= 15 ? 15
+              : responseTime.avg_minutes <= 60 ? 10
+              : 5
+            : 10;
+          const wScore = webhookHealth?.registered ? 15 : 5;
+          healthScore = qScore + tScore + rScore + wScore;
 
           numbers.push({
             settings_id: s.id,
@@ -267,9 +381,14 @@ Deno.serve(async (req: Request) => {
             active_windows: activeWindows || 0,
             expired_windows: expiredWindows > 0 ? expiredWindows : 0,
             cost_estimates: costEstimates,
+            response_time: responseTime,
+            broadcast_queue: broadcastQueue || 0,
+            recent_broadcasts: recentBroadcasts,
+            webhook_health: webhookHealth,
+            health_score: healthScore,
           });
         } catch (e) {
-          numbers.push({ settings_id: s.id, label: s.label || s.connected_phone_number || s.phone_number_id, phone_number_id: s.phone_number_id, connected_phone_number: s.connected_phone_number, error: e instanceof Error ? e.message : "Failed", messaging_limit_tier: null, quality_rating: null, status: null, unique_customers_24h: 0, daily_volume: [], quality_history: [], active_windows: 0, expired_windows: 0, cost_estimates: null });
+          numbers.push({ settings_id: s.id, label: s.label || s.connected_phone_number || s.phone_number_id, phone_number_id: s.phone_number_id, connected_phone_number: s.connected_phone_number, error: e instanceof Error ? e.message : "Failed", messaging_limit_tier: null, quality_rating: null, status: null, unique_customers_24h: 0, daily_volume: [], quality_history: [], active_windows: 0, expired_windows: 0, cost_estimates: null, response_time: null, broadcast_queue: 0, recent_broadcasts: [], webhook_health: null, health_score: 0 });
         }
       }
 

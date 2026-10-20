@@ -27,7 +27,7 @@ import {
   LayoutTemplate, Inbox as InboxIcon,
   HelpCircle, Sun, Moon,
   CreditCard, Smartphone,
-  Webhook, Clock3, Gauge, ExternalLink, Wallet,
+  Webhook, Clock3, Gauge, ExternalLink, Wallet, Columns3, HeartPulse, Radio,
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import DashboardOverview from '@/components/DashboardOverview';
@@ -7506,6 +7506,26 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
     estimated_cost_30d_usd: number;
     note: string;
   };
+  type WaResponseTime = {
+    avg_seconds: number;
+    avg_minutes: number;
+    sample_count: number;
+  };
+  type WaRecentBroadcast = {
+    id: string;
+    template_name: string;
+    status: string;
+    total_recipients: number;
+    sent_count: number;
+    delivered_count: number;
+    failed_count: number;
+    delivery_rate: number;
+    created_at: string;
+  };
+  type WaWebhookHealth = {
+    registered: boolean;
+    error?: string;
+  };
   type WaNumberStatus = {
     settings_id: string;
     label: string;
@@ -7524,12 +7544,21 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
     active_windows?: number;
     expired_windows?: number;
     cost_estimates?: WaCostEstimates | null;
+    response_time?: WaResponseTime | null;
+    broadcast_queue?: number;
+    recent_broadcasts?: WaRecentBroadcast[];
+    webhook_health?: WaWebhookHealth | null;
+    health_score?: number;
     error?: string;
   };
   const [waAllNumberStatuses, setWaAllNumberStatuses] = useState<WaNumberStatus[]>([]);
   const [waAllStatusLoading, setWaAllStatusLoading] = useState(false);
   const [waAllStatusError, setWaAllStatusError] = useState('');
   const [waAllStatusChecked, setWaAllStatusChecked] = useState(false);
+  const [waAutoRefresh, setWaAutoRefresh] = useState(false);
+  const [waCostCountry, setWaCostCountry] = useState('IN');
+  const [waShowComparison, setWaShowComparison] = useState(false);
+  const waAutoRefreshRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [waDisplayName, setWaDisplayName] = useState('');
   const [waDisplayNameSaving, setWaDisplayNameSaving] = useState(false);
   const [waDisplayNameError, setWaDisplayNameError] = useState('');
@@ -7651,6 +7680,78 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
       setWaAllStatusError('Failed to fetch status');
     }
     setWaAllStatusLoading(false);
+  };
+
+  // Auto-refresh effect for WhatsApp status
+  useEffect(() => {
+    if (waAutoRefresh && waAllStatusChecked) {
+      waAutoRefreshRef.current = setInterval(() => {
+        refreshAllWaStatuses();
+      }, 60000);
+    } else if (waAutoRefreshRef.current) {
+      clearInterval(waAutoRefreshRef.current);
+      waAutoRefreshRef.current = null;
+    }
+    return () => {
+      if (waAutoRefreshRef.current) {
+        clearInterval(waAutoRefreshRef.current);
+        waAutoRefreshRef.current = null;
+      }
+    };
+  }, [waAutoRefresh, waAllStatusChecked]);
+
+  // CSV export helper for WA status report
+  const exportWaStatusCSV = () => {
+    const headers = ['Label', 'Phone Number', 'Status', 'Tier', 'Quality', '24h Usage', 'Active Windows', 'Expired Windows', '7d Business Msgs', '7d Customer Msgs', 'Est Cost 7d (USD)', 'Est Cost 30d (USD)', 'Avg Response (min)', 'Broadcast Queue', 'Webhook Registered', 'Health Score'];
+    const rows = waAllNumberStatuses.map((n) => {
+      const tier = (n.messaging_limit_tier || '').toUpperCase();
+      const tierLabels: Record<string, string> = { TIER_1K: 'Tier 1 (1K)', TIER_10K: 'Tier 2 (10K)', TIER_100K: 'Tier 3 (100K)', TIER_UNLIMITED: 'Unlimited' };
+      const qLabels: Record<string, string> = { GREEN: 'High', YELLOW: 'Medium', RED: 'Low' };
+      const cost = n.cost_estimates;
+      return [
+        n.label,
+        n.connected_phone_number || '',
+        n.status || 'Error',
+        tierLabels[tier] || 'Unknown',
+        qLabels[(n.quality_rating || '').toUpperCase()] || 'Unknown',
+        String(n.unique_customers_24h || 0),
+        String(n.active_windows || 0),
+        String(n.expired_windows || 0),
+        String(cost?.business_initiated_7d || 0),
+        String(cost?.customer_initiated_7d || 0),
+        String(cost?.estimated_cost_7d_usd || 0),
+        String(cost?.estimated_cost_30d_usd || 0),
+        n.response_time ? String(n.response_time.avg_minutes) : 'N/A',
+        String(n.broadcast_queue || 0),
+        n.webhook_health ? (n.webhook_health.registered ? 'Yes' : 'No') : 'Unknown',
+        String(n.health_score || 0),
+      ];
+    });
+    const csv = [headers.join(','), ...rows.map((r) => r.map((c) => `"${c.replace(/"/g, '""')}"`).join(','))].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `whatsapp-status-report-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  // Country pricing data for cost calculator
+  const waCountryPricing: Record<string, { name: string; businessRate: number; customerRate: number }> = {
+    IN: { name: 'India', businessRate: 0.012, customerRate: 0 },
+    US: { name: 'United States', businessRate: 0.0147, customerRate: 0 },
+    GB: { name: 'United Kingdom', businessRate: 0.0322, customerRate: 0 },
+    AE: { name: 'UAE', businessRate: 0.0306, customerRate: 0 },
+    SG: { name: 'Singapore', businessRate: 0.0322, customerRate: 0 },
+    AU: { name: 'Australia', businessRate: 0.0357, customerRate: 0 },
+    ZA: { name: 'South Africa', businessRate: 0.0179, customerRate: 0 },
+    NG: { name: 'Nigeria', businessRate: 0.0322, customerRate: 0 },
+    KE: { name: 'Kenya', businessRate: 0.0179, customerRate: 0 },
+    PK: { name: 'Pakistan', businessRate: 0.0102, customerRate: 0 },
+    BD: { name: 'Bangladesh', businessRate: 0.0102, customerRate: 0 },
+    PH: { name: 'Philippines', businessRate: 0.0179, customerRate: 0 },
+    ID: { name: 'Indonesia', businessRate: 0.0128, customerRate: 0 },
   };
 
   const resetWaForm = () => {
@@ -9896,16 +9997,48 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                           <Gauge size={16} style={{ color: '#25D366' }} />
                           <strong style={{ fontSize: '0.85rem' }}>All Numbers — Status, Usage & Insights</strong>
                         </div>
-                        <button
-                          type="button"
-                          onClick={refreshAllWaStatuses}
-                          disabled={waAllStatusLoading}
-                          style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 10px', border: '1px solid var(--border-subtle)', borderRadius: '6px', background: 'var(--bg-card)', color: 'var(--text-muted)', fontSize: '0.72rem', fontWeight: 600, cursor: waAllStatusLoading ? 'not-allowed' : 'pointer', opacity: waAllStatusLoading ? 0.5 : 1 }}
-                        >
-                          {waAllStatusLoading ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
-                          {waAllStatusLoading ? 'Checking...' : 'Check All Numbers'}
-                        </button>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                          {/* Auto-refresh toggle */}
+                          <label style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '0.68rem', color: 'var(--text-muted)', cursor: 'pointer', userSelect: 'none' }}>
+                            <input type="checkbox" checked={waAutoRefresh} onChange={(e) => { setWaAutoRefresh(e.target.checked); if (e.target.checked && !waAllStatusChecked) refreshAllWaStatuses(); }} style={{ width: '14px', height: '14px', accentColor: '#25D366', cursor: 'pointer' }} />
+                            Auto-refresh
+                            {waAutoRefresh && <span style={{ color: '#25D366', fontSize: '0.6rem' }}>(60s)</span>}
+                          </label>
+                          {/* Comparison view toggle */}
+                          {waAllNumberStatuses.length > 1 && (
+                            <button type="button" onClick={() => setWaShowComparison(!waShowComparison)} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '4px 10px', border: '1px solid var(--border-subtle)', borderRadius: '6px', background: waShowComparison ? 'rgba(37,211,102,0.08)' : 'var(--bg-card)', color: waShowComparison ? '#25D366' : 'var(--text-muted)', fontSize: '0.68rem', fontWeight: 600, cursor: 'pointer' }}>
+                              <Columns3 size={12} /> Compare
+                            </button>
+                          )}
+                          {/* Export CSV */}
+                          {waAllNumberStatuses.length > 0 && (
+                            <button type="button" onClick={exportWaStatusCSV} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '4px 10px', border: '1px solid var(--border-subtle)', borderRadius: '6px', background: 'var(--bg-card)', color: 'var(--text-muted)', fontSize: '0.68rem', fontWeight: 600, cursor: 'pointer' }}>
+                              <Download size={12} /> Export CSV
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={refreshAllWaStatuses}
+                            disabled={waAllStatusLoading}
+                            style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 10px', border: '1px solid var(--border-subtle)', borderRadius: '6px', background: 'var(--bg-card)', color: 'var(--text-muted)', fontSize: '0.72rem', fontWeight: 600, cursor: waAllStatusLoading ? 'not-allowed' : 'pointer', opacity: waAllStatusLoading ? 0.5 : 1 }}
+                          >
+                            {waAllStatusLoading ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
+                            {waAllStatusLoading ? 'Checking...' : 'Check All Numbers'}
+                          </button>
+                        </div>
                       </div>
+
+                      {/* Country selector for cost calculator */}
+                      {waAllNumberStatuses.length > 0 && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px', flexWrap: 'wrap' }}>
+                          <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontWeight: 600 }}>Cost country:</span>
+                          <select value={waCostCountry} onChange={(e) => setWaCostCountry(e.target.value)} style={{ padding: '3px 8px', border: '1px solid var(--border-subtle)', borderRadius: '5px', background: 'var(--bg-card)', color: 'var(--text-main)', fontSize: '0.68rem', cursor: 'pointer' }}>
+                            {Object.entries(waCountryPricing).map(([code, p]) => (
+                              <option key={code} value={code}>{p.name}</option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
 
                       {waAllStatusError && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 12px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '6px', color: '#dc2626', fontSize: '0.78rem', marginBottom: '12px' }}>
@@ -9934,7 +10067,57 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                       )}
 
                       {!waAllStatusChecked && !waAllStatusError && !waAllStatusLoading && (
-                        <div style={{ fontSize: '0.78rem', color: 'var(--text-dark)', padding: '4px 0' }}>Click "Check All Numbers" to view the tier, quality, 7-day volume, conversation windows, and cost estimates for every connected WhatsApp number.</div>
+                        <div style={{ fontSize: '0.78rem', color: 'var(--text-dark)', padding: '4px 0' }}>Click "Check All Numbers" to view the tier, quality, 7-day volume, conversation windows, cost estimates, response times, broadcast performance, and webhook health for every connected WhatsApp number.</div>
+                      )}
+
+                      {/* Comparison Table View */}
+                      {waShowComparison && waAllNumberStatuses.length > 1 && (
+                        <div style={{ marginBottom: '12px', overflowX: 'auto' }}>
+                          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.7rem' }}>
+                            <thead>
+                              <tr style={{ borderBottom: '2px solid var(--border-subtle)' }}>
+                                <th style={{ textAlign: 'left', padding: '6px 8px', fontWeight: 700, color: 'var(--text-dark)' }}>Number</th>
+                                <th style={{ textAlign: 'center', padding: '6px 4px', fontWeight: 700, color: 'var(--text-dark)' }}>Health</th>
+                                <th style={{ textAlign: 'center', padding: '6px 4px', fontWeight: 700, color: 'var(--text-dark)' }}>Tier</th>
+                                <th style={{ textAlign: 'center', padding: '6px 4px', fontWeight: 700, color: 'var(--text-dark)' }}>Quality</th>
+                                <th style={{ textAlign: 'center', padding: '6px 4px', fontWeight: 700, color: 'var(--text-dark)' }}>24h</th>
+                                <th style={{ textAlign: 'center', padding: '6px 4px', fontWeight: 700, color: 'var(--text-dark)' }}>Windows</th>
+                                <th style={{ textAlign: 'center', padding: '6px 4px', fontWeight: 700, color: 'var(--text-dark)' }}>Resp. Time</th>
+                                <th style={{ textAlign: 'center', padding: '6px 4px', fontWeight: 700, color: 'var(--text-dark)' }}>7d Cost</th>
+                                <th style={{ textAlign: 'center', padding: '6px 4px', fontWeight: 700, color: 'var(--text-dark)' }}>Webhook</th>
+                                <th style={{ textAlign: 'center', padding: '6px 4px', fontWeight: 700, color: 'var(--text-dark)' }}>Queue</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {waAllNumberStatuses.map((n) => {
+                                const tier = (n.messaging_limit_tier || '').toUpperCase();
+                                const tierLabels: Record<string, string> = { TIER_1K: 'T1', TIER_10K: 'T2', TIER_100K: 'T3', TIER_UNLIMITED: 'UL' };
+                                const q = (n.quality_rating || '').toUpperCase();
+                                const qColor = q === 'GREEN' ? '#15803d' : q === 'YELLOW' ? '#a16207' : q === 'RED' ? '#b91c1c' : 'var(--text-muted)';
+                                const hs = n.health_score || 0;
+                                const hsColor = hs >= 75 ? '#16a34a' : hs >= 50 ? '#eab308' : '#ef4444';
+                                const pricing = waCountryPricing[waCostCountry] || waCountryPricing.IN;
+                                const last7Biz = n.cost_estimates?.business_initiated_7d || 0;
+                                const countryCost7d = +(last7Biz * pricing.businessRate).toFixed(2);
+                                const wh = n.webhook_health;
+                                return (
+                                  <tr key={n.settings_id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                                    <td style={{ padding: '6px 8px', fontWeight: 600, color: 'var(--text-main)' }}>{n.label}{n.connected_phone_number ? ` (${n.connected_phone_number})` : ''}{n.error ? ' — Error' : ''}</td>
+                                    <td style={{ textAlign: 'center', padding: '6px 4px' }}><span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '28px', height: '20px', borderRadius: '4px', background: `${hsColor}20`, color: hsColor, fontWeight: 700, fontSize: '0.65rem' }}>{hs}</span></td>
+                                    <td style={{ textAlign: 'center', padding: '6px 4px', color: 'var(--text-muted)' }}>{tierLabels[tier] || '?'}</td>
+                                    <td style={{ textAlign: 'center', padding: '6px 4px' }}><span style={{ color: qColor, fontWeight: 700 }}>{q === 'GREEN' ? 'H' : q === 'YELLOW' ? 'M' : q === 'RED' ? 'L' : '?'}</span></td>
+                                    <td style={{ textAlign: 'center', padding: '6px 4px', color: 'var(--text-main)' }}>{n.unique_customers_24h || 0}</td>
+                                    <td style={{ textAlign: 'center', padding: '6px 4px', color: '#0891B2' }}>{n.active_windows || 0}/{n.expired_windows || 0}</td>
+                                    <td style={{ textAlign: 'center', padding: '6px 4px', color: 'var(--text-muted)' }}>{n.response_time ? `${n.response_time.avg_minutes}m` : '—'}</td>
+                                    <td style={{ textAlign: 'center', padding: '6px 4px', color: '#0891B2', fontWeight: 600 }}>${countryCost7d}</td>
+                                    <td style={{ textAlign: 'center', padding: '6px 4px' }}>{wh ? <span style={{ color: wh.registered ? '#16a34a' : '#ef4444', fontWeight: 700 }}>&#9679;</span> : '—'}</td>
+                                    <td style={{ textAlign: 'center', padding: '6px 4px', color: n.broadcast_queue ? '#eab308' : 'var(--text-muted)', fontWeight: n.broadcast_queue ? 700 : 400 }}>{n.broadcast_queue || 0}</td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
                       )}
 
                       {waAllNumberStatuses.length > 0 && (
@@ -9979,6 +10162,11 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                                     <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-main)' }}>{n.label}</span>
                                     {isPrimary && <span style={{ fontSize: '0.6rem', fontWeight: 700, color: '#25D366', background: 'rgba(37,211,102,0.1)', padding: '2px 6px', borderRadius: '9999px', border: '1px solid rgba(37,211,102,0.2)' }}>PRIMARY</span>}
                                     {n.connected_phone_number && <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)', fontFamily: 'monospace' }}>{n.connected_phone_number}</span>}
+                                    {(() => {
+                                      const hs = n.health_score || 0;
+                                      const hsColor = hs >= 75 ? '#16a34a' : hs >= 50 ? '#eab308' : '#ef4444';
+                                      return <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', padding: '2px 8px', borderRadius: '9999px', background: `${hsColor}15`, color: hsColor, fontWeight: 700, fontSize: '0.65rem', border: `1px solid ${hsColor}30` }}><HeartPulse size={10} /> {hs}/100</span>;
+                                    })()}
                                   </div>
                                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                                     {n.status && (
@@ -10016,7 +10204,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                                   <div style={{ fontSize: '0.74rem', color: '#dc2626', padding: '6px 10px', background: 'rgba(239,68,68,0.06)', borderRadius: '6px' }}>{n.error}</div>
                                 ) : (
                                   <>
-                                    {/* Stats grid: Tier, Quality, 24h Usage, Active Windows */}
+                                    {/* Stats grid: Tier, Quality, 24h Usage, Active Windows, Response Time, Webhook */}
                                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: '8px', marginBottom: '10px' }}>
                                       <div style={{ padding: '8px 10px', borderRadius: '7px', background: t.bg, border: '1px solid var(--border-subtle)' }}>
                                         <div style={{ fontSize: '0.62rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: t.color, marginBottom: '3px' }}>Tier</div>
@@ -10034,6 +10222,21 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                                         <div style={{ fontSize: '0.62rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-dark)', marginBottom: '3px' }}>Open Windows</div>
                                         <div style={{ fontSize: '0.78rem', fontWeight: 700, color: activeWin > 0 ? '#0891B2' : 'var(--text-muted)' }}>{activeWin} active<span style={{ color: 'var(--text-muted)', fontWeight: 400 }}> / {expiredWin} expired</span></div>
                                       </div>
+                                      {n.response_time && (
+                                        <div style={{ padding: '8px 10px', borderRadius: '7px', background: 'var(--bg-light)', border: '1px solid var(--border-subtle)' }}>
+                                          <div style={{ fontSize: '0.62rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-dark)', marginBottom: '3px' }}>Avg Response</div>
+                                          <div style={{ fontSize: '0.78rem', fontWeight: 700, color: n.response_time.avg_minutes <= 5 ? '#16a34a' : n.response_time.avg_minutes <= 15 ? '#eab308' : '#ef4444' }}>{n.response_time.avg_minutes} min</div>
+                                        </div>
+                                      )}
+                                      {n.webhook_health && (
+                                        <div style={{ padding: '8px 10px', borderRadius: '7px', background: n.webhook_health.registered ? 'rgba(34,197,94,0.08)' : 'rgba(239,68,68,0.08)', border: '1px solid var(--border-subtle)' }}>
+                                          <div style={{ fontSize: '0.62rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: n.webhook_health.registered ? '#15803d' : '#b91c1c', marginBottom: '3px' }}>Webhook</div>
+                                          <div style={{ fontSize: '0.78rem', fontWeight: 700, color: n.webhook_health.registered ? '#15803d' : '#b91c1c', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                                            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: n.webhook_health.registered ? '#16a34a' : '#ef4444' }} />
+                                            {n.webhook_health.registered ? 'Active' : 'Down'}
+                                          </div>
+                                        </div>
+                                      )}
                                     </div>
 
                                     {/* Usage progress bar */}
@@ -10115,32 +10318,74 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                                       </div>
                                     )}
 
-                                    {/* Cost Estimator */}
-                                    {cost && (
+                                    {/* Cost Estimator — country-aware */}
+                                    {cost && (() => {
+                                      const pricing = waCountryPricing[waCostCountry] || waCountryPricing.IN;
+                                      const countryCost7d = +(cost.business_initiated_7d * pricing.businessRate).toFixed(2);
+                                      const countryCost30d = +(cost.business_initiated_7d * pricing.businessRate * (30 / 7)).toFixed(2);
+                                      return (
+                                        <div style={{ marginBottom: '10px', padding: '10px 12px', borderRadius: '7px', background: 'var(--bg-light)', border: '1px solid var(--border-subtle)' }}>
+                                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
+                                            <Wallet size={12} style={{ color: 'var(--text-muted)' }} />
+                                            <span style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--text-dark)' }}>Cost Estimate — {pricing.name} (7 days)</span>
+                                          </div>
+                                          <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+                                            <div>
+                                              <span style={{ fontSize: '0.62rem', color: 'var(--text-muted)' }}>Business-initiated</span>
+                                              <div style={{ fontSize: '0.76rem', fontWeight: 700, color: 'var(--text-main)' }}>{cost.business_initiated_7d} msgs</div>
+                                            </div>
+                                            <div>
+                                              <span style={{ fontSize: '0.62rem', color: 'var(--text-muted)' }}>Customer-initiated</span>
+                                              <div style={{ fontSize: '0.76rem', fontWeight: 700, color: 'var(--text-main)' }}>{cost.customer_initiated_7d} msgs</div>
+                                            </div>
+                                            <div>
+                                              <span style={{ fontSize: '0.62rem', color: 'var(--text-muted)' }}>Est. cost (7d)</span>
+                                              <div style={{ fontSize: '0.76rem', fontWeight: 700, color: '#0891B2' }}>${countryCost7d}</div>
+                                            </div>
+                                            <div>
+                                              <span style={{ fontSize: '0.62rem', color: 'var(--text-muted)' }}>Projected (30d)</span>
+                                              <div style={{ fontSize: '0.76rem', fontWeight: 700, color: '#0891B2' }}>${countryCost30d}</div>
+                                            </div>
+                                          </div>
+                                          <div style={{ fontSize: '0.58rem', color: 'var(--text-muted)', marginTop: '4px', fontStyle: 'italic' }}>Based on {pricing.name} market pricing. Actual costs vary by conversation category.</div>
+                                        </div>
+                                      );
+                                    })()}
+
+                                    {/* Broadcast Queue & Recent Broadcasts */}
+                                    {(n.broadcast_queue !== undefined && n.broadcast_queue > 0) || (n.recent_broadcasts && n.recent_broadcasts.length > 0) ? (
                                       <div style={{ marginBottom: '10px', padding: '10px 12px', borderRadius: '7px', background: 'var(--bg-light)', border: '1px solid var(--border-subtle)' }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
-                                          <Wallet size={12} style={{ color: 'var(--text-muted)' }} />
-                                          <span style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--text-dark)' }}>Cost Estimate (7 days)</span>
+                                          <Radio size={12} style={{ color: 'var(--text-muted)' }} />
+                                          <span style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--text-dark)' }}>Broadcast Activity</span>
+                                          {n.broadcast_queue !== undefined && n.broadcast_queue > 0 && (
+                                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', padding: '1px 6px', borderRadius: '9999px', background: 'rgba(234,179,8,0.12)', color: '#a16207', fontSize: '0.6rem', fontWeight: 700 }}>{n.broadcast_queue} queued</span>
+                                          )}
                                         </div>
-                                        <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
-                                          <div>
-                                            <span style={{ fontSize: '0.62rem', color: 'var(--text-muted)' }}>Business-initiated</span>
-                                            <div style={{ fontSize: '0.76rem', fontWeight: 700, color: 'var(--text-main)' }}>{cost.business_initiated_7d} msgs</div>
+                                        {n.recent_broadcasts && n.recent_broadcasts.length > 0 && (
+                                          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                            {n.recent_broadcasts.slice(0, 5).map((b) => {
+                                              const stColor = b.status === 'completed' ? '#16a34a' : b.status === 'sending' ? '#2563eb' : b.status === 'failed' ? '#ef4444' : b.status === 'paused' ? '#eab308' : 'var(--text-muted)';
+                                              return (
+                                                <div key={b.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 8px', borderRadius: '5px', background: 'var(--bg-card)', fontSize: '0.66rem' }}>
+                                                  <span style={{ color: 'var(--text-main)', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '140px' }}>{b.template_name}</span>
+                                                  <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                    <span style={{ color: stColor, fontWeight: 700, textTransform: 'capitalize' }}>{b.status}</span>
+                                                    <span style={{ color: 'var(--text-muted)' }}>{b.sent_count}/{b.total_recipients} sent</span>
+                                                    {b.sent_count > 0 && <span style={{ color: '#0891B2', fontWeight: 600 }}>{b.delivery_rate}% delivered</span>}
+                                                  </span>
+                                                </div>
+                                              );
+                                            })}
                                           </div>
-                                          <div>
-                                            <span style={{ fontSize: '0.62rem', color: 'var(--text-muted)' }}>Customer-initiated</span>
-                                            <div style={{ fontSize: '0.76rem', fontWeight: 700, color: 'var(--text-main)' }}>{cost.customer_initiated_7d} msgs</div>
-                                          </div>
-                                          <div>
-                                            <span style={{ fontSize: '0.62rem', color: 'var(--text-muted)' }}>Est. cost (7d)</span>
-                                            <div style={{ fontSize: '0.76rem', fontWeight: 700, color: '#0891B2' }}>${cost.estimated_cost_7d_usd}</div>
-                                          </div>
-                                          <div>
-                                            <span style={{ fontSize: '0.62rem', color: 'var(--text-muted)' }}>Projected (30d)</span>
-                                            <div style={{ fontSize: '0.76rem', fontWeight: 700, color: '#0891B2' }}>${cost.estimated_cost_30d_usd}</div>
-                                          </div>
-                                        </div>
-                                        <div style={{ fontSize: '0.58rem', color: 'var(--text-muted)', marginTop: '4px', fontStyle: 'italic' }}>{cost.note}</div>
+                                        )}
+                                      </div>
+                                    ) : null}
+
+                                    {/* Webhook Health Detail */}
+                                    {n.webhook_health && !n.webhook_health.registered && (
+                                      <div style={{ marginBottom: '10px', padding: '8px 10px', borderRadius: '7px', background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.15)', fontSize: '0.66rem', color: '#b91c1c', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                        <AlertTriangle size={12} /> Webhook not registered{n.webhook_health.error ? `: ${n.webhook_health.error}` : ''}. Incoming messages may not be received. Register your webhook in the Webhook section below.
                                       </div>
                                     )}
 
