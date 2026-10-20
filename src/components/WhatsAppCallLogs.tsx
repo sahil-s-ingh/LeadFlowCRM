@@ -33,6 +33,16 @@ type LeadInfo = {
   status: string | null;
 };
 
+type WaConvInfo = {
+  id: string;
+  wa_name: string | null;
+  wa_phone_number: string | null;
+};
+
+function normalizePhone(phone: string): string {
+  return phone.trim().replace(/^\+/, '').replace(/\s+/g, '');
+}
+
 const MISSED_STATUSES = ['rejected', 'no-answer', 'failed'];
 const INCOMING_DIR = 'user_initiated';
 const OUTGOING_DIR = 'business_initiated';
@@ -84,6 +94,7 @@ export default function WhatsAppCallLogs({ session, onBack }: { session: Session
   const [searchQuery, setSearchQuery] = useState('');
   const [dateRange, setDateRange] = useState<'today' | '7d' | '30d' | 'all'>('7d');
   const [leadMap, setLeadMap] = useState<Record<string, LeadInfo>>({});
+  const [waConvMap, setWaConvMap] = useState<Record<string, WaConvInfo>>({});
   const [callbackLoading, setCallbackLoading] = useState<string | null>(null);
   const [selectedCall, setSelectedCall] = useState<CallSession | null>(null);
   const [showAnalytics, setShowAnalytics] = useState(false);
@@ -105,17 +116,50 @@ export default function WhatsAppCallLogs({ session, onBack }: { session: Session
       setCalls(data || []);
 
       const phoneNumbers = [...new Set((data || []).map((c) => c.phone_number).filter(Boolean))];
+      const normalizedNumbers = phoneNumbers.map(normalizePhone);
+      const map: Record<string, LeadInfo> = {};
+
+      // 1. Try matching leads by phone number (try both raw and normalized forms)
       if (phoneNumbers.length > 0) {
         const { data: leads } = await supabase
           .from('submissions')
           .select('id, full_name, mobile_number, status')
           .in('mobile_number', phoneNumbers)
           .is('deleted_at', null);
-        const map: Record<string, LeadInfo> = {};
         (leads || []).forEach((l: any) => {
-          if (l.mobile_number) map[l.mobile_number.trim().replace(/^\+/, '')] = l;
+          if (l.mobile_number) map[normalizePhone(l.mobile_number)] = l;
         });
-        setLeadMap(map);
+      }
+
+      // 2. Fallback: try matching with + prefix variant
+      if (phoneNumbers.length > 0) {
+        const plusNumbers = normalizedNumbers.map((n) => '+' + n);
+        const { data: leadsPlus } = await supabase
+          .from('submissions')
+          .select('id, full_name, mobile_number, status')
+          .in('mobile_number', plusNumbers)
+          .is('deleted_at', null);
+        (leadsPlus || []).forEach((l: any) => {
+          if (l.mobile_number) {
+            const key = normalizePhone(l.mobile_number);
+            if (!map[key]) map[key] = l;
+          }
+        });
+      }
+
+      setLeadMap(map);
+
+      // 3. Fallback: fetch WhatsApp conversation names for numbers without a lead match
+      if (normalizedNumbers.length > 0) {
+        const { data: convs } = await supabase
+          .from('wa_conversations')
+          .select('id, wa_name, wa_phone_number')
+          .in('wa_phone_number', phoneNumbers);
+        const convMap: Record<string, WaConvInfo> = {};
+        (convs || []).forEach((c: any) => {
+          if (c.wa_phone_number) convMap[normalizePhone(c.wa_phone_number)] = c;
+        });
+        setWaConvMap(convMap);
       }
     } catch {
       setError('Failed to load call logs');
@@ -154,7 +198,7 @@ export default function WhatsAppCallLogs({ session, onBack }: { session: Session
         const data = await res.json();
         if (!res.ok || data.error) { setError(data.error || 'Failed to initiate call'); return; }
       } else {
-        const lead = leadMap[call.phone_number];
+        const lead = leadMap[normalizePhone(call.phone_number)];
         const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-whatsapp-message`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -181,8 +225,11 @@ export default function WhatsAppCallLogs({ session, onBack }: { session: Session
     if (filter === 'completed' && c.status !== 'ended' && c.status !== 'accepted') return false;
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
-      const lead = leadMap[c.phone_number];
-      const matches = c.phone_number.includes(q) || (lead?.full_name?.toLowerCase().includes(q) || false);
+      const lead = leadMap[normalizePhone(c.phone_number)];
+      const waName = waConvMap[normalizePhone(c.phone_number)]?.wa_name;
+      const matches = c.phone_number.includes(q)
+        || (lead?.full_name?.toLowerCase().includes(q) || false)
+        || (waName?.toLowerCase().includes(q) || false);
       if (!matches) return false;
     }
     return true;
@@ -402,7 +449,7 @@ export default function WhatsAppCallLogs({ session, onBack }: { session: Session
               {MISSED_STATUSES.includes(selectedCall.status) ? <PhoneMissed size={28} /> : <PhoneCall size={28} />}
             </div>
             <div className="wcl-detail-info">
-              <h2>{leadMap[selectedCall.phone_number]?.full_name || selectedCall.phone_number}</h2>
+              <h2>{leadMap[normalizePhone(selectedCall.phone_number)]?.full_name || waConvMap[normalizePhone(selectedCall.phone_number)]?.wa_name || selectedCall.phone_number}</h2>
               <span className="wcl-detail-phone">{selectedCall.phone_number}</span>
               <div className="wcl-detail-meta">
                 <span className="wcl-status-pill" style={{ background: (STATUS_CONFIG[selectedCall.status] || STATUS_CONFIG.initiating).bg, color: (STATUS_CONFIG[selectedCall.status] || STATUS_CONFIG.initiating).color }}>
@@ -428,9 +475,9 @@ export default function WhatsAppCallLogs({ session, onBack }: { session: Session
             </div>
             <div className="wcl-detail-card">
               <span className="wcl-detail-card-label"><User size={14} /> Lead</span>
-              <span className="wcl-detail-card-value">{leadMap[selectedCall.phone_number]?.full_name || 'Not found'}</span>
-              {leadMap[selectedCall.phone_number]?.status && (
-                <span className="wcl-detail-card-sub">Status: {leadMap[selectedCall.phone_number].status}</span>
+              <span className="wcl-detail-card-value">{leadMap[normalizePhone(selectedCall.phone_number)]?.full_name || waConvMap[normalizePhone(selectedCall.phone_number)]?.wa_name || 'Not found'}</span>
+              {leadMap[normalizePhone(selectedCall.phone_number)]?.status && (
+                <span className="wcl-detail-card-sub">Status: {leadMap[normalizePhone(selectedCall.phone_number)].status}</span>
               )}
             </div>
             <div className="wcl-detail-card">
@@ -517,7 +564,9 @@ export default function WhatsAppCallLogs({ session, onBack }: { session: Session
                 <tbody>
                   {filteredCalls.map((call) => {
                     const sc = STATUS_CONFIG[call.status] || STATUS_CONFIG.initiating;
-                    const lead = leadMap[call.phone_number];
+                    const lead = leadMap[normalizePhone(call.phone_number)];
+                    const waName = waConvMap[normalizePhone(call.phone_number)]?.wa_name;
+                    const displayName = lead?.full_name || waName;
                     const isMissed = MISSED_STATUSES.includes(call.status) || (call.status === 'incoming_ringing' && call.direction === INCOMING_DIR);
                     return (
                       <tr key={call.id} className={isMissed ? 'wcl-row-missed' : ''} onClick={() => setSelectedCall(call)} style={{ cursor: 'pointer' }}>
@@ -529,8 +578,9 @@ export default function WhatsAppCallLogs({ session, onBack }: { session: Session
                           </div>
                         </td>
                         <td className="wcl-td-name">
-                          {lead?.full_name || <span className="wcl-td-unknown">Unknown</span>}
+                          {displayName || <span className="wcl-td-unknown">Unknown</span>}
                           {lead?.status && <span className="wcl-td-lead-status">{lead.status}</span>}
+                          {!lead?.full_name && waName && <span className="wcl-td-lead-status">WhatsApp contact</span>}
                         </td>
                         <td className="wcl-td-phone">{call.phone_number}</td>
                         <td>
