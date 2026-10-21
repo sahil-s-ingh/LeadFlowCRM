@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import type { Session } from '@supabase/supabase-js';
-import { MessageSquare, X, Send, Users, Circle, Sparkles, Mic, MicOff, Volume2, VolumeX, Loader2, AlertTriangle, Bot } from 'lucide-react';
+import { MessageSquare, X, Send, Users, Circle, Sparkles, Mic, MicOff, Volume2, VolumeX, Loader2, AlertTriangle, Bot, Headphones, Settings2, Gauge } from 'lucide-react';
 
 interface TeamChatMessage {
   id: string;
@@ -100,9 +100,17 @@ export default function UnifiedAssistantWidget({ session, userRole }: UnifiedAss
   const [listening, setListening] = useState(false);
   const [voiceOn, setVoiceOn] = useState(false);
   const [voiceSupported, setVoiceSupported] = useState(false);
+  const [continuousMode, setContinuousMode] = useState(false);
+  const [interimText, setInterimText] = useState('');
+  const [voiceRate, setVoiceRate] = useState(1);
+  const [showVoiceSettings, setShowVoiceSettings] = useState(false);
   const aiScrollRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
   const speakingRef = useRef(false);
+  const continuousRef = useRef(false);
+  continuousRef.current = continuousMode;
+  const voiceRateRef = useRef(voiceRate);
+  voiceRateRef.current = voiceRate;
 
   // Position (draggable FAB)
   const [pos, setPos] = useState<{ x: number; y: number }>(() => {
@@ -254,9 +262,14 @@ export default function UnifiedAssistantWidget({ session, userRole }: UnifiedAss
     if (!voiceOn || !('speechSynthesis' in window)) return;
     window.speechSynthesis.cancel();
     const utter = new SpeechSynthesisUtterance(text);
-    utter.rate = 1; utter.pitch = 1; utter.lang = 'en-US';
+    utter.rate = voiceRateRef.current; utter.pitch = 1; utter.lang = 'en-US';
     utter.onstart = () => { speakingRef.current = true; };
-    utter.onend = () => { speakingRef.current = false; };
+    utter.onend = () => {
+      speakingRef.current = false;
+      if (continuousRef.current && voiceOn) {
+        setTimeout(() => startListening(), 300);
+      }
+    };
     window.speechSynthesis.speak(utter);
   }, [voiceOn]);
 
@@ -267,13 +280,24 @@ export default function UnifiedAssistantWidget({ session, userRole }: UnifiedAss
     if (!SR) return;
     if (speakingRef.current) stopSpeaking();
     const rec = new SR();
-    rec.lang = 'en-US'; rec.continuous = false; rec.interimResults = false;
+    rec.lang = 'en-US';
+    rec.continuous = continuousRef.current;
+    rec.interimResults = true;
     rec.onstart = () => { setListening(true); };
-    rec.onend = () => { setListening(false); };
-    rec.onerror = () => { setListening(false); };
+    rec.onend = () => { setListening(false); setInterimText(''); };
+    rec.onerror = () => { setListening(false); setInterimText(''); };
     rec.onresult = (e: SpeechRecognitionEventLike) => {
-      const transcript = e.results[e.results.length - 1][0]?.transcript || '';
-      if (transcript.trim()) sendAiQuestion(transcript.trim());
+      let interim = '';
+      let final = '';
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const r = e.results[i];
+        if (r[0]) {
+          if (typeof (r as unknown as { isFinal?: boolean }).isFinal === 'boolean' && (r as unknown as { isFinal?: boolean }).isFinal) final += r[0].transcript;
+          else interim += r[0].transcript;
+        }
+      }
+      if (interim) setInterimText(interim);
+      if (final.trim()) { setInterimText(''); sendAiQuestion(final.trim()); }
     };
     rec.start();
     recognitionRef.current = rec;
@@ -281,13 +305,13 @@ export default function UnifiedAssistantWidget({ session, userRole }: UnifiedAss
 
   const stopListening = useCallback(() => {
     if (recognitionRef.current) { try { recognitionRef.current.stop(); } catch { /* ignore */ } recognitionRef.current = null; }
-    setListening(false);
+    setListening(false); setInterimText('');
   }, []);
 
   const sendAiQuestion = async (q: string) => {
     if (!q.trim() || aiLoading || !session?.user?.id) return;
-    if (listening) stopListening();
-    stopSpeaking();
+    if (listening && !continuousRef.current) stopListening();
+    if (!continuousRef.current) stopSpeaking();
     const userMsg: AIMessage = { role: 'user', content: q };
     const history = [...aiMessages];
     setAiMessages((prev) => [...prev, userMsg]);
@@ -394,15 +418,44 @@ export default function UnifiedAssistantWidget({ session, userRole }: UnifiedAss
                 <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.75)' }}>
                   {mode === 'team'
                     ? `${activeMembers.length + (userRole === 'owner' ? 1 : 0)} members in team`
-                    : (listening ? 'Listening...' : speakingRef.current ? 'Speaking...' : 'Online — CRM Assistant')}
+                    : (listening ? (continuousMode ? 'Conversation mode — listening...' : 'Listening...') : speakingRef.current ? 'Speaking...' : (continuousMode ? 'Conversation mode — tap mic to start' : 'Online — CRM Assistant'))}
                 </div>
               </div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               {mode === 'ai' && voiceSupported && (
-                <button onClick={() => { if (voiceOn) { stopSpeaking(); setVoiceOn(false); } else setVoiceOn(true); }} style={{ background: voiceOn ? 'rgba(34,197,94,0.25)' : 'rgba(255,255,255,0.1)', border: 'none', cursor: 'pointer', borderRadius: '8px', padding: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title={voiceOn ? 'Voice replies on' : 'Voice replies off'}>
-                  {voiceOn ? <Volume2 size={16} color="#22c55e" /> : <VolumeX size={16} color="#fff" />}
-                </button>
+                <>
+                  <button onClick={() => { if (voiceOn) { stopSpeaking(); setVoiceOn(false); setContinuousMode(false); } else setVoiceOn(true); }} style={{ background: voiceOn ? 'rgba(34,197,94,0.25)' : 'rgba(255,255,255,0.1)', border: 'none', cursor: 'pointer', borderRadius: '8px', padding: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title={voiceOn ? 'Voice replies on' : 'Voice replies off'}>
+                    {voiceOn ? <Volume2 size={16} color="#22c55e" /> : <VolumeX size={16} color="#fff" />}
+                  </button>
+                  {voiceOn && (
+                    <button onClick={() => {
+                      if (continuousMode) { setContinuousMode(false); stopListening(); }
+                      else setContinuousMode(true);
+                    }} style={{ background: continuousMode ? 'rgba(251,191,36,0.25)' : 'rgba(255,255,255,0.1)', border: 'none', cursor: 'pointer', borderRadius: '8px', padding: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title={continuousMode ? 'Conversation mode on — click to turn off' : 'Turn on conversation mode'}>
+                      <Headphones size={16} color={continuousMode ? '#fbbf24' : '#fff'} />
+                    </button>
+                  )}
+                  {voiceOn && (
+                    <div style={{ position: 'relative' }}>
+                      <button onClick={() => setShowVoiceSettings((v) => !v)} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', cursor: 'pointer', borderRadius: '8px', padding: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Voice settings">
+                        <Settings2 size={16} color="#fff" />
+                      </button>
+                      {showVoiceSettings && (
+                        <div style={{ position: 'absolute', top: '40px', right: 0, background: 'var(--bg-card, #fff)', borderRadius: '12px', boxShadow: '0 8px 24px rgba(0,0,0,0.15)', border: '1px solid var(--border-subtle, #e2e8f0)', padding: '14px', width: '200px', zIndex: 100 }}>
+                          <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <Gauge size={13} color="#2563eb" /> Voice Speed
+                          </div>
+                          <input type="range" min="0.5" max="2" step="0.1" value={voiceRate} onChange={(e) => setVoiceRate(parseFloat(e.target.value))} style={{ width: '100%', accentColor: '#2563eb' }} />
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.62rem', color: 'var(--text-muted)', marginTop: '4px' }}>
+                            <span>0.5x</span><span style={{ fontWeight: 700, color: '#2563eb' }}>{voiceRate.toFixed(1)}x</span><span>2x</span>
+                          </div>
+                          <button onClick={() => { setShowVoiceSettings(false); if (voiceOn) speak('This is how Jarvis will sound at the new speed.'); }} style={{ width: '100%', marginTop: '10px', padding: '6px', borderRadius: '8px', border: 'none', background: 'rgba(37,99,235,0.1)', color: '#2563eb', fontSize: '0.68rem', fontWeight: 600, cursor: 'pointer' }}>Test Voice</button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </>
               )}
               {mode === 'team' && (
                 <button onClick={() => setShowMembersList((v) => !v)} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', cursor: 'pointer', borderRadius: '8px', padding: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Team members">
@@ -592,11 +645,20 @@ export default function UnifiedAssistantWidget({ session, userRole }: UnifiedAss
             </div>
             <div style={{ padding: '12px 14px', borderTop: '1px solid var(--border-subtle, #e2e8f0)', background: 'var(--bg-card, #fff)', display: 'flex', gap: '8px', alignItems: 'center' }}>
               {voiceSupported && (
-                <button onClick={listening ? stopListening : startListening} disabled={aiLoading} style={{ width: '40px', height: '40px', borderRadius: '10px', border: 'none', background: listening ? '#ef4444' : (aiLoading ? '#94a3b8' : 'rgba(37,99,235,0.1)'), cursor: aiLoading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }} title={listening ? 'Stop listening' : 'Speak to Jarvis'}>
-                  {listening ? <MicOff size={18} color="#fff" /> : <Mic size={18} color="#2563eb" />}
-                </button>
+                <div style={{ position: 'relative', flexShrink: 0 }}>
+                  <button onClick={listening ? stopListening : startListening} disabled={aiLoading} style={{ width: '40px', height: '40px', borderRadius: '10px', border: 'none', background: listening ? '#ef4444' : (aiLoading ? '#94a3b8' : 'rgba(37,99,235,0.1)'), cursor: aiLoading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.15s' }} title={listening ? 'Stop listening' : 'Speak to Jarvis'}>
+                    {listening ? <MicOff size={18} color="#fff" /> : <Mic size={18} color="#2563eb" />}
+                  </button>
+                  {listening && (
+                    <div style={{ position: 'absolute', bottom: '44px', left: '50%', transform: 'translateX(-50%)', display: 'flex', alignItems: 'flex-end', gap: '2px', height: '20px', pointerEvents: 'none' }}>
+                      {[0,1,2,3,4].map((i) => (
+                        <span key={i} style={{ width: '3px', background: '#ef4444', borderRadius: '2px', animation: `jarvis-wave 0.6s ease-in-out ${i * 0.1}s infinite alternate` }} />
+                      ))}
+                    </div>
+                  )}
+                </div>
               )}
-              <input type="text" value={aiInput} onChange={(e) => setAiInput(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendAiQuestion(aiInput); } }} placeholder={listening ? 'Listening...' : 'Ask Jarvis anything...'} disabled={aiLoading || listening} style={{ flex: 1, padding: '10px 12px', borderRadius: '10px', border: `1px solid ${listening ? 'rgba(239,68,68,0.3)' : 'var(--border-subtle, #e2e8f0)'}`, background: 'var(--bg-light, #f8fafc)', fontSize: '0.82rem', color: 'var(--text-main)', outline: 'none' }} />
+              <input type="text" value={listening && interimText ? interimText : aiInput} onChange={(e) => setAiInput(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendAiQuestion(aiInput); } }} placeholder={listening ? (interimText || 'Listening...') : 'Ask Jarvis anything...'} disabled={aiLoading || listening} style={{ flex: 1, padding: '10px 12px', borderRadius: '10px', border: `1px solid ${listening ? 'rgba(239,68,68,0.3)' : 'var(--border-subtle, #e2e8f0)'}`, background: 'var(--bg-light, #f8fafc)', fontSize: '0.82rem', color: listening && interimText ? '#ef4444' : 'var(--text-main)', outline: 'none', fontStyle: listening && interimText ? 'italic' : 'normal' }} />
               <button onClick={() => sendAiQuestion(aiInput)} disabled={aiLoading || !aiInput.trim()} style={{ width: '40px', height: '40px', borderRadius: '10px', border: 'none', background: aiLoading || !aiInput.trim() ? '#94a3b8' : '#2563eb', cursor: aiLoading || !aiInput.trim() ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 {aiLoading ? <Loader2 size={18} className="crm-spin" color="#fff" /> : <Send size={18} color="#fff" />}
               </button>
