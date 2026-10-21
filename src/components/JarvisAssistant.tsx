@@ -185,7 +185,7 @@ export default function JarvisAssistant({ session }: { session: Session | null }
         <button
           onClick={() => setOpen(true)}
           style={{
-            position: 'fixed', bottom: '24px', right: '24px', zIndex: 9000,
+            position: 'fixed', bottom: '24px', left: '24px', zIndex: 9000,
             width: '56px', height: '56px', borderRadius: '50%',
             background: 'linear-gradient(135deg, #2563eb, #1e40af)',
             border: 'none', cursor: 'pointer',
@@ -208,8 +208,8 @@ export default function JarvisAssistant({ session }: { session: Session | null }
 
       {open && (
         <div style={{
-          position: 'fixed', bottom: '24px', right: '24px', zIndex: 9000,
-          width: '400px', maxWidth: 'calc(100vw - 32px)', height: '560px', maxHeight: 'calc(100vh - 48px)',
+          position: 'fixed', bottom: '24px', left: '24px', zIndex: 9000,
+          width: '400px', maxWidth: 'calc(100vw - 48px)', height: '560px', maxHeight: 'calc(100vh - 48px)',
           background: 'var(--bg-card, #fff)',
           borderRadius: '16px',
           boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
