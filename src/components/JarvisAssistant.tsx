@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { Sparkles, X, Send, Loader2, AlertTriangle, Mic, MicOff, Volume2, VolumeX, GripVertical } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import type { Session } from '@supabase/supabase-js';
-import { Sparkles, X, Send, Loader2, AlertTriangle, Mic, MicOff, Volume2, VolumeX } from 'lucide-react';
+
 
 interface Message {
   role: 'user' | 'assistant';
@@ -55,6 +56,15 @@ export default function JarvisAssistant({ session }: { session: Session | null }
   const [listening, setListening] = useState(false);
   const [voiceOn, setVoiceOn] = useState(false);
   const [voiceSupported, setVoiceSupported] = useState(false);
+  const [pos, setPos] = useState<{ x: number; y: number }>(() => {
+    try {
+      const saved = localStorage.getItem('jarvis-pos');
+      if (saved) return JSON.parse(saved);
+    } catch { /* ignore */ }
+    return { x: window.innerWidth - 80, y: window.innerHeight - 80 };
+  });
+  const [dragging, setDragging] = useState(false);
+  const dragData = useRef<{ startX: number; startY: number; origX: number; origY: number; moved: boolean } | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
   const speakingRef = useRef(false);
@@ -182,20 +192,29 @@ export default function JarvisAssistant({ session }: { session: Session | null }
   return (
     <>
       {!open && (
-        <button
-          onClick={() => setOpen(true)}
+        <div
+          onMouseDown={(e) => {
+            dragData.current = { startX: e.clientX, startY: e.clientY, origX: pos.x, origY: pos.y, moved: false };
+            setDragging(true);
+          }}
+          onClick={() => {
+            if (dragData.current?.moved) return;
+            setOpen(true);
+          }}
           style={{
-            position: 'fixed', bottom: '24px', left: '24px', zIndex: 9000,
+            position: 'fixed', left: `${pos.x}px`, top: `${pos.y}px`, zIndex: 9000,
             width: '56px', height: '56px', borderRadius: '50%',
             background: 'linear-gradient(135deg, #2563eb, #1e40af)',
-            border: 'none', cursor: 'pointer',
+            border: 'none', cursor: dragging ? 'grabbing' : 'grab',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             boxShadow: '0 8px 24px rgba(37,99,235,0.35)',
-            transition: 'transform 0.2s',
+            transition: dragging ? 'none' : 'transform 0.2s',
+            userSelect: 'none',
+            transform: dragging ? 'scale(1.12)' : undefined,
           }}
-          onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.08)'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
-          title="Ask Jarvis AI"
+          onMouseEnter={(e) => { if (!dragging) e.currentTarget.style.transform = 'scale(1.08)'; }}
+          onMouseLeave={(e) => { if (!dragging) e.currentTarget.style.transform = 'scale(1)'; }}
+          title="Ask Jarvis AI — drag to move"
         >
           <Sparkles size={26} color="#fff" />
           <span style={{
@@ -203,12 +222,12 @@ export default function JarvisAssistant({ session }: { session: Session | null }
             width: '12px', height: '12px', borderRadius: '50%',
             background: '#22c55e', border: '2px solid #fff',
           }} />
-        </button>
+        </div>
       )}
 
       {open && (
         <div style={{
-          position: 'fixed', bottom: '24px', left: '24px', zIndex: 9000,
+          position: 'fixed', left: `${Math.min(pos.x, window.innerWidth - 420)}px`, top: `${Math.min(pos.y, window.innerHeight - 580)}px`, zIndex: 9000,
           width: '400px', maxWidth: 'calc(100vw - 48px)', height: '560px', maxHeight: 'calc(100vh - 48px)',
           background: 'var(--bg-card, #fff)',
           borderRadius: '16px',
@@ -219,55 +238,63 @@ export default function JarvisAssistant({ session }: { session: Session | null }
         }}>
           <div style={{
             background: 'linear-gradient(135deg, #2563eb, #1e40af)',
-            padding: '14px 18px',
+            padding: '10px 14px 10px 10px',
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
             flexShrink: 0,
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <div style={{
-                width: '36px', height: '36px', borderRadius: '10px',
-                background: 'rgba(255,255,255,0.15)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>
-                <Sparkles size={20} color="#fff" />
-              </div>
-              <div>
-                <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#fff' }}>Jarvis AI</div>
-                <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.7)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <span style={{
-                    width: '6px', height: '6px', borderRadius: '50%',
-                    background: listening ? '#fbbf24' : '#22c55e',
-                    animation: listening ? 'crm-pulse 1s infinite' : 'none',
-                  }} />
-                  {listening ? 'Listening...' : speakingRef.current ? 'Speaking...' : 'Online — CRM Assistant'}
-                </div>
-              </div>
+            cursor: 'grab',
+            userSelect: 'none',
+          }}
+          onMouseDown={(e) => {
+            dragData.current = { startX: e.clientX, startY: e.clientY, origX: pos.x, origY: pos.y, moved: false };
+            setDragging(true);
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <GripVertical size={14} color="rgba(255,255,255,0.3)" />
+            <div style={{
+              width: '36px', height: '36px', borderRadius: '10px',
+              background: 'rgba(255,255,255,0.15)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <Sparkles size={20} color="#fff" />
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              {voiceSupported && (
-                <button
-                  onClick={() => {
-                    if (voiceOn) { stopSpeaking(); setVoiceOn(false); }
-                    else setVoiceOn(true);
-                  }}
-                  style={{
-                    background: voiceOn ? 'rgba(34,197,94,0.25)' : 'rgba(255,255,255,0.1)',
-                    border: 'none', cursor: 'pointer', borderRadius: '8px', padding: '6px',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  }}
-                  title={voiceOn ? 'Voice replies on' : 'Voice replies off'}
-                >
-                  {voiceOn ? <Volume2 size={16} color="#22c55e" /> : <VolumeX size={16} color="#fff" />}
-                </button>
-              )}
-              <button
-                onClick={() => { stopSpeaking(); stopListening(); setOpen(false); }}
-                style={{ background: 'rgba(255,255,255,0.1)', border: 'none', cursor: 'pointer', borderRadius: '8px', padding: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-              >
-                <X size={18} color="#fff" />
-              </button>
+            <div>
+              <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#fff' }}>Jarvis AI</div>
+              <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.7)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <span style={{
+                  width: '6px', height: '6px', borderRadius: '50%',
+                  background: listening ? '#fbbf24' : '#22c55e',
+                  animation: listening ? 'crm-pulse 1s infinite' : 'none',
+                }} />
+                {listening ? 'Listening...' : speakingRef.current ? 'Speaking...' : 'Online — CRM Assistant'}
+              </div>
             </div>
           </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            {voiceSupported && (
+              <button
+                onClick={() => {
+                  if (voiceOn) { stopSpeaking(); setVoiceOn(false); }
+                  else setVoiceOn(true);
+                }}
+                style={{
+                  background: voiceOn ? 'rgba(34,197,94,0.25)' : 'rgba(255,255,255,0.1)',
+                  border: 'none', cursor: 'pointer', borderRadius: '8px', padding: '6px',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}
+                title={voiceOn ? 'Voice replies on' : 'Voice replies off'}
+              >
+                {voiceOn ? <Volume2 size={16} color="#22c55e" /> : <VolumeX size={16} color="#fff" />}
+              </button>
+            )}
+            <button
+              onClick={() => { stopSpeaking(); stopListening(); setOpen(false); }}
+              style={{ background: 'rgba(255,255,255,0.1)', border: 'none', cursor: 'pointer', borderRadius: '8px', padding: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            >
+              <X size={18} color="#fff" />
+            </button>
+          </div>
+        </div>
 
           <div
             ref={scrollRef}
