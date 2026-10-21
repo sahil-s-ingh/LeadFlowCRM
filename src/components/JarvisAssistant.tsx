@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import type { Session } from '@supabase/supabase-js';
-import { Sparkles, X, Send, Loader2, AlertTriangle } from 'lucide-react';
+import { Sparkles, X, Send, Loader2, AlertTriangle, Mic, MicOff, Volume2, VolumeX } from 'lucide-react';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -17,6 +17,34 @@ const SUGGESTED_QUESTIONS = [
   { label: 'Overdue follow-ups', question: 'Which follow-ups are overdue? List them with lead names.' },
 ];
 
+// Minimal type declarations for the Web Speech API (not in standard TS lib)
+interface SpeechRecognitionResultLike {
+  transcript: string;
+  confidence: number;
+}
+interface SpeechRecognitionEventLike {
+  results: { [index: number]: SpeechRecognitionResultLike[] & { length: number; [index: number]: SpeechRecognitionResultLike } };
+  resultIndex: number;
+}
+interface SpeechRecognitionLike {
+  lang: string;
+  continuous: boolean;
+  interimResults: boolean;
+  start: () => void;
+  stop: () => void;
+  abort: () => void;
+  onresult: ((e: SpeechRecognitionEventLike) => void) | null;
+  onerror: ((e: { error: string }) => void) | null;
+  onend: (() => void) | null;
+  onstart: (() => void) | null;
+}
+declare global {
+  interface Window {
+    SpeechRecognition?: { new (): SpeechRecognitionLike };
+    webkitSpeechRecognition?: { new (): SpeechRecognitionLike };
+  }
+}
+
 export default function JarvisAssistant({ session }: { session: Session | null }) {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -24,7 +52,12 @@ export default function JarvisAssistant({ session }: { session: Session | null }
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [enabled, setEnabled] = useState<boolean | null>(null);
+  const [listening, setListening] = useState(false);
+  const [voiceOn, setVoiceOn] = useState(false);
+  const [voiceSupported, setVoiceSupported] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
+  const speakingRef = useRef(false);
 
   const checkEnabled = useCallback(async () => {
     if (!session?.user?.id) return;
@@ -41,7 +74,11 @@ export default function JarvisAssistant({ session }: { session: Session | null }
     }
   }, [session?.user?.id]);
 
-  useEffect(() => { checkEnabled(); }, [checkEnabled]);
+  useEffect(() => {
+    checkEnabled();
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    setVoiceSupported(!!SR && typeof window.speechSynthesis !== 'undefined');
+  }, [checkEnabled]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -49,8 +86,56 @@ export default function JarvisAssistant({ session }: { session: Session | null }
     }
   }, [messages, loading]);
 
+  const speak = useCallback((text: string) => {
+    if (!voiceOn || !('speechSynthesis' in window)) return;
+    window.speechSynthesis.cancel();
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.rate = 1;
+    utter.pitch = 1;
+    utter.lang = 'en-US';
+    utter.onstart = () => { speakingRef.current = true; };
+    utter.onend = () => { speakingRef.current = false; };
+    window.speechSynthesis.speak(utter);
+  }, [voiceOn]);
+
+  const stopSpeaking = useCallback(() => {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      speakingRef.current = false;
+    }
+  }, []);
+
+  const startListening = useCallback(() => {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) return;
+    if (speakingRef.current) stopSpeaking();
+    const rec = new SR();
+    rec.lang = 'en-US';
+    rec.continuous = false;
+    rec.interimResults = false;
+    rec.onstart = () => { setListening(true); };
+    rec.onend = () => { setListening(false); };
+    rec.onerror = () => { setListening(false); };
+    rec.onresult = (e: SpeechRecognitionEventLike) => {
+      const transcript = e.results[e.results.length - 1][0]?.transcript || '';
+      if (transcript.trim()) sendQuestion(transcript.trim());
+    };
+    rec.start();
+    recognitionRef.current = rec;
+  }, [stopSpeaking]);
+
+  const stopListening = useCallback(() => {
+    if (recognitionRef.current) {
+      try { recognitionRef.current.stop(); } catch { /* ignore */ }
+      recognitionRef.current = null;
+    }
+    setListening(false);
+  }, []);
+
   const sendQuestion = async (q: string) => {
     if (!q.trim() || loading || !session?.user?.id) return;
+    if (listening) stopListening();
+    stopSpeaking();
     const userMsg: Message = { role: 'user', content: q };
     const history = [...messages];
     setMessages((prev) => [...prev, userMsg]);
@@ -81,6 +166,7 @@ export default function JarvisAssistant({ session }: { session: Session | null }
         setMessages((prev) => [...prev, { role: 'assistant', content: data.error }]);
       } else if (data.reply) {
         setMessages((prev) => [...prev, { role: 'assistant', content: data.reply }]);
+        speak(data.reply);
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Failed to get response';
@@ -148,17 +234,39 @@ export default function JarvisAssistant({ session }: { session: Session | null }
               <div>
                 <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#fff' }}>Jarvis AI</div>
                 <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.7)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#22c55e' }} />
-                  Online — CRM Assistant
+                  <span style={{
+                    width: '6px', height: '6px', borderRadius: '50%',
+                    background: listening ? '#fbbf24' : '#22c55e',
+                    animation: listening ? 'crm-pulse 1s infinite' : 'none',
+                  }} />
+                  {listening ? 'Listening...' : speakingRef.current ? 'Speaking...' : 'Online — CRM Assistant'}
                 </div>
               </div>
             </div>
-            <button
-              onClick={() => setOpen(false)}
-              style={{ background: 'rgba(255,255,255,0.1)', border: 'none', cursor: 'pointer', borderRadius: '8px', padding: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-            >
-              <X size={18} color="#fff" />
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              {voiceSupported && (
+                <button
+                  onClick={() => {
+                    if (voiceOn) { stopSpeaking(); setVoiceOn(false); }
+                    else setVoiceOn(true);
+                  }}
+                  style={{
+                    background: voiceOn ? 'rgba(34,197,94,0.25)' : 'rgba(255,255,255,0.1)',
+                    border: 'none', cursor: 'pointer', borderRadius: '8px', padding: '6px',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}
+                  title={voiceOn ? 'Voice replies on' : 'Voice replies off'}
+                >
+                  {voiceOn ? <Volume2 size={16} color="#22c55e" /> : <VolumeX size={16} color="#fff" />}
+                </button>
+              )}
+              <button
+                onClick={() => { stopSpeaking(); stopListening(); setOpen(false); }}
+                style={{ background: 'rgba(255,255,255,0.1)', border: 'none', cursor: 'pointer', borderRadius: '8px', padding: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              >
+                <X size={18} color="#fff" />
+              </button>
+            </div>
           </div>
 
           <div
@@ -183,7 +291,7 @@ export default function JarvisAssistant({ session }: { session: Session | null }
                   Hi, I'm Jarvis
                 </p>
                 <p style={{ fontSize: '0.78rem', color: 'var(--text-muted, #64748b)', margin: '0 0 16px', lineHeight: 1.5 }}>
-                  Your AI CRM assistant. Ask me about your leads, follow-ups, WhatsApp chats, and more.
+                  Your AI CRM assistant. Ask me about your leads, follow-ups, WhatsApp chats, and more. Type or tap the mic to speak.
                 </p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   {SUGGESTED_QUESTIONS.map((sq) => (
@@ -225,7 +333,30 @@ export default function JarvisAssistant({ session }: { session: Session | null }
                   border: msg.role === 'user' ? 'none' : '1px solid var(--border-subtle, #e2e8f0)',
                   whiteSpace: 'pre-wrap',
                 }}>
-                  {msg.content}
+                  {msg.role === 'user' && msg.content.startsWith('\u{1F3A4}') ? (
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <Mic size={13} /> {msg.content.replace(/^\u{1F3A4}\s*/, '')}
+                    </span>
+                  ) : msg.role === 'assistant' ? (
+                    <span>
+                      {msg.content}
+                      {voiceOn && i === messages.length - 1 && (
+                        <button
+                          onClick={() => speak(msg.content)}
+                          style={{
+                            marginLeft: '8px', background: 'none', border: 'none', cursor: 'pointer',
+                            padding: '2px', display: 'inline-flex', alignItems: 'center',
+                            verticalAlign: 'middle', opacity: 0.6,
+                          }}
+                          title="Play voice"
+                        >
+                          <Volume2 size={13} color="#2563eb" />
+                        </button>
+                      )}
+                    </span>
+                  ) : (
+                    msg.content
+                  )}
                 </div>
               </div>
             ))}
@@ -255,16 +386,33 @@ export default function JarvisAssistant({ session }: { session: Session | null }
             background: 'var(--bg-card, #fff)', flexShrink: 0,
             display: 'flex', gap: '8px', alignItems: 'center',
           }}>
+            {voiceSupported && (
+              <button
+                onClick={listening ? stopListening : startListening}
+                disabled={loading}
+                style={{
+                  width: '40px', height: '40px', borderRadius: '10px',
+                  border: 'none',
+                  background: listening ? '#ef4444' : (loading ? '#94a3b8' : 'rgba(37,99,235,0.1)'),
+                  cursor: loading ? 'not-allowed' : 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  flexShrink: 0, transition: 'background 0.15s',
+                }}
+                title={listening ? 'Stop listening' : 'Speak to Jarvis'}
+              >
+                {listening ? <MicOff size={18} color="#fff" /> : <Mic size={18} color="#2563eb" />}
+              </button>
+            )}
             <input
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendQuestion(input); } }}
-              placeholder="Ask Jarvis anything about your CRM..."
-              disabled={loading}
+              placeholder={listening ? 'Listening...' : 'Ask Jarvis anything about your CRM...'}
+              disabled={loading || listening}
               style={{
                 flex: 1, padding: '10px 12px', borderRadius: '10px',
-                border: '1px solid var(--border-subtle, #e2e8f0)',
+                border: `1px solid ${listening ? 'rgba(239,68,68,0.3)' : 'var(--border-subtle, #e2e8f0)'}`,
                 background: 'var(--bg-light, #f8fafc)',
                 fontSize: '0.82rem', color: 'var(--text-main)',
                 outline: 'none',
