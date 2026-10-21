@@ -65,6 +65,9 @@ export default function JarvisAssistant({ session }: { session: Session | null }
   });
   const [dragging, setDragging] = useState(false);
   const dragData = useRef<{ startX: number; startY: number; origX: number; origY: number; moved: boolean } | null>(null);
+  const wasDragged = useRef(false);
+  const posRef = useRef(pos);
+  posRef.current = pos;
   const scrollRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
   const speakingRef = useRef(false);
@@ -83,6 +86,36 @@ export default function JarvisAssistant({ session }: { session: Session | null }
       setEnabled(false);
     }
   }, [session?.user?.id]);
+
+  useEffect(() => {
+    if (!dragging) return;
+    const onMove = (e: MouseEvent) => {
+      const d = dragData.current;
+      if (!d) return;
+      const dx = e.clientX - d.startX;
+      const dy = e.clientY - d.startY;
+      if (Math.abs(dx) > 4 || Math.abs(dy) > 4) d.moved = true;
+      const nx = Math.max(8, Math.min(window.innerWidth - 64, d.origX + dx));
+      const ny = Math.max(8, Math.min(window.innerHeight - 64, d.origY + dy));
+      setPos({ x: nx, y: ny });
+    };
+    const onUp = () => {
+      const d = dragData.current;
+      const moved = d?.moved;
+      dragData.current = null;
+      setDragging(false);
+      if (moved) {
+        try { localStorage.setItem('jarvis-pos', JSON.stringify(posRef.current)); } catch { /* ignore */ }
+      }
+      if (moved) wasDragged.current = true;
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+    return () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
+  }, [dragging]);
 
   useEffect(() => {
     checkEnabled();
@@ -198,7 +231,7 @@ export default function JarvisAssistant({ session }: { session: Session | null }
             setDragging(true);
           }}
           onClick={() => {
-            if (dragData.current?.moved) return;
+            if (wasDragged.current) { wasDragged.current = false; return; }
             setOpen(true);
           }}
           style={{
