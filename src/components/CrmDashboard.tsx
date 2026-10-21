@@ -31,7 +31,7 @@ import {
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import DashboardOverview from '@/components/DashboardOverview';
-import TeamChatWidget from '@/components/TeamChatWidget';
+import UnifiedAssistantWidget from '@/components/UnifiedAssistantWidget';
 import AnalyticsHub from '@/components/AnalyticsHub';
 import MessageTemplates from '@/components/MessageTemplates';
 import TemplatesHub from '@/components/TemplatesHub';
@@ -67,7 +67,7 @@ import { RoleTagPicker } from '@/components/RoleTags';
 import WhatsAppGroups from '@/components/WhatsAppGroups';
 import WhatsAppFlows from '@/components/WhatsAppFlows';
 import InstagramInbox from '@/components/InstagramInbox';
-import JarvisAssistant from '@/components/JarvisAssistant';
+
 
 type LeadStatus = 'new' | 'called_no_response' | 'called_responded' | 'interested' | 'not_interested' | 'converted';
 
@@ -3705,9 +3705,7 @@ export default function CrmDashboard({ session, initialView }: { session: Sessio
         />
       )}
 
-      <TeamChatWidget session={session} userRole={userRole} />
-
-      <JarvisAssistant session={session} />
+      <UnifiedAssistantWidget session={session} userRole={userRole} />
 
       {showTrashModal && (
         <>
