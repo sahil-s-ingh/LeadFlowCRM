@@ -349,6 +349,29 @@ async function processMessage(
 
   await supabase.from("chat_messages").insert(messageData);
 
+  // ─── AI Auto-Reply ──────────────────────────────────────
+  if (msg.text) {
+    try {
+      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+      const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+      const aiRes = await fetch(`${supabaseUrl}/functions/v1/ai-reply`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${supabaseKey}` },
+        body: JSON.stringify({ user_id: adminUserId, platform: "telegram", conversation_id: conversation.id, incoming_text: msg.text }),
+      });
+      if (aiRes.ok) {
+        const aiData = await aiRes.json();
+        if (aiData.reply && !aiData.skipped) {
+          await sendTelegramMessage(botToken, chatId, aiData.reply);
+          await supabase.from("chat_messages").insert({ conversation_id: conversation.id, sender: "agent", message_type: "text", text_content: aiData.reply });
+        } else if (aiData.fallback) {
+          await sendTelegramMessage(botToken, chatId, aiData.fallback);
+          await supabase.from("chat_messages").insert({ conversation_id: conversation.id, sender: "agent", message_type: "text", text_content: aiData.fallback });
+        }
+      }
+    } catch { /* AI reply is best-effort */ }
+  }
+
   // Fire automation trigger for telegram_received
   try {
     await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/process-automations`, {

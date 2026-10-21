@@ -41,6 +41,7 @@ type WaMessage = {
   created_at: string;
   wa_message_id?: string | null;
   delivery_status?: string | null;
+  error_message?: string | null;
 };
 
 type Conversation = {
@@ -435,7 +436,7 @@ const LeadWhatsAppDrawer: React.FC<Props> = ({ open, lead, session, onClose }) =
         loadTemplates(conv as Conversation);
         const { data: msgs, error: msgErr } = await supabase
           .from('wa_messages')
-          .select('id, conversation_id, sender, message_type, text_content, media_id, mime_type, file_name, file_size, created_at, wa_message_id, delivery_status')
+          .select('id, conversation_id, sender, message_type, text_content, media_id, mime_type, file_name, file_size, created_at, wa_message_id, delivery_status, error_message')
           .eq('conversation_id', conv.id)
           .order('created_at', { ascending: true });
         if (msgErr) throw msgErr;
@@ -1462,7 +1463,7 @@ const LeadWhatsAppDrawer: React.FC<Props> = ({ open, lead, session, onClose }) =
     if (status === 'read') return <CheckCheck size={13} className="lead-wa-tick lead-wa-tick-read" />;
     if (status === 'delivered') return <CheckCheck size={13} className="lead-wa-tick" />;
     if (status === 'sent') return <Check size={12} className="lead-wa-tick" />;
-    if (status === 'failed') return <span className="lead-wa-tick lead-wa-tick-fail">!</span>;
+    if (status === 'failed') return <span className="lead-wa-tick lead-wa-tick-fail" title={m.error_message || 'Delivery failed — hover to see error'}>!</span>;
     return null;
   };
 

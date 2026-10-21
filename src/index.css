@@ -7486,6 +7486,28 @@ a.crm-drawer-contact-item:hover {
   flex-wrap: wrap;
 }
 
+.crm-quick-actions-3 {
+  gap: 8px;
+  flex-wrap: nowrap;
+}
+
+.crm-quick-actions-3 .crm-quick-btn {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 12px 8px;
+  font-size: 0.8rem;
+}
+
+@media (max-width: 420px) {
+  .crm-quick-actions-3 {
+    flex-wrap: wrap;
+  }
+  .crm-quick-actions-3 .crm-quick-btn {
+    flex: 1 1 40%;
+    min-width: 110px;
+  }
+}
+
 .crm-quick-btn {
   flex: 1;
   min-width: 110px;
@@ -28456,15 +28478,99 @@ html.crm-dark .ea-container {
 .lead-wa-send:hover { background: #15803d; transform: scale(1.08); box-shadow: 0 3px 10px rgba(22,163,74,0.35); }
 .lead-wa-send:disabled { background: #D1D5DB; cursor: not-allowed; transform: none; box-shadow: none; }
 
-.lead-wa-row-btn {
-  width: 32px; height: 32px; border-radius: 8px;
-  border: 1px solid #E5E7EB;
-  background: #ffffff; color: #16a34a;
-  display: inline-flex; align-items: center; justify-content: center;
-  cursor: pointer; transition: all 0.15s;
+.crm-row-actions-cell {
+  min-width: 196px;
 }
-.lead-wa-row-btn:hover { background: #F3F4F6; transform: scale(1.08); }
-.lead-wa-row-btn:disabled { color: #D1D5DB; background: #fff; border-color: #E5E7EB; cursor: not-allowed; }
+.crm-row-actions {
+  display: flex;
+  align-items: stretch;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.crm-row-action-btn {
+  width: 92px;
+  min-height: 42px;
+  padding: 8px 6px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease, border-color 0.18s ease;
+}
+.crm-row-action-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+}
+.crm-row-action-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+.crm-row-email-btn {
+  border: 1px solid rgba(37, 99, 235, 0.2);
+  background: linear-gradient(145deg, #eef3ff, #e5ecff);
+  color: #2563eb;
+  box-shadow: 0 3px 8px rgba(37, 99, 235, 0.12);
+}
+.crm-row-email-btn:hover:not(:disabled) {
+  background: linear-gradient(145deg, #dce7ff, #d3e0ff);
+  border-color: rgba(37, 99, 235, 0.35);
+  box-shadow: 0 7px 14px rgba(37, 99, 235, 0.18);
+}
+.lead-wa-row-btn {
+  border: 1px solid rgba(22, 163, 74, 0.25);
+  background: linear-gradient(145deg, #effcf4, #e2f8eb);
+  color: #15803d;
+  box-shadow: 0 3px 8px rgba(22, 163, 74, 0.12);
+}
+.lead-wa-row-btn:hover:not(:disabled) {
+  background: linear-gradient(145deg, #dcf8e7, #cff3dc);
+  border-color: rgba(22, 163, 74, 0.4);
+  box-shadow: 0 7px 14px rgba(22, 163, 74, 0.18);
+}
+.lead-wa-row-btn:disabled {
+  color: #aeb7c4;
+  background: #f8fafc;
+  border-color: #e2e8f0;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+.crm-row-merge-btn {
+  width: auto;
+  border: 1px solid rgba(217, 119, 6, 0.3);
+  background: rgba(245, 158, 11, 0.08);
+  color: #d97706;
+}
+html.crm-dark .crm-row-email-btn {
+  background: linear-gradient(145deg, rgba(59, 130, 246, 0.2), rgba(37, 99, 235, 0.12)) !important;
+  border-color: rgba(96, 165, 250, 0.3);
+  color: #93c5fd !important;
+  box-shadow: 0 3px 10px rgba(37, 99, 235, 0.16);
+}
+html.crm-dark .crm-row-email-btn:hover:not(:disabled) {
+  background: linear-gradient(145deg, rgba(59, 130, 246, 0.3), rgba(37, 99, 235, 0.2)) !important;
+}
+html.crm-dark .lead-wa-row-btn {
+  background: linear-gradient(145deg, rgba(34, 197, 94, 0.2), rgba(22, 163, 74, 0.12));
+  border-color: rgba(74, 222, 128, 0.3);
+  color: #86efac;
+  box-shadow: 0 3px 10px rgba(22, 163, 74, 0.16);
+}
+html.crm-dark .lead-wa-row-btn:hover:not(:disabled) {
+  background: linear-gradient(145deg, rgba(34, 197, 94, 0.3), rgba(22, 163, 74, 0.2));
+}
+html.crm-dark .lead-wa-row-btn:disabled {
+  background: #1a2640;
+  border-color: rgba(148, 163, 184, 0.15);
+  color: #475569;
+  box-shadow: none;
+}
+@media (max-width: 1280px) {
+  .crm-row-actions-cell { min-width: 176px; }
+  .crm-row-action-btn { width: 82px; }
+}
 
 /* Dark mode */
 html.crm-dark .lead-wa-drawer { background: #131c31; border-left-color: rgba(148,163,184,0.12); box-shadow: -12px 0 40px rgba(0,0,0,0.4); }

@@ -26,7 +26,7 @@ const PHONE_HEADER_KEYWORDS = ['phone', 'mobile', 'number', 'whatsapp', 'contact
 const NAME_HEADER_KEYWORDS = ['name', 'customer', 'client', 'full', 'first', 'last'];
 
 function normalizePhone(raw: string): string {
-  return String(raw).replace(/[^\d]/g, '').replace(/^0+/, '');
+  return String(raw).replace(/[^\d]/g, '').replace(/^00/, '');
 }
 
 function fuzzyMatchHeader(header: string, keywords: string[]): boolean {

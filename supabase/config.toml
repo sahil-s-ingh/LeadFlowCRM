@@ -141,3 +141,6 @@ verify_jwt = false
 
 [functions.send-instagram-message]
 verify_jwt = true
+
+[functions.ai-reply]
+verify_jwt = false

@@ -6,7 +6,8 @@ import {
 } from 'lucide-react';
 import type { Session } from '@supabase/supabase-js';
 import { GoogleSheetsIntegration } from './GoogleSheetsIntegration';
-import { FileSpreadsheet } from 'lucide-react';
+import AIChatbotSettings from './AIChatbotSettings';
+import { FileSpreadsheet, Sparkles } from 'lucide-react';
 
 type WebhookEvent =
   | 'lead_created' | 'lead_status_changed' | 'lead_converted'
@@ -96,7 +97,7 @@ export function IntegrationHub({ session }: { session: Session | null }) {
   const [formUrl, setFormUrl] = useState('');
   const [formEvents, setFormEvents] = useState<WebhookEvent[]>(['lead_created']);
   const [saving, setSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState<'endpoints' | 'event_log' | 'platforms' | 'google_sheets'>('endpoints');
+  const [activeTab, setActiveTab] = useState<'endpoints' | 'event_log' | 'platforms' | 'google_sheets' | 'ai_chatbot'>('endpoints');
   const [deliveries, setDeliveries] = useState<Delivery[]>([]);
   const [deliveriesLoading, setDeliveriesLoading] = useState(false);
   const [expandedDelivery, setExpandedDelivery] = useState<string | null>(null);
@@ -272,6 +273,7 @@ export function IntegrationHub({ session }: { session: Session | null }) {
           { key: 'event_log', label: 'Event Log', icon: <Clock size={14} /> },
           { key: 'platforms', label: 'Platform Guides', icon: <Zap size={14} /> },
           { key: 'google_sheets', label: 'Google Sheets', icon: <FileSpreadsheet size={14} /> },
+          { key: 'ai_chatbot', label: 'AI Chatbot', icon: <Sparkles size={14} /> },
         ] as const).map((tab) => (
           <button
             key={tab.key}
@@ -457,6 +459,11 @@ export function IntegrationHub({ session }: { session: Session | null }) {
             </div>
           )}
         </div>
+      )}
+
+      {/* AI Chatbot Tab */}
+      {activeTab === 'ai_chatbot' && (
+        <AIChatbotSettings session={session} />
       )}
 
       {/* Google Sheets Tab */}

@@ -1,93 +1,77 @@
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import {
-  Plus, Trash2, Edit3, Save, X, Loader2, AlertCircle, CheckCircle2,
-  Table, Copy, Send, Power, Clock, RefreshCw, ExternalLink, FileSpreadsheet,
-  ArrowRight, Code, Zap,
+  Plus, Trash2, Copy, Loader2, AlertCircle, CheckCircle2,
+  FileSpreadsheet, Code, Key, Power, X, ArrowRight,
 } from 'lucide-react';
 import type { Session } from '@supabase/supabase-js';
 
-type WebhookEvent =
-  | 'lead_created' | 'lead_status_changed' | 'lead_converted'
-  | 'lead_assigned' | 'lead_note_added' | 'lead_deleted';
-
-type GSConnection = {
+type ApiKey = {
   id: string;
-  user_id: string;
   name: string;
-  script_url: string;
-  spreadsheet_id: string | null;
-  spreadsheet_name: string | null;
-  sheet_name: string;
-  events: WebhookEvent[];
-  column_mapping: Record<string, string>;
+  key_prefix: string;
   is_active: boolean;
-  last_sync_at: string | null;
-  last_sync_status: string | null;
-  last_sync_error: string | null;
+  last_used_at: string | null;
   created_at: string;
 };
-
-type SyncLogEntry = {
-  id: string;
-  connection_id: string;
-  event: string;
-  lead_id: string | null;
-  lead_data: Record<string, unknown>;
-  status: string;
-  error_message: string | null;
-  created_at: string;
-};
-
-const EVENT_OPTIONS: { key: WebhookEvent; label: string; desc: string; color: string }[] = [
-  { key: 'lead_created', label: 'New Lead', desc: 'Fires when a lead is added to the CRM', color: '#2563eb' },
-  { key: 'lead_status_changed', label: 'Status Changed', desc: 'Fires when a lead moves pipeline stages', color: '#f59e0b' },
-  { key: 'lead_converted', label: 'Lead Converted', desc: 'Fires when a lead is marked as converted', color: '#16a34a' },
-  { key: 'lead_assigned', label: 'Lead Assigned', desc: 'Fires when a lead is assigned to a team member', color: '#0f766e' },
-  { key: 'lead_note_added', label: 'Note Added', desc: 'Fires when a note is added to a lead', color: '#7c3aed' },
-  { key: 'lead_deleted', label: 'Lead Deleted', desc: 'Fires when a lead is removed', color: '#dc2626' },
-];
-
-const LEAD_FIELDS = [
-  'full_name', 'email', 'mobile_number', 'status', 'state',
-  'trading_product', 'fund_amount', 'lead_source', 'assigned_to', 'created_at',
-];
 
 const APPS_SCRIPT_CODE = `/**
- * CRM → Google Sheets Sync
- * Paste this into Extensions → Apps Script in your Google Sheet,
- * then Deploy → New deployment → Web app → Anyone access.
- * Copy the deployment URL and paste it into the CRM.
+ * Google Sheets → CRM Contact Sync
+ * Paste into Extensions → Apps Script in your Google Sheet.
+ * Run "syncContacts" or set a time trigger to run every 5 minutes.
+ * Every new row with a phone number will be pushed into your CRM automatically.
  */
-function doPost(e) {
-  const body = JSON.parse(e.postData.contents);
-  const sheet = SpreadsheetApp.getActiveSpreadsheet()
-    .getSheetByName(body.sheetName) || SpreadsheetApp.getActiveSpreadsheet()
-    .insertSheet(body.sheetName);
+var API_KEY = 'PASTE_YOUR_API_KEY_HERE';
+var SYNC_URL = 'https://SUPABASE_URL/functions/v1/google-sheets-sync';
+var LAST_SYNC_CELL = 'SyncMeta';
 
-  const mapping = body.columnMapping || {};
-  const lead = body.lead || {};
-  const headers = sheet.getLastRow() === 0;
+function syncContacts() {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  var data = sheet.getDataRange().getValues();
+  if (data.length < 2) return;
 
-  const cols = Object.keys(mapping).length > 0
-    ? Object.keys(mapping)
-    : ['Full Name', 'Email', 'Phone', 'Status', 'Source', 'Created At'];
+  var headers = data[0];
+  var lastSynced = getSyncedCount();
 
-  const fieldMap = {
-    'Full Name': 'full_name', 'Email': 'email', 'Phone': 'mobile_number',
-    'Status': 'status', 'Source': 'lead_source', 'Created At': 'created_at',
-  };
+  // Collect unsynced rows
+  var contacts = [];
+  for (var i = lastSynced; i < data.length; i++) {
+    var row = {};
+    for (var j = 0; j < headers.length; j++) {
+      row[headers[j].toString().trim()] = data[i][j] ? data[i][j].toString().trim() : '';
+    }
+    contacts.push(row);
+  }
 
-  if (headers) sheet.getRange(1, 1, 1, cols.length).setValues([cols]);
+  if (contacts.length === 0) {
+    Logger.log('No new contacts to sync.');
+    return;
+  }
 
-  const row = cols.map(function(c) {
-    var field = mapping[c] || fieldMap[c] || c.toLowerCase().replace(/\\s/g, '_');
-    return lead[field] || '';
+  var response = UrlFetchApp.fetch(SYNC_URL, {
+    method: 'post',
+    contentType: 'application/json',
+    headers: { 'X-Api-Key': API_KEY },
+    payload: JSON.stringify({ contacts: contacts }),
+    muteHttpExceptions: true,
   });
 
-  sheet.appendRow(row);
-  return ContentService.createTextOutput(JSON.stringify({ ok: true }))
-    .setMimeType(ContentService.MimeType.JSON);
+  var result = JSON.parse(response.getContentText());
+  Logger.log('Synced: ' + result.imported + ' imported, ' +
+    result.duplicates + ' duplicates, ' + result.failed + ' failed');
+
+  // Mark all rows as synced
+  setSyncedCount(data.length);
+}
+
+function getSyncedCount() {
+  var props = PropertiesService.getDocumentProperties();
+  var val = props.getProperty(LAST_SYNC_CELL);
+  return val ? parseInt(val) : 1;
+}
+
+function setSyncedCount(count) {
+  PropertiesService.getDocumentProperties().setProperty(LAST_SYNC_CELL, count.toString());
 }`;
 
 const inputStyle: React.CSSProperties = {
@@ -114,196 +98,93 @@ const iconBtn: React.CSSProperties = {
 };
 
 export function GoogleSheetsIntegration({ session }: { session: Session | null }) {
-  const [connections, setConnections] = useState<GSConnection[]>([]);
+  const [keys, setKeys] = useState<ApiKey[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [showForm, setShowForm] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [formName, setFormName] = useState('');
-  const [formUrl, setFormUrl] = useState('');
-  const [formSheet, setFormSheet] = useState('Leads');
-  const [formEvents, setFormEvents] = useState<WebhookEvent[]>(['lead_created']);
-  const [formMapping, setFormMapping] = useState<Record<string, string>>({});
-  const [saving, setSaving] = useState(false);
-  const [activeSubTab, setActiveSubTab] = useState<'connections' | 'sync_log' | 'setup'>('connections');
-  const [syncLog, setSyncLog] = useState<SyncLogEntry[]>([]);
-  const [syncLogLoading, setSyncLogLoading] = useState(false);
-  const [expandedLog, setExpandedLog] = useState<string | null>(null);
-  const [testingId, setTestingId] = useState<string | null>(null);
+  const [showCreate, setShowCreate] = useState(false);
+  const [keyName, setKeyName] = useState('');
+  const [creating, setCreating] = useState(false);
+  const [newKey, setNewKey] = useState<string | null>(null);
+  const [copiedKey, setCopiedKey] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
+  const [activeTab, setActiveTab] = useState<'api_keys' | 'setup'>('api_keys');
 
-  const fetchConnections = useCallback(async () => {
+  const fetchKeys = useCallback(async () => {
     setLoading(true);
     const { data, err } = await supabase
-      .from('google_sheets_connections')
-      .select('*')
+      .from('google_sheets_api_keys')
+      .select('id, name, key_prefix, is_active, last_used_at, created_at')
       .order('created_at', { ascending: false });
     if (err) setError(err.message);
-    else setConnections((data || []) as GSConnection[]);
+    else setKeys((data || []) as ApiKey[]);
     setLoading(false);
   }, []);
 
-  useEffect(() => { fetchConnections(); }, [fetchConnections]);
+  useEffect(() => { fetchKeys(); }, [fetchKeys]);
 
-  const fetchSyncLog = useCallback(async () => {
-    setSyncLogLoading(true);
-    const { data } = await supabase
-      .from('google_sheets_sync_log')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(50);
-    setSyncLog((data || []) as SyncLogEntry[]);
-    setSyncLogLoading(false);
-  }, []);
+  const generateKey = useCallback(async () => {
+    const array = new Uint8Array(32);
+    crypto.getRandomValues(array);
+    const plain = Array.from(array).map((b) => b.toString(16).padStart(2, '0')).join('');
+    const prefix = plain.slice(0, 10);
 
-  useEffect(() => {
-    if (activeSubTab === 'sync_log') fetchSyncLog();
-  }, [activeSubTab, fetchSyncLog]);
+    const data = new TextEncoder().encode(plain);
+    const buf = await crypto.subtle.digest('SHA-256', data);
+    const keyHash = Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, '0')).join('');
 
-  const resetForm = () => {
-    setFormName(''); setFormUrl(''); setFormSheet('Leads');
-    setFormEvents(['lead_created']); setFormMapping({});
-    setEditingId(null); setShowForm(false);
-  };
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData.session?.user.id;
+    if (!userId) { setError('Not authenticated'); return; }
 
-  const startEdit = (conn: GSConnection) => {
-    setEditingId(conn.id);
-    setFormName(conn.name);
-    setFormUrl(conn.script_url);
-    setFormSheet(conn.sheet_name);
-    setFormEvents(conn.events);
-    setFormMapping(conn.column_mapping || {});
-    setShowForm(true);
-  };
+    const { error: insErr } = await supabase.from('google_sheets_api_keys').insert({
+      name: keyName.trim() || 'My Google Sheets Key',
+      key_hash: keyHash,
+      key_prefix: prefix,
+      user_id: userId,
+    });
 
-  const handleSave = async () => {
-    if (!formName.trim() || !formUrl.trim()) { setError('Name and Script URL are required'); return; }
-    if (!formUrl.startsWith('https://')) { setError('URL must start with https://'); return; }
-    setSaving(true); setError('');
+    if (insErr) { setError(insErr.message); return; }
+    setNewKey(plain);
+    setKeyName('');
+    setShowCreate(false);
+    setSuccess('API key created! Copy it now — you will not be able to see it again.');
+    fetchKeys();
+  }, [keyName, fetchKeys]);
 
-    if (editingId) {
-      const { error: updErr } = await supabase
-        .from('google_sheets_connections')
-        .update({
-          name: formName.trim(), script_url: formUrl.trim(), sheet_name: formSheet.trim(),
-          events: formEvents, column_mapping: formMapping,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', editingId);
-      if (updErr) setError(updErr.message);
-      else { setSuccess('Connection updated successfully'); resetForm(); fetchConnections(); }
-    } else {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const userId = sessionData.session?.user.id;
-      if (!userId) { setError('Not authenticated'); setSaving(false); return; }
-      const { error: insErr } = await supabase
-        .from('google_sheets_connections')
-        .insert({
-          name: formName.trim(), script_url: formUrl.trim(), sheet_name: formSheet.trim(),
-          events: formEvents, column_mapping: formMapping, user_id: userId,
-        });
-      if (insErr) setError(insErr.message);
-      else { setSuccess('Google Sheets connection created'); resetForm(); fetchConnections(); }
-    }
-    setSaving(false);
+  const toggleActive = async (key: ApiKey) => {
+    await supabase.from('google_sheets_api_keys')
+      .update({ is_active: !key.is_active, updated_at: new Date().toISOString() })
+      .eq('id', key.id);
+    fetchKeys();
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Delete this Google Sheets connection? Sync logs will also be removed.')) return;
-    await supabase.from('google_sheets_connections').delete().eq('id', id);
-    fetchConnections();
+    if (!confirm('Delete this API key? Contacts will no longer sync from this key.')) return;
+    await supabase.from('google_sheets_api_keys').delete().eq('id', id);
+    fetchKeys();
   };
 
-  const toggleActive = async (conn: GSConnection) => {
-    await supabase.from('google_sheets_connections')
-      .update({ is_active: !conn.is_active, updated_at: new Date().toISOString() })
-      .eq('id', conn.id);
-    fetchConnections();
-  };
-
-  const toggleEvent = (ev: WebhookEvent) => {
-    setFormEvents((prev) => prev.includes(ev) ? prev.filter((e) => e !== ev) : [...prev, ev]);
-  };
-
-  const updateMapping = (colName: string, field: string) => {
-    setFormMapping((prev) => {
-      const next = { ...prev };
-      if (!field) delete next[colName];
-      else next[colName] = field;
-      return next;
-    });
-  };
-
-  const testSync = async (conn: GSConnection) => {
-    setTestingId(conn.id);
-    setError('');
-    const { data: sessionData } = await supabase.auth.getSession();
-    const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/google-sheets-sync`;
-    try {
-      const resp = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${sessionData.session?.access_token}`,
-          apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
-        },
-        body: JSON.stringify({
-          connection_id: conn.id,
-          event: conn.events[0] || 'lead_created',
-          lead_data: {
-            id: 'test-lead-00000000-0000-0000-0000-000000000000',
-            full_name: 'Test Lead',
-            email: 'test@example.com',
-            mobile_number: '+1234567890',
-            status: 'new',
-            lead_source: 'Test',
-            created_at: new Date().toISOString(),
-          },
-        }),
-      });
-      if (!resp.ok) {
-        const body = await resp.text();
-        setError(`Test sync failed (${resp.status}): ${body.slice(0, 200)}`);
-      } else {
-        setSuccess('Test row sent! Check your Google Sheet to confirm it appeared.');
-        fetchConnections();
-      }
-    } catch (err) {
-      setError(`Test sync error: ${String(err)}`);
-    }
-    setTestingId(null);
-  };
-
-  const copyCode = () => {
-    navigator.clipboard.writeText(APPS_SCRIPT_CODE);
-    setCopiedCode(true);
-    setTimeout(() => setCopiedCode(false), 2000);
-  };
-
-  const statusColor = (status: string) => {
-    if (status === 'synced') return '#16a34a';
-    if (status === 'failed') return '#dc2626';
-    if (status === 'pending') return '#f59e0b';
-    return '#64748b';
+  const copyToClipboard = (text: string, setter: (v: boolean) => void) => {
+    navigator.clipboard.writeText(text);
+    setter(true);
+    setTimeout(() => setter(false), 2000);
   };
 
   return (
     <div>
-      {/* Sub-tabs */}
       <div style={{ display: 'flex', gap: '4px', marginBottom: '20px', borderBottom: '1px solid var(--border-subtle)' }}>
         {([
-          { key: 'connections', label: 'Connections' },
-          { key: 'sync_log', label: 'Sync Log' },
+          { key: 'api_keys', label: 'API Keys' },
           { key: 'setup', label: 'Setup Guide' },
         ] as const).map((tab) => (
           <button
             key={tab.key}
-            onClick={() => setActiveSubTab(tab.key)}
+            onClick={() => setActiveTab(tab.key)}
             style={{
-              padding: '10px 16px', border: 'none', borderBottom: activeSubTab === tab.key ? '2px solid #16a34a' : '2px solid transparent',
+              padding: '10px 16px', border: 'none', borderBottom: activeTab === tab.key ? '2px solid #16a34a' : '2px solid transparent',
               background: 'none', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600,
-              color: activeSubTab === tab.key ? '#16a34a' : 'var(--text-dark)',
+              color: activeTab === tab.key ? '#16a34a' : 'var(--text-dark)',
               transition: 'all 0.15s', marginBottom: '-1px',
             }}
           >
@@ -315,122 +196,54 @@ export function GoogleSheetsIntegration({ session }: { session: Session | null }
       {error && <GSBanner type="error" message={error} onClose={() => setError('')} />}
       {success && <GSBanner type="success" message={success} onClose={() => setSuccess('')} />}
 
-      {/* Connections sub-tab */}
-      {activeSubTab === 'connections' && (
+      {newKey && (
+        <div style={{
+          background: 'rgba(22,163,74,0.05)', border: '1px solid rgba(22,163,74,0.3)',
+          borderRadius: '12px', padding: '16px', marginBottom: '20px',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+            <Key size={16} style={{ color: '#16a34a' }} />
+            <strong style={{ fontSize: '0.85rem', color: 'var(--text-main)' }}>Your New API Key (shown once)</strong>
+          </div>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <input readOnly value={newKey} style={{ ...inputStyle, fontFamily: 'monospace', fontSize: '0.78rem' }} />
+            <button onClick={() => copyToClipboard(newKey, setCopiedKey)} style={btnSecondary}>
+              {copiedKey ? <CheckCircle2 size={14} style={{ color: '#16a34a' }} /> : <Copy size={14} />}
+              {copiedKey ? 'Copied!' : 'Copy'}
+            </button>
+            <button onClick={() => setNewKey(null)} style={iconBtn}><X size={14} /></button>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'api_keys' && (
         <div>
-          {!showForm && (
+          {!showCreate && (
             <button
-              onClick={() => { resetForm(); setShowForm(true); }}
-              style={{
-                display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 16px',
-                background: '#16a34a', color: '#fff', border: 'none', borderRadius: '8px',
-                fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', marginBottom: '16px', transition: 'background 0.15s',
-              }}
+              onClick={() => { setKeyName(''); setShowCreate(true); }}
+              style={{ ...btnPrimary, marginBottom: '16px' }}
             >
-              <Plus size={16} /> Add Google Sheets Connection
+              <Plus size={16} /> Generate API Key
             </button>
           )}
 
-          {showForm && (
+          {showCreate && (
             <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', borderRadius: '12px', padding: '20px', marginBottom: '20px' }}>
-              <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-main)', margin: '0 0 16px' }}>
-                {editingId ? 'Edit Connection' : 'New Google Sheets Connection'}
+              <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-main)', margin: '0 0 14px' }}>
+                Create New API Key
               </h3>
-
-              <GSField label="Connection Name" style={{ marginBottom: '14px' }}>
-                <input type="text" value={formName} onChange={(e) => setFormName(e.target.value)}
-                  placeholder="e.g. New Leads → Master Sheet" style={inputStyle} />
-              </GSField>
-
-              <GSField label="Apps Script Web App URL" style={{ marginBottom: '14px' }}>
-                <input type="url" value={formUrl} onChange={(e) => setFormUrl(e.target.value)}
-                  placeholder="https://script.google.com/macros/s/.../exec" style={inputStyle} />
-              </GSField>
-
-              <GSField label="Sheet Name (tab inside the spreadsheet)" style={{ marginBottom: '14px' }}>
-                <input type="text" value={formSheet} onChange={(e) => setFormSheet(e.target.value)}
-                  placeholder="Leads" style={inputStyle} />
-              </GSField>
-
-              <div style={{ marginBottom: '16px' }}>
-                <span style={{ fontSize: '0.76rem', fontWeight: 600, color: 'var(--text-dark)', display: 'block', marginBottom: '8px' }}>
-                  Events to sync
-                </span>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '8px' }}>
-                  {EVENT_OPTIONS.map((ev) => {
-                    const selected = formEvents.includes(ev.key);
-                    return (
-                      <button
-                        key={ev.key} type="button" onClick={() => toggleEvent(ev.key)}
-                        style={{
-                          display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 12px',
-                          borderRadius: '8px', border: `2px solid ${selected ? ev.color : 'var(--border-subtle)'}`,
-                          background: selected ? `${ev.color}10` : 'var(--bg-card)',
-                          cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s',
-                        }}
-                      >
-                        <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: ev.color, flexShrink: 0, opacity: selected ? 1 : 0.3 }} />
-                        <div>
-                          <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-main)' }}>{ev.label}</div>
-                          <div style={{ fontSize: '0.7rem', color: 'var(--text-dark)' }}>{ev.desc}</div>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Column mapping */}
-              <div style={{ marginBottom: '16px' }}>
-                <span style={{ fontSize: '0.76rem', fontWeight: 600, color: 'var(--text-dark)', display: 'block', marginBottom: '8px' }}>
-                  Column Mapping (optional — leave empty to auto-detect)
-                </span>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {Object.entries(formMapping).map(([col, field]) => (
-                    <div key={col} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <input type="text" value={col} readOnly
-                        style={{ ...inputStyle, flex: 1, background: 'var(--bg-light)', cursor: 'default' }} />
-                      <ArrowRight size={14} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
-                      <select value={field} onChange={(e) => updateMapping(col, e.target.value)} style={{ ...inputStyle, flex: 1 }}>
-                        {LEAD_FIELDS.map((f) => <option key={f} value={f}>{f}</option>)}
-                      </select>
-                      <button onClick={() => updateMapping(col, '')} style={{ ...iconBtn, color: '#dc2626', borderColor: 'rgba(239,68,68,0.2)' }}>
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                  ))}
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <input type="text" id="gs-new-col" placeholder="New column name (e.g. Phone Number)"
-                      style={{ ...inputStyle, flex: 1 }}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          const val = (e.target as HTMLInputElement).value.trim();
-                          if (val && !formMapping[val]) {
-                            setFormMapping({ ...formMapping, [val]: LEAD_FIELDS[0] });
-                            (e.target as HTMLInputElement).value = '';
-                          }
-                        }
-                      }} />
-                    <button onClick={() => {
-                      const input = document.getElementById('gs-new-col') as HTMLInputElement;
-                      const val = input.value.trim();
-                      if (val && !formMapping[val]) {
-                        setFormMapping({ ...formMapping, [val]: LEAD_FIELDS[0] });
-                        input.value = '';
-                      }
-                    }} style={btnSecondary}>
-                      <Plus size={14} /> Add Column
-                    </button>
-                  </div>
-                </div>
-              </div>
-
+              <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '14px' }}>
+                <span style={{ fontSize: '0.76rem', fontWeight: 600, color: 'var(--text-dark)' }}>Key Name</span>
+                <input type="text" value={keyName} onChange={(e) => setKeyName(e.target.value)}
+                  placeholder="e.g. Master Lead Sheet" style={inputStyle}
+                  onKeyDown={(e) => { if (e.key === 'Enter' && keyName.trim()) generateKey(); }} />
+              </label>
               <div style={{ display: 'flex', gap: '8px' }}>
-                <button onClick={handleSave} disabled={saving} style={{ ...btnPrimary, opacity: saving ? 0.6 : 1 }}>
-                  {saving ? <Loader2 size={16} className="crm-spin" /> : <Save size={16} />}
-                  {editingId ? 'Update' : 'Create'} Connection
+                <button onClick={generateKey} disabled={creating} style={{ ...btnPrimary, opacity: creating ? 0.6 : 1 }}>
+                  {creating ? <Loader2 size={16} className="crm-spin" /> : <Key size={16} />}
+                  Generate
                 </button>
-                <button onClick={resetForm} style={btnSecondary}>Cancel</button>
+                <button onClick={() => setShowCreate(false)} style={btnSecondary}>Cancel</button>
               </div>
             </div>
           )}
@@ -439,83 +252,46 @@ export function GoogleSheetsIntegration({ session }: { session: Session | null }
             <div style={{ textAlign: 'center', padding: '40px' }}>
               <Loader2 size={28} className="crm-spin" style={{ color: 'var(--text-muted)' }} />
             </div>
-          ) : connections.length === 0 ? (
+          ) : keys.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '48px 20px', color: 'var(--text-dark)' }}>
-              <FileSpreadsheet size={40} style={{ opacity: 0.3, marginBottom: '12px' }} />
-              <p style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '4px' }}>No Google Sheets connections yet</p>
-              <p style={{ fontSize: '0.82rem' }}>Connect a Google Sheet to start syncing leads automatically. Check the Setup Guide tab for step-by-step instructions.</p>
+              <Key size={40} style={{ opacity: 0.3, marginBottom: '12px' }} />
+              <p style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '4px' }}>No API keys yet</p>
+              <p style={{ fontSize: '0.82rem' }}>Generate an API key, then paste it into your Google Sheet's Apps Script to start syncing contacts automatically.</p>
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {connections.map((conn) => (
-                <div key={conn.id} style={{
-                  background: 'var(--bg-card)', border: '1px solid var(--border-subtle)',
-                  borderRadius: '12px', padding: '16px',
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px', marginBottom: '10px' }}>
+              {keys.map((key) => (
+                <div key={key.id} style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', borderRadius: '12px', padding: '16px' }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                        <Table size={16} style={{ color: '#16a34a', flexShrink: 0 }} />
-                        <strong style={{ fontSize: '0.9rem', color: 'var(--text-main)' }}>{conn.name}</strong>
+                        <Key size={16} style={{ color: '#16a34a', flexShrink: 0 }} />
+                        <strong style={{ fontSize: '0.9rem', color: 'var(--text-main)' }}>{key.name}</strong>
                         <span style={{
                           fontSize: '0.65rem', fontWeight: 700, padding: '2px 8px', borderRadius: '100px',
-                          background: conn.is_active ? 'rgba(22,163,74,0.1)' : 'rgba(148,163,184,0.15)',
-                          color: conn.is_active ? '#16a34a' : '#94a3b8',
+                          background: key.is_active ? 'rgba(22,163,74,0.1)' : 'rgba(148,163,184,0.15)',
+                          color: key.is_active ? '#16a34a' : '#94a3b8',
                         }}>
-                          {conn.is_active ? 'ACTIVE' : 'PAUSED'}
+                          {key.is_active ? 'ACTIVE' : 'REVOKED'}
                         </span>
                       </div>
-                      <div style={{ fontSize: '0.76rem', color: 'var(--text-dark)', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '4px' }}>
-                        <ExternalLink size={12} style={{ flexShrink: 0 }} />
-                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{conn.script_url}</span>
+                      <div style={{ fontSize: '0.74rem', color: 'var(--text-dark)', fontFamily: 'monospace', marginBottom: '4px' }}>
+                        {key.key_prefix}••••••••••••••••
                       </div>
-                      <div style={{ fontSize: '0.72rem', color: 'var(--text-dark)', marginBottom: '8px' }}>
-                        Sheet: <strong>{conn.sheet_name}</strong>
-                      </div>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-                        {conn.events.map((ev) => {
-                          const opt = EVENT_OPTIONS.find((o) => o.key === ev);
-                          return (
-                            <span key={ev} style={{
-                              fontSize: '0.65rem', fontWeight: 600, padding: '2px 8px', borderRadius: '6px',
-                              background: `${opt?.color || '#64748b'}15`, color: opt?.color || '#64748b',
-                            }}>
-                              {opt?.label || ev}
-                            </span>
-                          );
-                        })}
+                      <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                        Created {new Date(key.created_at).toLocaleDateString()}
+                        {key.last_used_at && ` · Last used ${new Date(key.last_used_at).toLocaleDateString()}`}
                       </div>
                     </div>
                     <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
-                      <button onClick={() => toggleActive(conn)} title={conn.is_active ? 'Pause' : 'Activate'} style={iconBtn}>
-                        <Power size={14} style={{ color: conn.is_active ? '#16a34a' : '#94a3b8' }} />
+                      <button onClick={() => toggleActive(key)} title={key.is_active ? 'Revoke' : 'Activate'} style={iconBtn}>
+                        <Power size={14} style={{ color: key.is_active ? '#16a34a' : '#94a3b8' }} />
                       </button>
-                      <button onClick={() => testSync(conn)} disabled={testingId === conn.id} title="Send test row" style={iconBtn}>
-                        {testingId === conn.id ? <Loader2 size={14} className="crm-spin" /> : <Send size={14} style={{ color: '#16a34a' }} />}
-                      </button>
-                      <button onClick={() => startEdit(conn)} title="Edit" style={iconBtn}>
-                        <Edit3 size={14} />
-                      </button>
-                      <button onClick={() => handleDelete(conn.id)} title="Delete" style={{ ...iconBtn, color: '#dc2626', borderColor: 'rgba(239,68,68,0.2)' }}>
+                      <button onClick={() => handleDelete(key.id)} title="Delete" style={{ ...iconBtn, color: '#dc2626', borderColor: 'rgba(239,68,68,0.2)' }}>
                         <Trash2 size={14} />
                       </button>
                     </div>
                   </div>
-
-                  {conn.last_sync_at && (
-                    <div style={{ marginTop: '8px', fontSize: '0.7rem', color: 'var(--text-dark)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <Clock size={12} />
-                      Last sync: {new Date(conn.last_sync_at).toLocaleString()}
-                      {conn.last_sync_status && (
-                        <span style={{ fontWeight: 600, color: statusColor(conn.last_sync_status) }}>
-                          ({conn.last_sync_status})
-                        </span>
-                      )}
-                      {conn.last_sync_error && (
-                        <span style={{ color: '#dc2626' }}>— {conn.last_sync_error}</span>
-                      )}
-                    </div>
-                  )}
                 </div>
               ))}
             </div>
@@ -523,84 +299,7 @@ export function GoogleSheetsIntegration({ session }: { session: Session | null }
         </div>
       )}
 
-      {/* Sync Log sub-tab */}
-      {activeSubTab === 'sync_log' && (
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-            <p style={{ fontSize: '0.82rem', color: 'var(--text-dark)', margin: 0 }}>
-              Recent sync attempts. Click a row to see the lead data that was sent.
-            </p>
-            <button onClick={fetchSyncLog} style={btnSecondary}>
-              <RefreshCw size={14} /> Refresh
-            </button>
-          </div>
-
-          {syncLogLoading ? (
-            <div style={{ textAlign: 'center', padding: '40px' }}>
-              <Loader2 size={28} className="crm-spin" style={{ color: 'var(--text-muted)' }} />
-            </div>
-          ) : syncLog.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '48px 20px', color: 'var(--text-dark)' }}>
-              <Clock size={40} style={{ opacity: 0.3, marginBottom: '12px' }} />
-              <p style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '4px' }}>No sync events yet</p>
-              <p style={{ fontSize: '0.82rem' }}>Sync events will appear here once lead data is pushed to your sheets.</p>
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {syncLog.map((entry) => {
-                const conn = connections.find((c) => c.id === entry.connection_id);
-                const expanded = expandedLog === entry.id;
-                return (
-                  <div key={entry.id} style={{
-                    background: 'var(--bg-card)', border: '1px solid var(--border-subtle)',
-                    borderRadius: '10px', overflow: 'hidden',
-                  }}>
-                    <div
-                      onClick={() => setExpandedLog(expanded ? null : entry.id)}
-                      style={{ padding: '12px 16px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px' }}
-                    >
-                      <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: statusColor(entry.status), flexShrink: 0 }} />
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-main)' }}>
-                          {conn?.name || 'Unknown connection'} — {entry.event}
-                        </div>
-                        <div style={{ fontSize: '0.7rem', color: 'var(--text-dark)' }}>
-                          {new Date(entry.created_at).toLocaleString()}
-                          {entry.error_message && ` · ${entry.error_message.slice(0, 80)}`}
-                        </div>
-                      </div>
-                      <span style={{
-                        fontSize: '0.65rem', fontWeight: 700, padding: '2px 10px', borderRadius: '100px',
-                        background: `${statusColor(entry.status)}15`, color: statusColor(entry.status),
-                        textTransform: 'capitalize',
-                      }}>
-                        {entry.status}
-                      </span>
-                    </div>
-                    {expanded && (
-                      <div style={{ padding: '0 16px 16px', borderTop: '1px solid var(--border-subtle)' }}>
-                        <div style={{ marginTop: '12px' }}>
-                          <span style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-dark)' }}>Lead Data:</span>
-                          <pre style={{
-                            marginTop: '4px', padding: '10px', background: 'var(--bg-light)', borderRadius: '8px',
-                            fontSize: '0.72rem', fontFamily: 'monospace', color: 'var(--text-main)',
-                            overflow: 'auto', maxHeight: '200px', whiteSpace: 'pre-wrap',
-                          }}>
-                            {JSON.stringify(entry.lead_data, null, 2)}
-                          </pre>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Setup Guide sub-tab */}
-      {activeSubTab === 'setup' && (
+      {activeTab === 'setup' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div style={{
             background: 'rgba(22,163,74,0.05)', border: '1px solid rgba(22,163,74,0.15)',
@@ -617,43 +316,36 @@ export function GoogleSheetsIntegration({ session }: { session: Session | null }
               <div>
                 <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-main)', margin: 0 }}>How Google Sheets Sync Works</h3>
                 <p style={{ fontSize: '0.76rem', color: 'var(--text-dark)', margin: '2px 0 0' }}>
-                  Your CRM pushes lead data to a Google Sheet in real-time — no Zapier or Make.com needed.
+                  New rows in your Google Sheet automatically become leads in your CRM — no manual CSV uploads.
                 </p>
               </div>
             </div>
             <ol style={{ margin: 0, paddingLeft: '20px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <li style={{ fontSize: '0.8rem', color: 'var(--text-dark)', lineHeight: 1.5 }}>
+                Go to the <strong>API Keys</strong> tab and click <strong>Generate API Key</strong>. Copy the key immediately — you won't see it again.
+              </li>
+              <li style={{ fontSize: '0.8rem', color: 'var(--text-dark)', lineHeight: 1.5 }}>
                 Open your Google Sheet, then go to <strong>Extensions &rarr; Apps Script</strong>.
               </li>
               <li style={{ fontSize: '0.8rem', color: 'var(--text-dark)', lineHeight: 1.5 }}>
-                Delete any code in the editor and paste the script below.
+                Delete any code and paste the script below. Replace <code>API_KEY</code> with your key and <code>SUPABASE_URL</code> with your project URL.
               </li>
               <li style={{ fontSize: '0.8rem', color: 'var(--text-dark)', lineHeight: 1.5 }}>
-                Click <strong>Deploy &rarr; New deployment</strong>, choose <strong>Web app</strong>, set access to <strong>Anyone</strong>, and click Deploy.
+                Click <strong>Run</strong> to sync immediately, or set a time trigger to run every 5 minutes for real-time sync.
               </li>
               <li style={{ fontSize: '0.8rem', color: 'var(--text-dark)', lineHeight: 1.5 }}>
-                Copy the deployment URL (ends in <code>/exec</code>) and paste it into a new connection on the Connections tab.
-              </li>
-              <li style={{ fontSize: '0.8rem', color: 'var(--text-dark)', lineHeight: 1.5 }}>
-                Choose which events to sync and optionally map columns. Click <strong>Test</strong> to send a sample row.
-              </li>
-              <li style={{ fontSize: '0.8rem', color: 'var(--text-dark)', lineHeight: 1.5 }}>
-                From now on, every matching lead event will automatically append a row to your sheet.
+                Every row in your sheet with a phone column will be imported as a new lead. Duplicates are skipped automatically.
               </li>
             </ol>
           </div>
 
-          {/* Apps Script code block */}
-          <div style={{
-            background: 'var(--bg-card)', border: '1px solid var(--border-subtle)',
-            borderRadius: '12px', padding: '20px',
-          }}>
+          <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', borderRadius: '12px', padding: '20px' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Code size={18} style={{ color: '#16a34a' }} />
                 <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-main)', margin: 0 }}>Apps Script Code</h4>
               </div>
-              <button onClick={copyCode} style={btnSecondary}>
+              <button onClick={() => copyToClipboard(APPS_SCRIPT_CODE, setCopiedCode)} style={btnSecondary}>
                 {copiedCode ? <CheckCircle2 size={14} style={{ color: '#16a34a' }} /> : <Copy size={14} />}
                 {copiedCode ? 'Copied!' : 'Copy Code'}
               </button>
@@ -667,41 +359,43 @@ export function GoogleSheetsIntegration({ session }: { session: Session | null }
             </pre>
           </div>
 
-          {/* Data flow diagram */}
-          <div style={{
-            background: 'var(--bg-card)', border: '1px solid var(--border-subtle)',
-            borderRadius: '12px', padding: '20px',
-          }}>
+          <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', borderRadius: '12px', padding: '20px' }}>
             <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-main)', margin: '0 0 14px' }}>Data Flow</h4>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', background: 'var(--bg-light)', borderRadius: '10px' }}>
-                <Table size={16} style={{ color: '#2563eb' }} />
+                <FileSpreadsheet size={16} style={{ color: '#16a34a' }} />
+                <span style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-main)' }}>New Row in Google Sheet</span>
+              </div>
+              <ArrowRight size={18} style={{ color: 'var(--text-muted)' }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', background: 'var(--bg-light)', borderRadius: '10px' }}>
+                <Key size={16} style={{ color: '#f59e0b' }} />
+                <span style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-main)' }}>API Key Auth</span>
+              </div>
+              <ArrowRight size={18} style={{ color: 'var(--text-muted)' }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', background: 'var(--bg-light)', borderRadius: '10px' }}>
+                <Plus size={16} style={{ color: '#2563eb' }} />
                 <span style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-main)' }}>New Lead in CRM</span>
               </div>
-              <ArrowRight size={18} style={{ color: 'var(--text-muted)' }} />
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', background: 'var(--bg-light)', borderRadius: '10px' }}>
-                <Zap size={16} style={{ color: '#f59e0b' }} />
-                <span style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-main)' }}>Edge Function Fires</span>
-              </div>
-              <ArrowRight size={18} style={{ color: 'var(--text-muted)' }} />
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', background: 'var(--bg-light)', borderRadius: '10px' }}>
-                <FileSpreadsheet size={16} style={{ color: '#16a34a' }} />
-                <span style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-main)' }}>Row Added to Sheet</span>
-              </div>
             </div>
+          </div>
+
+          <div style={{
+            background: 'rgba(245,158,11,0.05)', border: '1px solid rgba(245,158,11,0.15)',
+            borderRadius: '12px', padding: '16px',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+              <AlertCircle size={16} style={{ color: '#f59e0b' }} />
+              <strong style={{ fontSize: '0.82rem', color: 'var(--text-main)' }}>Column Requirements</strong>
+            </div>
+            <p style={{ fontSize: '0.76rem', color: 'var(--text-dark)', lineHeight: 1.5, margin: 0 }}>
+              Your sheet must have a column for phone numbers (recognized names: <code>phone</code>, <code>mobile_number</code>, <code>Phone</code>, or <code>phone number</code>).<br />
+              Optional columns: <code>name</code>/<code>full_name</code>/<code>Full Name</code> and <code>email</code>/<code>Email</code>.
+              The first row should be headers.
+            </p>
           </div>
         </div>
       )}
     </div>
-  );
-}
-
-function GSField({ label, children, style }: { label: string; children: React.ReactNode; style?: React.CSSProperties }) {
-  return (
-    <label style={{ display: 'flex', flexDirection: 'column', gap: '4px', ...style }}>
-      <span style={{ fontSize: '0.76rem', fontWeight: 600, color: 'var(--text-dark)' }}>{label}</span>
-      {children}
-    </label>
   );
 }
 

@@ -307,6 +307,7 @@ const LeadTrackerPage: React.FC<Props> = ({ leads, onBack, session }) => {
                           aria-label="Open WhatsApp chat"
                         >
                           <MessageCircle size={16} />
+                          <span className="lead-wa-row-btn-label">Chat</span>
                         </button>
                       </td>
                     </tr>

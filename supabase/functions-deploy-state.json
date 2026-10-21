@@ -1,0 +1,201 @@
+{
+  "projectId": "71491159",
+  "functions": {
+    "admin-manage-account": {
+      "hasChanged": false,
+      "hash": "73c8d451d6983ea4b8ddf2c3df022d0e5498ccdfcbe899c10d255b9d9383480a"
+    },
+    "call-quality-scoring": {
+      "hasChanged": false,
+      "hash": "93c6c007fae18c283f00661340c99000c1e6f1d05948c7e242ccc1be95f4220d"
+    },
+    "delete-account": {
+      "hasChanged": false,
+      "hash": "a85da885e985df35d659e766e88a247af8834c3b88d7f313d1a72acd48fa6c5c"
+    },
+    "email-broadcast": {
+      "hasChanged": false,
+      "hash": "d1cfc53bc9d2a885494612cbac90f6b3d05438a02b159bf24330beda10adcc82"
+    },
+    "email-track": {
+      "hasChanged": false,
+      "hash": "309f59a72ea66d3566cf778cf5c6cf54ee1baa68b95f4e2ecc335737a667328f"
+    },
+    "google-sheets-sync": {
+      "hasChanged": false,
+      "hash": "c467805d2ea88df811c7621886c3d004453a0c3688504f30313c55e7c8171b66"
+    },
+    "impersonate": {
+      "hasChanged": false,
+      "hash": "88395f7955958990c3d9b589f644ee4192d37403505c27485d40631f56e93ae5"
+    },
+    "instagram-webhook": {
+      "hasChanged": false,
+      "hash": "6053a984d4df123898bae9918c9ea5ba1078116586d8bfe013c03c7e4886f849"
+    },
+    "integration-webhooks": {
+      "hasChanged": false,
+      "hash": "85f9515455f7fd3140c5aadb17e175d3a540c789dfa505562c921d5b18f16de2"
+    },
+    "integration-webhooks-retry": {
+      "hasChanged": false,
+      "hash": "faf565b0651ad45fba5831f3f2a9d75542c0766721ac93f9eb557158a9688846"
+    },
+    "meta-ads-manager": {
+      "hasChanged": false,
+      "hash": "5b9aefb0ae6502952b639158c9d0a9d94f1c19aedee4f468a1ebdaf26ced712e"
+    },
+    "meta-conversion-api": {
+      "hasChanged": false,
+      "hash": "92122d7bfc497974820ee033dd7c0f4c574cda291e12ac02dfc7050c0c7bbd57"
+    },
+    "paypal-create-order": {
+      "hasChanged": false,
+      "hash": "044a3e5f45d027ae725ee4b1925b3075424c5af046ece541d86585f8439071f2"
+    },
+    "paypal-verify-payment": {
+      "hasChanged": false,
+      "hash": "69a45ecc230f1c925a6766e9f38b27f4f5d5fdd283266e2660bb0b97cba725cd"
+    },
+    "phonepe-create-order": {
+      "hasChanged": false,
+      "hash": "8cf5915fd09f6f7b60744aaefa091e181c97da1d37458953a5faef20112a8a2f"
+    },
+    "phonepe-verify-payment": {
+      "hasChanged": false,
+      "hash": "6b6fe8bcbe0f838c3037bfc92569b2191d02cff90e43136401166dc16b52795f"
+    },
+    "plivo-answer": {
+      "hasChanged": false,
+      "hash": "d264d80c3920928e644c87736458a6a714f88cdfdcf3844cda3cb96d2675b407"
+    },
+    "process-automations": {
+      "hasChanged": false,
+      "hash": "bc8eba2c19892573b666ab7f041e9b909697e9dfa9dfcc6cc8d61ce6b01a5fd9"
+    },
+    "process-drip-sequences": {
+      "hasChanged": false,
+      "hash": "f0ec19d9ad3f54f6632962b6eec1f867bd4ca7893050050b01d911138f9b7c6d"
+    },
+    "process-followups": {
+      "hasChanged": false,
+      "hash": "6b10529df89da18bf0e266d181a1c403039d284ae2e9c0b11d22587dc6d7c340"
+    },
+    "process-scheduled-broadcasts": {
+      "hasChanged": false,
+      "hash": "08d49b5de4800aebc4ba7ecd49fd10f1eca57664a625dd871deaa941b87dc8dd"
+    },
+    "process-scheduled-emails": {
+      "hasChanged": false,
+      "hash": "c7b253a65a3c9811c829ec3eb9e0f8edf47a4eea7f002324501b24ef637940ef"
+    },
+    "process-scheduled-wa-messages": {
+      "hasChanged": false,
+      "hash": "335bc5aeaf0a381628df204ec2008e5710e896243e42a47875eb852c1500e8f1"
+    },
+    "razorpay-create-order": {
+      "hasChanged": false,
+      "hash": "7d22c1d05ad6869f036d92006e074a8570141943319e74ec485b8ec4f00def05"
+    },
+    "razorpay-verify-payment": {
+      "hasChanged": false,
+      "hash": "33b09f2fbdeb103b3c81e62e855e55d4e51a00b391d745a0d7c14ffbf2531dfe"
+    },
+    "send-chat-notification": {
+      "hasChanged": false,
+      "hash": "36e4e748d9990420f49f8de10dc3d630883077d282dc3bbd38ae2399b280d9e2"
+    },
+    "send-email": {
+      "hasChanged": false,
+      "hash": "15ea504f791b5c6523898eff027b4bf20989da460e55da837089d7247b8ad693"
+    },
+    "send-instagram-message": {
+      "hasChanged": false,
+      "hash": "4cf1e9ca565e5e6361be2c0d97306627d9377de916932f9c86e791c014721560"
+    },
+    "send-team-invite": {
+      "hasChanged": false,
+      "hash": "527a28c622c13770d6a4c81e7b66271e46afb2055591d1f5fb29d80d4c4f2416"
+    },
+    "send-telegram-message": {
+      "hasChanged": false,
+      "hash": "5460400bcc4dcdd840756053df3b975e996f971013760f327344fc5d9634fb6a"
+    },
+    "send-welcome-email": {
+      "hasChanged": false,
+      "hash": "ebb368a150c08ed3264de3641bc87581d56834560f9766271dfb559773d56dee"
+    },
+    "send-whatsapp-message": {
+      "hasChanged": false,
+      "hash": "ccfeb733cfe2c1d8bf06448a5a94ebb5829b5fd577db6fd3d43bea1380ce933a"
+    },
+    "short-link": {
+      "hasChanged": false,
+      "hash": "45a187de3c6d19249352aa9f3abb64491a6f32eaf4721486dcb0e63e96643ec4"
+    },
+    "telegram-broadcast": {
+      "hasChanged": false,
+      "hash": "fb500a99e9fb84f558dfc34385b09b601790aa3d80495701b2c3591033993642"
+    },
+    "telegram-file": {
+      "hasChanged": false,
+      "hash": "e7b420e78b68d7ed0aeb48e67d8d84464308a5847b720d82dff3d943b0f5a275"
+    },
+    "telegram-webhook": {
+      "hasChanged": false,
+      "hash": "99f8ced87e145378406327e7ce1d704be6c31d09ff2a72047aa3315f10ca5021"
+    },
+    "twilio-call": {
+      "hasChanged": false,
+      "hash": "1f8ef8fda73a177ffb4d6af33a6ccdc05789890375a61dc269f558d20228b90b"
+    },
+    "wa-embedded-signup": {
+      "hasChanged": false,
+      "hash": "f10d65f61099bde37327b488edfb2d86f761ad7ac517696b3b5da52678ebf184"
+    },
+    "whatsapp-broadcast": {
+      "hasChanged": false,
+      "hash": "d84a26f0e4c2f20deaf05ba58d17625a3f897beda0f4f1cc62ce32343424d495"
+    },
+    "whatsapp-call": {
+      "hasChanged": false,
+      "hash": "68fecb39227ebedad88f300ef6d48af071769f299cd29123588bbb3f3b480fa6"
+    },
+    "whatsapp-call-signaling": {
+      "hasChanged": false,
+      "hash": "2fdd3ba6a556bffe29325db7d1b3dff52aef4e504ae588d16478b352d2acd7fe"
+    },
+    "whatsapp-file": {
+      "hasChanged": false,
+      "hash": "6a9bdb3ac1c67c192858ee4e8b4fe92a77007d87783328fc85c4a4cbfbb93921"
+    },
+    "whatsapp-flows": {
+      "hasChanged": false,
+      "hash": "addabdb71db5248660384054c4333aa56c929fcdb549ea4c36d42af456f84c87"
+    },
+    "whatsapp-groups": {
+      "hasChanged": false,
+      "hash": "13561d3a2d0e3b57563c8f9c1b1e5582bd7169120490f52d8ea6aaec4acbb5ae"
+    },
+    "whatsapp-payment": {
+      "hasChanged": false,
+      "hash": "eaaab968799a96a0a299cd61638d20c26ffcc238862d6fcd8a27594b8342ed45"
+    },
+    "whatsapp-profile-picture": {
+      "hasChanged": false,
+      "hash": "11cdfab6b8a690b116d35ba3af0270f965d3553e5522b62bfdca8a6706d855e2"
+    },
+    "whatsapp-templates": {
+      "hasChanged": false,
+      "hash": "f0f2b2428a16c0cea3f9326ae2f9cc73295c6588eb26188f4e8ab3d23d3fe52b"
+    },
+    "whatsapp-webhook": {
+      "hasChanged": false,
+      "hash": "dde7710a5717cbf0f25ad51521817c5fd1861f0146bb86743f4f0eaa992dc12a"
+    },
+    "ai-reply": {
+      "hasChanged": false,
+      "hash": "e1e9ce718defa923b63b1ed7fc06369fb322471cc4c224adb91a90aac127b552"
+    }
+  }
+}

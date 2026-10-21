@@ -177,7 +177,10 @@ Deno.serve(async (req: Request) => {
             if (stStatus === "read") { upd.delivered_at = new Date().toISOString(); upd.read_at = new Date().toISOString(); }
             if (stStatus === "failed") {
               const errs = st.errors?.[0];
-              if (errs) upd.delivery_status = "failed";
+              if (errs) {
+                upd.delivery_status = "failed";
+                upd.error_message = errs.error_data?.details || errs.message || `Delivery failed (code: ${errs.code || "unknown"})`;
+              }
             }
             if (stStatus === "typing") {
               // Update the conversation's typing indicator
@@ -525,6 +528,27 @@ Deno.serve(async (req: Request) => {
           const senderDisplayName = contactName || phoneFromWaId || "Unknown sender";
           const previewText = getPreviewText(msg);
           await sendChatNotificationEmail(supabase, adminUserId, senderDisplayName, previewText, "WhatsApp");
+
+          // ─── AI Auto-Reply ──────────────────────────────────────
+          if (msg.type === "text" && msg.text?.body) {
+            try {
+              const aiRes = await fetch(`${supabaseUrl}/functions/v1/ai-reply`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${supabaseKey}` },
+                body: JSON.stringify({ user_id: adminUserId, platform: "whatsapp", conversation_id: conversation.id, incoming_text: msg.text.body }),
+              });
+              if (aiRes.ok) {
+                const aiData = await aiRes.json();
+                if (aiData.reply && !aiData.skipped) {
+                  await sendWhatsAppMessage(settings.phone_number_id, settings.access_token, phoneFromWaId, aiData.reply);
+                  await supabase.from("wa_messages").insert({ conversation_id: conversation.id, sender: "agent", message_type: "text", text_content: aiData.reply });
+                } else if (aiData.fallback) {
+                  await sendWhatsAppMessage(settings.phone_number_id, settings.access_token, phoneFromWaId, aiData.fallback);
+                  await supabase.from("wa_messages").insert({ conversation_id: conversation.id, sender: "agent", message_type: "text", text_content: aiData.fallback });
+                }
+              }
+            } catch { /* AI reply is best-effort */ }
+          }
 
           // Send welcome message if this is a new conversation and it's a text "hi"/"hello"
           if (settings.welcome_message && msg.type === "text") {

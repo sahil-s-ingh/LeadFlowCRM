@@ -3,7 +3,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey, X-Api-Key",
 };
 
 const supabase = createClient(
@@ -11,125 +11,115 @@ const supabase = createClient(
   Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
 );
 
+async function hashKey(plain: string): Promise<string> {
+  const data = new TextEncoder().encode(plain);
+  const buf = await crypto.subtle.digest("SHA-256", data);
+  return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { status: 200, headers: corsHeaders });
   }
 
   try {
-    const { connection_id, event, lead_data } = await req.json();
-
-    if (!connection_id || !event) {
-      return new Response(JSON.stringify({ error: "Missing connection_id or event" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+    const authHeader = req.headers.get("X-Api-Key") || req.headers.get("Authorization")?.replace("Bearer ", "");
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: "Missing API key" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const { data: conn, error: connErr } = await supabase
-      .from("google_sheets_connections")
-      .select("*")
-      .eq("id", connection_id)
+    const body = await req.json();
+    const { contacts } = body as { contacts: Array<Record<string, string>> };
+
+    if (!contacts || !Array.isArray(contacts) || contacts.length === 0) {
+      return new Response(JSON.stringify({ error: "Missing or empty 'contacts' array" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const hashedKey = await hashKey(authHeader);
+    const { data: apiKey, error: keyErr } = await supabase
+      .from("google_sheets_api_keys")
+      .select("id, user_id, is_active")
+      .eq("key_hash", hashedKey)
       .maybeSingle();
 
-    if (connErr || !conn) {
-      return new Response(JSON.stringify({ error: "Connection not found" }), {
-        status: 404,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+    if (keyErr || !apiKey) {
+      return new Response(JSON.stringify({ error: "Invalid API key" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    if (!conn.is_active) {
-      return new Response(JSON.stringify({ skipped: true, reason: "inactive" }), {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+    if (!apiKey.is_active) {
+      return new Response(JSON.stringify({ error: "API key has been revoked" }), {
+        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    if (!conn.events.includes(event)) {
-      return new Response(JSON.stringify({ skipped: true, reason: "event_not_subscribed" }), {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+    await supabase.from("google_sheets_api_keys")
+      .update({ last_used_at: new Date().toISOString() })
+      .eq("id", apiKey.id);
+
+    let imported = 0;
+    let duplicates = 0;
+    let failed = 0;
+    const errors: string[] = [];
+
+    for (const contact of contacts) {
+      const phone = (contact.phone || contact.mobile_number || contact["phone number"] || contact["Phone"] || "").trim();
+      const name = (contact.name || contact.full_name || contact["Full Name"] || contact["Name"] || "").trim();
+      const email = (contact.email || contact["Email"] || contact["email address"] || "").trim();
+
+      if (!phone) {
+        failed++;
+        errors.push(`Row missing phone: ${JSON.stringify(contact).slice(0, 100)}`);
+        continue;
+      }
+
+      const { data: existing } = await supabase
+        .from("submissions")
+        .select("id")
+        .eq("user_id", apiKey.user_id)
+        .eq("mobile_number", phone)
+        .maybeSingle();
+
+      if (existing) {
+        duplicates++;
+        continue;
+      }
+
+      const { error: insertErr } = await supabase.from("submissions").insert({
+        user_id: apiKey.user_id,
+        full_name: name,
+        mobile_number: phone,
+        email: email || null,
+        status: "new",
+        lead_source: "google_sheets",
       });
+
+      if (insertErr) {
+        failed++;
+        errors.push(`Failed to import ${phone}: ${insertErr.message}`);
+      } else {
+        imported++;
+      }
     }
 
-    // Create sync log entry
-    const { data: logEntry, error: logErr } = await supabase
-      .from("google_sheets_sync_log")
-      .insert({
-        connection_id: conn.id,
-        user_id: conn.user_id,
-        event,
-        lead_id: lead_data?.id || null,
-        lead_data: lead_data || {},
-        status: "pending",
-      })
-      .select()
-      .single();
-
-    if (logErr || !logEntry) {
-      return new Response(JSON.stringify({ error: "Failed to create sync log" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // Build payload for the Apps Script web app
-    const payload = {
-      event,
-      timestamp: new Date().toISOString(),
-      sheetName: conn.sheet_name,
-      columnMapping: conn.column_mapping,
-      lead: lead_data || {},
-    };
-
-    try {
-      const resp = await fetch(conn.script_url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-        signal: AbortSignal.timeout(15000),
-      });
-
-      const respText = await resp.text();
-      const isOk = resp.ok;
-
-      await supabase.from("google_sheets_sync_log").update({
-        status: isOk ? "synced" : "failed",
-        error_message: isOk ? null : `HTTP ${resp.status}: ${respText.slice(0, 500)}`,
-      }).eq("id", logEntry.id);
-
-      await supabase.from("google_sheets_connections").update({
-        last_sync_at: new Date().toISOString(),
-        last_sync_status: isOk ? "synced" : "failed",
-        last_sync_error: isOk ? null : `HTTP ${resp.status}`,
-      }).eq("id", conn.id);
-
-      return new Response(JSON.stringify({ success: isOk, log_id: logEntry.id }), {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    } catch (fetchErr) {
-      await supabase.from("google_sheets_sync_log").update({
-        status: "failed",
-        error_message: String((fetchErr as Error).message || fetchErr).slice(0, 500),
-      }).eq("id", logEntry.id);
-
-      await supabase.from("google_sheets_connections").update({
-        last_sync_at: new Date().toISOString(),
-        last_sync_status: "failed",
-        last_sync_error: String((fetchErr as Error).message || fetchErr).slice(0, 200),
-      }).eq("id", conn.id);
-
-      return new Response(JSON.stringify({ success: false, error: String((fetchErr as Error).message || fetchErr) }), {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    return new Response(JSON.stringify({
+      success: true,
+      imported,
+      duplicates,
+      failed,
+      errors: errors.slice(0, 10),
+    }), {
+      status: 200,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   } catch (err) {
     return new Response(JSON.stringify({ error: String((err as Error).message || err) }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });

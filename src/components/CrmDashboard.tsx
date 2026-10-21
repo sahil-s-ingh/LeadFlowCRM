@@ -2842,39 +2842,38 @@ export default function CrmDashboard({ session, initialView }: { session: Sessio
                           )}
                         </td>
                         <td><span className="crm-date-tag">{formatDate(lead.created_at)}</span></td>
-                        <td onClick={(e) => e.stopPropagation()} style={{ textAlign: 'right' }}>
-                          {duplicateLeadIds.has(lead.id) && (
+                        <td onClick={(e) => e.stopPropagation()} className="crm-row-actions-cell">
+                          <div className="crm-row-actions">
+                            {duplicateLeadIds.has(lead.id) && (
+                              <button
+                                onClick={() => setMergeTarget(lead)}
+                                aria-label={`Merge ${lead.full_name}`}
+                                title="Merge duplicate"
+                                className="crm-row-action-btn crm-row-merge-btn"
+                                onMouseEnter={(e) => { e.currentTarget.style.background = '#d97706'; e.currentTarget.style.color = '#fff'; }}
+                                onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(245,158,11,0.08)'; e.currentTarget.style.color = '#d97706'; }}
+                              >
+                                <GitMerge size={14} /> Merge
+                              </button>
+                            )}
                             <button
-                              onClick={() => setMergeTarget(lead)}
-                              aria-label={`Merge ${lead.full_name}`}
-                              title="Merge duplicate"
-                              style={{ border: '1px solid rgba(245,158,11,0.3)', background: 'rgba(245,158,11,0.08)', color: '#d97706', borderRadius: '8px', padding: '7px 10px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px', fontWeight: 600, fontSize: '0.8rem', transition: 'all 0.15s', marginRight: '6px' }}
-                              onMouseEnter={(e) => { e.currentTarget.style.background = '#d97706'; e.currentTarget.style.color = '#fff'; }}
-                              onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(245,158,11,0.08)'; e.currentTarget.style.color = '#d97706'; }}
+                              className="crm-row-action-btn crm-row-email-btn"
+                              onClick={() => setEmailTarget(lead)}
+                              aria-label={`Email ${lead.full_name}`}
+                              title="Send Email"
                             >
-                              <GitMerge size={14} /> Merge
+                              <Send size={14} /> <span>Email</span>
                             </button>
-                          )}
-                          <button
-                            className="crm-row-email-btn"
-                            onClick={() => setEmailTarget(lead)}
-                            aria-label={`Email ${lead.full_name}`}
-                            title="Send Email"
-                            style={{ border: 'none', background: 'rgba(37,99,235,0.1)', color: '#2563eb', borderRadius: '8px', padding: '7px 10px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px', fontWeight: 600, fontSize: '0.8rem', transition: 'all 0.15s', marginRight: '6px' }}
-                            onMouseEnter={(e) => { e.currentTarget.style.background = '#2563eb'; e.currentTarget.style.color = '#fff'; }}
-                            onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(37,99,235,0.1)'; e.currentTarget.style.color = '#2563eb'; }}
-                          >
-                            <Send size={14} /> Email
-                          </button>
-                          <button
-                            className="lead-wa-row-btn"
-                            onClick={(e) => { e.stopPropagation(); setWaDrawerLead(lead); }}
-                            disabled={!lead.mobile_number}
-                            title={lead.mobile_number ? 'WhatsApp Quick-Chat' : 'No phone number'}
-                            aria-label={`WhatsApp ${lead.full_name}`}
-                          >
-                            <MessageCircle size={14} />
-                          </button>
+                            <button
+                              className="crm-row-action-btn lead-wa-row-btn"
+                              onClick={(e) => { e.stopPropagation(); setWaDrawerLead(lead); }}
+                              disabled={!lead.mobile_number}
+                              title={lead.mobile_number ? 'WhatsApp Quick-Chat' : 'No phone number'}
+                              aria-label={`WhatsApp ${lead.full_name}`}
+                            >
+                              <MessageCircle size={14} /> <span>WhatsApp</span>
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -3166,6 +3165,7 @@ export default function CrmDashboard({ session, initialView }: { session: Sessio
           formatDate={formatDate}
           onSendEmail={(lead) => setEmailTarget(lead)}
           onCall={(number) => { window.location.href = `tel:${number.replace(/[^+\d]/g, '')}`; }}
+          onWhatsApp={(lead) => setWaDrawerLead(lead)}
           setupCostPerClient={setupCostPerClient}
           stages={pipelineStages}
         />
@@ -5899,7 +5899,7 @@ function QualificationSection({ lead }: { lead: Lead }) {
   );
 }
 
-function LeadDetailDrawer({ lead, onClose, onUpdate, onDelete, formatDate, onSendEmail, onCall, setupCostPerClient, stages }: {
+function LeadDetailDrawer({ lead, onClose, onUpdate, onDelete, formatDate, onSendEmail, onCall, onWhatsApp, setupCostPerClient, stages }: {
   lead: Lead;
   onClose: () => void;
   onUpdate: (id: string, updates: Partial<Lead>) => void;
@@ -5907,6 +5907,7 @@ function LeadDetailDrawer({ lead, onClose, onUpdate, onDelete, formatDate, onSen
   formatDate: (iso: string) => string;
   onSendEmail: (lead: Lead) => void;
   onCall: (number: string) => void;
+  onWhatsApp: (lead: Lead) => void;
   setupCostPerClient: number;
   stages: { key: LeadStatus; label: string; icon: React.ReactNode; color: string }[];
 }) {
@@ -6756,17 +6757,15 @@ function LeadDetailDrawer({ lead, onClose, onUpdate, onDelete, formatDate, onSen
         {/* Quick Call Actions */}
         <div className="crm-drawer-section">
           <label className="crm-drawer-label">QUICK ACTIONS</label>
-          <div className="crm-quick-actions">
+          <div className="crm-quick-actions crm-quick-actions-3">
             <button type="button" className="crm-quick-btn crm-quick-call" onClick={() => onCall(lead.mobile_number)} style={{ cursor: 'pointer' }}>
-              <PhoneCall size={18} /> Call Now
+              <PhoneCall size={18} /> Call
             </button>
             <a href={`https://wa.me/${lead.mobile_number.replace(/[^0-9]/g, '')}`} target="_blank" rel="noopener noreferrer" className="crm-quick-btn crm-quick-wa">
               <MessageCircle size={18} /> WhatsApp
             </a>
-          </div>
-          <div className="crm-quick-actions" style={{ marginTop: '8px' }}>
-            <button className="crm-quick-btn" style={{ background: 'linear-gradient(135deg, #1e40af, #2563eb)', color: 'var(--bg-card)', border: 'none', cursor: 'pointer' }} onClick={() => onSendEmail(lead)}>
-              <Send size={18} /> Send Email
+            <button type="button" className="crm-quick-btn crm-quick-email" onClick={() => onSendEmail(lead)} style={{ cursor: 'pointer' }}>
+              <Send size={18} /> Email
             </button>
           </div>
         </div>

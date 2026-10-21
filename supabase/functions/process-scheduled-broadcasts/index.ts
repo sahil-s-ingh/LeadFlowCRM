@@ -121,6 +121,26 @@ Deno.serve(async (req: Request) => {
             const templatePayload: Record<string, unknown> = { name: templateName, language: { code: templateLanguage } };
             if (components.length > 0) templatePayload.components = components;
 
+            // Handle HEADER components that contain variables (same logic as
+            // the whatsapp-broadcast function). Static headers and BUTTONS are
+            // auto-included by Meta from the approved template definition.
+            const headerComp = storedComponents.find((c: any) => (c?.type || "").toUpperCase() === "HEADER");
+            if (headerComp) {
+              const headerText: string = headerComp.text || "";
+              const headerVarMatches = headerText.match(/\{\{(\d+)\}\}/g) || [];
+              if (headerVarMatches.length > 0) {
+                const headerParams: { type: string; text: string }[] = [];
+                for (let i = 1; i <= headerVarMatches.length; i++) {
+                  const key = String(i);
+                  const rawVal = varValues[key];
+                  const val = rawVal !== undefined && rawVal !== null && String(rawVal).trim() !== "" ? String(rawVal) : " ";
+                  headerParams.push({ type: "text", text: val });
+                }
+                const allComponents = [{ type: "header", parameters: headerParams }, ...(templatePayload.components as any[] || [])];
+                templatePayload.components = allComponents;
+              }
+            }
+
             const sendBody: Record<string, unknown> = { messaging_product: "whatsapp", to: recipient.phone_number, type: "template", template: templatePayload };
 
             const sendRes = await fetch(`https://graph.facebook.com/${GRAPH_API_VERSION}/${phoneNumberId}/messages`, {

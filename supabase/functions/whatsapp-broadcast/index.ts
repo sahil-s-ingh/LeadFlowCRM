@@ -50,6 +50,10 @@ Deno.serve(async (req: Request) => {
         const updateData: Record<string, unknown> = { status: newStatus };
         if (newStatus === "delivered") updateData.delivered_at = new Date().toISOString();
         if (newStatus === "read") { updateData.delivered_at = new Date().toISOString(); updateData.read_at = new Date().toISOString(); }
+        if (newStatus === "failed") {
+          const errs = s.errors?.[0];
+          if (errs) updateData.error_message = errs.error_data?.details || errs.message || "Delivery failed (no error details from Meta)";
+        }
 
         const { data: recipient } = await adminSupabase.from("wa_broadcast_recipients").update(updateData).eq("wa_message_id", waMessageId).select("campaign_id").maybeSingle();
         if (recipient?.campaign_id) affectedCampaigns.add(recipient.campaign_id);
@@ -193,8 +197,8 @@ Deno.serve(async (req: Request) => {
       }
 
       const normalizePhone = (raw: string): string => {
-        // Strip everything but digits, drop leading + or 00
-        const digits = String(raw || "").replace(/[^\d]/g, "").replace(/^0+/, "");
+        let digits = String(raw || "").replace(/[^\d]/g, "");
+        if (digits.startsWith("00")) digits = digits.slice(2);
         return digits;
       };
 
@@ -291,18 +295,26 @@ Deno.serve(async (req: Request) => {
             components.push({ type: "body", parameters: sortedKeys.map((k) => ({ type: "text", text: varValues[k] || " " })) });
           }
 
-          // Re-include header / button components as originally stored so Meta
-          // doesn't reject for missing required components.
-          for (const comp of storedComponents) {
-            const ctype = (comp?.type || "").toUpperCase();
-            if (ctype === "HEADER" || ctype === "BUTTONS") {
-              components.push(comp as { type: string; parameters: { type: string; text: string }[] });
+          // Handle HEADER components that contain variables. Meta requires
+          // lowercase component types and a parameters array. Static headers
+          // and BUTTONS are auto-included from the template definition —
+          // sending them in the stored definition format causes Meta to reject
+          // the message with a component format error.
+          const headerComp = storedComponents.find((c: any) => (c?.type || "").toUpperCase() === "HEADER");
+          if (headerComp) {
+            const headerText: string = headerComp.text || "";
+            const headerVarMatches = headerText.match(/\{\{(\d+)\}\}/g) || [];
+            if (headerVarMatches.length > 0) {
+              const headerParams: { type: string; text: string }[] = [];
+              for (let i = 1; i <= headerVarMatches.length; i++) {
+                const key = String(i);
+                const rawVal = varValues[key];
+                const val = rawVal !== undefined && rawVal !== null && String(rawVal).trim() !== "" ? String(rawVal) : " ";
+                headerParams.push({ type: "text", text: val });
+              }
+              components.unshift({ type: "header", parameters: headerParams });
             }
           }
-
-          // Last-resort guard: if the stored template had no body component at
-          // all but the template body in Meta has placeholders, we still need
-          // to send them. Already handled above via expectedParamCount.
 
           const templatePayload: Record<string, unknown> = { name: templateName, language: { code: templateLanguage } };
           if (components.length > 0) templatePayload.components = components;

@@ -204,12 +204,12 @@ Deno.serve(async (req: Request) => {
         );
       }
 
-      const preview = caption ? caption.slice(0, 100) : `[${messageType}]`;
       await adminSupabase
         .from("chat_conversations")
         .update({
           last_message_text: preview,
           last_message_at: new Date().toISOString(),
+          ai_paused: true,
         })
         .eq("id", conversationId);
 
@@ -312,6 +312,7 @@ Deno.serve(async (req: Request) => {
       .update({
         last_message_text: text.slice(0, 100),
         last_message_at: new Date().toISOString(),
+        ai_paused: true,
       })
       .eq("id", conversationId);
 

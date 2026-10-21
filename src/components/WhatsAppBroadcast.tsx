@@ -339,7 +339,7 @@ export default function WhatsAppBroadcast({ session, onBack }: { session: Sessio
       if (recipientMode === 'csv') {
         const parsed = parseCsv();
         if (parsed.length === 0) { setBroadcastError('No valid phone numbers found in CSV'); setBroadcastCreating(false); return; }
-        recipients = parsed.map((r) => ({ phone_number: String(r.phone_number || '').replace(/[^\d]/g, '').replace(/^0+/, ''), name: r.name }));
+        recipients = parsed.map((r) => ({ phone_number: String(r.phone_number || '').replace(/[^\d]/g, '').replace(/^00/, ''), name: r.name }));
       } else if (recipientMode === 'excel') {
         if (excelContacts.length === 0) { setBroadcastError('No valid contacts from the uploaded file'); setBroadcastCreating(false); return; }
         recipients = excelContacts.map((c) => ({ phone_number: c.phone_number, name: c.name, lead_data: { ...c.variables, full_name: c.name } }));
@@ -348,7 +348,7 @@ export default function WhatsAppBroadcast({ session, onBack }: { session: Sessio
         if (broadcastRecipientFilter !== 'all') query = query.eq('status', broadcastRecipientFilter);
         const { data: leads } = await query;
         if (!leads || leads.length === 0) { setBroadcastError('No leads found matching the filter'); setBroadcastCreating(false); return; }
-        recipients = leads.filter((l: any) => l.mobile_number && l.mobile_number.trim()).map((l: any) => ({ lead_id: l.id, phone_number: String(l.mobile_number).replace(/[^\d]/g, '').replace(/^0+/, ''), name: l.full_name, lead_data: l }));
+        recipients = leads.filter((l: any) => l.mobile_number && l.mobile_number.trim()).map((l: any) => ({ lead_id: l.id, phone_number: String(l.mobile_number).replace(/[^\d]/g, '').replace(/^00/, ''), name: l.full_name, lead_data: l }));
       }
       if (recipients.length === 0) { setBroadcastError('No valid recipients found'); setBroadcastCreating(false); return; }
 
@@ -499,7 +499,7 @@ export default function WhatsAppBroadcast({ session, onBack }: { session: Sessio
       if (!leads || leads.length === 0) { setBroadcastError('No leads found for A/B test'); return; }
 
       const validLeads = leads.filter((l: any) => l.mobile_number?.trim());
-      const normPhone = (p: string) => String(p).replace(/[^\d]/g, '').replace(/^0+/, '');
+      const normPhone = (p: string) => String(p).replace(/[^\d]/g, '').replace(/^00/, '');
       const splitIdx = Math.floor(validLeads.length * (config.split / 100));
       const groupA = validLeads.slice(0, splitIdx);
       const groupB = validLeads.slice(splitIdx);
