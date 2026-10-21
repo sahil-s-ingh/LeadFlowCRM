@@ -4,7 +4,7 @@ import { Sparkles, Save, Loader2, CheckCircle2, AlertTriangle, Key, Cpu, Power, 
 
 const PROVIDERS = [
   { id: 'openai', label: 'OpenAI (ChatGPT)', models: ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-3.5-turbo'], apiKeyUrl: 'https://platform.openai.com/api-keys' },
-  { id: 'gemini', label: 'Google Gemini', models: ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-2.0-flash-exp'], apiKeyUrl: 'https://aistudio.google.com/app/apikey' },
+  { id: 'gemini', label: 'Google Gemini (Free)', models: ['gemini-3.5-flash-lite', 'gemini-3.5-flash', 'gemini-3.8-flash', 'gemini-3.8-flash-lite', 'gemini-flash-latest'], apiKeyUrl: 'https://aistudio.google.com/app/apikey' },
   { id: 'claude', label: 'Anthropic Claude', models: ['claude-3-5-sonnet-20241022', 'claude-3-5-haiku-20241022', 'claude-3-opus-20240229'], apiKeyUrl: 'https://console.anthropic.com/settings/keys' },
   { id: 'mistral', label: 'Mistral AI', models: ['mistral-large-latest', 'mistral-small-latest', 'open-mixtral-8x7b'], apiKeyUrl: 'https://console.mistral.ai/api-keys/' },
 ] as const;

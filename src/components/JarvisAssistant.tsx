@@ -54,7 +54,7 @@ export default function JarvisAssistant({ session }: { session: Session | null }
   const [error, setError] = useState('');
   const [enabled, setEnabled] = useState<boolean | null>(null);
   const [listening, setListening] = useState(false);
-  const [voiceOn, setVoiceOn] = useState(false);
+  const [voiceOn, setVoiceOn] = useState(true);
   const [voiceSupported, setVoiceSupported] = useState(false);
   const [pos, setPos] = useState<{ x: number; y: number }>(() => {
     try {
@@ -121,6 +121,10 @@ export default function JarvisAssistant({ session }: { session: Session | null }
     checkEnabled();
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     setVoiceSupported(!!SR && typeof window.speechSynthesis !== 'undefined');
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.getVoices();
+      window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+    }
   }, [checkEnabled]);
 
   useEffect(() => {
@@ -133,9 +137,28 @@ export default function JarvisAssistant({ session }: { session: Session | null }
     if (!voiceOn || !('speechSynthesis' in window)) return;
     window.speechSynthesis.cancel();
     const utter = new SpeechSynthesisUtterance(text);
-    utter.rate = 1;
+    utter.rate = 1.15;
     utter.pitch = 1;
     utter.lang = 'en-US';
+    const pickVoice = () => {
+      const voices = window.speechSynthesis.getVoices();
+      if (!voices.length) return;
+      const prefs = [
+        'Google US English', 'Google UK English Female', 'Microsoft Aria',
+        'Microsoft Jenny', 'Samantha', 'Google Hindi',
+      ];
+      for (const name of prefs) {
+        const v = voices.find((v) => v.name === name);
+        if (v) { utter.voice = v; return; }
+      }
+      const enVoice = voices.find((v) => v.lang?.startsWith('en') && /female|aria|jenny|samantha|natural/i.test(v.name));
+      if (enVoice) utter.voice = enVoice;
+      else {
+        const anyEn = voices.find((v) => v.lang?.startsWith('en'));
+        if (anyEn) utter.voice = anyEn;
+      }
+    };
+    pickVoice();
     utter.onstart = () => { speakingRef.current = true; };
     utter.onend = () => { speakingRef.current = false; };
     window.speechSynthesis.speak(utter);

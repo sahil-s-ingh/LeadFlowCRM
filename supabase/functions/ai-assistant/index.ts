@@ -73,29 +73,37 @@ async function gatherCRMContext(supabase: ReturnType<typeof createClient>, userI
   const today = new Date().toISOString().slice(0, 10);
   const parts: string[] = [];
 
-  const { data: leads } = await supabase.from("submissions").select("id, full_name, mobile_number, email, status, fund_amount, created_at, lead_score, state, trading_product, assigned_to, lead_source").eq("user_id", userId).is("deleted_at", null).order("created_at", { ascending: false }).limit(200);
-  parts.push(`=== LEADS (${leads?.length || 0} total, showing most recent 200) ===`);
-  for (const l of leads || []) {
+  const [leadsRes, followupsRes, waConvCountRes, waConvsRes, tgConvsRes] = await Promise.all([
+    supabase.from("submissions").select("id, full_name, mobile_number, email, status, fund_amount, created_at, lead_score, state, trading_product, assigned_to, lead_source").eq("user_id", userId).is("deleted_at", null).order("created_at", { ascending: false }).limit(50),
+    supabase.from("lead_followups").select("id, title, note, reminder_at, status, lead_id").eq("user_id", userId).eq("status", "pending").order("reminder_at", { ascending: true }).limit(50),
+    supabase.from("wa_conversations").select("id", { count: "exact", head: true }).eq("user_id", userId),
+    supabase.from("wa_conversations").select("id, customer_name, customer_phone, last_message_text, last_message_at, ai_paused").eq("user_id", userId).order("last_message_at", { ascending: false }).limit(10),
+    supabase.from("chat_conversations").select("id, customer_name, customer_phone, last_message_text, last_message_at").eq("user_id", userId).order("last_message_at", { ascending: false }).limit(10),
+  ]);
+
+  const leads = leadsRes.data || [];
+  const followups = followupsRes.data || [];
+  const waConvCount = waConvCountRes.count || 0;
+  const waConvs = waConvsRes.data || [];
+  const tgConvs = tgConvsRes.data || [];
+
+  parts.push(`=== LEADS (${leads.length} most recent) ===`);
+  for (const l of leads) {
     parts.push(`- ${l.full_name} | phone: ${l.mobile_number || "N/A"} | email: ${l.email || "N/A"} | status: ${l.status || "new"} | score: ${l.lead_score ?? "N/A"} | state: ${l.state || "N/A"} | product: ${l.trading_product || "N/A"} | fund: ${l.fund_amount ?? "N/A"} | source: ${l.lead_source || "N/A"} | created: ${l.created_at?.slice(0,10)}`);
   }
 
-  const { data: followups } = await supabase.from("lead_followups").select("id, title, note, reminder_at, status, lead_id").eq("user_id", userId).order("reminder_at", { ascending: true }).limit(100);
-  const pendingFollowups = (followups || []).filter((f) => f.status === "pending");
-  const overdue = pendingFollowups.filter((f) => f.reminder_at && f.reminder_at.slice(0, 10) <= today);
-  parts.push(`\n=== FOLLOW-UPS (${pendingFollowups.length} pending, ${overdue.length} overdue/due today) ===`);
-  for (const f of pendingFollowups.slice(0, 50)) {
-    const leadName = leads?.find((l) => l.id === f.lead_id)?.full_name || "Unknown lead";
+  const overdue = followups.filter((f) => f.reminder_at && f.reminder_at.slice(0, 10) <= today);
+  parts.push(`\n=== FOLLOW-UPS (${followups.length} pending, ${overdue.length} overdue/due today) ===`);
+  for (const f of followups.slice(0, 30)) {
+    const leadName = leads.find((l) => l.id === f.lead_id)?.full_name || "Unknown lead";
     parts.push(`- [${f.reminder_at?.slice(0, 16) || "N/A"}] ${f.title} (lead: ${leadName}) | status: ${f.status}${f.note ? ` | note: ${f.note}` : ""}`);
   }
 
-  const { count: waConvCount } = await supabase.from("wa_conversations").select("id", { count: "exact", head: true }).eq("user_id", userId);
-  const { data: waConvs } = await supabase.from("wa_conversations").select("id, customer_name, customer_phone, last_message_text, last_message_at, ai_paused").eq("user_id", userId).order("last_message_at", { ascending: false }).limit(20);
-  parts.push(`\n=== WHATSAPP CONVERSATIONS (${waConvCount || 0} total, showing recent 20) ===`);
-  for (const c of waConvs || []) {
+  parts.push(`\n=== WHATSAPP CONVERSATIONS (${waConvCount} total, showing recent 10) ===`);
+  for (const c of waConvs) {
     parts.push(`- ${c.customer_name || c.customer_phone || "Unknown"} | phone: ${c.customer_phone || "N/A"} | last msg: ${c.last_message_text?.slice(0, 80) || "N/A"} | at: ${c.last_message_at?.slice(0, 16) || "N/A"}${c.ai_paused ? " | [AI paused]" : ""}`);
   }
 
-  const { data: tgConvs } = await supabase.from("chat_conversations").select("id, customer_name, customer_phone, last_message_text, last_message_at").eq("user_id", userId).order("last_message_at", { ascending: false }).limit(10);
   if (tgConvs && tgConvs.length > 0) {
     parts.push(`\n=== TELEGRAM CONVERSATIONS (showing recent 10) ===`);
     for (const c of tgConvs) {
@@ -104,7 +112,7 @@ async function gatherCRMContext(supabase: ReturnType<typeof createClient>, userI
   }
 
   const statusCounts: Record<string, number> = {};
-  for (const l of leads || []) { const s = l.status || "new"; statusCounts[s] = (statusCounts[s] || 0) + 1; }
+  for (const l of leads) { const s = l.status || "new"; statusCounts[s] = (statusCounts[s] || 0) + 1; }
   parts.push(`\n=== LEAD STATUS BREAKDOWN ===`);
   for (const [status, count] of Object.entries(statusCounts)) { parts.push(`- ${status}: ${count}`); }
 

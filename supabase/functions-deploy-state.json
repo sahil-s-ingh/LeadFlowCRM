@@ -5,6 +5,10 @@
       "hasChanged": false,
       "hash": "73c8d451d6983ea4b8ddf2c3df022d0e5498ccdfcbe899c10d255b9d9383480a"
     },
+    "ai-assistant": {
+      "hasChanged": false,
+      "hash": "cc8b9be132c77b5c8e6578149ba7e7a3d01924c8b4e5c42254d33138b4a5fa5d"
+    },
     "ai-reply": {
       "hasChanged": false,
       "hash": "e1e9ce718defa923b63b1ed7fc06369fb322471cc4c224adb91a90aac127b552"
@@ -196,10 +200,6 @@
     "whatsapp-webhook": {
       "hasChanged": false,
       "hash": "dde7710a5717cbf0f25ad51521817c5fd1861f0146bb86743f4f0eaa992dc12a"
-    },
-    "ai-assistant": {
-      "hasChanged": false,
-      "hash": "bfdbf4a2573c9e152fbe6d1a26a079275971261c970ea98090bfb1ad0483cf56"
     }
   }
 }
