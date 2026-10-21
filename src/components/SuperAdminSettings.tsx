@@ -3,7 +3,7 @@ import type { Session } from '@supabase/supabase-js';
 import {
   Settings as SettingsIcon, CreditCard, ToggleLeft, FileText, Mail,
   Wallet, MessageSquare, Zap, TrendingUp, LogIn,
-  ChevronRight,
+  ChevronRight, Sparkles,
 } from 'lucide-react';
 import SuperAdminPlans from './SuperAdminPlans';
 import SuperAdminFeatures from './SuperAdminFeatures';
@@ -14,6 +14,7 @@ import SuperAdminWhatsAppConfig from './SuperAdminWhatsAppConfig';
 import SuperAdminWhatsAppOnboarding from './SuperAdminWhatsAppOnboarding';
 import SuperAdminMetaAdsSettings from './SuperAdminMetaAdsSettings';
 import SuperAdminSocialAuthSettings from './SuperAdminSocialAuthSettings';
+import SuperAdminAIAssistant from './SuperAdminAIAssistant';
 
 type SettingsTab =
   | 'plans'
@@ -24,7 +25,8 @@ type SettingsTab =
   | 'wa_config'
   | 'wa_onboarding'
   | 'meta_ads'
-  | 'social_auth';
+  | 'social_auth'
+  | 'ai_assistant';
 
 type TabDef = {
   key: SettingsTab;
@@ -44,6 +46,7 @@ const TABS: TabDef[] = [
   { key: 'wa_onboarding', label: 'WhatsApp Onboarding', description: 'Configure embedded signup for client WhatsApp onboarding', icon: <Zap size={18} />, group: 'WhatsApp' },
   { key: 'meta_ads', label: 'Meta Marketing API', description: 'Configure Facebook Marketing API for the Ads Manager OAuth flow', icon: <TrendingUp size={18} />, group: 'Integrations' },
   { key: 'social_auth', label: 'Social Login', description: 'Enable Continue with Google / Facebook on the admin login page', icon: <LogIn size={18} />, group: 'Integrations' },
+  { key: 'ai_assistant', label: 'Jarvis AI Assistant', description: 'Configure the AI provider and API key for the Jarvis CRM assistant', icon: <Sparkles size={18} />, group: 'Integrations' },
 ];
 
 export default function SuperAdminSettings({ session }: { session: Session }) {
@@ -69,6 +72,7 @@ export default function SuperAdminSettings({ session }: { session: Session }) {
       case 'wa_onboarding': return <SuperAdminWhatsAppOnboarding />;
       case 'meta_ads': return <SuperAdminMetaAdsSettings />;
       case 'social_auth': return <SuperAdminSocialAuthSettings />;
+      case 'ai_assistant': return <SuperAdminAIAssistant />;
       default: return null;
     }
   };

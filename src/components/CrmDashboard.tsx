@@ -67,6 +67,7 @@ import { RoleTagPicker } from '@/components/RoleTags';
 import WhatsAppGroups from '@/components/WhatsAppGroups';
 import WhatsAppFlows from '@/components/WhatsAppFlows';
 import InstagramInbox from '@/components/InstagramInbox';
+import JarvisAssistant from '@/components/JarvisAssistant';
 
 type LeadStatus = 'new' | 'called_no_response' | 'called_responded' | 'interested' | 'not_interested' | 'converted';
 
@@ -3705,6 +3706,8 @@ export default function CrmDashboard({ session, initialView }: { session: Sessio
       )}
 
       <TeamChatWidget session={session} userRole={userRole} />
+
+      <JarvisAssistant session={session} />
 
       {showTrashModal && (
         <>
