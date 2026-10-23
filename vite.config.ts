@@ -17,8 +17,8 @@ export default defineConfig({
     chunkSizeWarningLimit: 900,
     rollupOptions: {
       output: {
-        manualChunks(id) {
-          if (id.includes('node_modules/xlsx')) return 'xlsx';
+        manualChunks: {
+          xlsx: ['xlsx'],
         },
       },
     },

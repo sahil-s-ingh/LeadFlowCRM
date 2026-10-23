@@ -9,7 +9,6 @@ type Config = {
   id: string;
   google_enabled: boolean;
   facebook_enabled: boolean;
-  apple_enabled: boolean;
   google_client_id: string | null;
   google_client_secret: string | null;
   facebook_client_id: string | null;
@@ -40,7 +39,6 @@ export default function SuperAdminSocialAuthSettings() {
   const [config, setConfig] = useState<Config | null>(null);
   const [googleEnabled, setGoogleEnabled] = useState(false);
   const [facebookEnabled, setFacebookEnabled] = useState(false);
-  const [appleEnabled, setAppleEnabled] = useState(false);
   const [googleClientId, setGoogleClientId] = useState('');
   const [googleClientSecret, setGoogleClientSecret] = useState('');
   const [facebookClientId, setFacebookClientId] = useState('');
@@ -65,7 +63,6 @@ export default function SuperAdminSocialAuthSettings() {
         setConfig(data as Config);
         setGoogleEnabled(data.google_enabled);
         setFacebookEnabled(data.facebook_enabled);
-        setAppleEnabled(data.apple_enabled);
         setGoogleClientId(data.google_client_id || '');
         setGoogleClientSecret(data.google_client_secret || '');
         setFacebookClientId(data.facebook_client_id || '');
@@ -89,7 +86,6 @@ export default function SuperAdminSocialAuthSettings() {
     const payload = {
       google_enabled: googleEnabled,
       facebook_enabled: facebookEnabled,
-      apple_enabled: appleEnabled,
       google_client_id: googleClientId.trim() || null,
       google_client_secret: googleClientSecret.trim() || null,
       facebook_client_id: facebookClientId.trim() || null,
@@ -145,7 +141,7 @@ export default function SuperAdminSocialAuthSettings() {
         </div>
         <div>
           <h2 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-main)' }}>Social Login</h2>
-          <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--text-muted)' }}>Enable "Continue with Google", "Continue with Facebook", and "Continue with Apple" on the admin login page</p>
+          <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--text-muted)' }}>Enable "Continue with Google" and "Continue with Facebook" on the admin login page</p>
         </div>
       </div>
 
@@ -218,18 +214,6 @@ export default function SuperAdminSocialAuthSettings() {
             </div>
             <small style={{ fontSize: '0.74rem', color: 'var(--text-dark)', marginTop: '4px', display: 'block' }}>Click "Show" in Meta App Dashboard to reveal.</small>
           </div>
-        </div>
-      </div>
-
-      {/* Apple section */}
-      <div style={{ background: 'var(--bg-card)', borderRadius: '14px', border: '1px solid var(--border-subtle)', padding: '24px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
-          <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path fill="#000" d="M17.05 12.04c-.03-2.66 2.17-3.94 2.27-4.01-1.24-1.82-3.17-2.07-3.86-2.1-1.64-.17-3.2.97-4.03.97-.84 0-2.12-.95-3.49-.92-1.8.03-3.47 1.05-4.4 2.67-1.88 3.27-.48 8.1 1.34 10.75.9 1.3 1.97 2.75 3.37 2.7 1.36-.06 1.87-.87 3.51-.87 1.64 0 2.1.87 3.53.84 1.46-.03 2.39-1.32 3.28-2.63 1.04-1.5 1.47-2.97 1.49-3.05-.03-.01-2.85-1.1-2.88-4.35zM14.52 4.27c.75-.91 1.26-2.18 1.12-3.44-1.08.04-2.39.72-3.17 1.62-.7.8-1.31 2.09-1.15 3.33 1.2.09 2.44-.61 3.2-1.51z"/></svg>
-          <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-main)' }}>Apple</h3>
-        </div>
-        <Toggle on={appleEnabled} onClick={() => setAppleEnabled(!appleEnabled)} label="Show Continue with Apple button" color="#000" />
-        <div style={{ marginTop: '12px', fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>
-          Apple Sign In uses native Apple OAuth — no client ID or secret needs to be stored here. You only need to enable <strong>Apple</strong> as a provider in your <a href="https://supabase.com/dashboard/project/_/auth/providers" target="_blank" rel="noreferrer" style={{ color: '#2563eb', textDecoration: 'none', fontWeight: 600 }}>Supabase Auth Providers</a> dashboard.
         </div>
       </div>
 

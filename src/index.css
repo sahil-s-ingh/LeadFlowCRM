@@ -28238,13 +28238,6 @@ html.crm-dark .ea-container {
 .admin-auth-submit:hover:not(:disabled) { transform: translateY(-2px); background: linear-gradient(180deg, #ffca49 0%, #eaa019 100%); box-shadow: 0 13px 25px rgba(211, 142, 14, .3), inset 0 1px rgba(255,255,255,.6); }
 .admin-auth-submit:active:not(:disabled) { transform: translateY(0); }
 .admin-auth-submit:disabled { opacity: .65; cursor: not-allowed; }
-.admin-auth-social-btn { position: relative; overflow: hidden; }
-.admin-auth-social-btn::after { content: ''; position: absolute; inset: 0; background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,0.12) 50%, transparent 70%); transform: translateX(-100%); transition: transform 0.5s ease; pointer-events: none; }
-.admin-auth-social-btn:hover:not(:disabled)::after { transform: translateX(100%); }
-.admin-auth-social-google:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,0.1); border-color: #cbd5e1; }
-.admin-auth-social-facebook:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(24,119,242,0.35); }
-.admin-auth-social-apple:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.4); }
-.admin-auth-social-btn:active:not(:disabled) { transform: translateY(0); }
 .admin-auth-divider { display: flex; align-items: center; gap: 12px; margin: 25px 0 19px; color: #a2afbe; font-size: .66rem; font-weight: 700; text-transform: uppercase; }
 .admin-auth-divider::before, .admin-auth-divider::after { content: ''; height: 1px; flex: 1; background: #dde5ed; }
 .admin-auth-switch { color: #8292a6; text-align: center; font-size: .72rem; }

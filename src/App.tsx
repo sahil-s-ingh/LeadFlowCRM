@@ -9,7 +9,6 @@ import SuperAdminDashboard from './components/SuperAdminDashboard';
 import { AboutPage, PrivacyPage, TermsPage, CareersPage, SecurityPage, BrandAssetsPage, ReportAbusePage, SitemapPage } from './components/InfoPages';
 import LegalPageView from './components/LegalPageView';
 import { Shield, X } from 'lucide-react';
-import ErrorBoundary from '@/components/ErrorBoundary';
 
 function useHashRoute() {
   const [hash, setHash] = useState(() => window.location.hash.slice(1));
@@ -117,7 +116,7 @@ function ImpersonationBanner({ adminEmail, onExit }: { adminEmail: string; onExi
   );
 }
 
-function AppInner() {
+function App() {
   const [session, setSession] = useState<Session | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
   const [superAdminChecked, setSuperAdminChecked] = useState(false);
@@ -305,14 +304,6 @@ function AppInner() {
 
   // Unknown hash — fall back to landing
   return <LandingPage />;
-}
-
-function App() {
-  return (
-    <ErrorBoundary>
-      <AppInner />
-    </ErrorBoundary>
-  );
 }
 
 export default App;
