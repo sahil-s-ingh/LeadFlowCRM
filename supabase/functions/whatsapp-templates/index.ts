@@ -1,4 +1,4 @@
-// Updated: AI generation + heatmap analytics
+// Updated: AI generation + heatmap analytics + test send fix
 import { createClient } from "npm:@supabase/supabase-js@2.45.4";
 
 const corsHeaders = {
@@ -505,16 +505,8 @@ Deno.serve(async (req: Request) => {
         );
       }
 
-      // Get the phone number ID
-      const { data: phoneSettings } = await adminSupabase
-        .from("whatsapp_settings")
-        .select("phone_number_id")
-        .eq("user_id", userData.user.id)
-        .order("created_at", { ascending: true })
-        .limit(1)
-        .maybeSingle();
-
-      if (!phoneSettings?.phone_number_id) {
+      // Get the phone number ID — use the already-resolved settings from the top of the function
+      if (!settings?.phone_number_id) {
         return new Response(
           JSON.stringify({ error: "Phone number ID not configured. Connect a WhatsApp number first." }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
@@ -536,7 +528,7 @@ Deno.serve(async (req: Request) => {
       }
 
       const sendRes = await fetch(
-        `https://graph.facebook.com/${GRAPH_API_VERSION}/${phoneSettings.phone_number_id}/messages`,
+        `https://graph.facebook.com/${GRAPH_API_VERSION}/${settings.phone_number_id}/messages`,
         {
           method: "POST",
           headers: {
