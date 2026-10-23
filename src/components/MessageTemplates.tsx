@@ -555,11 +555,86 @@ function AnalyticsPanel({ template, onClose }: { template: WaTemplate; onClose: 
   );
 }
 
+const COUNTRY_CODES: { code: string; label: string; flag: string }[] = [
+  { code: '91', label: 'India', flag: '\u{1F1EE}\u{1F1F3}' },
+  { code: '1', label: 'United States', flag: '\u{1F1FA}\u{1F1F8}' },
+  { code: '1', label: 'Canada', flag: '\u{1F1E8}\u{1F1E6}' },
+  { code: '44', label: 'United Kingdom', flag: '\u{1F1EC}\u{1F1E7}' },
+  { code: '61', label: 'Australia', flag: '\u{1F1E6}\u{1F1FA}' },
+  { code: '971', label: 'UAE', flag: '\u{1F1E6}\u{1F1EA}' },
+  { code: '966', label: 'Saudi Arabia', flag: '\u{1F1F8}\u{1F1E6}' },
+  { code: '92', label: 'Pakistan', flag: '\u{1F1F5}\u{1F1F0}' },
+  { code: '880', label: 'Bangladesh', flag: '\u{1F1E7}\u{1F1E9}' },
+  { code: '94', label: 'Sri Lanka', flag: '\u{1F1F8}\u{1F1F0}' },
+  { code: '977', label: 'Nepal', flag: '\u{1F1F3}\u{1F1F5}' },
+  { code: '960', label: 'Maldives', flag: '\u{1F1F2}\u{1F1FB}' },
+  { code: '93', label: 'Afghanistan', flag: '\u{1F1E6}\u{1F1EB}' },
+  { code: '98', label: 'Iran', flag: '\u{1F1EE}\u{1F1F7}' },
+  { code: '964', label: 'Iraq', flag: '\u{1F1EE}\u{1F1F6}' },
+  { code: '962', label: 'Jordan', flag: '\u{1F1EF}\u{1F1F4}' },
+  { code: '961', label: 'Lebanon', flag: '\u{1F1F1}\u{1F1E8}' },
+  { code: '972', label: 'Israel', flag: '\u{1F1EE}\u{1F1F1}' },
+  { code: '90', label: 'Turkey', flag: '\u{1F1F9}\u{1F1F7}' },
+  { code: '20', label: 'Egypt', flag: '\u{1F1EA}\u{1F1EC}' },
+  { code: '234', label: 'Nigeria', flag: '\u{1F1F3}\u{1F1EC}' },
+  { code: '254', label: 'Kenya', flag: '\u{1F1F0}\u{1F1EA}' },
+  { code: '27', label: 'South Africa', flag: '\u{1F1FF}\u{1F1E6}' },
+  { code: '212', label: 'Morocco', flag: '\u{1F1F2}\u{1F1E6}' },
+  { code: '233', label: 'Ghana', flag: '\u{1F1EC}\u{1F1ED}' },
+  { code: '62', label: 'Indonesia', flag: '\u{1F1EE}\u{1F1E9}' },
+  { code: '60', label: 'Malaysia', flag: '\u{1F1F2}\u{1F1FE}' },
+  { code: '65', label: 'Singapore', flag: '\u{1F1F8}\u{1F1EC}' },
+  { code: '66', label: 'Thailand', flag: '\u{1F1F9}\u{1F1ED}' },
+  { code: '84', label: 'Vietnam', flag: '\u{1F1FB}\u{1F1F3}' },
+  { code: '63', label: 'Philippines', flag: '\u{1F1F5}\u{1F1ED}' },
+  { code: '81', label: 'Japan', flag: '\u{1F1EF}\u{1F1F5}' },
+  { code: '82', label: 'South Korea', flag: '\u{1F1F0}\u{1F1F7}' },
+  { code: '86', label: 'China', flag: '\u{1F1E8}\u{1F1F3}' },
+  { code: '852', label: 'Hong Kong', flag: '\u{1F1ED}\u{1F1F0}' },
+  { code: '886', label: 'Taiwan', flag: '\u{1F1F9}\u{1F1FC}' },
+  { code: '49', label: 'Germany', flag: '\u{1F1E9}\u{1F1EA}' },
+  { code: '33', label: 'France', flag: '\u{1F1EB}\u{1F1F7}' },
+  { code: '39', label: 'Italy', flag: '\u{1F1EE}\u{1F1F9}' },
+  { code: '34', label: 'Spain', flag: '\u{1F1EA}\u{1F1F8}' },
+  { code: '31', label: 'Netherlands', flag: '\u{1F1F3}\u{1F1F1}' },
+  { code: '7', label: 'Russia', flag: '\u{1F1F7}\u{1F1F8}' },
+  { code: '55', label: 'Brazil', flag: '\u{1F1E7}\u{1F1F7}' },
+  { code: '52', label: 'Mexico', flag: '\u{1F1F2}\u{1F1FD}' },
+  { code: '54', label: 'Argentina', flag: '\u{1F1E6}\u{1F1F7}' },
+  { code: '57', label: 'Colombia', flag: '\u{1F1E8}\u{1F1F4}' },
+  { code: '56', label: 'Chile', flag: '\u{1F1E8}\u{1F1F1}' },
+  { code: '51', label: 'Peru', flag: '\u{1F1F5}\u{1F1EA}' },
+  { code: '58', label: 'Venezuela', flag: '\u{1F1FB}\u{1F1EA}' },
+  { code: '48', label: 'Poland', flag: '\u{1F1F5}\u{1F1F1}' },
+  { code: '46', label: 'Sweden', flag: '\u{1F1F8}\u{1F1EA}' },
+  { code: '47', label: 'Norway', flag: '\u{1F1F3}\u{1F1F4}' },
+  { code: '45', label: 'Denmark', flag: '\u{1F1E9}\u{1F1F0}' },
+  { code: '351', label: 'Portugal', flag: '\u{1F1F5}\u{1F1F9}' },
+  { code: '30', label: 'Greece', flag: '\u{1F1EC}\u{1F1F7}' },
+  { code: '358', label: 'Finland', flag: '\u{1F1EB}\u{1F1EE}' },
+  { code: '41', label: 'Switzerland', flag: '\u{1F1E8}\u{1F1ED}' },
+  { code: '43', label: 'Austria', flag: '\u{1F1E6}\u{1F1F9}' },
+  { code: '32', label: 'Belgium', flag: '\u{1F1E7}\u{1F1EA}' },
+  { code: '353', label: 'Ireland', flag: '\u{1F1EE}\u{1F1EA}' },
+  { code: '351', label: 'Cape Verde', flag: '\u{1F1E8}\u{1F1FB}' },
+  { code: '234', label: 'Uganda', flag: '\u{1F1FA}\u{1F1EC}' },
+  { code: '255', label: 'Tanzania', flag: '\u{1F1F9}\u{1F1FF}' },
+  { code: '256', label: 'Uganda', flag: '\u{1F1FA}\u{1F1EC}' },
+  { code: '260', label: 'Zambia', flag: '\u{1F1FF}\u{1F1F2}' },
+  { code: '263', label: 'Zimbabwe', flag: '\u{1F1FF}\u{1F1FC}' },
+];
+
 function TestSendModal({ template, phoneNumberId, onClose }: { template: WaTemplate; phoneNumberId: string; onClose: () => void }) {
   const [phone, setPhone] = useState('');
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [countryCode, setCountryCode] = useState('91');
+  const [countrySearch, setCountrySearch] = useState('');
+  const [countryDropdownOpen, setCountryDropdownOpen] = useState(false);
+  const [detectedCountry, setDetectedCountry] = useState<string | null>(null);
+  const selectedCountry = COUNTRY_CODES.find((c) => c.code === countryCode && c.label.toLowerCase().includes(countrySearch.toLowerCase())) || COUNTRY_CODES.find((c) => c.code === countryCode)!;
+  const filteredCountries = countrySearch.trim() ? COUNTRY_CODES.filter((c) => c.label.toLowerCase().includes(countrySearch.toLowerCase()) || c.code.includes(countrySearch.trim())) : COUNTRY_CODES;
   const bodyComp = template.components?.find((c: any) => c.type === 'BODY');
   const headerComp = template.components?.find((c: any) => c.type === 'HEADER');
   const bodyVars: number[] = (bodyComp?.text?.match(/\{\{(\d+)\}\}/g) || []).map((m: string) => parseInt(m.match(/\d+/)![0], 10));
@@ -585,7 +660,12 @@ function TestSendModal({ template, phoneNumberId, onClose }: { template: WaTempl
       if (uniqueVars.length > 0) {
         components.push({ type: 'body', parameters: varValues.map((v) => ({ type: 'text', text: v })) });
       }
-      const cleanPhone = phone.replace(/[\s\-()]/g, '');
+      let cleanPhone = phone.replace(/[\s\-()]/g, '');
+      if (!cleanPhone.startsWith('+') && !cleanPhone.startsWith(countryCode)) {
+        cleanPhone = countryCode + cleanPhone;
+      } else if (cleanPhone.startsWith('+')) {
+        cleanPhone = cleanPhone.replace('+', '');
+      }
       const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/whatsapp-templates?action=test_send&phone_number_id=${encodeURIComponent(phoneNumberId)}`;
       const res = await fetch(apiUrl, {
         method: 'POST',
@@ -616,8 +696,32 @@ function TestSendModal({ template, phoneNumberId, onClose }: { template: WaTempl
             <p className="mt2-modal-desc">Send a test of <strong>{template.name}</strong> to your WhatsApp number to see exactly how it looks.</p>
             <label className="mt2-field mt2-field-full">
               <span>Your Phone Number <em>*</em></span>
-              <input type="text" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+1234567890" className="mt2-input" />
-              <small className="mt2-field-hint">Include country code. e.g. +91 for India, +1 for US.</small>
+              <div style={{ display: 'flex', gap: '8px', position: 'relative' }}>
+                <div style={{ position: 'relative', minWidth: '110px' }}>
+                  <button type="button" onClick={() => setCountryDropdownOpen(!countryDropdownOpen)} className="mt2-input" style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', padding: '0 10px', height: '42px', whiteSpace: 'nowrap' }}>
+                    <span style={{ fontSize: '1.1rem' }}>{selectedCountry.flag}</span>
+                    <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-dark)' }}>+{countryCode}</span>
+                    <ChevronDown size={14} style={{ color: 'var(--text-muted)', marginLeft: 'auto' }} />
+                  </button>
+                  {countryDropdownOpen && (
+                    <div style={{ position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, minWidth: '220px', maxHeight: '280px', overflowY: 'auto', background: '#fff', border: '1px solid rgba(0,0,0,0.12)', borderRadius: '8px', boxShadow: '0 8px 24px rgba(0,0,0,0.15)', zIndex: 1000 }}>
+                      <div style={{ position: 'sticky', top: 0, background: '#fff', padding: '8px', borderBottom: '1px solid rgba(0,0,0,0.08)' }}>
+                        <input type="text" value={countrySearch} onChange={(e) => setCountrySearch(e.target.value)} placeholder="Search country..." autoFocus className="mt2-input" style={{ fontSize: '0.78rem', height: '34px' }} />
+                      </div>
+                      {filteredCountries.map((c, i) => (
+                        <button key={i} type="button" onClick={() => { setCountryCode(c.code); setCountryDropdownOpen(false); setCountrySearch(''); }} style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', padding: '8px 12px', border: 0, background: countryCode === c.code ? 'rgba(37,99,235,0.06)' : 'transparent', cursor: 'pointer', textAlign: 'left', fontSize: '0.78rem', color: 'var(--text-dark)' }} onMouseEnter={(e) => { (e.target as HTMLElement).style.background = 'rgba(0,0,0,0.04)'; }} onMouseLeave={(e) => { (e.target as HTMLElement).style.background = countryCode === c.code ? 'rgba(37,99,235,0.06)' : 'transparent'; }}>
+                          <span style={{ fontSize: '1.1rem' }}>{c.flag}</span>
+                          <span style={{ flex: 1 }}>{c.label}</span>
+                          <span style={{ fontWeight: 600, color: 'var(--text-muted)' }}>+{c.code}</span>
+                        </button>
+                      ))}
+                      {filteredCountries.length === 0 && <div style={{ padding: '16px', textAlign: 'center', fontSize: '0.78rem', color: 'var(--text-muted)' }}>No countries found</div>}
+                    </div>
+                  )}
+                </div>
+                <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="98765 43210" className="mt2-input" style={{ flex: 1 }} />
+              </div>
+              <small className="mt2-field-hint">Select your country code, then enter your number without the country prefix.</small>
             </label>
             {uniqueHeaderVars.length > 0 && (
               <div className="mt2-modal-vars">
