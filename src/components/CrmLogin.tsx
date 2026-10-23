@@ -138,7 +138,7 @@ export default function CrmLogin({ initialMode = 'login' }: { initialMode?: Mode
 
   return (
     <main className="admin-auth-page">
-      <section className="admin-auth-story" aria-label="LeadFlow CRM overview">
+      <section className="admin-auth-story" aria-label="HubbotsX CRM overview">
         <div className="admin-auth-story-glow admin-auth-story-glow-one" />
         <div className="admin-auth-story-glow admin-auth-story-glow-two" />
         <div className="admin-auth-story-glow admin-auth-story-glow-three" />
@@ -150,10 +150,10 @@ export default function CrmLogin({ initialMode = 'login' }: { initialMode?: Mode
         <div className="admin-auth-shape admin-auth-shape-bars" />
 
         <div className="admin-auth-story-content" ref={storyRef} onMouseMove={handleStoryTilt} onMouseLeave={handleStoryReset} style={{ transformStyle: 'preserve-3d' }}>
-          <a href="#/" className="admin-auth-brand" aria-label="Back to LeadFlow CRM home" style={{ transform: 'translateZ(40px)' }}>
+          <a href="#/" className="admin-auth-brand" aria-label="Back to HubbotsX CRM home" style={{ transform: 'translateZ(40px)' }}>
             <span className="admin-auth-brand-mark"><Sparkles size={17} strokeWidth={2.6} /></span>
             <span>
-              <strong>LeadFlow</strong>
+              <strong>HubbotsX</strong>
               <small>ADMIN PORTAL</small>
             </span>
           </a>
@@ -186,7 +186,7 @@ export default function CrmLogin({ initialMode = 'login' }: { initialMode?: Mode
         <div className="admin-auth-form-wrap" ref={cardRef} onMouseMove={handleCardTilt} onMouseLeave={handleCardReset} style={{ transformStyle: 'preserve-3d' }}>
           <div className="admin-auth-mobile-brand">
             <span className="admin-auth-brand-mark"><Sparkles size={16} /></span>
-            <strong>LeadFlow</strong>
+            <strong>HubbotsX</strong>
           </div>
           <div className="admin-auth-heading" style={{ transform: 'translateZ(30px)' }}>
             <span className="admin-auth-eyebrow">YOUR WORKSPACE AWAITS</span>
@@ -267,7 +267,7 @@ export default function CrmLogin({ initialMode = 'login' }: { initialMode?: Mode
             <button type="button" onClick={() => changeMode(mode === 'login' ? 'signup' : 'login')}>{mode === 'login' ? 'Sign up free' : 'Sign in'}</button>
           </p>
           <div className="admin-auth-trust"><span><ShieldCheck size={15} /> Secure access</span><span><Check size={14} /> Your data stays yours</span><span><UsersRound size={14} /> Team-ready</span></div>
-          <a href="#/" className="admin-auth-back">Back to LeadFlow home</a>
+          <a href="#/" className="admin-auth-back">Back to HubbotsX home</a>
         </div>
       </section>
     </main>

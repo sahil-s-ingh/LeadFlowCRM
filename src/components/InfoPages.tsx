@@ -24,7 +24,7 @@ function InfoHeader({ title, subtitle }: { title: string; subtitle?: string }) {
           <div style={{ width: 34, height: 34, borderRadius: 8, background: 'linear-gradient(135deg, #FEF08A, #EAB308)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: '2px solid #EAB308', boxShadow: '0 2px 6px rgba(234,179,8,0.25)' }}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#422006" strokeWidth="2.5"><path d="M3 17l6-6 4 4 8-8" /><path d="M21 7v4h-4" /></svg>
           </div>
-          <span>LeadFlow CRM</span>
+          <span>HubbotsX CRM</span>
         </a>
         <a href="#" onClick={(e) => { e.preventDefault(); window.location.hash = ''; }} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 8, background: 'linear-gradient(180deg, #FACC15, #EAB308)', color: 'var(--text-main)', fontFamily: 'Outfit, sans-serif', fontWeight: 800, fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.3px', textDecoration: 'none', border: '1px solid #CA8A04', boxShadow: '0 3px 10px rgba(202,138,4,0.2)' }}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M19 12H5" /><path d="M12 19l-7-7 7-7" /></svg>
@@ -54,7 +54,7 @@ function InfoFooter() {
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#422006" strokeWidth="2.5"><path d="M3 17l6-6 4 4 8-8" /><path d="M21 7v4h-4" /></svg>
           </div>
           <div>
-            <div style={{ fontFamily: 'Outfit, sans-serif', fontWeight: 900, fontSize: '0.92rem', color: 'var(--bg-light)' }}>LeadFlow CRM</div>
+            <div style={{ fontFamily: 'Outfit, sans-serif', fontWeight: 900, fontSize: '0.92rem', color: 'var(--bg-light)' }}>HubbotsX CRM</div>
             <div style={{ fontSize: '0.68rem', color: 'var(--text-dark)' }}>All-in-One Sales & Lead Management Platform</div>
           </div>
         </div>
@@ -66,7 +66,7 @@ function InfoFooter() {
           ))}
         </div>
         <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 16, textAlign: 'center', color: 'var(--text-dark)', fontSize: '0.73rem' }}>
-          &copy; 2026 LeadFlow CRM. All Rights Reserved.
+          &copy; 2026 HubbotsX CRM. All Rights Reserved.
         </div>
       </div>
     </footer>
@@ -136,12 +136,12 @@ export function AboutPage() {
   ];
   return (
     <InfoLayout title="About Us">
-      <PageTitle pill="ABOUT US" title="Building the future of sales in India" desc="LeadFlow CRM was born from a simple idea: sales teams in India deserve a CRM that's powerful, affordable, and built for how they actually work." />
+      <PageTitle pill="ABOUT US" title="Building the future of sales in India" desc="HubbotsX CRM was born from a simple idea: sales teams in India deserve a CRM that's powerful, affordable, and built for how they actually work." />
       <Card>
         <H2>Our Story</H2>
         <P>In 2025, our founders were running a growing sales team and struggling with the same tools everyone uses -- expensive CRMs designed for American enterprise, clunky spreadsheets, and WhatsApp groups that spiraled out of control. They knew there had to be a better way.</P>
-        <P>LeadFlow CRM was built from the ground up for Indian sales teams. We started with what matters most: a visual pipeline that actually makes sense, WhatsApp integration that works natively (because that's how India communicates), and automation that saves hours every week without requiring a computer science degree to set up.</P>
-        <P>Today, over 5,000 businesses across 120+ cities use LeadFlow to manage their leads, automate their follow-ups, and close more deals. We're just getting started.</P>
+        <P>HubbotsX CRM was built from the ground up for Indian sales teams. We started with what matters most: a visual pipeline that actually makes sense, WhatsApp integration that works natively (because that's how India communicates), and automation that saves hours every week without requiring a computer science degree to set up.</P>
+        <P>Today, over 5,000 businesses across 120+ cities use HubbotsX to manage their leads, automate their follow-ups, and close more deals. We're just getting started.</P>
       </Card>
       <Card>
         <H2>Our Mission</H2>
@@ -212,7 +212,7 @@ export function PrivacyPage() {
       c: (
         <>
           <UL items={[
-            'To provide, maintain, and improve the LeadFlow CRM platform',
+            'To provide, maintain, and improve the HubbotsX CRM platform',
             'To send you notifications, follow-up reminders, and broadcast messages on your behalf',
             'To provide analytics, reports, and insights about your sales performance',
             'To communicate with you about updates, security alerts, and support',
@@ -263,7 +263,7 @@ export function PrivacyPage() {
     },
     {
       h: '8. Contact Us',
-      c: <P>For privacy questions or data requests, email us at privacy@leadflowcrm.com. We respond to all requests within 72 hours.</P>,
+      c: <P>For privacy questions or data requests, email us at privacy@hubbotsxcrm.com. We respond to all requests within 72 hours.</P>,
     },
   ];
   return (
@@ -282,8 +282,8 @@ export function PrivacyPage() {
 // ===================== Terms & Conditions =====================
 export function TermsPage() {
   const sections = [
-    { h: '1. Acceptance of Terms', c: <P>By creating an account or using LeadFlow CRM, you agree to these Terms & Conditions. If you do not agree, you may not use the platform. These terms constitute a legally binding agreement between you and LeadFlow CRM.</P> },
-    { h: '2. Description of Service', c: <P>LeadFlow CRM provides a cloud-based sales and lead management platform including pipeline management, WhatsApp and email broadcast, automated follow-ups, analytics, team collaboration, and integration features. We offer 14-day free trials and paid subscription plans.</P> },
+    { h: '1. Acceptance of Terms', c: <P>By creating an account or using HubbotsX CRM, you agree to these Terms & Conditions. If you do not agree, you may not use the platform. These terms constitute a legally binding agreement between you and HubbotsX CRM.</P> },
+    { h: '2. Description of Service', c: <P>HubbotsX CRM provides a cloud-based sales and lead management platform including pipeline management, WhatsApp and email broadcast, automated follow-ups, analytics, team collaboration, and integration features. We offer 14-day free trials and paid subscription plans.</P> },
     { h: '3. Account Responsibilities', c: (
       <>
         <UL items={[
@@ -321,14 +321,14 @@ export function TermsPage() {
     ) },
     { h: '6. Data & Intellectual Property', c: <P>You retain all rights to your lead data and content. We retain ownership of the platform, its design, code, and branding. You grant us a limited license to process your data solely to provide the service.</P> },
     { h: '7. Service Availability', c: <P>We strive for 99.9% uptime but do not guarantee uninterrupted service. We are not liable for downtime caused by maintenance, third-party failures (WhatsApp API, email providers), or events beyond our control.</P> },
-    { h: '8. Limitation of Liability', c: <P>LeadFlow CRM is provided "as is." We are not liable for indirect, incidental, or consequential damages, including lost revenue or leads. Our total liability is limited to the amount you paid in the preceding 12 months.</P> },
+    { h: '8. Limitation of Liability', c: <P>HubbotsX CRM is provided "as is." We are not liable for indirect, incidental, or consequential damages, including lost revenue or leads. Our total liability is limited to the amount you paid in the preceding 12 months.</P> },
     { h: '9. Termination', c: <P>You may terminate your account at any time. We may suspend or terminate accounts that violate these terms. Upon termination, your data is permanently deleted within 30 days unless legally required to retain.</P> },
     { h: '10. Changes to Terms', c: <P>We may update these terms with 30 days notice. Continued use after changes constitutes acceptance. Material changes will be communicated via email.</P> },
-    { h: '11. Contact', c: <P>For legal questions, email legal@leadflowcrm.com.</P> },
+    { h: '11. Contact', c: <P>For legal questions, email legal@hubbotsxcrm.com.</P> },
   ];
   return (
     <InfoLayout title="Terms & Conditions">
-      <PageTitle pill="LEGAL" title="Terms & Conditions" desc="Last updated: October 7, 2026. These terms govern your use of LeadFlow CRM. Please read them carefully." />
+      <PageTitle pill="LEGAL" title="Terms & Conditions" desc="Last updated: October 7, 2026. These terms govern your use of HubbotsX CRM. Please read them carefully." />
       {sections.map((s) => (
         <Card key={s.h}>
           <H2>{s.h}</H2>
@@ -343,10 +343,10 @@ export function TermsPage() {
 export function CareersPage() {
   const [expanded, setExpanded] = useState<string | null>(null);
   const jobs = [
-    { role: 'Senior Full-Stack Engineer', team: 'Engineering', location: 'Remote (India)', type: 'Full-time', desc: 'Build and scale the LeadFlow CRM platform using React, TypeScript, and Supabase. You\'ll own features end-to-end and work directly with customers.', reqs: ['5+ years React/TypeScript', 'Experience with PostgreSQL', 'Strong product sense', 'Comfortable with rapid iteration'] },
+    { role: 'Senior Full-Stack Engineer', team: 'Engineering', location: 'Remote (India)', type: 'Full-time', desc: 'Build and scale the HubbotsX CRM platform using React, TypeScript, and Supabase. You\'ll own features end-to-end and work directly with customers.', reqs: ['5+ years React/TypeScript', 'Experience with PostgreSQL', 'Strong product sense', 'Comfortable with rapid iteration'] },
     { role: 'Product Designer', team: 'Design', location: 'Bengaluru (Hybrid)', type: 'Full-time', desc: 'Design intuitive interfaces for sales professionals. You\'ll create wireframes, prototypes, and polished production designs that make complex workflows feel simple.', reqs: ['3+ years product design', 'Proficiency in Figma', 'Experience with SaaS products', 'User research skills'] },
-    { role: 'Sales Development Representative', team: 'Sales', location: 'Mumbai (On-site)', type: 'Full-time', desc: 'Drive new business by reaching out to potential customers, running demos, and closing deals. You\'ll be the first touchpoint for businesses discovering LeadFlow.', reqs: ['2+ years B2B SaaS sales', 'Excellent communication skills', 'CRM experience (using one, not just selling one)', 'Self-motivated and goal-oriented'] },
-    { role: 'Customer Success Manager', team: 'Success', location: 'Remote (India)', type: 'Full-time', desc: 'Help customers get maximum value from LeadFlow. Onboard new accounts, drive adoption, and reduce churn through proactive engagement.', reqs: ['3+ years in customer success', 'Experience with CRM/SaaS platforms', 'Strong relationship-building skills', 'Data-driven approach to retention'] },
+    { role: 'Sales Development Representative', team: 'Sales', location: 'Mumbai (On-site)', type: 'Full-time', desc: 'Drive new business by reaching out to potential customers, running demos, and closing deals. You\'ll be the first touchpoint for businesses discovering HubbotsX.', reqs: ['2+ years B2B SaaS sales', 'Excellent communication skills', 'CRM experience (using one, not just selling one)', 'Self-motivated and goal-oriented'] },
+    { role: 'Customer Success Manager', team: 'Success', location: 'Remote (India)', type: 'Full-time', desc: 'Help customers get maximum value from HubbotsX. Onboard new accounts, drive adoption, and reduce churn through proactive engagement.', reqs: ['3+ years in customer success', 'Experience with CRM/SaaS platforms', 'Strong relationship-building skills', 'Data-driven approach to retention'] },
     { role: 'WhatsApp Integration Engineer', team: 'Engineering', location: 'Remote (India)', type: 'Full-time', desc: 'Own the WhatsApp Business API integration including message templates, broadcast systems, webhook handling, and calling features.', reqs: ['3+ years backend experience', 'WhatsApp Business API experience', 'Webhook and real-time systems knowledge', 'Deno/Edge Functions experience a plus'] },
   ];
   const perks = ['Remote-first culture', 'Health insurance for you & family', 'Flexible working hours', 'Learning budget (₹25,000/yr)', 'Stock options for all roles', 'Annual team offsites'];
@@ -354,7 +354,7 @@ export function CareersPage() {
     <InfoLayout title="Careers">
       <PageTitle pill="CAREERS" title="Join the team building India's best CRM" desc="We're a passionate team on a mission to make sales software that actually helps. Come build with us." />
       <Card>
-        <H2>Why Work at LeadFlow?</H2>
+        <H2>Why Work at HubbotsX?</H2>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10, marginTop: 8 }} className="careers-perks-grid">
           {perks.map((perk) => (
             <div key={perk} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', background: 'var(--bg-light)', borderRadius: 10, border: '1px solid rgba(0,0,0,0.05)' }}>
@@ -384,7 +384,7 @@ export function CareersPage() {
                 <P>{job.desc}</P>
                 <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: 8 }}>Requirements:</div>
                 <UL items={job.reqs} />
-                <a href="mailto:careers@leadflowcrm.com" className="gold-cta" style={{ maxWidth: 'fit-content', padding: '9px 18px', fontSize: '0.78rem', marginTop: 4 }}>
+                <a href="mailto:careers@hubbotsxcrm.com" className="gold-cta" style={{ maxWidth: 'fit-content', padding: '9px 18px', fontSize: '0.78rem', marginTop: 4 }}>
                   <span>APPLY NOW</span>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14" /><path d="M12 5l7 7-7 7" /></svg>
                 </a>
@@ -397,7 +397,7 @@ export function CareersPage() {
         <div style={{ textAlign: 'center' }}>
           <H2>Don't see the right role?</H2>
           <P>Send us your resume and tell us how you'd contribute. We're always looking for exceptional people.</P>
-          <a href="mailto:careers@leadflowcrm.com" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '10px 20px', borderRadius: 14, border: '1px solid rgba(0,0,0,0.15)', background: 'var(--bg-card)', color: 'var(--text-main)', fontFamily: 'Outfit, sans-serif', fontWeight: 800, fontSize: '0.82rem', textTransform: 'uppercase', textDecoration: 'none' }}>
+          <a href="mailto:careers@hubbotsxcrm.com" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '10px 20px', borderRadius: 14, border: '1px solid rgba(0,0,0,0.15)', background: 'var(--bg-card)', color: 'var(--text-main)', fontFamily: 'Outfit, sans-serif', fontWeight: 800, fontSize: '0.82rem', textTransform: 'uppercase', textDecoration: 'none' }}>
             Email Careers Team
           </a>
         </div>
@@ -454,7 +454,7 @@ export function SecurityPage() {
       </div>
       <Card>
         <H2>Responsible Disclosure</H2>
-        <P>If you discover a security vulnerability, please email security@leadflowcrm.com with details. We respond within 24 hours and offer rewards for verified reports. Please do not publicly disclose vulnerabilities until we've had a chance to address them.</P>
+        <P>If you discover a security vulnerability, please email security@hubbotsxcrm.com with details. We respond within 24 hours and offer rewards for verified reports. Please do not publicly disclose vulnerabilities until we've had a chance to address them.</P>
       </Card>
       <Card>
         <H2>Data Deletion</H2>
@@ -486,7 +486,7 @@ export function BrandAssetsPage() {
   ];
   return (
     <InfoLayout title="Brand Assets">
-      <PageTitle pill="BRAND" title="LeadFlow CRM Brand Guidelines" desc="Use these assets to represent LeadFlow CRM correctly in your content, partnerships, and integrations." />
+      <PageTitle pill="BRAND" title="HubbotsX CRM Brand Guidelines" desc="Use these assets to represent HubbotsX CRM correctly in your content, partnerships, and integrations." />
       <Card>
         <H2>Logo</H2>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginTop: 8 }}>
@@ -495,7 +495,7 @@ export function BrandAssetsPage() {
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#422006" strokeWidth="2.5"><path d="M3 17l6-6 4 4 8-8" /><path d="M21 7v4h-4" /></svg>
             </div>
             <div>
-              <div style={{ fontFamily: 'Outfit, sans-serif', fontWeight: 900, fontSize: '1.1rem', color: 'var(--text-main)' }}>LeadFlow CRM</div>
+              <div style={{ fontFamily: 'Outfit, sans-serif', fontWeight: 900, fontSize: '1.1rem', color: 'var(--text-main)' }}>HubbotsX CRM</div>
               <div style={{ fontSize: '0.68rem', color: '#CA8A04', fontWeight: 800, letterSpacing: '0.4px' }}>SALES & LEAD MANAGEMENT</div>
             </div>
           </div>
@@ -504,7 +504,7 @@ export function BrandAssetsPage() {
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#422006" strokeWidth="2.5"><path d="M3 17l6-6 4 4 8-8" /><path d="M21 7v4h-4" /></svg>
             </div>
             <div>
-              <div style={{ fontFamily: 'Outfit, sans-serif', fontWeight: 900, fontSize: '1.1rem', color: 'var(--bg-light)' }}>LeadFlow CRM</div>
+              <div style={{ fontFamily: 'Outfit, sans-serif', fontWeight: 900, fontSize: '1.1rem', color: 'var(--bg-light)' }}>HubbotsX CRM</div>
               <div style={{ fontSize: '0.68rem', color: '#FACC15', fontWeight: 800, letterSpacing: '0.4px' }}>SALES & LEAD MANAGEMENT</div>
             </div>
           </div>
@@ -528,7 +528,7 @@ export function BrandAssetsPage() {
       <Card>
         <H2>Download Assets</H2>
         <P>For high-resolution logo files (SVG, PNG, EPS) and brand kit PDF, please contact us.</P>
-        <a href="mailto:brand@leadflowcrm.com" className="gold-cta" style={{ maxWidth: 'fit-content', padding: '10px 20px', fontSize: '0.82rem' }}>
+        <a href="mailto:brand@hubbotsxcrm.com" className="gold-cta" style={{ maxWidth: 'fit-content', padding: '10px 20px', fontSize: '0.82rem' }}>
           <span>REQUEST BRAND KIT</span>
         </a>
       </Card>
@@ -556,7 +556,7 @@ export function ReportAbusePage() {
   };
   return (
     <InfoLayout title="Report Abuse">
-      <PageTitle pill="REPORT" title="Report Abuse or Policy Violation" desc="Help us keep LeadFlow CRM safe. Report misuse, spam, or policy violations and our team will investigate promptly." />
+      <PageTitle pill="REPORT" title="Report Abuse or Policy Violation" desc="Help us keep HubbotsX CRM safe. Report misuse, spam, or policy violations and our team will investigate promptly." />
       {submitted ? (
         <Card>
           <div style={{ textAlign: 'center', padding: '20px 10px' }}>
@@ -626,7 +626,7 @@ export function ReportAbusePage() {
       </Card>
       <Card>
         <H2>Emergency Situations</H2>
-        <P>If you believe someone is in immediate danger, contact local emergency services first. For urgent security issues, email security@leadflowcrm.com directly.</P>
+        <P>If you believe someone is in immediate danger, contact local emergency services first. For urgent security issues, email security@hubbotsxcrm.com directly.</P>
       </Card>
     </InfoLayout>
   );
@@ -677,7 +677,7 @@ export function SitemapPage() {
   ];
   return (
     <InfoLayout title="Sitemap">
-      <PageTitle pill="NAVIGATION" title="Sitemap" desc="Find any page on LeadFlow CRM quickly. This sitemap also helps search engines index our content." />
+      <PageTitle pill="NAVIGATION" title="Sitemap" desc="Find any page on HubbotsX CRM quickly. This sitemap also helps search engines index our content." />
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 14 }} className="sitemap-grid">
         {sections.map((s) => (
           <Card key={s.title}>

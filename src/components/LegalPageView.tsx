@@ -65,7 +65,7 @@ export default function LegalPageView({ slug }: { slug: string }) {
             <div style={{ width: 34, height: 34, borderRadius: 8, background: 'linear-gradient(135deg, #FEF08A, #EAB308)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: '2px solid #EAB308', boxShadow: '0 2px 6px rgba(234,179,8,0.25)' }}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#422006" strokeWidth="2.5"><path d="M3 17l6-6 4 4 8-8" /><path d="M21 7v4h-4" /></svg>
             </div>
-            <span>LeadFlow CRM</span>
+            <span>HubbotsX CRM</span>
           </a>
           <a href="#" onClick={(e) => { e.preventDefault(); window.location.hash = ''; }} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 8, background: 'linear-gradient(180deg, #FACC15, #EAB308)', color: 'var(--text-main)', fontFamily: 'Outfit, sans-serif', fontWeight: 800, fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.3px', textDecoration: 'none', border: '1px solid #CA8A04', boxShadow: '0 3px 10px rgba(202,138,4,0.2)' }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M19 12H5" /><path d="M12 19l-7-7 7-7" /></svg>
@@ -93,8 +93,8 @@ export default function LegalPageView({ slug }: { slug: string }) {
       {/* Footer */}
       <footer style={{ background: '#09120F', color: 'var(--text-dark)', borderTop: '1px solid rgba(255,255,255,0.08)', padding: '24px 16px 32px', fontSize: '0.78rem', textAlign: 'center' }}>
         <div style={{ maxWidth: 800, margin: '0 auto' }}>
-          <a href="#" onClick={(e) => { e.preventDefault(); window.location.hash = ''; }} style={{ color: 'var(--text-dark)', textDecoration: 'none', fontSize: '0.76rem', fontWeight: 600 }}>&larr; Back to LeadFlow CRM</a>
-          <div style={{ marginTop: 8, color: 'var(--text-dark)', fontSize: '0.73rem' }}>&copy; 2026 LeadFlow CRM. All Rights Reserved.</div>
+          <a href="#" onClick={(e) => { e.preventDefault(); window.location.hash = ''; }} style={{ color: 'var(--text-dark)', textDecoration: 'none', fontSize: '0.76rem', fontWeight: 600 }}>&larr; Back to HubbotsX CRM</a>
+          <div style={{ marginTop: 8, color: 'var(--text-dark)', fontSize: '0.73rem' }}>&copy; 2026 HubbotsX CRM. All Rights Reserved.</div>
         </div>
       </footer>
     </div>

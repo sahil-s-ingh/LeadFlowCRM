@@ -112,9 +112,59 @@ interface TelegramMessage {
   contact?: { phone_number: string; first_name: string; last_name?: string };
 }
 
+interface TelegramChatMemberUpdate {
+  update_id: number;
+  chat_member?: {
+    chat: { id: number; type: string; title?: string };
+    from: { id: number; first_name?: string; last_name?: string; username?: string };
+    date: number;
+    old_chat_member: {
+      user: { id: number; first_name?: string; last_name?: string; username?: string; is_bot: boolean };
+      status: string;
+    };
+    new_chat_member: {
+      user: { id: number; first_name?: string; last_name?: string; username?: string; is_bot: boolean };
+      status: string;
+    };
+    invite_link?: {
+      invite_link: string;
+      creator: number;
+      creates_join_request: boolean;
+      name?: string;
+      expire_date?: number;
+      member_limit?: number;
+      pending_join_request_count?: number;
+    };
+  };
+  my_chat_member?: {
+    chat: { id: number; type: string; title?: string };
+    from: { id: number; first_name?: string; last_name?: string; username?: string };
+    date: number;
+    old_chat_member: {
+      user: { id: number; first_name?: string; last_name?: string; username?: string; is_bot: boolean };
+      status: string;
+    };
+    new_chat_member: {
+      user: { id: number; first_name?: string; last_name?: string; username?: string; is_bot: boolean };
+      status: string;
+    };
+    invite_link?: {
+      invite_link: string;
+      creator: number;
+      creates_join_request: boolean;
+      name?: string;
+      expire_date?: number;
+      member_limit?: number;
+      pending_join_request_count?: number;
+    };
+  };
+}
+
 interface TelegramUpdate {
   update_id: number;
   message?: TelegramMessage;
+  chat_member?: TelegramChatMemberUpdate["chat_member"];
+  my_chat_member?: TelegramChatMemberUpdate["my_chat_member"];
 }
 
 interface BotRecord {
@@ -149,6 +199,16 @@ Deno.serve(async (req: Request) => {
     }
 
     const body: TelegramUpdate = await req.json();
+
+    // ─── Handle chat_member / my_chat_member updates (join tracking) ───────
+    const memberUpdate = body.chat_member || body.my_chat_member;
+    if (memberUpdate) {
+      await handleMemberUpdate(supabase, memberUpdate);
+      return new Response(
+        JSON.stringify({ ok: true }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
 
     if (!body.message) {
       return new Response(
@@ -272,6 +332,100 @@ Deno.serve(async (req: Request) => {
     );
   }
 });
+
+// ─── VIP Member Join Tracking ─────────────────────────────────────────
+// When someone joins the VIP channel via an invite link, Telegram sends a
+// chat_member or my_chat_member update. We match the invite_link string to
+// our telegram_invite_links table and mark that link as 'joined'.
+
+async function handleMemberUpdate(
+  supabase: ReturnType<typeof createClient>,
+  update: NonNullable<TelegramChatMemberUpdate["chat_member"]>,
+) {
+  try {
+    const newStatus = update.new_chat_member?.status;
+    const oldStatus = update.old_chat_member?.status;
+    const inviteLink = update.invite_link?.invite_link;
+    const joinedUser = update.new_chat_member?.user;
+
+    // Only proceed if someone actually joined (member, administrator, creator, restricted)
+    const joinedStatuses = ["member", "administrator", "creator", "restricted"];
+    const wasLeft = ["left", "kicked"];
+
+    if (!joinedStatuses.includes(newStatus) && !wasLeft.includes(newStatus)) return;
+
+    if (!inviteLink) return;
+
+    // Find the invite link record by matching the invite link string
+    const { data: linkRecord } = await supabase
+      .from("telegram_invite_links")
+      .select("id, lead_id, user_id, join_status")
+      .eq("tg_invite_link", inviteLink)
+      .maybeSingle();
+
+    if (!linkRecord) {
+      // Fallback: try matching by invite_link column (the stored invite link URL)
+      const { data: linkByStored } = await supabase
+        .from("telegram_invite_links")
+        .select("id, lead_id, user_id, join_status")
+        .eq("invite_link", inviteLink)
+        .maybeSingle();
+      if (!linkByStored) return;
+      await markLinkJoined(supabase, linkByStored, joinedUser, newStatus, oldStatus);
+      return;
+    }
+
+    await markLinkJoined(supabase, linkRecord, joinedUser, newStatus, oldStatus);
+  } catch {
+    // Best-effort — don't block the webhook
+  }
+}
+
+async function markLinkJoined(
+  supabase: ReturnType<typeof createClient>,
+  link: { id: string; lead_id: string; user_id: string; join_status: string },
+  joinedUser: { id: number; first_name?: string; last_name?: string; username?: string } | undefined,
+  newStatus: string,
+  oldStatus: string,
+) {
+  const leftStatuses = ["left", "kicked"];
+
+  if (leftStatuses.includes(newStatus)) {
+    // Member left or was kicked — update status but keep joined_at
+    if (link.join_status === "joined") {
+      await supabase
+        .from("telegram_invite_links")
+        .update({ join_status: "left" })
+        .eq("id", link.id);
+    }
+    return;
+  }
+
+  // Member joined
+  if (link.join_status === "joined") return; // already marked
+
+  await supabase
+    .from("telegram_invite_links")
+    .update({
+      join_status: "joined",
+      joined_at: new Date().toISOString(),
+      joined_by_telegram_user_id: joinedUser ? String(joinedUser.id) : null,
+    })
+    .eq("id", link.id);
+
+  // Log activity on the lead
+  const joinerName = joinedUser
+    ? [joinedUser.first_name, joinedUser.last_name].filter(Boolean).join(" ").trim() || joinedUser.username || String(joinedUser.id)
+    : "Unknown";
+
+  await supabase.from("lead_activities").insert({
+    user_id: link.user_id,
+    lead_id: link.lead_id,
+    activity_type: "telegram_vip_joined",
+    description: `Lead joined the Telegram VIP channel as ${joinerName}`,
+    metadata: { telegram_user_id: joinedUser ? String(joinedUser.id) : null, status: newStatus },
+  });
+}
 
 async function processMessage(
   supabase: ReturnType<typeof createClient>,

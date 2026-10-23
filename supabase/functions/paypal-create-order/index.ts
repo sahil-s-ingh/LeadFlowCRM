@@ -93,7 +93,7 @@ Deno.serve(async (req: Request) => {
         },
       ],
       application_context: {
-        brand_name: "LeadFlow CRM",
+        brand_name: "HubbotsX CRM",
         user_action: "PAY_NOW",
         shipping_preference: "NO_SHIPPING",
         return_url: returnUrl,

@@ -133,7 +133,7 @@ export default function SuperAdminSetupGuide() {
       desc: 'Download the CRM source code from GitHub to your VPS.',
       details: (
         <>
-          <CodeBlock code={`mkdir -p /var/www/leadflow\ncd /var/www/leadflow\ngit clone https://github.com/YOUR_USERNAME/YOUR_REPO.git .`} id="git-clone" />
+          <CodeBlock code={`mkdir -p /var/www/hubbotsx\ncd /var/www/hubbotsx\ngit clone https://github.com/YOUR_USERNAME/YOUR_REPO.git .`} id="git-clone" />
           <p style={{ fontSize: '0.86rem', color: 'var(--text-muted)', lineHeight: 1.65, marginBottom: 12 }}>
             For private repos, use a GitHub Personal Access Token (PAT):
           </p>
@@ -165,7 +165,7 @@ export default function SuperAdminSetupGuide() {
       desc: 'Compile the CRM into optimized static files.',
       details: (
         <>
-          <CodeBlock code={`cd /var/www/leadflow\nnpm install`} id="npm-install" />
+          <CodeBlock code={`cd /var/www/hubbotsx\nnpm install`} id="npm-install" />
           <CodeBlock code={`npm run build`} id="npm-build" />
           <p style={{ fontSize: '0.86rem', color: 'var(--text-muted)', lineHeight: 1.65 }}>
             This creates a <code style={{ background: 'var(--bg-light)', padding: '2px 6px', borderRadius: 4, fontSize: '0.78rem' }}>dist/</code> folder with all the static files.
@@ -181,8 +181,8 @@ export default function SuperAdminSetupGuide() {
       details: (
         <>
           <CodeBlock code={`apt install -y nginx`} id="nginx-install" />
-          <CodeBlock code={`cat > /etc/nginx/sites-available/leadflow << 'EOF'\nserver {\n    listen 80;\n    server_name yourdomain.com www.yourdomain.com;\n    root /var/www/leadflow/dist;\n    index index.html;\n    location / { try_files $uri $uri/ /index.html; }\n    location ~* \\.(js|css|png|jpg|jpeg|gif|ico|svg|webp|woff|woff2)$ {\n        expires 30d;\n        add_header Cache-Control "public, immutable";\n    }\n    gzip on;\n    gzip_types text/css application/javascript application/json image/svg+xml;\n}\nEOF`} id="nginx-config" />
-          <CodeBlock code={`ln -sf /etc/nginx/sites-available/leadflow /etc/nginx/sites-enabled/leadflow\nnginx -t && systemctl restart nginx && systemctl enable nginx`} id="nginx-enable" />
+          <CodeBlock code={`cat > /etc/nginx/sites-available/hubbotsx << 'EOF'\nserver {\n    listen 80;\n    server_name yourdomain.com www.yourdomain.com;\n    root /var/www/hubbotsx/dist;\n    index index.html;\n    location / { try_files $uri $uri/ /index.html; }\n    location ~* \\.(js|css|png|jpg|jpeg|gif|ico|svg|webp|woff|woff2)$ {\n        expires 30d;\n        add_header Cache-Control "public, immutable";\n    }\n    gzip on;\n    gzip_types text/css application/javascript application/json image/svg+xml;\n}\nEOF`} id="nginx-config" />
+          <CodeBlock code={`ln -sf /etc/nginx/sites-available/hubbotsx /etc/nginx/sites-enabled/hubbotsx\nnginx -t && systemctl restart nginx && systemctl enable nginx`} id="nginx-enable" />
         </>
       ),
     },
@@ -208,8 +208,8 @@ export default function SuperAdminSetupGuide() {
       desc: 'Automatically update the CRM when you push to GitHub.',
       details: (
         <>
-          <CodeBlock code={`cat > /var/www/leadflow/deploy.sh << 'EOF'\n#!/bin/bash\ncd /var/www/leadflow\ngit pull origin main\nnpm install\nnpm run build\necho "Deploy complete: $(date)"\nEOF\nchmod +x /var/www/leadflow/deploy.sh`} id="deploy-script" />
-          <CodeBlock code={`/var/www/leadflow/deploy.sh`} id="deploy-run" />
+          <CodeBlock code={`cat > /var/www/hubbotsx/deploy.sh << 'EOF'\n#!/bin/bash\ncd /var/www/hubbotsx\ngit pull origin main\nnpm install\nnpm run build\necho "Deploy complete: $(date)"\nEOF\nchmod +x /var/www/hubbotsx/deploy.sh`} id="deploy-script" />
+          <CodeBlock code={`/var/www/hubbotsx/deploy.sh`} id="deploy-run" />
         </>
       ),
     },
@@ -257,7 +257,7 @@ export default function SuperAdminSetupGuide() {
       }}>
         <h2 style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: 8 }}>How This CRM Works</h2>
         <p style={{ fontSize: '0.86rem', color: 'var(--text-muted)', lineHeight: 1.65, marginBottom: 12 }}>
-          LeadCentre CRM has two parts: a <strong>frontend</strong> (the React app you're building) and a <strong>backend</strong> (Supabase — a managed PostgreSQL database with auth, APIs, and edge functions). The frontend is compiled into static files and served by Nginx on your VPS.
+          HubbotsX CRM has two parts: a <strong>frontend</strong> (the React app you're building) and a <strong>backend</strong> (Supabase — a managed PostgreSQL database with auth, APIs, and edge functions). The frontend is compiled into static files and served by Nginx on your VPS.
         </p>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           <div style={{ padding: '14px', background: 'var(--bg-card)', borderRadius: 10, border: '1px solid var(--border-subtle)' }}>

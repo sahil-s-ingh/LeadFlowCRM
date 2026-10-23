@@ -5,7 +5,7 @@ import {
   Phone, Mail, CalendarClock, Tag, Zap, ChevronDown, KeyRound, Pin, Smile,
   Mic, Square, XCircle, Send as SendIcon, Activity, UserCheck, Flame,
   TrendingUp, DollarSign, CalendarCheck, CreditCard, Bot, Copy, Star, Search,
-  CalendarPlus, ChevronUp, Clock3,
+  CalendarPlus, ChevronUp, Clock3, Gift, Link2, ExternalLink,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { Session } from '@supabase/supabase-js';
@@ -384,6 +384,16 @@ const LeadWhatsAppDrawer: React.FC<Props> = ({ open, lead, session, onClose }) =
   const [paySending, setPaySending] = useState(false);
   const [payConfigOk, setPayConfigOk] = useState<boolean | null>(null);
   const [paymentOrders, setPaymentOrders] = useState<{ id: string; reference_id: string; amount_value: number; title: string; status: string; created_at: string }[]>([]);
+
+  // Telegram VIP invite state
+  const [showTelegramPanel, setShowTelegramPanel] = useState(false);
+  const [tgChatId, setTgChatId] = useState<string>('');
+  const [tgInviteLink, setTgInviteLink] = useState<string | null>(null);
+  const [tgInviteLoading, setTgInviteLoading] = useState(false);
+  const [tgInviteError, setTgInviteError] = useState<string | null>(null);
+  const [tgInviteCount, setTgInviteCount] = useState<number>(0);
+  const [tgInviteHistory, setTgInviteHistory] = useState<{ id: string; invite_link: string; created_at: string; expires_at: string | null; status: string }[]>([]);
+  const [tgLinkCopied, setTgLinkCopied] = useState(false);
 
   // Voice recording state
   const [isRecording, setIsRecording] = useState(false);
@@ -1323,6 +1333,45 @@ const LeadWhatsAppDrawer: React.FC<Props> = ({ open, lead, session, onClose }) =
     }
   };
 
+  const loadTelegramInvites = useCallback(async () => {
+    if (!lead || !session) return;
+    try {
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/telegram-invite-link`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ action: 'list', leadId: lead.id }),
+      });
+      const data = await res.json();
+      if (res.ok && !data.error) {
+        setTgInviteHistory((data.links || []).map((l: any) => ({ id: l.id, invite_link: l.invite_link, created_at: l.created_at, expires_at: l.expires_at, status: l.status })));
+        setTgInviteCount(data.count || 0);
+      }
+    } catch { /* ignore */ }
+  }, [lead, session]);
+
+  const handleGenerateTelegramInvite = async () => {
+    if (!lead || !session || !tgChatId.trim() || tgInviteLoading) return;
+    setTgInviteLoading(true);
+    setTgInviteError(null);
+    try {
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/telegram-invite-link`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ leadId: lead.id, chatId: tgChatId.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) throw new Error(data.error || 'Failed to generate invite link');
+      setTgInviteLink(data.inviteLink);
+      setTgInviteCount(data.generationCount || 1);
+      await loadTelegramInvites();
+      showToast('VIP invite link generated');
+    } catch (e: any) {
+      setTgInviteError(e.message || 'Failed to generate invite link');
+    } finally {
+      setTgInviteLoading(false);
+    }
+  };
+
   const handleScheduleMessage = async () => {
     if (!session || !conversation || !draft.trim() || !scheduleDate) return;
     setScheduleSaving(true);
@@ -1782,6 +1831,7 @@ const LeadWhatsAppDrawer: React.FC<Props> = ({ open, lead, session, onClose }) =
                 <Check size={14} /> {converting ? 'Marking…' : 'Mark converted'}
               </button>
             )}
+
           </div>
         )}
 
@@ -2021,6 +2071,110 @@ const LeadWhatsAppDrawer: React.FC<Props> = ({ open, lead, session, onClose }) =
                         <span className="lead-wa-fu-date">₹{(o.amount_value / 100).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                       </div>
                       <span className={`lead-wa-pay-status lead-wa-pay-status-${o.status}`}>{o.status}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Telegram VIP invite — always visible for converted leads */}
+        {leadStatus === 'converted' && (
+          <div className="lead-wa-action-bar" style={{ borderTop: 'none', paddingTop: 0 }}>
+            <button className="lead-wa-action-btn" style={{ background: 'rgba(139,92,246,0.08)', color: '#7C3AED', borderColor: 'rgba(139,92,246,0.2)' }} onClick={() => { setShowTelegramPanel((v) => !v); loadTelegramInvites(); }}>
+              <Gift size={16} /> VIP Invite
+              {tgInviteCount > 0 && <span className="lead-wa-action-badge" style={{ background: '#7C3AED' }}>{tgInviteCount}</span>}
+            </button>
+          </div>
+        )}
+
+        {/* Telegram VIP invite panel */}
+        {showTelegramPanel && leadStatus === 'converted' && (
+          <div className="lead-wa-panel" style={{ borderColor: 'rgba(139,92,246,0.2)' }}>
+            <div className="lead-wa-panel-head" style={{ color: '#7C3AED' }}>
+              <Gift size={15} />
+              <span>Telegram VIP Invite Link</span>
+            </div>
+            <div className="lead-wa-panel-body">
+              <p className="lead-wa-starter-desc" style={{ marginBottom: 8 }}>
+                Generate a one-time invite link to your private Telegram VIP channel. The link expires in 24 hours and allows only 1 join.
+              </p>
+              <label className="lead-wa-panel-label">Telegram channel/group chat ID</label>
+              <input
+                type="text"
+                className="lead-wa-panel-input"
+                placeholder="e.g. -1001234567890"
+                value={tgChatId}
+                onChange={(e) => setTgChatId(e.target.value)}
+                disabled={tgInviteLoading}
+              />
+              <p style={{ fontSize: '0.72rem', color: '#94A3B8', margin: '4px 0 10px' }}>
+                Find your channel ID by forwarding a message from the channel to @userinfobot on Telegram, or check your bot settings.
+              </p>
+              <button
+                className="lead-wa-panel-save"
+                style={{ background: 'linear-gradient(135deg, #7C3AED, #6D28D9)' }}
+                onClick={handleGenerateTelegramInvite}
+                disabled={tgInviteLoading || !tgChatId.trim()}
+              >
+                {tgInviteLoading ? 'Generating…' : 'Generate one-time invite link'}
+              </button>
+
+              {tgInviteError && (
+                <div className="lead-wa-payment-warning" style={{ marginTop: 8 }}>
+                  <AlertCircle size={14} />
+                  <span>{tgInviteError}</span>
+                </div>
+              )}
+
+              {tgInviteLink && (
+                <div style={{ marginTop: 12, padding: '12px 14px', background: 'rgba(139,92,246,0.06)', border: '1px solid rgba(139,92,246,0.2)', borderRadius: 10 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                    <Link2 size={14} style={{ color: '#7C3AED', flexShrink: 0 }} />
+                    <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#5B21B6' }}>Your invite link (expires in 24h)</span>
+                  </div>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                    <input
+                      type="text"
+                      readOnly
+                      value={tgInviteLink}
+                      className="lead-wa-panel-input"
+                      style={{ flex: 1, fontSize: '0.76rem', fontFamily: 'ui-monospace, monospace' }}
+                      onClick={(e) => (e.target as HTMLInputElement).select()}
+                    />
+                    <button
+                      className="lead-wa-label-add-btn"
+                      style={{ background: '#7C3AED', color: '#fff', flexShrink: 0 }}
+                      onClick={() => { navigator.clipboard?.writeText(tgInviteLink); setTgLinkCopied(true); setTimeout(() => setTgLinkCopied(false), 2000); showToast('Invite link copied'); }}
+                    >
+                      {tgLinkCopied ? <Check size={15} /> : <Copy size={15} />}
+                    </button>
+                    <a href={tgInviteLink} target="_blank" rel="noopener noreferrer" className="lead-wa-label-add-btn" style={{ background: '#F3F4F6', color: '#374151', flexShrink: 0, textDecoration: 'none' }}>
+                      <ExternalLink size={15} />
+                    </a>
+                  </div>
+                </div>
+              )}
+
+              {tgInviteCount > 0 && (
+                <div style={{ marginTop: 10, fontSize: '0.74rem', color: '#6B7280', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Gift size={12} style={{ color: '#7C3AED' }} />
+                  <span>You have generated <strong style={{ color: '#7C3AED' }}>{tgInviteCount}</strong> invite link{tgInviteCount > 1 ? 's' : ''} for this lead.</span>
+                </div>
+              )}
+
+              {tgInviteHistory.length > 0 && (
+                <div className="lead-wa-fu-list" style={{ marginTop: 10 }}>
+                  <p className="lead-wa-fu-list-title">Invite link history</p>
+                  {tgInviteHistory.map((h) => (
+                    <div key={h.id} className="lead-wa-pay-item">
+                      <Link2 size={13} style={{ color: '#7C3AED' }} />
+                      <div className="lead-wa-fu-info">
+                        <span className="lead-wa-fu-title" style={{ fontSize: '0.72rem', fontFamily: 'ui-monospace, monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '180px' }}>{h.invite_link}</span>
+                        <span className="lead-wa-fu-date">{new Date(h.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</span>
+                      </div>
+                      <span className={`lead-wa-pay-status lead-wa-pay-status-${h.status === 'active' ? 'pending' : 'failed'}`}>{h.status}</span>
                     </div>
                   ))}
                 </div>

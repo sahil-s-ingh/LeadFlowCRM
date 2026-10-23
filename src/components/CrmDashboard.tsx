@@ -28,6 +28,7 @@ import {
   HelpCircle, Sun, Moon,
   CreditCard, Smartphone,
   Webhook, Clock3, Gauge, ExternalLink, Wallet, Columns3, HeartPulse, Radio,
+  Gift, AlertCircle,
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import DashboardOverview from '@/components/DashboardOverview';
@@ -5942,6 +5943,25 @@ function LeadDetailDrawer({ lead, onClose, onUpdate, onDelete, formatDate, onSen
   const [savingInfo, setSavingInfo] = useState(false);
   const [brokers, setBrokers] = useState<{ id: string; name: string; website: string | null; logo_url: string | null }[]>([]);
   const [drawerUserId, setDrawerUserId] = useState('');
+  const [showTgPanel, setShowTgPanel] = useState(false);
+  const [tgChatId, setTgChatId] = useState('');
+  const [tgInviteLoading, setTgInviteLoading] = useState(false);
+  const [tgInviteError, setTgInviteError] = useState('');
+  const [tgInviteLink, setTgInviteLink] = useState('');
+  const [tgInviteCount, setTgInviteCount] = useState(0);
+  const [tgInviteHistory, setTgInviteHistory] = useState<{ id: string; invite_link: string; created_at: string; expires_at: string | null; status: string; join_status: string; joined_at: string | null }[]>([]);
+  const [tgLinkCopied, setTgLinkCopied] = useState(false);
+  const [tgSavedChannelId, setTgSavedChannelId] = useState('');
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from('telegram_settings')
+        .select('tg_vip_channel_id')
+        .maybeSingle();
+      if (data?.tg_vip_channel_id) setTgSavedChannelId(data.tg_vip_channel_id);
+    })();
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -6205,6 +6225,48 @@ function LeadDetailDrawer({ lead, onClose, onUpdate, onDelete, formatDate, onSen
     logActivity('follow_up_done', 'Follow-up reminder marked as done', { followup_id: id });
   };
 
+  const loadTelegramInvites = useCallback(async () => {
+    const { data: sd } = await supabase.auth.getSession();
+    if (!sd.session) return;
+    try {
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/telegram-invite-link`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${sd.session.access_token}` },
+        body: JSON.stringify({ action: 'list', leadId: lead.id }),
+      });
+      const data = await res.json();
+      if (res.ok && !data.error) {
+        setTgInviteHistory((data.links || []).map((l: any) => ({ id: l.id, invite_link: l.invite_link, created_at: l.created_at, expires_at: l.expires_at, status: l.status, join_status: l.join_status || 'pending', joined_at: l.joined_at || null })));
+        setTgInviteCount(data.count || 0);
+      }
+    } catch { /* ignore */ }
+  }, [lead.id]);
+
+  const handleGenerateTelegramInvite = async () => {
+    const { data: sd } = await supabase.auth.getSession();
+    const effectiveChatId = tgChatId.trim() || tgSavedChannelId;
+    if (!sd.session || !effectiveChatId || tgInviteLoading) return;
+    setTgInviteLoading(true);
+    setTgInviteError('');
+    try {
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/telegram-invite-link`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${sd.session.access_token}` },
+        body: JSON.stringify({ leadId: lead.id, chatId: effectiveChatId }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) throw new Error(data.error || 'Failed to generate invite link');
+      setTgInviteLink(data.inviteLink);
+      setTgInviteCount(data.generationCount || 1);
+      logActivity('telegram_invite', 'Telegram VIP invite link generated', { chat_id: effectiveChatId });
+      await loadTelegramInvites();
+    } catch (e: any) {
+      setTgInviteError(e.message || 'Failed to generate invite link');
+    } finally {
+      setTgInviteLoading(false);
+    }
+  };
+
   const availableSuggestions = SUGGESTED_TAGS.filter(
     (s) => !(lead.tags || []).some((t) => t.toLowerCase() === s.toLowerCase())
   );
@@ -6436,6 +6498,137 @@ function LeadDetailDrawer({ lead, onClose, onUpdate, onDelete, formatDate, onSen
           </div>
 
           <RoleTagPicker leadId={lead.id} sessionUserId={drawerUserId} />
+        </div>
+        )}
+
+        {/* Telegram VIP Invite — only for converted leads */}
+        {lead.status === 'converted' && (
+        <div className="crm-drawer-section">
+          <label className="crm-drawer-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <Gift size={14} style={{ color: '#7C3AED' }} /> TELEGRAM VIP INVITE
+          </label>
+          <button
+            type="button"
+            onClick={() => { setShowTgPanel((v) => !v); if (!showTgPanel) loadTelegramInvites(); }}
+            style={{
+              width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+              padding: '10px', borderRadius: '8px', border: '1px solid rgba(139,92,246,0.2)',
+              background: 'rgba(139,92,246,0.06)', color: '#7C3AED', fontSize: '0.82rem', fontWeight: 600,
+              cursor: 'pointer', transition: 'all 0.15s',
+            }}
+          >
+            <Gift size={15} /> VIP Invite
+            {tgInviteCount > 0 && <span style={{ background: '#7C3AED', color: '#fff', borderRadius: '10px', padding: '1px 8px', fontSize: '0.7rem', fontWeight: 700 }}>{tgInviteCount}</span>}
+          </button>
+
+          {showTgPanel && (
+            <div style={{ marginTop: '12px', padding: '14px', borderRadius: '10px', border: '1px solid rgba(139,92,246,0.15)', background: 'rgba(139,92,246,0.02)' }}>
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-dark)', margin: '0 0 10px', lineHeight: 1.5 }}>
+                Generate a one-time invite link to your private Telegram VIP channel. The link expires in 24 hours and allows only 1 join.
+              </p>
+              {tgSavedChannelId ? (
+                <div style={{ marginBottom: '10px', padding: '8px 10px', borderRadius: '6px', background: 'rgba(139,92,246,0.06)', border: '1px solid rgba(139,92,246,0.1)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Check size={13} style={{ color: '#16a34a' }} />
+                  <span style={{ fontSize: '0.72rem', color: 'var(--text-dark)' }}>Using saved VIP channel: <code style={{ fontSize: '0.72rem', color: '#5B21B6' }}>{tgSavedChannelId}</code></span>
+                </div>
+              ) : (
+                <>
+                  <label className="crm-drawer-label" style={{ fontSize: '0.7rem' }}>Telegram channel/group chat ID</label>
+                  <input
+                    type="text"
+                    value={tgChatId}
+                    onChange={(e) => setTgChatId(e.target.value)}
+                    disabled={tgInviteLoading}
+                    placeholder="e.g. -1001234567890"
+                    style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid var(--border-subtle)', background: 'var(--bg-card)', fontSize: '0.82rem', marginBottom: '6px', outline: 'none' }}
+                  />
+                  <p style={{ fontSize: '0.7rem', color: 'var(--text-dark)', margin: '0 0 10px' }}>
+                    Tip: Set the VIP channel ID once in Settings so you don't have to enter it each time. Find your channel ID by forwarding a message from the channel to @userinfobot on Telegram.
+                  </p>
+                </>
+              )}
+              <button
+                type="button"
+                onClick={handleGenerateTelegramInvite}
+                disabled={tgInviteLoading || (!tgChatId.trim() && !tgSavedChannelId)}
+                style={{
+                  width: '100%', padding: '9px', borderRadius: '8px', border: 'none',
+                  background: 'linear-gradient(135deg, #7C3AED, #6D28D9)', color: '#fff',
+                  fontSize: '0.82rem', fontWeight: 600, cursor: (tgInviteLoading || (!tgChatId.trim() && !tgSavedChannelId)) ? 'not-allowed' : 'pointer',
+                  opacity: (tgInviteLoading || (!tgChatId.trim() && !tgSavedChannelId)) ? 0.5 : 1,
+                }}
+              >
+                {tgInviteLoading ? <Loader2 size={15} className="crm-spin" /> : <Gift size={15} />}
+                {tgInviteLoading ? 'Generating...' : 'Generate one-time invite link'}
+              </button>
+
+              {tgInviteError && (
+                <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 10px', borderRadius: '6px', background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.15)', fontSize: '0.75rem', color: '#dc2626' }}>
+                  <AlertCircle size={14} /> {tgInviteError}
+                </div>
+              )}
+
+              {tgInviteLink && (
+                <div style={{ marginTop: '10px', padding: '10px 12px', borderRadius: '8px', background: 'rgba(139,92,246,0.05)', border: '1px solid rgba(139,92,246,0.15)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
+                    <Link2 size={13} style={{ color: '#7C3AED' }} />
+                    <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#5B21B6' }}>Invite link (expires in 24h)</span>
+                  </div>
+                  <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                    <input
+                      type="text"
+                      readOnly
+                      value={tgInviteLink}
+                      onClick={(e) => (e.target as HTMLInputElement).select()}
+                      style={{ flex: 1, padding: '6px 8px', borderRadius: '6px', border: '1px solid var(--border-subtle)', fontSize: '0.72rem', fontFamily: 'ui-monospace, monospace', background: 'var(--bg-card)', outline: 'none' }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => { navigator.clipboard?.writeText(tgInviteLink); setTgLinkCopied(true); setTimeout(() => setTgLinkCopied(false), 2000); }}
+                      style={{ padding: '6px', borderRadius: '6px', border: 'none', background: '#7C3AED', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
+                    >
+                      {tgLinkCopied ? <Check size={14} /> : <Copy size={14} />}
+                    </button>
+                    <a href={tgInviteLink} target="_blank" rel="noopener noreferrer" style={{ padding: '6px', borderRadius: '6px', border: '1px solid var(--border-subtle)', background: 'var(--bg-card)', color: '#374151', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, textDecoration: 'none' }}>
+                      <ExternalLink size={14} />
+                    </a>
+                  </div>
+                </div>
+              )}
+
+              {tgInviteHistory.length > 0 && (
+                <div style={{ marginTop: '10px' }}>
+                  <p style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-dark)', marginBottom: '6px' }}>Invite link history</p>
+                  {tgInviteHistory.map((h) => {
+                    const joinStatus = h.join_status || 'pending';
+                    const joinColors: Record<string, { bg: string; color: string; label: string }> = {
+                      joined: { bg: 'rgba(22,163,74,0.12)', color: '#16a34a', label: 'Joined' },
+                      pending: { bg: 'rgba(245,158,11,0.12)', color: '#d97706', label: 'Pending' },
+                      expired: { bg: 'rgba(148,163,184,0.12)', color: '#64748b', label: 'Expired' },
+                      left: { bg: 'rgba(239,68,68,0.1)', color: '#dc2626', label: 'Left' },
+                      revoked: { bg: 'rgba(148,163,184,0.12)', color: '#64748b', label: 'Revoked' },
+                    };
+                    const jc = joinColors[joinStatus] || joinColors.pending;
+                    return (
+                      <div key={h.id} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 8px', borderRadius: '6px', background: 'var(--bg-light)', marginBottom: '4px' }}>
+                        <Link2 size={12} style={{ color: '#7C3AED', flexShrink: 0 }} />
+                        <span style={{ fontSize: '0.68rem', fontFamily: 'ui-monospace, monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100px' }}>{h.invite_link}</span>
+                        <span style={{ fontSize: '0.68rem', color: 'var(--text-dark)', whiteSpace: 'nowrap' }}>{new Date(h.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                        {h.joined_at && <span style={{ fontSize: '0.62rem', color: '#16a34a', whiteSpace: 'nowrap' }}>joined {new Date(h.joined_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>}
+                        <span style={{ fontSize: '0.65rem', padding: '1px 6px', borderRadius: '10px', fontWeight: 600, background: jc.bg, color: jc.color, marginLeft: 'auto', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                          {joinStatus === 'joined' && <CheckCircle2 size={10} />}
+                          {joinStatus === 'pending' && <Clock size={10} />}
+                          {joinStatus === 'expired' && <X size={10} />}
+                          {joinStatus === 'left' && <LogOut size={10} />}
+                          {jc.label}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
         </div>
         )}
 
@@ -7401,6 +7594,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
   const [welcomeMessage, setWelcomeMessage] = useState('');
   const [telegramLink, setTelegramLink] = useState('');
   const [whatsappGroupLink, setWhatsappGroupLink] = useState('');
+  const [tgVipChannelId, setTgVipChannelId] = useState('');
 
   const [showBotToken, setShowBotToken] = useState(false);
   const [webhookStatus, setWebhookStatus] = useState<'idle' | 'setting' | 'set' | 'error'>('idle');
@@ -8225,6 +8419,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
         setWelcomeMessage(tgRes.data.welcome_message || '');
         setTelegramLink(tgRes.data.telegram_link || '');
         setWhatsappGroupLink(tgRes.data.whatsapp_group_link || '');
+        setTgVipChannelId(tgRes.data.tg_vip_channel_id || '');
 
       }
 
@@ -8386,6 +8581,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
         user_id: session.user.id,
         telegram_link: telegramLink.trim(),
         whatsapp_group_link: whatsappGroupLink.trim(),
+        tg_vip_channel_id: tgVipChannelId.trim(),
 
         updated_at: new Date().toISOString(),
       };
@@ -11403,6 +11599,19 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                         />
                         <small style={{ color: 'var(--text-dark)', fontSize: '0.74rem', marginTop: '4px', display: 'block' }}>
                           Included in the auto welcome email so leads can join your WhatsApp group.
+                        </small>
+                      </label>
+                      <label className="crm-add-lead-field" style={{ gridColumn: '1 / -1' }}>
+                        <span>Telegram VIP Channel ID <Gift size={12} style={{ color: '#7C3AED', display: 'inline', verticalAlign: 'middle' }} /></span>
+                        <input
+                          type="text"
+                          value={tgVipChannelId}
+                          onChange={(e) => setTgVipChannelId(e.target.value)}
+                          placeholder="e.g. -1001234567890"
+                          style={{ fontFamily: 'monospace', fontSize: '0.82rem' }}
+                        />
+                        <small style={{ color: 'var(--text-dark)', fontSize: '0.74rem', marginTop: '4px', display: 'block' }}>
+                          Set this once so the VIP Invite button on converted leads generates one-time invite links automatically — no need to enter it each time. Find your channel ID by forwarding a message from the channel to @userinfobot on Telegram.
                         </small>
                       </label>
 

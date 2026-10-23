@@ -116,10 +116,10 @@ export default function SuperAdminLogin() {
         <div className="sa-auth-shape sa-auth-shape-bars" />
 
         <div className="sa-auth-story-content" ref={storyRef} onMouseMove={handleStoryTilt} onMouseLeave={handleStoryReset} style={{ transformStyle: 'preserve-3d' }}>
-          <a href="#/" className="sa-auth-brand" aria-label="Back to LeadFlow CRM home" style={{ transform: 'translateZ(40px)' }}>
+          <a href="#/" className="sa-auth-brand" aria-label="Back to HubbotsX CRM home" style={{ transform: 'translateZ(40px)' }}>
             <span className="sa-auth-brand-mark"><Shield size={17} strokeWidth={2.6} /></span>
             <span>
-              <strong>LeadFlow</strong>
+              <strong>HubbotsX</strong>
               <small>SUPER ADMIN</small>
             </span>
           </a>
@@ -152,7 +152,7 @@ export default function SuperAdminLogin() {
         <div className="sa-auth-form-wrap" ref={cardRef} onMouseMove={handleCardTilt} onMouseLeave={handleCardReset} style={{ transformStyle: 'preserve-3d' }}>
           <div className="sa-auth-mobile-brand">
             <span className="sa-auth-brand-mark"><Shield size={16} /></span>
-            <strong>LeadFlow Super Admin</strong>
+            <strong>HubbotsX Super Admin</strong>
           </div>
           <div className="sa-auth-heading" style={{ transform: 'translateZ(30px)' }}>
             <span className="sa-auth-eyebrow">ADMINISTRATIVE ACCESS</span>
@@ -197,7 +197,7 @@ export default function SuperAdminLogin() {
             <button type="button" onClick={() => changeMode(mode === 'login' ? 'signup' : 'login')}>{mode === 'login' ? 'Sign up' : 'Sign in'}</button>
           </p>
           <div className="sa-auth-trust"><span><ShieldCheck size={15} /> Admin-grade security</span><span><Check size={14} /> Full platform access</span><span><Globe2 size={14} /> Global control</span></div>
-          <a href="#/" className="sa-auth-back">Back to LeadFlow home</a>
+          <a href="#/" className="sa-auth-back">Back to HubbotsX home</a>
         </div>
       </section>
     </main>

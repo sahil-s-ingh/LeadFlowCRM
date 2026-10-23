@@ -160,7 +160,7 @@ function useOfferReveal() {
 // ===================== Social Proof Toast Hook =====================
 const joiners = [
   { name: 'Arjun R.', city: 'Mumbai', time: '1 min ago', action: 'just activated their CRM dashboard!' },
-  { name: 'Sneha P.', city: 'Pune', time: 'Just now', action: 'synced 1,200 leads into LeadFlow!' },
+  { name: 'Sneha P.', city: 'Pune', time: 'Just now', action: 'synced 1,200 leads into HubbotsX!' },
   { name: 'Vikram J.', city: 'Hyderabad', time: '2 mins ago', action: 'closed 5 deals this week using pipeline!' },
   { name: 'Divya K.', city: 'Bengaluru', time: 'Just now', action: 'launched a WhatsApp broadcast to 3,000 leads!' },
   { name: 'Rohan Gupta', city: 'Ahmedabad', time: '3 mins ago', action: 'set up automated follow-up sequences!' },
@@ -267,7 +267,7 @@ function Header() {
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#422006" strokeWidth="2.5"><path d="M3 17l6-6 4 4 8-8"/><path d="M21 7v4h-4"/></svg>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <span style={{ fontWeight: 900, lineHeight: 1.1, fontSize: '1.05rem' }}>LeadFlow CRM</span>
+            <span style={{ fontWeight: 900, lineHeight: 1.1, fontSize: '1.05rem' }}>HubbotsX CRM</span>
             <span style={{ fontSize: '0.65rem', color: '#CA8A04', fontWeight: 800, letterSpacing: '0.4px' }}>CLOSE FASTER. SELL SMARTER.</span>
           </div>
         </a>
@@ -314,7 +314,7 @@ function Hero() {
 
         {/* Title */}
         <h1 className="hero-title">
-          Close More Deals With <span className="text-gold-gradient">LeadFlow CRM</span>
+          Close More Deals With <span className="text-gold-gradient">HubbotsX CRM</span>
         </h1>
 
         {/* Subtitle */}
@@ -418,7 +418,7 @@ function Hero() {
               <div className="hero-mockup-bar-dot" style={{ background: '#EF4444' }} />
               <div className="hero-mockup-bar-dot" style={{ background: '#F59E0B' }} />
               <div className="hero-mockup-bar-dot" style={{ background: '#22C55E' }} />
-              <div className="hero-mockup-url">app.leadflowcrm.com/pipeline</div>
+              <div className="hero-mockup-url">app.hubbotsxcrm.com/pipeline</div>
             </div>
 
             {/* Dashboard body */}
@@ -680,7 +680,7 @@ function About() {
   return (
     <section id="about" style={{ paddingBottom: 55 }}>
       <div style={{ maxWidth: 960, margin: '0 auto', padding: '0 16px' }}>
-        <SectionHeader pill="MEET THE TEAM" title="WHO BUILT LEADFLOW CRM?" />
+        <SectionHeader pill="MEET THE TEAM" title="WHO BUILT HUBBOTSX CRM?" />
         <div
           style={{
             background: 'var(--bg-card-alt)',
@@ -735,12 +735,12 @@ function About() {
 
             {/* Content */}
             <div style={{ flex: 1 }} className="about-content">
-              <h3 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1.3rem', fontWeight: 800, marginBottom: 3, color: 'var(--text-main)' }}>LeadFlow CRM Team</h3>
+              <h3 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1.3rem', fontWeight: 800, marginBottom: 3, color: 'var(--text-main)' }}>HubbotsX CRM Team</h3>
               <span style={{ fontSize: '0.82rem', color: '#CA8A04', fontWeight: 800, marginBottom: 12, display: 'block' }}>
                 Built by Sales Experts for Sales Teams
               </span>
               <p style={{ fontSize: '0.86rem', color: 'var(--text-main)', lineHeight: 1.55, marginBottom: 14 }}>
-                We built LeadFlow CRM after <strong>5+ years of managing sales teams</strong> and seeing the same problems everywhere — leads falling through cracks, no follow-up tracking, scattered WhatsApp chats, and no clear sales pipeline. So we put all our experience into one <strong>all-in-one CRM platform</strong> that handles lead management, automated follow-ups, WhatsApp &amp; Email broadcasts, team collaboration, and sales analytics — all from a single dashboard.
+                We built HubbotsX CRM after <strong>5+ years of managing sales teams</strong> and seeing the same problems everywhere — leads falling through cracks, no follow-up tracking, scattered WhatsApp chats, and no clear sales pipeline. So we put all our experience into one <strong>all-in-one CRM platform</strong> that handles lead management, automated follow-ups, WhatsApp &amp; Email broadcasts, team collaboration, and sales analytics — all from a single dashboard.
               </p>
               {/* Compliance Box */}
               <div
@@ -760,7 +760,7 @@ function About() {
                   <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                 </svg>
                 <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: 1.45 }}>
-                  <strong style={{ color: 'var(--text-main)' }}>Secure &amp; Reliable:</strong> Your data is encrypted and securely stored. We never share or sell your lead data. LeadFlow CRM is built with enterprise-grade security and regular backups to keep your business safe.
+                  <strong style={{ color: 'var(--text-main)' }}>Secure &amp; Reliable:</strong> Your data is encrypted and securely stored. We never share or sell your lead data. HubbotsX CRM is built with enterprise-grade security and regular backups to keep your business safe.
                 </p>
               </div>
             </div>
@@ -796,7 +796,7 @@ function GiftStack() {
       iconType: 'book',
       title: 'Automated Follow-up Scheduler',
       price: '\u20B92,999',
-      desc: 'Set smart follow-up reminders for every lead. LeadFlow pings your team at exactly the right moment, so no opportunity ever goes cold.',
+      desc: 'Set smart follow-up reminders for every lead. HubbotsX pings your team at exactly the right moment, so no opportunity ever goes cold.',
       delay: '0.3s',
     },
     {
@@ -1050,12 +1050,12 @@ function CurriculumIconSvg({ type }: { type: string }) {
 // ===================== Testimonials Section =====================
 function Testimonials() {
   const reviews = [
-    { text: "LeadFlow CRM transformed our sales process. We went from losing track of leads to closing 40% more deals in just two months. The pipeline view is a game changer!", name: 'Vikram Sharma', location: 'Delhi', initials: 'VS', rating: 5 },
+    { text: "HubbotsX CRM transformed our sales process. We went from losing track of leads to closing 40% more deals in just two months. The pipeline view is a game changer!", name: 'Vikram Sharma', location: 'Delhi', initials: 'VS', rating: 5 },
     { text: "The WhatsApp broadcast feature alone saves us 10 hours every week. We can reach all our leads with personalized messages in one click. Best CRM we've used.", name: 'Ananya Patel', location: 'Mumbai', initials: 'AP', rating: 5 },
-    { text: "Automated follow-ups mean no lead ever falls through the cracks. Our team's response time dropped from days to minutes. Highly recommend LeadFlow CRM!", name: 'Rajesh Kumar', location: 'Bengaluru', initials: 'RK', rating: 5 },
-    { text: "We switched from Salesforce to LeadFlow and never looked back. Setup took 5 minutes instead of 2 weeks. Our team actually uses it because it's so simple.", name: 'Priya Reddy', location: 'Hyderabad', initials: 'PR', rating: 5 },
+    { text: "Automated follow-ups mean no lead ever falls through the cracks. Our team's response time dropped from days to minutes. Highly recommend HubbotsX CRM!", name: 'Rajesh Kumar', location: 'Bengaluru', initials: 'RK', rating: 5 },
+    { text: "We switched from Salesforce to HubbotsX and never looked back. Setup took 5 minutes instead of 2 weeks. Our team actually uses it because it's so simple.", name: 'Priya Reddy', location: 'Hyderabad', initials: 'PR', rating: 5 },
     { text: "The lead scoring feature is incredible. We know exactly which prospects to prioritize and our conversion rate jumped from 12% to 28% in three months.", name: 'Arjun Mehta', location: 'Ahmedabad', initials: 'AM', rating: 5 },
-    { text: "As a real estate agency with 200+ leads per month, LeadFlow's pipeline board keeps everything organized. The WhatsApp integration is perfect for the Indian market.", name: 'Sneha Agarwal', location: 'Kolkata', initials: 'SA', rating: 5 },
+    { text: "As a real estate agency with 200+ leads per month, HubbotsX's pipeline board keeps everything organized. The WhatsApp integration is perfect for the Indian market.", name: 'Sneha Agarwal', location: 'Kolkata', initials: 'SA', rating: 5 },
     { text: "The automation builder saved us from hiring 2 extra sales reps. Follow-up sequences run on autopilot and our team focuses only on hot leads now.", name: 'Karan Singh', location: 'Jaipur', initials: 'KS', rating: 4 },
     { text: "I run a small insurance team and was hesitant about the price. Within the first month, the email broadcast feature alone brought us 15 new clients. Worth every rupee.", name: 'Deepika Nair', location: 'Kochi', initials: 'DN', rating: 5 },
     { text: "The Google Sheets sync is a lifesaver. Our marketing team updates lead sources in Sheets and they appear in the CRM instantly. No more manual data entry.", name: 'Rohit Verma', location: 'Lucknow', initials: 'RV', rating: 5 },
@@ -1064,7 +1064,7 @@ function Testimonials() {
   return (
     <section id="testimonials" style={{ paddingBottom: 55 }}>
       <div style={{ maxWidth: 960, margin: '0 auto', padding: '0 16px' }}>
-        <SectionHeader pill="CUSTOMER REVIEWS" title={<>WHAT OUR <span className="text-gold-gradient">CLIENTS SAY</span></>} desc="Join 5,000+ businesses growing with LeadFlow CRM. Real reviews from real customers." />
+        <SectionHeader pill="CUSTOMER REVIEWS" title={<>WHAT OUR <span className="text-gold-gradient">CLIENTS SAY</span></>} desc="Join 5,000+ businesses growing with HubbotsX CRM. Real reviews from real customers." />
 
         {/* Overall rating badge */}
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20 }}>
@@ -1483,13 +1483,13 @@ function FAQ() {
     { id: 'security', label: 'Security & Data' },
   ];
   const faqs = [
-    { cat: 'general', q: 'What sets LeadFlow apart from other CRMs?', a: 'LeadFlow is purpose-built for sales teams that juggle leads across WhatsApp, Email, and phone. Instead of a generic CRM, you get pipeline management, auto-follow-ups, WhatsApp and Email blasts, and team chat — all in one clean dashboard.' },
+    { cat: 'general', q: 'What sets HubbotsX apart from other CRMs?', a: 'HubbotsX is purpose-built for sales teams that juggle leads across WhatsApp, Email, and phone. Instead of a generic CRM, you get pipeline management, auto-follow-ups, WhatsApp and Email blasts, and team chat — all in one clean dashboard.' },
     { cat: 'general', q: 'How does the 14-day free trial work?', a: 'Sign up with your details and that is it — no card required. You get the full feature set for 14 days. No hidden charges, no auto-billing. You decide whether to continue after the trial ends.' },
     { cat: 'general', q: 'How fast can I get set up?', a: 'Most teams are live in under 5 minutes. Import leads from CSV or Google Sheets, link your WhatsApp number, and your pipeline is ready to go. Zero technical knowledge needed.' },
     { cat: 'features', q: 'Can I bring my existing leads into the CRM?', a: 'Yes. Bulk-import via CSV, auto-sync from Google Sheets, or capture leads straight from your website with customizable popup forms. Everything lands in your pipeline in minutes.' },
     { cat: 'features', q: 'Does it handle WhatsApp bulk messaging?', a: 'Absolutely. Connect your WhatsApp Business number and blast personalized messages to thousands of leads in one click. Delivery, read receipts, and replies all show up right in your CRM dashboard.' },
-    { cat: 'features', q: 'Can I assign leads to different reps?', a: 'Yes. LeadFlow supports round-robin auto-assignment, manual hand-offs, and role-based permissions. Each rep sees only their leads and can collaborate through built-in team chat.' },
-    { cat: 'features', q: 'Which tools does LeadFlow integrate with?', a: 'WhatsApp, Email SMTP, Google Sheets, Meta Ads, Telegram, Twilio for calls, and webhooks. You can also tap our API for anything custom.' },
+    { cat: 'features', q: 'Can I assign leads to different reps?', a: 'Yes. HubbotsX supports round-robin auto-assignment, manual hand-offs, and role-based permissions. Each rep sees only their leads and can collaborate through built-in team chat.' },
+    { cat: 'features', q: 'Which tools does HubbotsX integrate with?', a: 'WhatsApp, Email SMTP, Google Sheets, Meta Ads, Telegram, Twilio for calls, and webhooks. You can also tap our API for anything custom.' },
     { cat: 'pricing', q: 'Do I need a credit card to start the trial?', a: 'Nope. The 14-day trial is completely free with no card on file. You only enter payment details when you pick a paid plan after the trial.' },
     { cat: 'pricing', q: 'Can I switch or cancel my plan anytime?', a: 'Yes. Upgrade, downgrade, or cancel from your dashboard whenever you want. No lock-in contracts, no cancellation fees.' },
     { cat: 'pricing', q: 'Is there an annual billing discount?', a: 'Yes. Annual billing saves you 20% versus monthly. You can flip between monthly and yearly at any point.' },
@@ -1615,7 +1615,7 @@ function ProductCarousel() {
   return (
     <section id="product" style={{ paddingBottom: 55 }}>
       <div style={{ maxWidth: 960, margin: '0 auto', padding: '0 16px' }}>
-        <SectionHeader pill="PRODUCT TOUR" title={<>SEE THE <span className="text-gold-gradient">CRM IN ACTION</span></>} desc="Get a glimpse of what awaits you inside LeadFlow CRM." />
+        <SectionHeader pill="PRODUCT TOUR" title={<>SEE THE <span className="text-gold-gradient">CRM IN ACTION</span></>} desc="Get a glimpse of what awaits you inside HubbotsX CRM." />
         <div
           onMouseEnter={() => setPaused(true)}
           onMouseLeave={() => setPaused(false)}
@@ -1632,7 +1632,7 @@ function ProductCarousel() {
             <div style={{ width: 12, height: 12, borderRadius: '50%', background: '#EF4444' }} />
             <div style={{ width: 12, height: 12, borderRadius: '50%', background: '#F59E0B' }} />
             <div style={{ width: 12, height: 12, borderRadius: '50%', background: '#22C55E' }} />
-            <div style={{ flex: 1, textAlign: 'center', fontSize: '0.72rem', color: 'var(--text-dark)', fontWeight: 600 }}>app.leadflowcrm.com</div>
+            <div style={{ flex: 1, textAlign: 'center', fontSize: '0.72rem', color: 'var(--text-dark)', fontWeight: 600 }}>app.hubbotsxcrm.com</div>
           </div>
 
           {/* Slide content */}
@@ -1853,7 +1853,7 @@ function ComparisonTable() {
   return (
     <section id="comparison" style={{ paddingBottom: 55 }}>
       <div style={{ maxWidth: 960, margin: '0 auto', padding: '0 16px' }}>
-        <SectionHeader pill="WHY LEADFLOW" title={<>LEADFLOW CRM vs <span className="text-gold-gradient">THE REST</span></>} desc="Why thousands of teams ditch spreadsheets and bloated CRMs for LeadFlow." />
+        <SectionHeader pill="WHY HUBBOTSX" title={<>HUBBOTSX CRM vs <span className="text-gold-gradient">THE REST</span></>} desc="Why thousands of teams ditch spreadsheets and bloated CRMs for HubbotsX." />
         <div style={{ background: 'var(--bg-card)', borderRadius: 16, overflow: 'hidden', border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 4px 20px rgba(0,0,0,0.04)' }} className="comparison-table-wrap">
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
             <thead>
@@ -1861,7 +1861,7 @@ function ComparisonTable() {
                 <th style={{ textAlign: 'left', padding: '14px 16px', fontWeight: 800, color: 'var(--text-main)', fontSize: '0.78rem' }}>Feature</th>
                 <th style={{ padding: '14px 12px', textAlign: 'center', fontWeight: 900, fontSize: '0.82rem' }}>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 2, alignItems: 'center' }}>
-                    <span style={{ color: '#CA8A04' }}>LeadFlow CRM</span>
+                    <span style={{ color: '#CA8A04' }}>HubbotsX CRM</span>
                     <span style={{ fontSize: '0.6rem', fontWeight: 800, color: '#22C55E', background: 'rgba(34, 197, 94, 0.1)', padding: '1px 8px', borderRadius: 9999 }}>RECOMMENDED</span>
                   </div>
                 </th>
@@ -1905,7 +1905,7 @@ function ComparisonTable() {
             </tbody>
           </table>
         </div>
-        <p style={{ textAlign: 'center', fontSize: '0.72rem', color: 'var(--text-dark)', marginTop: 10 }}>*Spreadsheets cost you in lost deals and hours of manual work. LeadFlow pays for itself.</p>
+        <p style={{ textAlign: 'center', fontSize: '0.72rem', color: 'var(--text-dark)', marginTop: 10 }}>*Spreadsheets cost you in lost deals and hours of manual work. HubbotsX pays for itself.</p>
       </div>
     </section>
   );
@@ -1979,7 +1979,7 @@ function VideoTestimonials() {
   return (
     <section id="video-testimonials" style={{ paddingBottom: 55 }}>
       <div style={{ maxWidth: 960, margin: '0 auto', padding: '0 16px' }}>
-        <SectionHeader pill="VIDEO STORIES" title={<>REAL <span className="text-gold-gradient">RESULTS</span></>} desc="Hear from businesses transforming their sales with LeadFlow CRM." />
+        <SectionHeader pill="VIDEO STORIES" title={<>REAL <span className="text-gold-gradient">RESULTS</span></>} desc="Hear from businesses transforming their sales with HubbotsX CRM." />
         <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 14 }} className="video-testimonials-grid">
           {testimonials.map((t, i) => (
             <div
@@ -2068,7 +2068,7 @@ function RoiCalculator() {
   return (
     <section id="roi" style={{ paddingBottom: 55 }}>
       <div style={{ maxWidth: 960, margin: '0 auto', padding: '0 16px' }}>
-        <SectionHeader pill="ROI CALCULATOR" title={<>HOW MUCH ARE YOU <span className="text-gold-gradient">LEAVING ON THE TABLE?</span></>} desc="Enter your numbers to see the revenue you could recover with LeadFlow CRM." />
+        <SectionHeader pill="ROI CALCULATOR" title={<>HOW MUCH ARE YOU <span className="text-gold-gradient">LEAVING ON THE TABLE?</span></>} desc="Enter your numbers to see the revenue you could recover with HubbotsX CRM." />
         <div style={{ background: 'var(--bg-card)', borderRadius: 18, border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 6px 24px rgba(0,0,0,0.04)', overflow: 'hidden' }} className="roi-calculator-wrap">
           <div style={{ display: 'flex', flexDirection: 'column' }} className="roi-grid">
             {/* Inputs */}
@@ -2133,7 +2133,7 @@ function RoiCalculator() {
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.72rem', color: 'var(--text-dark)', marginBottom: 16 }}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2.5"><path d="M7 17l4-4 3 3 5-6" /><path d="M15 7h6v6" /></svg>
-                With LeadFlow CRM ({improvedCloseRate}% close rate)
+                With HubbotsX CRM ({improvedCloseRate}% close rate)
               </div>
               <div style={{ marginBottom: 16 }}>
                 <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#16A34A', marginBottom: 4 }}>Projected Monthly Revenue</div>
@@ -2151,7 +2151,7 @@ function RoiCalculator() {
             </div>
           </div>
         </div>
-        <p style={{ textAlign: 'center', fontSize: '0.72rem', color: 'var(--text-dark)', marginTop: 10 }}>Estimates based on avg 12% close-rate improvement after implementing LeadFlow CRM.</p>
+        <p style={{ textAlign: 'center', fontSize: '0.72rem', color: 'var(--text-dark)', marginTop: 10 }}>Estimates based on avg 12% close-rate improvement after implementing HubbotsX CRM.</p>
       </div>
     </section>
   );
@@ -2198,7 +2198,7 @@ function LiveActivityFeed() {
   return (
     <section style={{ paddingBottom: 40 }}>
       <div style={{ maxWidth: 960, margin: '0 auto', padding: '0 16px' }}>
-        <SectionHeader pill="LIVE FEED" title={<>REAL <span className="text-gold-gradient">SIGNUPS</span></>} desc="Watch teams across India go live with LeadFlow in real time." />
+        <SectionHeader pill="LIVE FEED" title={<>REAL <span className="text-gold-gradient">SIGNUPS</span></>} desc="Watch teams across India go live with HubbotsX in real time." />
         <div style={{ background: 'var(--bg-card)', borderRadius: 14, border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 4px 16px rgba(0,0,0,0.03)', overflow: 'hidden', maxHeight: 340, overflowY: 'auto' }}>
           {loading ? (
             <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-dark)', fontSize: '0.82rem' }}>Fetching latest activity...</div>
@@ -2285,7 +2285,7 @@ function IndustryUseCases() {
   );
 }
 
-// ===================== Before vs After LeadFlow =====================
+// ===================== Before vs After HubbotsX =====================
 function BeforeAfter() {
   const beforeItems = [
     { text: 'Leads spread across messy spreadsheets and WhatsApp chats', icon: 'x' },
@@ -2304,7 +2304,7 @@ function BeforeAfter() {
   return (
     <section style={{ paddingBottom: 55 }}>
       <div style={{ maxWidth: 960, margin: '0 auto', padding: '0 16px' }}>
-        <SectionHeader pill="THE TRANSFORMATION" title={<>BEFORE vs <span className="text-gold-gradient">AFTER LEADFLOW</span></>} desc="See exactly what changes when your team switches to LeadFlow." />
+        <SectionHeader pill="THE TRANSFORMATION" title={<>BEFORE vs <span className="text-gold-gradient">AFTER HUBBOTSX</span></>} desc="See exactly what changes when your team switches to HubbotsX." />
         <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 14 }} className="before-after-grid">
           {/* Before */}
           <div style={{ background: '#FEF2F2', border: '1.5px solid #FECACA', borderRadius: 16, padding: '20px 18px' }}>
@@ -2323,12 +2323,12 @@ function BeforeAfter() {
           </div>
           {/* After */}
           <div style={{ background: '#F0FDF4', border: '2px solid #EAB308', borderRadius: 16, padding: '20px 18px', position: 'relative', boxShadow: '0 8px 24px rgba(234, 179, 8, 0.12)' }}>
-            <div style={{ position: 'absolute', top: -11, right: 16, background: 'linear-gradient(135deg, #FEF08A, #EAB308)', color: '#422006', fontWeight: 900, fontSize: '0.68rem', padding: '3px 12px', borderRadius: 9999, border: '1px solid #CA8A04' }}>WITH LEADFLOW</div>
+            <div style={{ position: 'absolute', top: -11, right: 16, background: 'linear-gradient(135deg, #FEF08A, #EAB308)', color: '#422006', fontWeight: 900, fontSize: '0.68rem', padding: '3px 12px', borderRadius: 9999, border: '1px solid #CA8A04' }}>WITH HUBBOTSX</div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
               <div style={{ width: 36, height: 36, borderRadius: 10, background: 'linear-gradient(135deg, #FEF08A, #EAB308)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#422006" strokeWidth="3"><polyline points="20 6 9 17 4 12" /></svg>
               </div>
-              <h4 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1.05rem', fontWeight: 900, color: '#15803D' }}>The LeadFlow Way</h4>
+              <h4 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1.05rem', fontWeight: 900, color: '#15803D' }}>The HubbotsX Way</h4>
             </div>
             {afterItems.map((item, i) => (
               <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 10 }}>
@@ -2534,7 +2534,7 @@ function HelpWidget() {
               </a>
             </div>
             <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid rgba(0,0,0,0.06)', fontSize: '0.72rem', color: 'var(--text-dark)', textAlign: 'center' }}>
-              Still stuck? Drop us a line at hello@leadflowcrm.com
+              Still stuck? Drop us a line at hello@hubbotsxcrm.com
             </div>
           </div>
         </div>
@@ -2658,7 +2658,7 @@ function OnboardingChecklist() {
 function SuccessMetrics() {
   const [active, setActive] = useState(0);
   const stories = [
-    { company: 'Sharma Real Estate', location: 'New Delhi', metric: '+40%', label: 'More deals closed', desc: 'LeadFlow\'s pipeline and auto-follow-ups helped our agents close 40% more deals within the first 60 days.', person: 'Vikram Sharma', role: 'Sales Director' },
+    { company: 'Sharma Real Estate', location: 'New Delhi', metric: '+40%', label: 'More deals closed', desc: 'HubbotsX\'s pipeline and auto-follow-ups helped our agents close 40% more deals within the first 60 days.', person: 'Vikram Sharma', role: 'Sales Director' },
     { company: 'Patel Insurance Group', location: 'Mumbai', metric: '10 hrs', label: 'Saved every week', desc: 'WhatsApp broadcast replaced manual messaging. Our team now spends that time talking to hot leads instead of typing.', person: 'Ananya Patel', role: 'Operations Head' },
     { company: 'EduFirst Academy', location: 'Pune', metric: '3x', label: 'Faster lead response', desc: 'Auto-assignment and instant alerts cut our response time from 2 hours to under 15 minutes. Enrollment tripled.', person: 'Rajesh Kumar', role: 'Admissions Lead' },
     { company: 'FinEdge Capital', location: 'Bengaluru', metric: '₹2.4Cr', label: 'New revenue tracked', desc: 'The analytics dashboard revealed which lead sources actually convert. We reallocated ad spend and tracked ₹2.4Cr in new revenue.', person: 'Priya Nair', role: 'VP Sales' },
@@ -2674,7 +2674,7 @@ function SuccessMetrics() {
   return (
     <section style={{ paddingBottom: 55 }}>
       <div style={{ maxWidth: 960, margin: '0 auto', padding: '0 16px' }}>
-        <SectionHeader pill="SUCCESS STORIES" title={<>REAL <span className="text-gold-gradient">RESULTS</span></>} desc="Teams across India are hitting new revenue milestones with LeadFlow." />
+        <SectionHeader pill="SUCCESS STORIES" title={<>REAL <span className="text-gold-gradient">RESULTS</span></>} desc="Teams across India are hitting new revenue milestones with HubbotsX." />
         <div style={{ background: 'linear-gradient(135deg, #FFFDF5 0%, #FEF9C3 100%)', borderRadius: 18, border: '1.5px solid rgba(234,179,8,0.3)', padding: '24px 20px', boxShadow: '0 8px 30px rgba(234,179,8,0.08)' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16, alignItems: 'center', textAlign: 'center' }} className="success-metric-layout">
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
@@ -2719,7 +2719,7 @@ function CountdownTimer() {
   const [timeLeft, setTimeLeft] = useState({ hours: 0, minutes: 0, seconds: 0 });
 
   useEffect(() => {
-    const STORAGE_KEY = 'leadflow-deadline';
+    const STORAGE_KEY = 'hubbotsx-deadline';
     let deadline = sessionStorage.getItem(STORAGE_KEY);
     if (!deadline) {
       const d = Date.now() + (23 * 3600 + 14 * 60 + 7) * 1000;
@@ -2802,7 +2802,7 @@ function FeatureDeepDive() {
       name: 'Automation',
       icon: 'automation',
       headline: 'Put your workflow on autopilot',
-      desc: 'Build automation rules visually, no code needed. Trigger actions on stage changes, new leads, or timers, and let LeadFlow do the busywork.',
+      desc: 'Build automation rules visually, no code needed. Trigger actions on stage changes, new leads, or timers, and let HubbotsX do the busywork.',
       points: ['Visual rule builder', 'Conditional triggers', 'Multi-step sequences', 'Webhook integrations'],
     },
     {
@@ -3029,7 +3029,7 @@ function MobilePreview() {
   return (
     <section style={{ paddingBottom: 55 }}>
       <div style={{ maxWidth: 960, margin: '0 auto', padding: '0 16px' }}>
-        <SectionHeader pill="WORKS EVERYWHERE" title={<>YOUR CRM ON <span className="text-gold-gradient">EVERY DEVICE</span></>} desc="Run your sales from a desk or your pocket. LeadFlow syncs across desktop, tablet, and phone instantly." />
+        <SectionHeader pill="WORKS EVERYWHERE" title={<>YOUR CRM ON <span className="text-gold-gradient">EVERY DEVICE</span></>} desc="Run your sales from a desk or your pocket. HubbotsX syncs across desktop, tablet, and phone instantly." />
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20, alignItems: 'center' }} className="mobile-preview-layout">
           {/* Desktop mockup */}
           <div style={{ width: '100%', maxWidth: 560, background: 'var(--bg-card)', borderRadius: 12, border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 10px 30px rgba(0,0,0,0.06)', padding: 12, overflow: 'hidden' }} className="desktop-mockup">
@@ -3071,7 +3071,7 @@ function MobilePreview() {
                 <div style={{ width: 28, height: 28, borderRadius: 8, background: 'linear-gradient(135deg, #FEF08A, #EAB308)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#422006" strokeWidth="2.5"><path d="M3 17l6-6 4 4 8-8" /><path d="M21 7v4h-4" /></svg>
                 </div>
-                <span style={{ fontFamily: 'Outfit, sans-serif', fontSize: '0.68rem', fontWeight: 900, color: 'var(--text-main)' }}>LeadFlow</span>
+                <span style={{ fontFamily: 'Outfit, sans-serif', fontSize: '0.68rem', fontWeight: 900, color: 'var(--text-main)' }}>HubbotsX</span>
               </div>
               {['Rajesh K.', 'Ananya P.', 'Vikram S.', 'Priya N.'].map((name, i) => (
                 <div key={name} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 6px', borderBottom: i < 3 ? '1px solid rgba(0,0,0,0.04)' : 'none' }}>
@@ -3152,13 +3152,13 @@ function CompetitorComparison() {
   return (
     <section style={{ paddingBottom: 55 }}>
       <div style={{ maxWidth: 960, margin: '0 auto', padding: '0 16px' }}>
-        <SectionHeader pill="HOW WE COMPARE" title={<>LEADFLOW vs <span className="text-gold-gradient">THE COMPETITION</span></>} desc="Why thousands of businesses pick LeadFlow over pricier, harder-to-use CRMs." />
+        <SectionHeader pill="HOW WE COMPARE" title={<>HUBBOTSX vs <span className="text-gold-gradient">THE COMPETITION</span></>} desc="Why thousands of businesses pick HubbotsX over pricier, harder-to-use CRMs." />
         <div style={{ overflowX: 'auto', borderRadius: 16, border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 6px 24px rgba(0,0,0,0.04)' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 600, background: 'var(--bg-card)' }}>
             <thead>
               <tr>
                 <th style={{ padding: '14px 12px', textAlign: 'left', fontSize: '0.76rem', fontWeight: 800, color: 'var(--text-muted)', borderBottom: '2px solid rgba(234,179,8,0.3)', background: 'var(--bg-light)' }}>Feature</th>
-                <th style={{ padding: '14px 10px', textAlign: 'center', fontSize: '0.78rem', fontWeight: 900, color: '#422006', borderBottom: '2px solid #EAB308', background: 'linear-gradient(135deg, #FEF08A, #FEF9C3)' }}>LeadFlow</th>
+                <th style={{ padding: '14px 10px', textAlign: 'center', fontSize: '0.78rem', fontWeight: 900, color: '#422006', borderBottom: '2px solid #EAB308', background: 'linear-gradient(135deg, #FEF08A, #FEF9C3)' }}>HubbotsX</th>
                 <th style={{ padding: '14px 10px', textAlign: 'center', fontSize: '0.74rem', fontWeight: 700, color: 'var(--text-muted)', borderBottom: '2px solid rgba(0,0,0,0.06)', background: 'var(--bg-light)' }}>Salesforce</th>
                 <th style={{ padding: '14px 10px', textAlign: 'center', fontSize: '0.74rem', fontWeight: 700, color: 'var(--text-muted)', borderBottom: '2px solid rgba(0,0,0,0.06)', background: 'var(--bg-light)' }}>Zoho</th>
                 <th style={{ padding: '14px 10px', textAlign: 'center', fontSize: '0.74rem', fontWeight: 700, color: 'var(--text-muted)', borderBottom: '2px solid rgba(0,0,0,0.06)', background: 'var(--bg-light)' }}>HubSpot</th>
@@ -3263,7 +3263,7 @@ function TimeSavingsCalculator() {
   return (
     <section style={{ paddingBottom: 55 }}>
       <div style={{ maxWidth: 960, margin: '0 auto', padding: '0 16px' }}>
-        <SectionHeader pill="TIME SAVINGS" title={<>HOW MANY HOURS WILL <span className="text-gold-gradient">LEADFLOW SAVE YOU?</span></>} desc="Drag the slider to see how much time automations give back to your team every week." />
+        <SectionHeader pill="TIME SAVINGS" title={<>HOW MANY HOURS WILL <span className="text-gold-gradient">HUBBOTSX SAVE YOU?</span></>} desc="Drag the slider to see how much time automations give back to your team every week." />
         <div style={{ background: 'var(--bg-card)', borderRadius: 18, border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 6px 24px rgba(0,0,0,0.04)', padding: '24px 20px' }}>
           <div style={{ marginBottom: 20 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
@@ -3292,7 +3292,7 @@ function TimeSavingsCalculator() {
             </div>
             <div style={{ textAlign: 'center', padding: '14px 8px', background: '#F0FDF4', borderRadius: 12, border: '1px solid rgba(22,163,74,0.2)' }}>
               <div style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1.4rem', fontWeight: 900, color: '#16A34A' }}>{leadflowHrs.toFixed(1)}h</div>
-              <div style={{ fontSize: '0.68rem', color: '#15803D', fontWeight: 700, marginTop: 2 }}>With LeadFlow / day</div>
+              <div style={{ fontSize: '0.68rem', color: '#15803D', fontWeight: 700, marginTop: 2 }}>With HubbotsX / day</div>
             </div>
             <div style={{ textAlign: 'center', padding: '14px 8px', background: 'linear-gradient(135deg, #FEF08A, #FEF9C3)', borderRadius: 12, border: '1.5px solid #EAB308' }}>
               <div style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1.4rem', fontWeight: 900, color: '#CA8A04' }}>{savedHrs.toFixed(1)}h</div>
@@ -3371,7 +3371,7 @@ function FinalCTA() {
             YOUR <span className="text-gold-gradient">14-DAY FREE TRIAL</span> AWAITS
           </h2>
           <p style={{ fontSize: '0.86rem', color: 'var(--landing-text-muted, #475569)', margin: '0 auto 20px auto', maxWidth: 480, lineHeight: 1.55 }}>
-            Spin up LeadFlow today and get the full toolkit — pipeline management, automated follow-ups, WhatsApp &amp; Email blasts, and live sales analytics. No credit card, no catch.
+            Spin up HubbotsX today and get the full toolkit — pipeline management, automated follow-ups, WhatsApp &amp; Email blasts, and live sales analytics. No credit card, no catch.
           </p>
           <a href="#signup" onClick={(event) => { event.preventDefault(); window.location.hash = 'signup'; }} className="gold-cta" style={{ margin: '0 auto' }}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -3434,7 +3434,7 @@ function Footer() {
               </svg>
             </div>
             <div>
-              <div style={{ fontFamily: 'Outfit, sans-serif', fontWeight: 900, fontSize: '0.92rem', color: 'var(--bg-light)', letterSpacing: '0.3px' }}>LeadFlow CRM</div>
+              <div style={{ fontFamily: 'Outfit, sans-serif', fontWeight: 900, fontSize: '0.92rem', color: 'var(--bg-light)', letterSpacing: '0.3px' }}>HubbotsX CRM</div>
               <div style={{ fontSize: '0.68rem', color: 'var(--text-dark)', marginTop: 1 }}>Your All-in-One Sales Growth Engine</div>
             </div>
           </div>
@@ -3466,10 +3466,10 @@ function Footer() {
 
         {/* Copyright bar */}
         <div className="copyright-row" style={{ display: 'flex', flexDirection: 'column', gap: 6, textAlign: 'center', borderTop: '1px solid rgba(255,255,255,0.06)', marginTop: 24, padding: '18px 0 20px 0', color: 'var(--text-dark)', fontSize: '0.73rem' }}>
-          <div>&copy; 2026 LeadFlow CRM. All rights reserved.</div>
+          <div>&copy; 2026 HubbotsX CRM. All rights reserved.</div>
           <div>
             <a href="#signup" onClick={(event) => { event.preventDefault(); window.location.hash = 'signup'; }} style={{ color: 'var(--text-dark)', textDecoration: 'none', transition: 'color 0.2s ease', cursor: 'pointer' }}>
-              Powered by <span style={{ color: '#FACC15', fontWeight: 700 }}>LeadFlow CRM Platform</span>
+              Powered by <span style={{ color: '#FACC15', fontWeight: 700 }}>HubbotsX CRM Platform</span>
             </a>
           </div>
         </div>
@@ -3504,7 +3504,7 @@ function MobileStickyCTA() {
     >
       <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
         <span style={{ fontFamily: 'Outfit, sans-serif', fontWeight: 900, fontSize: '0.84rem', color: 'var(--bg-card)', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-          LEADFLOW CRM
+          HUBBOTSX CRM
         </span>
         <span style={{ fontSize: '0.7rem', color: '#FACC15', fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
           14 Days Free • No Card Needed

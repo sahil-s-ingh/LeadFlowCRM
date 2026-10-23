@@ -9,9 +9,13 @@
       "hasChanged": false,
       "hash": "cc8b9be132c77b5c8e6578149ba7e7a3d01924c8b4e5c42254d33138b4a5fa5d"
     },
+    "ai-generate-kb": {
+      "hasChanged": false,
+      "hash": "5cb851585a198a43a7d59673188f6f0caf779214e70f3739deff0aa3fa6b9c41"
+    },
     "ai-reply": {
       "hasChanged": false,
-      "hash": "e1e9ce718defa923b63b1ed7fc06369fb322471cc4c224adb91a90aac127b552"
+      "hash": "6448bfd2de154eac62ddb59a8029d69a5b94df25e03ab30cfe32cc6d1a9ab41c"
     },
     "call-quality-scoring": {
       "hasChanged": false,
@@ -59,7 +63,7 @@
     },
     "paypal-create-order": {
       "hasChanged": false,
-      "hash": "044a3e5f45d027ae725ee4b1925b3075424c5af046ece541d86585f8439071f2"
+      "hash": "36a0f306e52d735712f6047411c97d1be91d49c8f146da7821ddedc35404d001"
     },
     "paypal-verify-payment": {
       "hasChanged": false,
@@ -149,9 +153,13 @@
       "hasChanged": false,
       "hash": "e7b420e78b68d7ed0aeb48e67d8d84464308a5847b720d82dff3d943b0f5a275"
     },
+    "telegram-invite-link": {
+      "hasChanged": false,
+      "hash": "5ca21253dda82490f107f4b6c40e2e7b8b2ffa3800b7476fcdc4faaee1b7883d"
+    },
     "telegram-webhook": {
       "hasChanged": false,
-      "hash": "99f8ced87e145378406327e7ce1d704be6c31d09ff2a72047aa3315f10ca5021"
+      "hash": "56fae229046bd1fc7aea8ab6a3fa33769a7685812a6a94e4d342ab638570f68f"
     },
     "twilio-call": {
       "hasChanged": false,
@@ -200,6 +208,10 @@
     "whatsapp-webhook": {
       "hasChanged": false,
       "hash": "dde7710a5717cbf0f25ad51521817c5fd1861f0146bb86743f4f0eaa992dc12a"
+    },
+    "process-vip-joins": {
+      "hasChanged": false,
+      "hash": "492084c0a4904bdbc6c7cde94ad0e00345551df5c5c97c57c1c4d244b29e8f3f"
     }
   }
 }

@@ -393,7 +393,7 @@ export default function CheckoutDrawer() {
           key: result.keyId,
           amount: result.amount,
           currency: result.currency,
-          name: 'LeadFlow CRM',
+          name: 'HubbotsX CRM',
           description: `${selectedPlan.name} — ${billingCycle}`,
           order_id: result.orderId,
           prefill: { name: form.fullName, email: form.email, contact: form.mobileNumber },
@@ -540,7 +540,7 @@ export default function CheckoutDrawer() {
                 <CheckCircle2 size={40} style={{ color: '#16a34a' }} />
               </div>
               <h3 style={{ fontSize: '1.3rem', fontWeight: 800, color: '#0F172A', margin: '0 0 8px', fontFamily: 'Outfit, sans-serif' }}>
-                Welcome to LeadFlow CRM!
+                Welcome to HubbotsX CRM!
               </h3>
               <p style={{ fontSize: '0.88rem', color: '#64748B', lineHeight: 1.6, maxWidth: '340px', margin: '0 auto 24px' }}>
                 Your payment was successful and your 14-day free trial is now active. Check your email for CRM access details and setup instructions.

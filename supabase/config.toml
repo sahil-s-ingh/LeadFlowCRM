@@ -76,6 +76,9 @@ verify_jwt = false
 [functions.telegram-broadcast]
 verify_jwt = true
 
+[functions.telegram-invite-link]
+verify_jwt = true
+
 [functions.meta-ads-manager]
 verify_jwt = true
 
@@ -145,5 +148,11 @@ verify_jwt = true
 [functions.ai-reply]
 verify_jwt = false
 
+[functions.ai-generate-kb]
+verify_jwt = true
+
 [functions.ai-assistant]
+verify_jwt = false
+
+[functions.process-vip-joins]
 verify_jwt = false
