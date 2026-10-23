@@ -105,10 +105,6 @@
       "hasChanged": false,
       "hash": "335bc5aeaf0a381628df204ec2008e5710e896243e42a47875eb852c1500e8f1"
     },
-    "process-vip-joins": {
-      "hasChanged": false,
-      "hash": "492084c0a4904bdbc6c7cde94ad0e00345551df5c5c97c57c1c4d244b29e8f3f"
-    },
     "razorpay-create-order": {
       "hasChanged": false,
       "hash": "7d22c1d05ad6869f036d92006e074a8570141943319e74ec485b8ec4f00def05"
@@ -207,11 +203,15 @@
     },
     "whatsapp-templates": {
       "hasChanged": false,
-      "hash": "826f71f63c4b6f1a0486ec826689fa7998712ee2bd3adb880755e40cfe87e343"
+      "hash": "f0f2b2428a16c0cea3f9326ae2f9cc73295c6588eb26188f4e8ab3d23d3fe52b"
     },
     "whatsapp-webhook": {
       "hasChanged": false,
       "hash": "dde7710a5717cbf0f25ad51521817c5fd1861f0146bb86743f4f0eaa992dc12a"
+    },
+    "process-vip-joins": {
+      "hasChanged": false,
+      "hash": "492084c0a4904bdbc6c7cde94ad0e00345551df5c5c97c57c1c4d244b29e8f3f"
     }
   }
 }
