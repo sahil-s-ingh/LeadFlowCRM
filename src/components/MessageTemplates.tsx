@@ -555,32 +555,42 @@ function AnalyticsPanel({ template, onClose }: { template: WaTemplate; onClose: 
   );
 }
 
-function TestSendModal({ template, onClose }: { template: WaTemplate; onClose: () => void }) {
+function TestSendModal({ template, phoneNumberId, onClose }: { template: WaTemplate; phoneNumberId: string; onClose: () => void }) {
   const [phone, setPhone] = useState('');
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const bodyComp = template.components?.find((c: any) => c.type === 'BODY');
+  const headerComp = template.components?.find((c: any) => c.type === 'HEADER');
   const bodyVars: number[] = (bodyComp?.text?.match(/\{\{(\d+)\}\}/g) || []).map((m: string) => parseInt(m.match(/\d+/)![0], 10));
   const uniqueVars = bodyVars.filter((value, index) => bodyVars.indexOf(value) === index).sort((a, b) => a - b);
+  const headerVars: number[] = (headerComp?.format === 'TEXT' ? (headerComp?.text?.match(/\{\{(\d+)\}\}/g) || []) : []).map((m: string) => parseInt(m.match(/\d+/)![0], 10));
+  const uniqueHeaderVars = headerVars.filter((value, index) => headerVars.indexOf(value) === index).sort((a, b) => a - b);
   const [varValues, setVarValues] = useState<string[]>(uniqueVars.map(() => ''));
+  const [headerVarValues, setHeaderVarValues] = useState<string[]>(uniqueHeaderVars.map(() => ''));
 
   const handleSend = async () => {
     if (!phone.trim()) { setError('Phone number is required'); return; }
+    if (uniqueVars.length > 0 && varValues.some((v) => !v.trim())) { setError('Please fill in all variable values'); return; }
+    if (uniqueHeaderVars.length > 0 && headerVarValues.some((v) => !v.trim())) { setError('Please fill in all header variable values'); return; }
     setSending(true); setError('');
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData.session?.access_token;
-      if (!token) return;
+      if (!token) { setError('Not authenticated'); return; }
       const components: any[] = [];
-      if (uniqueVars.length > 0) {
-        components.push({ type: 'body', parameters: varValues.filter(Boolean).map((v) => ({ type: 'text', text: v })) });
+      if (uniqueHeaderVars.length > 0) {
+        components.push({ type: 'header', parameters: headerVarValues.map((v) => ({ type: 'text', text: v })) });
       }
-      const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/whatsapp-templates?action=test_send`;
+      if (uniqueVars.length > 0) {
+        components.push({ type: 'body', parameters: varValues.map((v) => ({ type: 'text', text: v })) });
+      }
+      const cleanPhone = phone.replace(/[\s\-()]/g, '');
+      const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/whatsapp-templates?action=test_send&phone_number_id=${encodeURIComponent(phoneNumberId)}`;
       const res = await fetch(apiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ template_name: template.name, language: template.language, phone_number: phone, components }),
+        body: JSON.stringify({ template_name: template.name, language: template.language, phone_number: cleanPhone, components }),
       });
       const data = await res.json();
       if (!res.ok || data.error) { setError(data.error || 'Failed to send'); return; }
@@ -609,6 +619,14 @@ function TestSendModal({ template, onClose }: { template: WaTemplate; onClose: (
               <input type="text" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+1234567890" className="mt2-input" />
               <small className="mt2-field-hint">Include country code. e.g. +91 for India, +1 for US.</small>
             </label>
+            {uniqueHeaderVars.length > 0 && (
+              <div className="mt2-modal-vars">
+                <span className="mt2-modal-vars-label">Header Variable Values:</span>
+                {uniqueHeaderVars.map((v: number, i: number) => (
+                  <input key={i} type="text" value={headerVarValues[i] || ''} onChange={(e) => { const nv = [...headerVarValues]; nv[i] = e.target.value; setHeaderVarValues(nv); }} placeholder={`Value for header {{${v}}}`} className="mt2-input" />
+                ))}
+              </div>
+            )}
             {uniqueVars.length > 0 && (
               <div className="mt2-modal-vars">
                 <span className="mt2-modal-vars-label">Variable Values:</span>
@@ -2856,7 +2874,7 @@ export default function MessageTemplates({ session, onBack, embedded }: { sessio
         </div>
       )}
 
-      {testSendTpl && <TestSendModal template={testSendTpl} onClose={() => setTestSendTpl(null)} />}
+      {testSendTpl && <TestSendModal template={testSendTpl} phoneNumberId={[...selectedPhonesRef.current][0] || ''} onClose={() => setTestSendTpl(null)} />}
       {translateTpl && <TranslateModal template={translateTpl} onClose={() => { setTranslateTpl(null); fetchWaTemplates(); }} />}
       {analyticsTpl && <AnalyticsPanel template={analyticsTpl} onClose={() => setAnalyticsTpl(null)} />}
       {showLibrary && <TemplateLibraryModal onClose={() => setShowLibrary(false)} onImport={handleImportLibraryTemplate} />}
