@@ -254,49 +254,49 @@ const LeadTrackerPage: React.FC<Props> = ({ leads, onBack, session }) => {
               <Filter size={14} /> Clear
             </button>
           </div>
-          <div style={{ maxHeight: 500, overflowY: 'auto' }}>
+          <div style={{ maxHeight: 500, overflowX: 'auto', overflowY: 'auto' }}>
             {filteredLeads.length === 0 ? (
               <div style={{ padding: 48, textAlign: 'center', color: 'var(--text-dark)' }}>
                 <Users size={40} style={{ marginBottom: 12, opacity: 0.3 }} />
                 <p style={{ fontSize: '0.9rem', fontWeight: 600 }}>No leads found from this source</p>
               </div>
             ) : (
-              <table className="crm-table" style={{ width: '100%' }}>
+              <table className="crm-table" style={{ width: '100%', tableLayout: 'fixed', minWidth: 640 }}>
                 <thead>
                   <tr>
-                    <th className="crm-th" style={{ padding: '10px 16px', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-dark)', textAlign: 'left' }}>Lead</th>
-                    <th className="crm-th" style={{ padding: '10px 16px', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-dark)', textAlign: 'left' }}>Status</th>
-                    <th className="crm-th" style={{ padding: '10px 16px', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-dark)', textAlign: 'left' }}>Source</th>
-                    <th className="crm-th" style={{ padding: '10px 16px', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-dark)', textAlign: 'left' }}>Fund</th>
-                    <th className="crm-th" style={{ padding: '10px 16px', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-dark)', textAlign: 'left' }}>Date</th>
-                    <th className="crm-th" style={{ padding: '10px 16px', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-dark)', textAlign: 'right' }}>Chat</th>
+                    <th className="crm-th" style={{ padding: '10px 16px', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-dark)', textAlign: 'left', width: '30%' }}>Lead</th>
+                    <th className="crm-th" style={{ padding: '10px 16px', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-dark)', textAlign: 'left', width: '15%' }}>Status</th>
+                    <th className="crm-th" style={{ padding: '10px 16px', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-dark)', textAlign: 'left', width: '12%' }}>Source</th>
+                    <th className="crm-th" style={{ padding: '10px 16px', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-dark)', textAlign: 'left', width: '13%' }}>Fund</th>
+                    <th className="crm-th" style={{ padding: '10px 16px', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-dark)', textAlign: 'left', width: '18%' }}>Date</th>
+                    <th className="crm-th" style={{ padding: '10px 16px', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-dark)', textAlign: 'right', width: '12%' }}>Chat</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredLeads.map((lead) => (
                     <tr key={lead.id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-                      <td style={{ padding: '12px 16px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <td style={{ padding: '12px 16px', overflow: 'hidden' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
                           <div style={{ width: 32, height: 32, borderRadius: 8, background: 'var(--bg-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-dark)', flexShrink: 0 }}>
                             {lead.full_name?.split(' ').map((n) => n[0]).slice(0, 2).join('').toUpperCase() || '?'}
                           </div>
-                          <div>
-                            <div style={{ fontSize: '0.84rem', fontWeight: 700, color: 'var(--text-main)' }}>{lead.full_name}</div>
-                            <div style={{ fontSize: '0.72rem', color: 'var(--text-dark)' }}>{lead.email}</div>
+                          <div style={{ minWidth: 0, overflow: 'hidden' }}>
+                            <div style={{ fontSize: '0.84rem', fontWeight: 700, color: 'var(--text-main)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{lead.full_name}</div>
+                            <div style={{ fontSize: '0.72rem', color: 'var(--text-dark)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{lead.email}</div>
                           </div>
                         </div>
                       </td>
-                      <td style={{ padding: '12px 16px', fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-muted)' }}>
+                      <td style={{ padding: '12px 16px', fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
                         {STAGE_LABELS[lead.status] || lead.status}
                       </td>
                       <td style={{ padding: '12px 16px' }}>
                         <LeadSourceBadge source={lead.lead_source} size={16} />
                       </td>
-                      <td style={{ padding: '12px 16px', fontSize: '0.78rem', fontWeight: 700, color: lead.fund_amount ? '#16a34a' : 'var(--text-dark)' }}>
-                        {lead.fund_amount != null ? `$${lead.fund_amount.toLocaleString('en-US', { maximumFractionDigits: 0 })}` : '—'}
+                      <td style={{ padding: '12px 16px', fontSize: '0.78rem', fontWeight: 700, color: lead.fund_amount ? '#16a34a' : 'var(--text-dark)', whiteSpace: 'nowrap' }}>
+                        {lead.fund_amount != null ? `${lead.fund_amount.toLocaleString('en-US', { maximumFractionDigits: 0 })}` : '—'}
                       </td>
-                      <td style={{ padding: '12px 16px', fontSize: '0.75rem', color: 'var(--text-dark)', display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <Calendar size={12} /> {formatDate(lead.created_at)}
+                      <td style={{ padding: '12px 16px', fontSize: '0.75rem', color: 'var(--text-dark)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Calendar size={12} /> {formatDate(lead.created_at)}</span>
                       </td>
                       <td style={{ padding: '12px 16px', textAlign: 'right' }}>
                         <button
