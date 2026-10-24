@@ -322,57 +322,6 @@ export default function DashboardOverview({
         </div>
       </div>
 
-      {/* Quick Actions Bar — always visible at top */}
-      <div className="dash3d-actionbar" onMouseMove={handleTilt} onMouseLeave={handleTiltReset}>
-        <div className="dash3d-actionbar-inner">
-          <div className="dash3d-actionbar-label">
-            <Zap size={14} />
-            <span>Quick Actions</span>
-          </div>
-          <div className="dash3d-actionbar-chips">
-            {onGoToAddLead && (
-              <button className="dash3d-actionbar-chip dash3d-chip-blue" onClick={onGoToAddLead} style={{ transform: 'translateZ(20px)' }}>
-                <Plus size={16} />
-                <span>Add Lead</span>
-              </button>
-            )}
-            <button className="dash3d-actionbar-chip dash3d-chip-cyan" onClick={onGoToInbox} style={{ transform: 'translateZ(18px)' }}>
-              <MessageCircle size={16} />
-              <span>Inbox</span>
-              {todayTasks.newLeadsToContact > 0 && <span className="dash3d-chip-badge">{todayTasks.newLeadsToContact}</span>}
-            </button>
-            {onGoToFollowUps && (
-              <button className="dash3d-actionbar-chip dash3d-chip-amber" onClick={onGoToFollowUps} style={{ transform: 'translateZ(16px)' }}>
-                <Bell size={16} />
-                <span>Follow-Ups</span>
-                {todayTasks.overdueFollowUps > 0 && <span className="dash3d-chip-badge dash3d-chip-badge-red">{todayTasks.overdueFollowUps}</span>}
-              </button>
-            )}
-            {onGoToBroadcast && (
-              <button className="dash3d-actionbar-chip dash3d-chip-violet" onClick={onGoToBroadcast} style={{ transform: 'translateZ(14px)' }}>
-                <Send size={16} />
-                <span>Broadcast</span>
-              </button>
-            )}
-            <button className="dash3d-actionbar-chip dash3d-chip-orange" onClick={onGoToLeads} style={{ transform: 'translateZ(12px)' }}>
-              <AlertTriangle size={16} />
-              <span>Stale Leads</span>
-              {staleLeadsList.length > 0 && <span className="dash3d-chip-badge dash3d-chip-badge-orange">{staleLeadsList.length}</span>}
-            </button>
-            {onGoToAnalytics && (
-              <button className="dash3d-actionbar-chip dash3d-chip-green" onClick={onGoToAnalytics} style={{ transform: 'translateZ(10px)' }}>
-                <BarChart3 size={16} />
-                <span>Analytics</span>
-              </button>
-            )}
-            <button className="dash3d-actionbar-chip dash3d-chip-blue" onClick={onGoToLeads} style={{ transform: 'translateZ(8px)' }}>
-              <Filter size={16} />
-              <span>Manage Leads</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
       {/* 3D Stat Cards */}
       <div className="dash3d-stats-grid">
         {statCards.map((card, i) => {

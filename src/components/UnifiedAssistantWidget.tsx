@@ -413,7 +413,7 @@ export default function UnifiedAssistantWidget({ session, userRole }: UnifiedAss
               </div>
               <div>
                 <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#fff' }}>
-                  {mode === 'team' ? 'Team Chat' : 'Jarvis AI'}
+                  {mode === 'team' ? 'Team Chat' : 'HubbotsX AI'}
                 </div>
                 <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.75)' }}>
                   {mode === 'team'
@@ -450,7 +450,7 @@ export default function UnifiedAssistantWidget({ session, userRole }: UnifiedAss
                           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.62rem', color: 'var(--text-muted)', marginTop: '4px' }}>
                             <span>0.5x</span><span style={{ fontWeight: 700, color: '#2563eb' }}>{voiceRate.toFixed(1)}x</span><span>2x</span>
                           </div>
-                          <button onClick={() => { setShowVoiceSettings(false); if (voiceOn) speak('This is how Jarvis will sound at the new speed.'); }} style={{ width: '100%', marginTop: '10px', padding: '6px', borderRadius: '8px', border: 'none', background: 'rgba(37,99,235,0.1)', color: '#2563eb', fontSize: '0.68rem', fontWeight: 600, cursor: 'pointer' }}>Test Voice</button>
+                          <button onClick={() => { setShowVoiceSettings(false); if (voiceOn) speak('This is how HubbotsX will sound at the new speed.'); }} style={{ width: '100%', marginTop: '10px', padding: '6px', borderRadius: '8px', border: 'none', background: 'rgba(37,99,235,0.1)', color: '#2563eb', fontSize: '0.68rem', fontWeight: 600, cursor: 'pointer' }}>Test Voice</button>
                         </div>
                       )}
                     </div>
@@ -605,7 +605,7 @@ export default function UnifiedAssistantWidget({ session, userRole }: UnifiedAss
                   <div style={{ width: '52px', height: '52px', borderRadius: '14px', background: 'linear-gradient(135deg, #2563eb, #1e40af)', margin: '0 auto 14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <Sparkles size={26} color="#fff" />
                   </div>
-                  <p style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-main)', margin: '0 0 4px' }}>Hi, I'm Jarvis</p>
+                  <p style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-main)', margin: '0 0 4px' }}>Hi, I'm HubbotsX</p>
                   <p style={{ fontSize: '0.78rem', color: 'var(--text-muted, #64748b)', margin: '0 0 16px', lineHeight: 1.5 }}>Your AI CRM assistant. Ask me about your leads, follow-ups, WhatsApp chats, and more.</p>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     {SUGGESTED_QUESTIONS.map((sq) => (
@@ -646,19 +646,19 @@ export default function UnifiedAssistantWidget({ session, userRole }: UnifiedAss
             <div style={{ padding: '12px 14px', borderTop: '1px solid var(--border-subtle, #e2e8f0)', background: 'var(--bg-card, #fff)', display: 'flex', gap: '8px', alignItems: 'center' }}>
               {voiceSupported && (
                 <div style={{ position: 'relative', flexShrink: 0 }}>
-                  <button onClick={listening ? stopListening : startListening} disabled={aiLoading} style={{ width: '40px', height: '40px', borderRadius: '10px', border: 'none', background: listening ? '#ef4444' : (aiLoading ? '#94a3b8' : 'rgba(37,99,235,0.1)'), cursor: aiLoading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.15s' }} title={listening ? 'Stop listening' : 'Speak to Jarvis'}>
+                  <button onClick={listening ? stopListening : startListening} disabled={aiLoading} style={{ width: '40px', height: '40px', borderRadius: '10px', border: 'none', background: listening ? '#ef4444' : (aiLoading ? '#94a3b8' : 'rgba(37,99,235,0.1)'), cursor: aiLoading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.15s' }} title={listening ? 'Stop listening' : 'Speak to HubbotsX'}>
                     {listening ? <MicOff size={18} color="#fff" /> : <Mic size={18} color="#2563eb" />}
                   </button>
                   {listening && (
                     <div style={{ position: 'absolute', bottom: '44px', left: '50%', transform: 'translateX(-50%)', display: 'flex', alignItems: 'flex-end', gap: '2px', height: '20px', pointerEvents: 'none' }}>
                       {[0,1,2,3,4].map((i) => (
-                        <span key={i} style={{ width: '3px', background: '#ef4444', borderRadius: '2px', animation: `jarvis-wave 0.6s ease-in-out ${i * 0.1}s infinite alternate` }} />
+                        <span key={i} style={{ width: '3px', background: '#ef4444', borderRadius: '2px', animation: `hubbotsx-wave 0.6s ease-in-out ${i * 0.1}s infinite alternate` }} />
                       ))}
                     </div>
                   )}
                 </div>
               )}
-              <input type="text" value={listening && interimText ? interimText : aiInput} onChange={(e) => setAiInput(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendAiQuestion(aiInput); } }} placeholder={listening ? (interimText || 'Listening...') : 'Ask Jarvis anything...'} disabled={aiLoading || listening} style={{ flex: 1, padding: '10px 12px', borderRadius: '10px', border: `1px solid ${listening ? 'rgba(239,68,68,0.3)' : 'var(--border-subtle, #e2e8f0)'}`, background: 'var(--bg-light, #f8fafc)', fontSize: '0.82rem', color: listening && interimText ? '#ef4444' : 'var(--text-main)', outline: 'none', fontStyle: listening && interimText ? 'italic' : 'normal' }} />
+              <input type="text" value={listening && interimText ? interimText : aiInput} onChange={(e) => setAiInput(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendAiQuestion(aiInput); } }} placeholder={listening ? (interimText || 'Listening...') : 'Ask HubbotsX anything...'} disabled={aiLoading || listening} style={{ flex: 1, padding: '10px 12px', borderRadius: '10px', border: `1px solid ${listening ? 'rgba(239,68,68,0.3)' : 'var(--border-subtle, #e2e8f0)'}`, background: 'var(--bg-light, #f8fafc)', fontSize: '0.82rem', color: listening && interimText ? '#ef4444' : 'var(--text-main)', outline: 'none', fontStyle: listening && interimText ? 'italic' : 'normal' }} />
               <button onClick={() => sendAiQuestion(aiInput)} disabled={aiLoading || !aiInput.trim()} style={{ width: '40px', height: '40px', borderRadius: '10px', border: 'none', background: aiLoading || !aiInput.trim() ? '#94a3b8' : '#2563eb', cursor: aiLoading || !aiInput.trim() ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 {aiLoading ? <Loader2 size={18} className="crm-spin" color="#fff" /> : <Send size={18} color="#fff" />}
               </button>
@@ -671,7 +671,7 @@ export default function UnifiedAssistantWidget({ session, userRole }: UnifiedAss
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px', textAlign: 'center', background: 'var(--bg-light, #f8fafc)' }}>
             <Bot size={40} style={{ color: 'var(--text-muted)', opacity: 0.3, marginBottom: 12 }} />
             <p style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-main)', margin: '0 0 4px' }}>AI Assistant is not configured</p>
-            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.5 }}>An admin needs to enable Jarvis AI in Settings before it can be used.</p>
+            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.5 }}>An admin needs to enable HubbotsX AI in Settings before it can be used.</p>
           </div>
         )}
         </div>

@@ -431,6 +431,7 @@ Deno.serve(async (req: Request) => {
             .update({
               last_message_text: getPreviewText(msg),
               last_message_at: new Date().toISOString(),
+              last_customer_message_at: new Date().toISOString(),
               unread_count: conversation.unread_count + 1,
               is_typing: false,
             })
@@ -550,16 +551,57 @@ Deno.serve(async (req: Request) => {
             } catch { /* AI reply is best-effort */ }
           }
 
-          // Send welcome message if this is a new conversation and it's a text "hi"/"hello"
+          // ─── Greeting & Away Messages (wa_greeting_settings) ──────────
+          // Check per-number greeting/away configuration. The greeting fires
+          // when a customer's first message matches a trigger keyword. The
+          // away message fires outside configured business hours.
+          try {
+            const { data: greetingCfg } = await supabase
+              .from("wa_greeting_settings")
+              .select("*")
+              .eq("wa_settings_id", settings.id)
+              .maybeSingle();
+
+            if (greetingCfg) {
+              // Away message takes priority — check business hours first
+              if (greetingCfg.away_enabled && greetingCfg.away_text) {
+                const isOutsideHours = isOutsideBusinessHours(greetingCfg);
+                if (isOutsideHours) {
+                  await sendWhatsAppMessage(settings.phone_number_id, settings.access_token, phoneFromWaId, greetingCfg.away_text);
+                  await supabase.from("wa_messages").insert({ conversation_id: conversation.id, sender: "agent", message_type: "text", text_content: greetingCfg.away_text });
+                }
+              }
+
+              // Greeting message — only for text messages matching trigger keywords
+              if (greetingCfg.greeting_enabled && greetingCfg.greeting_text && msg.type === "text") {
+                const inboundText = (msg.text?.body || "").toLowerCase().trim();
+                const keywords: string[] = greetingCfg.greeting_trigger_keywords || ["hi", "hello", "hey", "start", "menu"];
+                const matched = keywords.some((kw: string) => inboundText === kw || inboundText.startsWith(kw + " "));
+                if (matched) {
+                  await sendWhatsAppMessage(settings.phone_number_id, settings.access_token, phoneFromWaId, greetingCfg.greeting_text);
+                  await supabase.from("wa_messages").insert({ conversation_id: conversation.id, sender: "agent", message_type: "text", text_content: greetingCfg.greeting_text });
+                }
+              }
+            }
+          } catch { /* greeting/away is best-effort */ }
+
+          // Legacy welcome message fallback (if no greeting_settings configured)
           if (settings.welcome_message && msg.type === "text") {
-            const text = (msg.text?.body || "").toLowerCase().trim();
-            if (["hi", "hello", "hey", "start", "menu"].includes(text)) {
-              await sendWhatsAppMessage(
-                settings.phone_number_id,
-                settings.access_token,
-                phoneFromWaId,
-                settings.welcome_message,
-              );
+            const { data: hasGreeting } = await supabase
+              .from("wa_greeting_settings")
+              .select("id")
+              .eq("wa_settings_id", settings.id)
+              .maybeSingle();
+            if (!hasGreeting) {
+              const text = (msg.text?.body || "").toLowerCase().trim();
+              if (["hi", "hello", "hey", "start", "menu"].includes(text)) {
+                await sendWhatsAppMessage(
+                  settings.phone_number_id,
+                  settings.access_token,
+                  phoneFromWaId,
+                  settings.welcome_message,
+                );
+              }
             }
           }
         }
@@ -642,6 +684,31 @@ function getFileSize(msg: any): number | null {
 function getFileName(msg: any): string | null {
   if (msg.type === "document") return msg.document?.filename || null;
   return null;
+}
+
+// Check if current time is outside configured business hours
+function isOutsideBusinessHours(cfg: any): boolean {
+  if (!cfg.business_hours_enabled) return false;
+  const tz = cfg.timezone || "UTC";
+  const now = new Date();
+  let localParts: string[];
+  try {
+    localParts = now.toLocaleString("en-US", { timeZone: tz, weekday: "short", hour: "2-digit", minute: "2-digit", hour12: false }).split(", ");
+  } catch {
+    localParts = now.toLocaleString("en-US", { weekday: "short", hour: "2-digit", minute: "2-digit", hour12: false }).split(", ");
+  }
+  const dayMap: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+  const dayIdx = dayMap[localParts[0]] ?? new Date().getDay();
+  const timeStr = localParts[1];
+  const [h, m] = timeStr.split(":").map(Number);
+  const currentMin = h * 60 + m;
+  const businessDays: number[] = cfg.business_days || [1, 2, 3, 4, 5];
+  if (!businessDays.includes(dayIdx)) return true;
+  const [startH, startM] = (cfg.business_hours_start || "09:00").split(":").map(Number);
+  const [endH, endM] = (cfg.business_hours_end || "18:00").split(":").map(Number);
+  const startMin = startH * 60 + startM;
+  const endMin = endH * 60 + endM;
+  return currentMin < startMin || currentMin >= endMin;
 }
 
 async function sendWhatsAppMessage(

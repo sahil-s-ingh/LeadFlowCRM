@@ -67,7 +67,11 @@ import CheckoutDrawer from '@/components/CheckoutDrawer';
 import { RoleTagPicker } from '@/components/RoleTags';
 import WhatsAppGroups from '@/components/WhatsAppGroups';
 import WhatsAppFlows from '@/components/WhatsAppFlows';
+import WhatsAppBlueTick from '@/components/WhatsAppBlueTick';
 import InstagramInbox from '@/components/InstagramInbox';
+import WhatsAppConversationTracker from '@/components/WhatsAppConversationTracker';
+import WhatsAppGreetingAway from '@/components/WhatsAppGreetingAway';
+import WhatsAppQualityAlerts from '@/components/WhatsAppQualityAlerts';
 
 
 type LeadStatus = 'new' | 'called_no_response' | 'called_responded' | 'interested' | 'not_interested' | 'converted';
@@ -115,7 +119,7 @@ const MOBILE_STAT_OPTIONS: { key: MobileStatKey; label: string }[] = [
 ];
 
 type DateFilterPreset = 'all' | 'today' | 'yesterday' | 'last_7_days' | 'this_week' | 'this_month' | 'this_year' | 'custom';
-type ActiveView = 'dashboard' | 'leads' | 'inbox_hub' | 'inbox' | 'whatsapp' | 'settings' | 'drip' | 'analytics_hub' | 'email_analytics' | 'message_templates' | 'broadcast_hub' | 'broadcast' | 'email_broadcast' | 'telegram_broadcast' | 'activity_timeline' | 'revenue_forecast' | 'followups' | 'leaderboard' | 'goals' | 'win_loss' | 'duplicates' | 'heatmap' | 'automations' | 'brokers' | 'lead_tracker' | 'meta_ads' | 'integrations' | 'call_quality' | 'call_logs' | 'wa_groups' | 'wa_flows' | 'ig_inbox';
+type ActiveView = 'dashboard' | 'leads' | 'inbox_hub' | 'inbox' | 'whatsapp' | 'settings' | 'drip' | 'analytics_hub' | 'email_analytics' | 'message_templates' | 'broadcast_hub' | 'broadcast' | 'email_broadcast' | 'telegram_broadcast' | 'activity_timeline' | 'revenue_forecast' | 'followups' | 'leaderboard' | 'goals' | 'win_loss' | 'duplicates' | 'heatmap' | 'automations' | 'brokers' | 'meta_ads' | 'integrations';
 
 type UserRole = 'owner' | 'admin' | 'manager' | 'agent';
 
@@ -530,7 +534,7 @@ async function sendMetaConversionEvent(leadId: string, lead: Lead, newStatus: Le
   }
 }
 
-const VALID_VIEWS: ActiveView[] = ['dashboard', 'leads', 'inbox_hub', 'inbox', 'whatsapp', 'settings', 'drip', 'analytics_hub', 'email_analytics', 'message_templates', 'broadcast_hub', 'broadcast', 'email_broadcast', 'telegram_broadcast', 'activity_timeline', 'revenue_forecast', 'followups', 'leaderboard', 'goals', 'win_loss', 'duplicates', 'heatmap', 'automations', 'brokers', 'lead_tracker', 'meta_ads', 'integrations', 'call_quality', 'call_logs', 'wa_groups', 'wa_flows'];
+const VALID_VIEWS: ActiveView[] = ['dashboard', 'leads', 'inbox_hub', 'inbox', 'whatsapp', 'settings', 'drip', 'analytics_hub', 'email_analytics', 'message_templates', 'broadcast_hub', 'broadcast', 'email_broadcast', 'telegram_broadcast', 'activity_timeline', 'revenue_forecast', 'followups', 'leaderboard', 'goals', 'win_loss', 'duplicates', 'heatmap', 'automations', 'brokers', 'meta_ads', 'integrations'];
 
 export default function CrmDashboard({ session, initialView }: { session: Session; initialView?: string }) {
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -652,11 +656,14 @@ export default function CrmDashboard({ session, initialView }: { session: Sessio
   const [emailUnreadCount, setEmailUnreadCount] = useState(0);
   const [showTelegramInbox, setShowTelegramInbox] = useState(true);
   const [showWhatsAppInbox, setShowWhatsAppInbox] = useState(true);
+  const [showInstagramInbox, setShowInstagramInbox] = useState(true);
 
   const [sectionVisibility, setSectionVisibility] = useState<Record<string, boolean>>({
     leads: true, brokers: true, inbox: true, broadcasts: true,
     analytics: true, lead_tracker: true, templates: true, followups: true,
     automations: true, pipeline: true, integrations: true, telegram_inbox: true,
+    instagram_inbox: true,
+    meta_ads: true,
   });
   const [sidebarSections, setSidebarSections] = useState<Record<string, boolean>>(() => {
     try {
@@ -971,12 +978,13 @@ export default function CrmDashboard({ session, initialView }: { session: Sessio
     (async () => {
       const { data } = await supabase
         .from('appearance_settings')
-        .select('show_telegram_inbox, show_whatsapp_inbox, show_leads, show_brokers, show_inbox, show_broadcasts, show_analytics, show_lead_tracker, show_templates, show_followups, show_automations, show_pipeline, show_integrations, setup_cost')
+        .select('show_telegram_inbox, show_whatsapp_inbox, show_instagram_inbox, show_meta_ads, show_leads, show_brokers, show_inbox, show_broadcasts, show_analytics, show_lead_tracker, show_templates, show_followups, show_automations, show_pipeline, show_integrations, setup_cost')
         .maybeSingle();
       if (data) {
-        const a = data as { show_telegram_inbox: boolean; show_whatsapp_inbox: boolean; show_leads: boolean; show_brokers: boolean; show_inbox: boolean; show_broadcasts: boolean; show_analytics: boolean; show_lead_tracker: boolean; show_templates: boolean; show_followups: boolean; show_automations: boolean; show_pipeline: boolean; show_integrations: boolean; setup_cost: number | null };
+        const a = data as { show_telegram_inbox: boolean; show_whatsapp_inbox: boolean; show_instagram_inbox: boolean; show_meta_ads: boolean; show_leads: boolean; show_brokers: boolean; show_inbox: boolean; show_broadcasts: boolean; show_analytics: boolean; show_lead_tracker: boolean; show_templates: boolean; show_followups: boolean; show_automations: boolean; show_pipeline: boolean; show_integrations: boolean; setup_cost: number | null };
         setShowTelegramInbox(a.show_telegram_inbox !== false);
         setShowWhatsAppInbox(a.show_whatsapp_inbox !== false);
+        setShowInstagramInbox(a.show_instagram_inbox !== false);
         setSectionVisibility({
           leads: a.show_leads !== false,
           brokers: a.show_brokers !== false,
@@ -990,6 +998,8 @@ export default function CrmDashboard({ session, initialView }: { session: Sessio
           pipeline: a.show_pipeline !== false,
           integrations: a.show_integrations !== false,
           telegram_inbox: a.show_telegram_inbox !== false,
+          instagram_inbox: a.show_instagram_inbox !== false,
+          meta_ads: a.show_meta_ads !== false,
         });
         if (a.setup_cost != null) setSetupCostPerClient(a.setup_cost);
       }
@@ -2078,15 +2088,6 @@ export default function CrmDashboard({ session, initialView }: { session: Sessio
             <Send size={18} /> {!sidebarCollapsed && 'Broadcasts'}
           </a>
           )}
-          <a className={`crm-nav-item ${activeView === 'wa_groups' ? 'active' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`} onClick={() => { navigateToView('wa_groups'); setMobileSidebarOpen(false); setMobileNav('leads'); }} style={{ cursor: 'pointer' }} title={sidebarCollapsed ? 'WhatsApp Groups' : undefined}>
-            <Users size={18} /> {!sidebarCollapsed && 'WhatsApp Groups'}
-          </a>
-          <a className={`crm-nav-item ${activeView === 'wa_flows' ? 'active' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`} onClick={() => { navigateToView('wa_flows'); setMobileSidebarOpen(false); setMobileNav('leads'); }} style={{ cursor: 'pointer' }} title={sidebarCollapsed ? 'WhatsApp Flows' : undefined}>
-            <Layout size={18} /> {!sidebarCollapsed && 'WhatsApp Flows'}
-          </a>
-          <a className={`crm-nav-item ${activeView === 'ig_inbox' ? 'active' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`} onClick={() => { navigateToView('ig_inbox'); setMobileSidebarOpen(false); setMobileNav('leads'); }} style={{ cursor: 'pointer' }} title={sidebarCollapsed ? 'Instagram Inbox' : undefined}>
-            <Instagram size={18} /> {!sidebarCollapsed && 'Instagram Inbox'}
-          </a>
         </div>
         )}
         {permissions.analytics && sidebarSections.analytics && (
@@ -2097,14 +2098,11 @@ export default function CrmDashboard({ session, initialView }: { session: Sessio
             <BarChart3 size={18} /> {!sidebarCollapsed && 'Analytics'}
           </a>
           )}
-          {sectionVisibility.lead_tracker && (
-          <a className={`crm-nav-item ${activeView === 'lead_tracker' ? 'active' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`} onClick={() => { navigateToView('lead_tracker'); setMobileSidebarOpen(false); setMobileNav('leads'); }} style={{ cursor: 'pointer' }} title={sidebarCollapsed ? 'Lead Tracker' : undefined}>
-            <Radar size={18} /> {!sidebarCollapsed && 'Lead Tracker'}
-          </a>
-          )}
+          {sectionVisibility.meta_ads && (
           <a className={`crm-nav-item ${activeView === 'meta_ads' ? 'active' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`} onClick={() => { navigateToView('meta_ads'); setMobileSidebarOpen(false); setMobileNav('leads'); }} style={{ cursor: 'pointer' }} title={sidebarCollapsed ? 'Meta Ads Manager' : undefined}>
             <TrendingUp size={18} /> {!sidebarCollapsed && 'Meta Ads Manager'}
           </a>
+          )}
         </div>
         )}
         {(permissions.broadcasts || permissions.followUps) && sidebarSections.tools && (
@@ -2133,13 +2131,6 @@ export default function CrmDashboard({ session, initialView }: { session: Sessio
             <Zap size={18} /> {!sidebarCollapsed && 'Automations'}
           </a>
           )}
-          <a className={`crm-nav-item ${activeView === 'call_quality' ? 'active' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`} onClick={() => { navigateToView('call_quality'); setMobileSidebarOpen(false); setMobileNav('leads'); }} style={{ cursor: 'pointer' }} title={sidebarCollapsed ? 'Call Quality' : undefined}>
-            <Award size={18} /> {!sidebarCollapsed && 'Call Quality'}
-          </a>
-          <a className={`crm-nav-item ${activeView === 'call_logs' ? 'active' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`} onClick={() => { navigateToView('call_logs'); setMobileSidebarOpen(false); setMobileNav('leads'); }} style={{ cursor: 'pointer' }} title={sidebarCollapsed ? 'WhatsApp Call Logs' : undefined}>
-            <Phone size={18} /> {!sidebarCollapsed && 'WhatsApp Call Logs'}
-          </a>
-
           {sectionVisibility.integrations && (
           <a className={`crm-nav-item ${activeView === 'integrations' ? 'active' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`} onClick={() => { navigateToView('integrations'); setMobileSidebarOpen(false); setMobileNav('leads'); }} style={{ cursor: 'pointer' }} title={sidebarCollapsed ? 'Integrations' : undefined}>
             <Webhook size={18} /> {!sidebarCollapsed && 'Integrations'}
@@ -2318,13 +2309,15 @@ export default function CrmDashboard({ session, initialView }: { session: Sessio
             session={session}
             showTelegram={showTelegramInbox}
             showWhatsApp={showWhatsAppInbox}
+            showInstagram={showInstagramInbox}
             ChatInbox={ChatInbox}
             WhatsAppInbox={WhatsAppInbox}
+            InstagramInbox={InstagramInbox}
             onTotalUnreadChange={() => {}}
             onCall={(number) => { window.location.href = `tel:${number.replace(/[^+\d]/g, '')}`; }}
           />
         ) : activeView === 'settings' ? (
-          <SettingsPage session={session} userRole={userRole} permissions={permissions} customPermissions={customPermissions} onBack={() => navigateToView('leads')} onSignOut={handleSignOut} onInboxVisibilityChange={(tg, wa) => { setShowTelegramInbox(tg); setShowWhatsAppInbox(wa); }} onOpenRecycleBin={() => { fetchTrashedLeads(); setShowTrashModal(true); }} pipelineAutoAssignEnabled={pipelineAutoAssignEnabled} pipelineAutoAssignStages={pipelineAutoAssignStages} onPipelineAutoAssignChange={(enabled, stages) => { setPipelineAutoAssignEnabled(enabled); setPipelineAutoAssignStages(stages); }} onStageLabelsChange={async () => { const { data } = await supabase.from('pipeline_stage_labels').select('stage_key, label'); if (data) { const map: Record<string, string> = {}; for (const row of data as { stage_key: string; label: string }[]) { map[row.stage_key] = row.label; } setStageLabelMap(map); } }} sidebarSections={sidebarSections} onSidebarSectionChange={updateSidebarSection} sectionVisibility={sectionVisibility} onSectionVisibilityChange={(key, visible) => setSectionVisibility((prev) => ({ ...prev, [key]: visible }))} onOpenInbox={() => navigateToView('inbox')} />
+          <SettingsPage session={session} userRole={userRole} permissions={permissions} customPermissions={customPermissions} onBack={() => navigateToView('leads')} onSignOut={handleSignOut} onInboxVisibilityChange={(tg, wa, ig) => { setShowTelegramInbox(tg); setShowWhatsAppInbox(wa); setShowInstagramInbox(ig); }} onOpenRecycleBin={() => { fetchTrashedLeads(); setShowTrashModal(true); }} pipelineAutoAssignEnabled={pipelineAutoAssignEnabled} pipelineAutoAssignStages={pipelineAutoAssignStages} onPipelineAutoAssignChange={(enabled, stages) => { setPipelineAutoAssignEnabled(enabled); setPipelineAutoAssignStages(stages); }} onStageLabelsChange={async () => { const { data } = await supabase.from('pipeline_stage_labels').select('stage_key, label'); if (data) { const map: Record<string, string> = {}; for (const row of data as { stage_key: string; label: string }[]) { map[row.stage_key] = row.label; } setStageLabelMap(map); } }} sidebarSections={sidebarSections} onSidebarSectionChange={updateSidebarSection} sectionVisibility={sectionVisibility} onSectionVisibilityChange={(key, visible) => setSectionVisibility((prev) => ({ ...prev, [key]: visible }))} onOpenInbox={() => navigateToView('inbox')} />
         ) : activeView === 'analytics_hub' ? (
           <AnalyticsHub session={session} onBack={() => navigateToView('dashboard')} />
         ) : activeView === 'message_templates' ? (
@@ -2347,20 +2340,8 @@ export default function CrmDashboard({ session, initialView }: { session: Sessio
           <IntegrationHub session={session} />
         ) : activeView === 'brokers' ? (
           <BrokerTrackerPage session={session} onBack={() => navigateToView('dashboard')} />
-        ) : activeView === 'lead_tracker' ? (
-          <LeadTrackerPage leads={leads} session={session} onBack={() => navigateToView('dashboard')} />
         ) : activeView === 'meta_ads' ? (
           <MetaAdsManager session={session} />
-        ) : activeView === 'call_quality' ? (
-          <CallQualityScoring session={session} onBack={() => navigateToView('dashboard')} />
-        ) : activeView === 'call_logs' ? (
-          <WhatsAppCallLogs session={session} onBack={() => navigateToView('dashboard')} />
-        ) : activeView === 'wa_groups' ? (
-          <WhatsAppGroups session={session} onBack={() => navigateToView('dashboard')} />
-        ) : activeView === 'wa_flows' ? (
-          <WhatsAppFlows session={session} onBack={() => navigateToView('dashboard')} />
-        ) : activeView === 'ig_inbox' ? (
-          <InstagramInbox session={session} onBack={() => navigateToView('dashboard')} />
         ) : activeView === 'heatmap' ? (
           <div className="dash-overview">
             <div className="dash-page-header">
@@ -7507,7 +7488,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
   customPermissions: Record<string, PermissionFlags>;
   onBack: () => void;
   onSignOut: () => void;
-  onInboxVisibilityChange?: (telegram: boolean, whatsapp: boolean) => void;
+  onInboxVisibilityChange?: (telegram: boolean, whatsapp: boolean, instagram: boolean) => void;
   onOpenRecycleBin?: () => void;
   pipelineAutoAssignEnabled?: boolean;
   pipelineAutoAssignStages?: string[];
@@ -7519,7 +7500,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
   onSectionVisibilityChange?: (key: string, visible: boolean) => void;
   onOpenInbox?: () => void;
 }) {
-  const [activeTab, setActiveTab] = useState<'account' | 'email' | 'scheduled_emails' | 'telegram' | 'whatsapp' | 'twilio' | 'team' | 'team_dashboard' | 'role_management' | 'lead_distribution' | 'pipeline_autoassign' | 'pipeline_stages' | 'followup' | 'meta' | 'assignment' | 'recycle_bin' | 'section_visibility' | 'billing' | 'danger'>('account');
+  const [activeTab, setActiveTab] = useState<'account' | 'email' | 'scheduled_emails' | 'telegram' | 'whatsapp' | 'wa_window_tracker' | 'wa_greeting_away' | 'wa_quality_alerts' | 'wa_groups' | 'call_quality' | 'call_logs' | 'lead_tracker' | 'wa_flows' | 'twilio' | 'team' | 'team_dashboard' | 'role_management' | 'lead_distribution' | 'pipeline_autoassign' | 'pipeline_stages' | 'followup' | 'meta' | 'assignment' | 'recycle_bin' | 'section_visibility' | 'billing' | 'danger'>('account');
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -8244,6 +8225,8 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
     leads: true, brokers: true, inbox: true, broadcasts: true,
     analytics: true, lead_tracker: true, templates: true, followups: true,
     automations: true, pipeline: true, integrations: true, telegram_inbox: true,
+    instagram_inbox: true,
+    meta_ads: true,
   });
   const [sectionVisSaving, setSectionVisSaving] = useState(false);
   const [sectionVisSaved, setSectionVisSaved] = useState(false);
@@ -8353,6 +8336,8 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
           pipeline: sv.show_pipeline !== false,
           integrations: sv.show_integrations !== false,
           telegram_inbox: sv.show_telegram_inbox !== false,
+          instagram_inbox: sv.show_instagram_inbox !== false,
+          meta_ads: sv.show_meta_ads !== false,
         });
       }
 
@@ -8749,6 +8734,8 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
         show_pipeline: localSectionVis.pipeline,
         show_integrations: localSectionVis.integrations,
         show_telegram_inbox: localSectionVis.telegram_inbox,
+        show_instagram_inbox: localSectionVis.instagram_inbox,
+        show_meta_ads: localSectionVis.meta_ads,
         updated_at: new Date().toISOString(),
       };
       const { data: existing } = await supabase.from('appearance_settings').select('id').maybeSingle();
@@ -8757,7 +8744,7 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
         : await supabase.from('appearance_settings').insert({ ...payload, user_id: session.user.id });
       if (result.error) { setError(result.error.message); setSectionVisSaving(false); return; }
       Object.entries(localSectionVis).forEach(([key, val]) => onSectionVisibilityChange?.(key, val));
-      onInboxVisibilityChange?.(localSectionVis.telegram_inbox !== false, showWhatsAppInbox);
+      onInboxVisibilityChange?.(localSectionVis.telegram_inbox !== false, showWhatsAppInbox, localSectionVis.instagram_inbox !== false);
       setSectionVisSaved(true);
       setTimeout(() => setSectionVisSaved(false), 3000);
     } catch (e) {
@@ -9094,6 +9081,14 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
     { key: 'scheduled_emails', label: 'Scheduled Emails', icon: <CalendarClock size={18} />, accent: 'scheduled_emails', show: true },
     { key: 'telegram', label: 'Telegram Bot', icon: <MessageCircle size={18} />, accent: 'telegram', show: true },
     { key: 'whatsapp', label: 'WhatsApp API', icon: <PhoneIcon size={18} />, accent: 'whatsapp', show: true },
+    { key: 'wa_window_tracker', label: 'Window Tracker', icon: <Clock3 size={18} />, accent: 'whatsapp', show: true },
+    { key: 'wa_greeting_away', label: 'Greeting & Away', icon: <MessageSquare size={18} />, accent: 'whatsapp', show: true },
+    { key: 'wa_quality_alerts', label: 'Quality Alerts', icon: <ShieldAlert size={18} />, accent: 'whatsapp', show: true },
+    { key: 'wa_groups', label: 'WhatsApp Groups', icon: <Users size={18} />, accent: 'whatsapp', show: true },
+    { key: 'call_quality', label: 'Call Quality Scoring', icon: <Award size={18} />, accent: 'call_guardrails', show: true },
+    { key: 'call_logs', label: 'WhatsApp Call Logs', icon: <Phone size={18} />, accent: 'call_guardrails', show: true },
+    { key: 'lead_tracker', label: 'Lead Tracker', icon: <Radar size={18} />, accent: 'meta', show: true },
+    { key: 'wa_flows', label: 'WhatsApp Flows', icon: <Layout size={18} />, accent: 'whatsapp', show: true },
     { key: 'twilio', label: 'Virtual Calling', icon: <PhoneCall size={18} />, accent: 'twilio', show: true },
     { key: 'call_guardrails', label: 'Call Guardrails', icon: <ShieldCheck size={18} />, accent: 'call_guardrails', show: true },
     { key: 'followup_escalation', label: 'Escalation', icon: <TrendingUp size={18} />, accent: 'followup_escalation', show: true },
@@ -10055,6 +10050,9 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                     </div>
                   </div>
                   )}
+
+                  {/* Blue Tick (OBA) Verification Application */}
+                  <WhatsAppBlueTick session={session} />
 
                   {/* Phone Number Status & Quality Rating — only for first number */}
                   {waNumbersList.length > 0 && waNumbersList[0]?.phone_number_id && waNumbersList[0]?.access_token && (
@@ -12046,6 +12044,22 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                     </>
                   )}
                 </>
+              ) : activeTab === 'wa_groups' ? (
+                <WhatsAppGroups session={session} onBack={() => { setActiveTab('whatsapp'); setError(''); }} />
+              ) : activeTab === 'wa_window_tracker' ? (
+                <WhatsAppConversationTracker session={session} onBack={() => { setActiveTab('whatsapp'); setError(''); }} />
+              ) : activeTab === 'wa_greeting_away' ? (
+                <WhatsAppGreetingAway session={session} onBack={() => { setActiveTab('whatsapp'); setError(''); }} />
+              ) : activeTab === 'wa_quality_alerts' ? (
+                <WhatsAppQualityAlerts session={session} onBack={() => { setActiveTab('whatsapp'); setError(''); }} />
+              ) : activeTab === 'call_quality' ? (
+                <CallQualityScoring session={session} onBack={() => { setActiveTab('twilio'); setError(''); }} />
+              ) : activeTab === 'call_logs' ? (
+                <WhatsAppCallLogs session={session} onBack={() => { setActiveTab('twilio'); setError(''); }} />
+              ) : activeTab === 'lead_tracker' ? (
+                <LeadTrackerPage leads={leads} session={session} onBack={() => { setActiveTab('meta'); setError(''); }} />
+              ) : activeTab === 'wa_flows' ? (
+                <WhatsAppFlows session={session} onBack={() => { setActiveTab('lead_tracker'); setError(''); }} />
               ) : activeTab === 'meta' ? (
                 <>
                   <div className="crm-settings-card-header">
@@ -12511,6 +12525,8 @@ function SettingsPage({ session, userRole, permissions, customPermissions, onBac
                         { key: 'pipeline', label: 'Pipeline Funnel', sub: 'Visual lead pipeline funnel in sidebar', icon: <Filter size={18} />, iconBg: 'rgba(139,92,246,0.1)', iconColor: '#8B5CF6' },
                         { key: 'integrations', label: 'Integrations', sub: 'Webhook endpoints for Zapier, Make, and Pabbly', icon: <Webhook size={18} />, iconBg: 'rgba(99,102,241,0.1)', iconColor: '#6366F1' },
                         { key: 'telegram_inbox', label: 'Telegram Chat', sub: 'Show Telegram conversations in the shared inbox', icon: <Send size={18} />, iconBg: 'rgba(15,118,110,0.1)', iconColor: '#0F766E' },
+                        { key: 'instagram_inbox', label: 'Instagram Chat', sub: 'Show Instagram conversations in the shared inbox', icon: <Instagram size={18} />, iconBg: 'rgba(225,48,108,0.1)', iconColor: '#E1306C' },
+                        { key: 'meta_ads', label: 'Meta Ads Manager', sub: 'Manage Facebook & Instagram ad campaigns', icon: <TrendingUp size={18} />, iconBg: 'rgba(59,130,246,0.1)', iconColor: '#3B82F6' },
                       ].map((item) => {
                         const isVisible = localSectionVis[item.key] !== false;
                         return (

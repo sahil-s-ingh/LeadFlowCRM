@@ -46,7 +46,7 @@ const TABS: TabDef[] = [
   { key: 'wa_onboarding', label: 'WhatsApp Onboarding', description: 'Configure embedded signup for client WhatsApp onboarding', icon: <Zap size={18} />, group: 'WhatsApp' },
   { key: 'meta_ads', label: 'Meta Marketing API', description: 'Configure Facebook Marketing API for the Ads Manager OAuth flow', icon: <TrendingUp size={18} />, group: 'Integrations' },
   { key: 'social_auth', label: 'Social Login', description: 'Enable Continue with Google / Facebook on the admin login page', icon: <LogIn size={18} />, group: 'Integrations' },
-  { key: 'ai_assistant', label: 'Jarvis AI Assistant', description: 'Configure the AI provider and API key for the Jarvis CRM assistant', icon: <Sparkles size={18} />, group: 'Integrations' },
+  { key: 'ai_assistant', label: 'HubbotsX AI Assistant', description: 'Configure the AI provider and API key for the HubbotsX CRM assistant', icon: <Sparkles size={18} />, group: 'Integrations' },
 ];
 
 export default function SuperAdminSettings({ session }: { session: Session }) {

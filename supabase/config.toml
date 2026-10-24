@@ -156,3 +156,6 @@ verify_jwt = false
 
 [functions.process-vip-joins]
 verify_jwt = false
+
+[functions.wa-blue-tick]
+verify_jwt = true

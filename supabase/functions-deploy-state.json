@@ -7,7 +7,7 @@
     },
     "ai-assistant": {
       "hasChanged": false,
-      "hash": "cc8b9be132c77b5c8e6578149ba7e7a3d01924c8b4e5c42254d33138b4a5fa5d"
+      "hash": "f44d906ae8b26962befdda76019596fce636cd77f4c859ccd0d412a145afae35"
     },
     "ai-generate-kb": {
       "hasChanged": false,
@@ -169,6 +169,10 @@
       "hasChanged": false,
       "hash": "1f8ef8fda73a177ffb4d6af33a6ccdc05789890375a61dc269f558d20228b90b"
     },
+    "wa-blue-tick": {
+      "hasChanged": false,
+      "hash": "636d1f80378f11d624642e44a476efb58574ef79fc0744511daf74dcfc16423d"
+    },
     "wa-embedded-signup": {
       "hasChanged": false,
       "hash": "f10d65f61099bde37327b488edfb2d86f761ad7ac517696b3b5da52678ebf184"
@@ -211,7 +215,7 @@
     },
     "whatsapp-webhook": {
       "hasChanged": false,
-      "hash": "dde7710a5717cbf0f25ad51521817c5fd1861f0146bb86743f4f0eaa992dc12a"
+      "hash": "9455a711d31f9b76d1b6cd01f3e9585089b848e716301c511dbc7e0fa196549b"
     }
   }
 }

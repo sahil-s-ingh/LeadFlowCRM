@@ -40,9 +40,12 @@ interface IgMessage {
 interface Props {
   session: Session;
   onBack: () => void;
+  onUnreadChange?: (n: number) => void;
+  refreshKey?: number;
+  onRefresh?: () => void;
 }
 
-export default function InstagramInbox({ session, onBack }: Props) {
+export default function InstagramInbox({ session, onBack, onUnreadChange, refreshKey, onRefresh }: Props) {
   const [settings, setSettings] = useState<IgSettings | null>(null);
   const [loadingSettings, setLoadingSettings] = useState(true);
   const [showSetup, setShowSetup] = useState(false);
@@ -96,6 +99,20 @@ export default function InstagramInbox({ session, onBack }: Props) {
     }
     setConvLoading(false);
   }, []);
+
+  // Report unread count to parent (Shared Inbox)
+  useEffect(() => {
+    if (onUnreadChange) {
+      onUnreadChange(conversations.reduce((sum, c) => sum + c.unread_count, 0));
+    }
+  }, [conversations, onUnreadChange]);
+
+  // External refresh trigger (from Shared Inbox refresh button)
+  useEffect(() => {
+    if (refreshKey !== undefined && refreshKey > 0) {
+      fetchConversations();
+    }
+  }, [refreshKey, fetchConversations]);
 
   useEffect(() => {
     fetchSettings();
@@ -385,7 +402,7 @@ export default function InstagramInbox({ session, onBack }: Props) {
 
       {/* Toolbar */}
       <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginBottom: '16px' }}>
-        <button onClick={() => fetchConversations()} className="crm-btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+        <button onClick={() => { fetchConversations(); onRefresh?.(); }} className="crm-btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           <RefreshCw size={16} /> Refresh
         </button>
         <div style={{ flex: 1 }} />

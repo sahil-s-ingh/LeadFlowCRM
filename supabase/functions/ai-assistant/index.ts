@@ -168,7 +168,7 @@ Deno.serve(async (req: Request) => {
 
     const crmContext = await gatherCRMContext(supabase, user_id);
 
-    const systemPrompt = `${config.system_prompt || "You are Jarvis, an AI assistant for a trading CRM."}\n\nBelow is the current CRM data for the logged-in user. Use this to answer their questions accurately. All numbers and names come from real data — do not make up information.\n\n${crmContext}`;
+    const systemPrompt = `${config.system_prompt || "You are HubbotsX, an AI assistant for a trading CRM."}\n\nBelow is the current CRM data for the logged-in user. Use this to answer their questions accurately. All numbers and names come from real data — do not make up information.\n\n${crmContext}`;
 
     const conversation: ChatMessage[] = (history || []).slice(-10);
     conversation.push({ role: "user", content: question });
@@ -184,7 +184,7 @@ Deno.serve(async (req: Request) => {
       if (!reply) reply = "I could not generate a response. Please try rephrasing your question.";
     } catch (err) {
       const msg = err instanceof Error ? err.message : "AI generation failed";
-      console.error("Jarvis AI error:", msg);
+      console.error("HubbotsX AI error:", msg);
       return new Response(JSON.stringify({ error: `AI service error: ${msg}` }), {
         status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

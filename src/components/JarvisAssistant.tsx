@@ -46,7 +46,7 @@ declare global {
   }
 }
 
-export default function JarvisAssistant({ session }: { session: Session | null }) {
+export default function HubbotsXAssistant({ session }: { session: Session | null }) {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -58,7 +58,7 @@ export default function JarvisAssistant({ session }: { session: Session | null }
   const [voiceSupported, setVoiceSupported] = useState(false);
   const [pos, setPos] = useState<{ x: number; y: number }>(() => {
     try {
-      const saved = localStorage.getItem('jarvis-pos');
+      const saved = localStorage.getItem('hubbotsx-pos');
       if (saved) return JSON.parse(saved);
     } catch { /* ignore */ }
     return { x: window.innerWidth - 80, y: window.innerHeight - 80 };
@@ -105,7 +105,7 @@ export default function JarvisAssistant({ session }: { session: Session | null }
       dragData.current = null;
       setDragging(false);
       if (moved) {
-        try { localStorage.setItem('jarvis-pos', JSON.stringify(posRef.current)); } catch { /* ignore */ }
+        try { localStorage.setItem('hubbotsx-pos', JSON.stringify(posRef.current)); } catch { /* ignore */ }
       }
       if (moved) wasDragged.current = true;
     };
@@ -270,7 +270,7 @@ export default function JarvisAssistant({ session }: { session: Session | null }
           }}
           onMouseEnter={(e) => { if (!dragging) e.currentTarget.style.transform = 'scale(1.08)'; }}
           onMouseLeave={(e) => { if (!dragging) e.currentTarget.style.transform = 'scale(1)'; }}
-          title="Ask Jarvis AI — drag to move"
+          title="Ask HubbotsX AI — drag to move"
         >
           <Sparkles size={26} color="#fff" />
           <span style={{
@@ -315,7 +315,7 @@ export default function JarvisAssistant({ session }: { session: Session | null }
               <Sparkles size={20} color="#fff" />
             </div>
             <div>
-              <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#fff' }}>Jarvis AI</div>
+              <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#fff' }}>HubbotsX AI</div>
               <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.7)', display: 'flex', alignItems: 'center', gap: '4px' }}>
                 <span style={{
                   width: '6px', height: '6px', borderRadius: '50%',
@@ -371,7 +371,7 @@ export default function JarvisAssistant({ session }: { session: Session | null }
                   <Sparkles size={26} color="#fff" />
                 </div>
                 <p style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-main)', margin: '0 0 4px' }}>
-                  Hi, I'm Jarvis
+                  Hi, I'm HubbotsX
                 </p>
                 <p style={{ fontSize: '0.78rem', color: 'var(--text-muted, #64748b)', margin: '0 0 16px', lineHeight: 1.5 }}>
                   Your AI CRM assistant. Ask me about your leads, follow-ups, WhatsApp chats, and more. Type or tap the mic to speak.
@@ -481,7 +481,7 @@ export default function JarvisAssistant({ session }: { session: Session | null }
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   flexShrink: 0, transition: 'background 0.15s',
                 }}
-                title={listening ? 'Stop listening' : 'Speak to Jarvis'}
+                title={listening ? 'Stop listening' : 'Speak to HubbotsX'}
               >
                 {listening ? <MicOff size={18} color="#fff" /> : <Mic size={18} color="#2563eb" />}
               </button>
@@ -491,7 +491,7 @@ export default function JarvisAssistant({ session }: { session: Session | null }
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendQuestion(input); } }}
-              placeholder={listening ? 'Listening...' : 'Ask Jarvis anything about your CRM...'}
+              placeholder={listening ? 'Listening...' : 'Ask HubbotsX anything about your CRM...'}
               disabled={loading || listening}
               style={{
                 flex: 1, padding: '10px 12px', borderRadius: '10px',

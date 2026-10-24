@@ -1,15 +1,33 @@
 import { useState, useEffect, useRef } from 'react';
 import type { Session } from '@supabase/supabase-js';
-import { MessageCircle, Phone as PhoneIcon, Mail, Inbox as InboxIcon } from 'lucide-react';
+import { MessageCircle, Phone as PhoneIcon, Mail, Inbox as InboxIcon, Instagram } from 'lucide-react';
 
-type InboxTab = 'telegram' | 'whatsapp';
+type InboxTab = 'telegram' | 'whatsapp' | 'instagram';
+
+type InboxComponent = React.ComponentType<{
+  session: Session;
+  onUnreadChange: (n: number) => void;
+  refreshKey: number;
+  onRefresh: () => void;
+  onCall?: (number: string) => void;
+}>;
+
+type InstagramComponent = React.ComponentType<{
+  session: Session;
+  onBack: () => void;
+  onUnreadChange?: (n: number) => void;
+  refreshKey?: number;
+  onRefresh?: () => void;
+}>;
 
 interface InboxHubProps {
   session: Session;
   showTelegram: boolean;
   showWhatsApp: boolean;
-  ChatInbox: React.ComponentType<{ session: Session; onUnreadChange: (n: number) => void; refreshKey: number; onRefresh: () => void; onCall?: (number: string) => void }>;
-  WhatsAppInbox: React.ComponentType<{ session: Session; onUnreadChange: (n: number) => void; refreshKey: number; onRefresh: () => void; onCall?: (number: string) => void }>;
+  showInstagram?: boolean;
+  ChatInbox: InboxComponent;
+  WhatsAppInbox: InboxComponent;
+  InstagramInbox?: InstagramComponent;
   onTotalUnreadChange?: (total: number) => void;
   onCall?: (number: string) => void;
   initialTab?: InboxTab;
@@ -19,8 +37,10 @@ export default function InboxHub({
   session,
   showTelegram,
   showWhatsApp,
+  showInstagram,
   ChatInbox,
   WhatsAppInbox,
+  InstagramInbox,
   onTotalUnreadChange,
   onCall,
   initialTab,
@@ -28,19 +48,19 @@ export default function InboxHub({
   const availableTabs: InboxTab[] = [];
   if (showTelegram) availableTabs.push('telegram');
   if (showWhatsApp) availableTabs.push('whatsapp');
+  if (showInstagram && InstagramInbox) availableTabs.push('instagram');
 
   const [tab, setTab] = useState<InboxTab>(
     initialTab && availableTabs.includes(initialTab) ? initialTab : availableTabs[0] || 'telegram'
   );
 
-  // Per-tab unread counts + refresh keys
   const [tgUnread, setTgUnread] = useState(0);
   const [waUnread, setWaUnread] = useState(0);
+  const [igUnread, setIgUnread] = useState(0);
   const [tgRefresh, setTgRefresh] = useState(0);
   const [waRefresh, setWaRefresh] = useState(0);
+  const [igRefresh, setIgRefresh] = useState(0);
 
-  // Keep track of which tabs have been mounted so we don't unmount/remount
-  // (preserves chat state when switching back)
   const [mounted, setMounted] = useState<Set<InboxTab>>(new Set([tab]));
   const firstRender = useRef(true);
 
@@ -54,12 +74,10 @@ export default function InboxHub({
 
   useEffect(() => {
     if (onTotalUnreadChange) {
-      onTotalUnreadChange(tgUnread + waUnread);
+      onTotalUnreadChange(tgUnread + waUnread + igUnread);
     }
-  }, [tgUnread, waUnread, onTotalUnreadChange]);
+  }, [tgUnread, waUnread, igUnread, onTotalUnreadChange]);
 
-  // Suppress the initial total-unread callback so we don't double-count
-  // on first render (parent already has its own counters).
   useEffect(() => {
     if (firstRender.current) {
       firstRender.current = false;
@@ -69,14 +87,14 @@ export default function InboxHub({
   const TAB_META: Record<InboxTab, { label: string; icon: typeof Mail; color: string }> = {
     telegram: { label: 'Telegram', icon: MessageCircle, color: '#0088CC' },
     whatsapp: { label: 'WhatsApp', icon: PhoneIcon, color: '#25D366' },
+    instagram: { label: 'Instagram', icon: Instagram, color: '#E1306C' },
   };
 
   const unreadFor = (t: InboxTab) =>
-    t === 'telegram' ? tgUnread : waUnread;
+    t === 'telegram' ? tgUnread : t === 'whatsapp' ? waUnread : igUnread;
 
   return (
     <div>
-      {/* Tab bar */}
       <div className="ah-tabbar">
         {availableTabs.map((t) => {
           const meta = TAB_META[t];
@@ -88,10 +106,10 @@ export default function InboxHub({
               key={t}
               className={`ah-tab ${active ? 'ah-tab-active' : ''}`}
               onClick={() => setTab(t)}
+              title={meta.label}
               style={active ? { borderBottomColor: meta.color, color: meta.color } : undefined}
             >
-              <Icon size={17} />
-              <span>{meta.label}</span>
+              <Icon size={20} />
               {count > 0 && (
                 <span
                   className="ah-tab-badge"
@@ -105,7 +123,6 @@ export default function InboxHub({
         })}
       </div>
 
-      {/* Tab content — keep mounted tabs alive to preserve scroll/state */}
       <div className="ah-content">
         {mounted.has('telegram') && showTelegram && (
           <div style={{ display: tab === 'telegram' ? 'block' : 'none' }}>
@@ -126,6 +143,17 @@ export default function InboxHub({
               refreshKey={waRefresh}
               onRefresh={() => setWaRefresh((k) => k + 1)}
               onCall={onCall}
+            />
+          </div>
+        )}
+        {mounted.has('instagram') && showInstagram && InstagramInbox && (
+          <div style={{ display: tab === 'instagram' ? 'block' : 'none' }}>
+            <InstagramInbox
+              session={session}
+              onBack={() => setTab(availableTabs[0] || 'telegram')}
+              onUnreadChange={setIgUnread}
+              refreshKey={igRefresh}
+              onRefresh={() => setIgRefresh((k) => k + 1)}
             />
           </div>
         )}

@@ -95,17 +95,17 @@ export default function SuperAdminAIAssistant() {
       )}
       {saved && (
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 16px', marginBottom: '16px', background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)', borderRadius: '10px', color: '#16a34a', fontSize: '0.82rem' }}>
-          <CheckCircle2 size={16} /> Settings saved. Jarvis AI is now available to all CRM users.
+          <CheckCircle2 size={16} /> Settings saved. HubbotsX AI is now available to all CRM users.
         </div>
       )}
 
       <div style={{ background: 'var(--bg-card)', borderRadius: '16px', border: '1px solid var(--border-subtle)', padding: '24px', marginBottom: '20px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
           <Sparkles size={20} style={{ color: '#2563eb' }} />
-          <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 700 }}>Jarvis AI Assistant Configuration</h3>
+          <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 700 }}>HubbotsX AI Assistant Configuration</h3>
         </div>
         <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: '0 0 20px', lineHeight: 1.5 }}>
-          Configure the AI provider and API key for the Jarvis AI Assistant. This is a platform-level setting — every CRM user who signs in will have access to the floating Jarvis button in their dashboard.
+          Configure the AI provider and API key for the HubbotsX AI Assistant. This is a platform-level setting — every CRM user who signs in will have access to the floating HubbotsX button in their dashboard.
         </p>
 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', padding: '12px 16px', borderRadius: '10px', border: '1px solid var(--border-subtle)' }}>
@@ -113,7 +113,7 @@ export default function SuperAdminAIAssistant() {
             <Power size={18} style={{ color: config?.is_active ? '#16a34a' : '#94a3b8' }} />
             <div>
               <div style={{ fontWeight: 600, fontSize: '0.85rem' }}>Assistant Active</div>
-              <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{config?.is_active ? 'Jarvis is available to all users' : 'Jarvis is disabled'}</div>
+              <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{config?.is_active ? 'HubbotsX is available to all users' : 'HubbotsX is disabled'}</div>
             </div>
           </div>
           <button onClick={() => update('is_active', !config?.is_active)} style={{ width: '44px', height: '24px', borderRadius: '12px', background: config?.is_active ? '#16a34a' : '#cbd5e1', border: 'none', cursor: 'pointer', position: 'relative', transition: 'background 0.2s', flexShrink: 0 }}>
@@ -179,10 +179,10 @@ export default function SuperAdminAIAssistant() {
             value={config?.system_prompt || ''}
             onChange={(e) => update('system_prompt', e.target.value)}
             rows={4}
-            placeholder="Instructions for the Jarvis AI assistant..."
+            placeholder="Instructions for the HubbotsX AI assistant..."
             style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)', background: 'var(--bg-light)', fontSize: '0.82rem', resize: 'vertical', lineHeight: 1.5 }}
           />
-          <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '4px' }}>Defines Jarvis's personality and what it should know about your business.</p>
+          <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '4px' }}>Defines HubbotsX's personality and what it should know about your business.</p>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
